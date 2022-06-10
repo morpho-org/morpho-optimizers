@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@contracts/aave-v2/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
@@ -51,7 +50,9 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho public morphoImplV1;
     Morpho public morpho;
     IInterestRatesManager public interestRatesManager;
-    IRewardsManager public rewardsManager;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
+    IRewardsManager internal rewardsManagerImplV1;
+    IRewardsManager internal rewardsManager;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
     Lens public lens;
@@ -124,23 +125,19 @@ contract TestSetup is Config, Utils, stdCheats {
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
-        if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network
-            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                lendingPool,
-                IMorpho(address(morpho))
-            );
-        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network
-            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                lendingPool,
-                IMorpho(address(morpho))
-            );
+        if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
+            rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network
-            rewardsManager = new RewardsManagerOnPolygon(lendingPool, IMorpho(address(morpho)));
+            rewardsManagerImplV1 = new RewardsManagerOnPolygon();
         }
 
+        rewardsManagerProxy = new TransparentUpgradeableProxy(
+            address(rewardsManagerImplV1),
+            address(proxyAdmin),
+            ""
+        );
+        rewardsManager = IRewardsManager(address(rewardsManagerProxy));
+        rewardsManager.initialize(address(morpho));
         rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
         morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
 

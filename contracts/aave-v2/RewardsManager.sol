@@ -8,13 +8,13 @@ import "./interfaces/IGetterUnderlyingAsset.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title RewardsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice This abstract contract is a base for rewards managers managing the rewards from the Aave protocol.
-abstract contract RewardsManager is IRewardsManager, Ownable {
+abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// STRUCTS ///
 
     struct LocalAssetData {
@@ -29,14 +29,28 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
     IAaveIncentivesController public override aaveIncentivesController;
-    ILendingPool public immutable lendingPool;
-    IMorpho public immutable morpho;
+    ILendingPool public lendingPool;
+    IMorpho public morpho;
 
     /// EVENTS ///
 
     /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
+
+    /// @notice Emitted when rewards of an asset are accrued on behalf of a user.
+    /// @param _asset The address of the incentivized asset.
+    /// @param _user The address of the user that rewards are accrued on behalf of.
+    /// @param _assetIndex The index of the asset distribution.
+    /// @param _userIndex The index of the asset distribution on behalf of the user.
+    /// @param _rewardsAccrued The amount of rewards accrued.
+    event Accrued(
+        address indexed _asset,
+        address indexed _user,
+        uint256 _assetIndex,
+        uint256 _userIndex,
+        uint256 _rewardsAccrued
+    );
 
     /// ERRORS ///
 
@@ -56,12 +70,19 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
     /// CONSTRUCTOR ///
 
-    /// @notice Constructs the RewardsManager contract.
-    /// @param _lendingPool The `lendingPool`.
-    /// @param _morpho The `morpho`.
-    constructor(ILendingPool _lendingPool, IMorpho _morpho) {
-        lendingPool = _lendingPool;
-        morpho = _morpho;
+    /// @notice Constructs the contract.
+    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
+    constructor() initializer {}
+
+    /// UPGRADE ///
+
+    /// @notice Initializes the RewardsManager contract.
+    /// @param _morpho The address of Morpho's main contract's proxy.
+    function initialize(address _morpho) external initializer {
+        __Ownable_init();
+
+        morpho = IMorpho(_morpho);
+        lendingPool = ILendingPool(morpho.lendingPool());
     }
 
     /// EXTERNAL ///
@@ -214,10 +235,11 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         (, uint256 newIndex) = _udpateAsset(_asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
-            if (_userBalance != 0)
-                accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
+            if (_userBalance != 0) {}
+            accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
 
             localAssetData[_asset].userIndex[_user] = newIndex;
+            emit Accrued(_asset, _user, newIndex, formerUserIndex, accruedRewards);
         }
     }
 

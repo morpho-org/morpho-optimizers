@@ -8,8 +8,6 @@ import "../RewardsManager.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice This contract is used to manage the rewards from the Aave protocol on Polygon.
 contract RewardsManagerOnPolygon is RewardsManager {
-    constructor(ILendingPool _lendingPool, IMorpho _morpho) RewardsManager(_lendingPool, _morpho) {}
-
     /// @inheritdoc RewardsManager
     function _getAssetIndex(address _asset, uint256 _totalBalance)
         internal
