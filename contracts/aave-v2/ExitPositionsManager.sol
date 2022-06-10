@@ -494,7 +494,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
-            vars.feeToRepay = Math.safeSub(
+            vars.feeToRepay = Math.zeroFloorSub(
                 (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
                     delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)),
                 (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
