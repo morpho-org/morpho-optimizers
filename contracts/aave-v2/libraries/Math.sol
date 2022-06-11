@@ -11,6 +11,8 @@ library Math {
     }
 
     function zeroFloorSub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a - b : 0;
+        unchecked {
+            return a > b ? a - b : 0;
+        }
     }
 }
