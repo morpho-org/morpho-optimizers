@@ -30,6 +30,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant BORROWING_MASK =
         0x5555555555555555555555555555555555555555555555555555555555555555;
+    uint256 public constant MAX_NUMBER_OF_MARKETS = 128;
 
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
