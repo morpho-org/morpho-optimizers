@@ -20,6 +20,7 @@ interface IMorpho {
     function LIQUIDATION_CLOSE_FACTOR_PERCENT() external view returns(uint16);
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns(uint256);
     function BORROWING_MASK() external view returns(uint256);
+    function MAX_NUMBER_OF_MARKETS() external view returns(uint256);
 
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function maxSortedUsers() external view returns (uint256);
