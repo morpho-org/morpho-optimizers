@@ -14,6 +14,13 @@ interface IMorpho {
 
     /// STORAGE ///
 
+    function NO_REFERRAL_CODE() external view returns(uint8);
+    function VARIABLE_INTEREST_MODE() external view returns(uint8);
+    function MAX_BASIS_POINTS() external view returns(uint16);
+    function LIQUIDATION_CLOSE_FACTOR_PERCENT() external view returns(uint16);
+    function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns(uint256);
+    function BORROWING_MASK() external view returns(uint256);
+
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function maxSortedUsers() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
