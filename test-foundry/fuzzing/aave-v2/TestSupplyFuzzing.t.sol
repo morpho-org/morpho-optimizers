@@ -5,16 +5,16 @@ import "./setup/TestSetupFuzzing.sol";
 
 contract TestSupplyFuzzing is TestSetupFuzzing {
     struct AssetVars {
-        address suppliedCToken;
+        address suppliedAToken;
         address suppliedUnderlying;
-        address borrowedCToken;
+        address borrowedAToken;
         address borrowedUnderlying;
-        address collateralCToken;
+        address collateralAToken;
         address collateralUnderlying;
     }
 
     function testSupply1Fuzzed(uint128 _amount, uint8 _asset) public {
-        (address asset, address underlying) = getAsset(_asset);
+        (address asset, address underlying) = getSupplyAsset(_asset);
         uint256 amount = _amount;
 
         assumeSupplyAmountIsCorrect(underlying, amount);
@@ -24,11 +24,10 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlying);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
-        testEquality(ERC20(asset).balanceOf(address(morpho)), expectedOnPool, "balance of aToken");
+        testEquality(ERC20(asset).balanceOf(address(morpho)), amount, "balance of aToken");
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(asset, address(supplier1));
 
-        testEquality(onPool, IAToken(asset).balanceOf(address(morpho)), "on pool");
         testEquality(onPool, expectedOnPool, "on pool");
         assertEq(inP2P, 0, "in P2P");
     }
@@ -36,14 +35,14 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
     function testSupply2Fuzzed(
         uint128 _suppliedAmount,
         uint8 _randomModulo,
-        uint8 _suppliedCToken,
-        uint8 _borrowedCToken
+        uint8 _suppliedAToken,
+        uint8 _borrowedAToken
     ) public {
         hevm.assume(_randomModulo > 0);
         AssetVars memory vars;
 
-        (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_suppliedCToken);
-        (vars.borrowedCToken, vars.borrowedUnderlying) = getAsset(_borrowedCToken);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_suppliedAToken);
+        (vars.borrowedAToken, vars.borrowedUnderlying) = getAsset(_borrowedAToken);
 
         uint256 suppliedAmount = _suppliedAmount;
 
@@ -51,19 +50,19 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         // Because there are two supply with suppliedAmount
 
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
-        borrower1.supply(vars.suppliedCToken, suppliedAmount);
+        borrower1.supply(vars.suppliedAToken, suppliedAmount);
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            vars.borrowedCToken
+            vars.borrowedAToken
         );
 
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
-        assumeBorrowAmountIsCorrect(vars.borrowedCToken, borrowedAmount);
-        borrower1.borrow(vars.borrowedCToken, borrowedAmount);
+        assumeBorrowAmountIsCorrect(vars.borrowedAToken, borrowedAmount);
+        borrower1.borrow(vars.borrowedAToken, borrowedAmount);
 
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
-        borrower1.supply(vars.suppliedCToken, suppliedAmount);
+        borrower1.supply(vars.suppliedAToken, suppliedAmount);
     }
 
     // what is fuzzed is the proportion in P2P on the supply of the second user
@@ -74,8 +73,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _random1
     ) public {
         AssetVars memory vars;
-        (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
-        (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.collateralAToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
 
@@ -84,19 +83,19 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         );
 
         borrower1.approve(vars.collateralUnderlying, collateralAmountToSupply);
-        borrower1.supply(vars.collateralCToken, collateralAmountToSupply);
+        borrower1.supply(vars.collateralAToken, collateralAmountToSupply);
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            vars.suppliedCToken
+            vars.suppliedAToken
         );
         uint256 borrowedAmount = (borrowable * _random1) / 255;
-        assumeBorrowAmountIsCorrect(vars.suppliedCToken, borrowedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedAToken, borrowedAmount);
 
-        borrower1.borrow(vars.suppliedCToken, borrowedAmount);
+        borrower1.borrow(vars.suppliedAToken, borrowedAmount);
 
         supplier1.approve(vars.suppliedUnderlying, _suppliedAmount);
-        supplier1.supply(vars.suppliedCToken, _suppliedAmount);
+        supplier1.supply(vars.suppliedAToken, _suppliedAmount);
     }
 
     // what is fuzzed is the amount supplied
@@ -107,13 +106,13 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _random1
     ) public {
         AssetVars memory vars;
-        (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
-        (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.collateralAToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
-        assumeBorrowAmountIsCorrect(vars.suppliedCToken, NMAX * amountPerBorrower);
+        assumeBorrowAmountIsCorrect(vars.suppliedAToken, NMAX * amountPerBorrower);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -125,23 +124,23 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
 
         uint256 collateralAmount = ERC20(vars.collateralUnderlying).balanceOf(address(borrower1));
         borrower1.approve(vars.collateralUnderlying, collateralAmount);
-        borrower1.supply(vars.collateralCToken, collateralAmount);
+        borrower1.supply(vars.collateralAToken, collateralAmount);
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            vars.suppliedCToken
+            vars.suppliedAToken
         );
 
         hevm.assume(amountPerBorrower < borrowable);
-        borrower1.borrow(vars.suppliedCToken, amountPerBorrower);
+        borrower1.borrow(vars.suppliedAToken, amountPerBorrower);
         for (uint256 i = 1; i < NMAX - 1; i++) {
             borrowers[i + 1].approve(vars.collateralUnderlying, collateralAmount);
-            borrowers[i + 1].supply(vars.collateralCToken, collateralAmount);
-            borrowers[i + 1].borrow(vars.suppliedCToken, amountPerBorrower);
+            borrowers[i + 1].supply(vars.collateralAToken, collateralAmount);
+            borrowers[i + 1].borrow(vars.suppliedAToken, amountPerBorrower);
         }
 
         supplier1.approve(vars.suppliedUnderlying, _suppliedAmount);
-        supplier1.supply(vars.suppliedCToken, _suppliedAmount);
+        supplier1.supply(vars.suppliedAToken, _suppliedAmount);
     }
 
     // what is fuzzed is the amount supplied
@@ -152,13 +151,13 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _random1
     ) public {
         AssetVars memory vars;
-        (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
-        (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.collateralAToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         uint256 amountPerBorrower = _suppliedAmount / (2 * NMAX);
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
-        assumeBorrowAmountIsCorrect(vars.suppliedCToken, NMAX * amountPerBorrower);
+        assumeBorrowAmountIsCorrect(vars.suppliedAToken, NMAX * amountPerBorrower);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -171,26 +170,26 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
 
         {
             borrower1.approve(vars.collateralUnderlying, collateralAmount);
-            borrower1.supply(vars.collateralCToken, collateralAmount);
+            borrower1.supply(vars.collateralAToken, collateralAmount);
             (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
                 address(borrower1),
-                vars.suppliedCToken
+                vars.suppliedAToken
             );
             hevm.assume(borrowable >= amountPerBorrower);
-            borrower1.borrow(vars.suppliedCToken, amountPerBorrower);
+            borrower1.borrow(vars.suppliedAToken, amountPerBorrower);
         }
         createSigners(NMAX);
 
         for (uint256 i = 0; i < NMAX - 1; i++) {
             borrowers[i + 1].approve(vars.collateralUnderlying, collateralAmount);
-            borrowers[i + 1].supply(vars.collateralCToken, collateralAmount);
-            borrowers[i + 1].borrow(vars.suppliedCToken, amountPerBorrower);
+            borrowers[i + 1].supply(vars.collateralAToken, collateralAmount);
+            borrowers[i + 1].borrow(vars.suppliedAToken, amountPerBorrower);
         }
 
         {
             uint256 actuallySupplied = (_suppliedAmount / NMAX) * NMAX;
             supplier1.approve(vars.suppliedUnderlying, actuallySupplied);
-            supplier1.supply(vars.suppliedCToken, actuallySupplied);
+            supplier1.supply(vars.suppliedAToken, actuallySupplied);
         }
     }
 }
