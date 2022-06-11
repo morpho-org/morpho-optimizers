@@ -19,14 +19,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.
-    /// @param _supplier The address of the account sending funds.
+    /// @param _from The address of the account sending funds.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Supplied(
-        address indexed _supplier,
+        address indexed _from,
         address indexed _onBehalf,
         address indexed _poolTokenAddress,
         uint256 _amount,
@@ -72,13 +72,13 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
-    /// @param _supplier The address of the account sending funds.
+    /// @param _from The address of the account sending funds.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supplyLogic(
         address _poolTokenAddress,
-        address _supplier,
+        address _from,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
@@ -90,7 +90,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (!_isSupplying(_onBehalf, _poolTokenAddress))
             _setSupplying(_onBehalf, _poolTokenAddress, true);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
+        underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
         SupplyVars memory vars;
@@ -161,7 +161,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         _updateSupplierInDS(_poolTokenAddress, _onBehalf);
 
         emit Supplied(
-            _supplier,
+            _from,
             _onBehalf,
             _poolTokenAddress,
             _amount,
