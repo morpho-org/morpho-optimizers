@@ -51,6 +51,8 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     Morpho public morphoImplV1;
     Morpho public morpho;
     IInterestRatesManager public interestRatesManager;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
+    IRewardsManager internal rewardsManagerImplV1;
     IRewardsManager public rewardsManager;
     IEntryPositionsManager public entryManager;
     IExitPositionsManager public exitManager;
@@ -125,23 +127,19 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
-        if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network
-            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                lendingPool,
-                IMorpho(address(morpho))
-            );
-        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network
-            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                lendingPool,
-                IMorpho(address(morpho))
-            );
+        if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
+            rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network
-            rewardsManager = new RewardsManagerOnPolygon(lendingPool, IMorpho(address(morpho)));
+            rewardsManagerImplV1 = new RewardsManagerOnPolygon();
         }
 
+        rewardsManagerProxy = new TransparentUpgradeableProxy(
+            address(rewardsManagerImplV1),
+            address(proxyAdmin),
+            ""
+        );
+        rewardsManager = IRewardsManager(address(rewardsManagerProxy));
+        rewardsManager.initialize(address(morpho));
         rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
         morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
 
@@ -284,7 +282,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     function move1YearForward(address _marketAddress) public {
         for (uint256 k; k < 365; k++) {
             hevm.warp(block.timestamp + (1 days));
-            interestRatesManager.updateP2PIndexes(_marketAddress);
+            morpho.updateIndexes(_marketAddress);
         }
     }
 
