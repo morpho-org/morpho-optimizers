@@ -595,33 +595,39 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
+            if (_isSupplyingOrBorrowing(_user, poolToken)) {
+                if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-            address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
-            .getConfiguration(underlyingAddress)
-            .getParamsMemory();
-            assetData.tokenUnit = 10**assetData.reserveDecimals;
+                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+                (
+                    assetData.ltv,
+                    assetData.liquidationThreshold,
+                    ,
+                    assetData.reserveDecimals,
 
-            if (_isBorrowing(_user, poolToken))
-                liquidityData.debtValue +=
-                    (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                    assetData.tokenUnit;
+                ) = pool.getConfiguration(underlyingAddress).getParamsMemory();
+                assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            if (_isSupplying(_user, poolToken)) {
-                assetData.collateralValue =
-                    (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                    assetData.tokenUnit;
-                liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
+                if (_isBorrowing(_user, poolToken))
+                    liquidityData.debtValue +=
+                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
+
+                if (_isSupplying(_user, poolToken)) {
+                    assetData.collateralValue =
+                        (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
+                    liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                        assetData.liquidationThreshold
+                    );
+                }
+
+                if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
+                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
+                        assetData.underlyingPrice) / assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
             }
-
-            if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
-                liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                    assetData.underlyingPrice) / assetData.tokenUnit)
-                .percentMul(assetData.liquidationThreshold);
 
             unchecked {
                 ++i;
@@ -645,7 +651,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _withdrawnAmount
     ) internal returns (bool) {
         return
-            _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >
+            _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
