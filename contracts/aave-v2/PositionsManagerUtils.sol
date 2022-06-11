@@ -18,20 +18,20 @@ abstract contract PositionsManagerUtils is MatchingEngine {
 
     /// COMMON EVENTS ///
 
-    /// @notice Emitted when the borrow peer-to-peer delta is updated.
+    /// @notice Emitted when the peer-to-peer borrow delta is updated.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
+    /// @param _p2pBorrowDelta The peer-to-peer borrow delta after update.
     event P2PBorrowDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pBorrowDelta);
 
-    /// @notice Emitted when the supply peer-to-peer delta is updated.
+    /// @notice Emitted when the peer-to-peer supply delta is updated.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pSupplyDelta The supply peer-to-peer delta after update.
+    /// @param _p2pSupplyDelta The peer-to-peer supply delta after update.
     event P2PSupplyDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pSupplyDelta);
 
-    /// @notice Emitted when the supply and borrow peer-to-peer amounts are updated.
+    /// @notice Emitted when the supply and peer-to-peer borrow amounts are updated.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pSupplyAmount The supply peer-to-peer amount after update.
-    /// @param _p2pBorrowAmount The borrow peer-to-peer amount after update.
+    /// @param _p2pSupplyAmount The peer-to-peer supply amount after update.
+    /// @param _p2pBorrowAmount The peer-to-peer borrow amount after update.
     event P2PAmountsUpdated(
         address indexed _poolTokenAddress,
         uint256 _p2pSupplyAmount,
