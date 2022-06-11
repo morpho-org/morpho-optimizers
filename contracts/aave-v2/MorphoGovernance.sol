@@ -26,11 +26,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
 
-    /// @notice Emitted the address of the `treasuryVault` is set.
+    /// @notice Emitted when the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted the address of the `incentivesVault` is set.
+    /// @notice Emitted when the address of the `incentivesVault` is set.
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
