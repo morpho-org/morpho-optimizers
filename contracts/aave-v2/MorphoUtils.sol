@@ -42,18 +42,18 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused) revert MarketPaused();
+        Types.MarketStatus memory status = marketStatus[_poolTokenAddress];
+        if (!status.isCreated) revert MarketNotCreated();
+        if (status.isPaused) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
+        Types.MarketStatus memory status = marketStatus[_poolTokenAddress];
+        if (!status.isCreated) revert MarketNotCreated();
+        if (status.isPaused || status.isPartiallyPaused) revert MarketPaused();
         _;
     }
 
@@ -61,7 +61,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+    function getAllMarkets() external view returns (address[] memory) {
         return marketsCreated;
     }
 
