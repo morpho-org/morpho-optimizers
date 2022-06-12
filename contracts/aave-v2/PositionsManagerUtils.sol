@@ -40,6 +40,9 @@ abstract contract PositionsManagerUtils is MatchingEngine {
 
     /// COMMON ERRORS ///
 
+    /// @notice Thrown when the address is zero.
+    error AddressIsZero();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 

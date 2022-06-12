@@ -128,6 +128,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (_receiver == address(0)) revert AddressIsZero();
         if (!_isSupplying(_supplier, _poolTokenAddress)) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenAddress);
