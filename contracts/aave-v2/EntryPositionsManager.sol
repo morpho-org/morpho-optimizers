@@ -57,9 +57,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
 
-    /// @notice Thrown when the address is zero.
-    error AddressIsZero();
-
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
