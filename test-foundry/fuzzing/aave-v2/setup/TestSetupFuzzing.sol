@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@contracts/aave-v2/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
@@ -64,7 +63,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
     ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
-    IProtocolDataProvider public protocolDataProvider;
     IPriceOracleGetter public oracle;
     ILendingPool public lendingPool;
 
@@ -94,9 +92,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             repay: 3e6
         });
 
-        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
-            lendingPoolAddressesProviderAddress
-        );
+        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(poolAddressesProviderAddress);
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
         entryManager = new EntryPositionsManager();
         exitManager = new ExitPositionsManager();
@@ -115,7 +111,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             entryManager,
             exitManager,
             interestRatesManager,
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            ILendingPoolAddressesProvider(poolAddressesProviderAddress),
             defaultMaxGasForMatching,
             20
         );
@@ -167,7 +163,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
-        protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);
@@ -230,7 +225,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
         hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
         hevm.label(address(lendingPool), "LendingPool");
-        hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(interestRatesManager), "InterestRatesManager");
@@ -342,22 +336,28 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     /// @notice Checks morpho will not revert.
-    /// @param underlying Address of the underlying to supply.
-    /// @param amount To check.
-    function getSupplyAmount(address underlying, uint256 amount) internal returns (uint256) {
-        uint256 min = 1;
-        if (ERC20(underlying).decimals() == 18) {
-            min = 10**6;
-        }
+    /// @param _underlying Address of the underlying to supply.
+    /// @param _amount To check.
+    function getSupplyAmount(address _underlying, uint256 _amount) internal view returns (uint256) {
+        uint256 min = 10**ERC20(_underlying).decimals();
 
-        return bound(amount, min, ERC20(underlying).balanceOf(address(supplier1)));
+        return bound(_amount, min, ERC20(_underlying).balanceOf(address(supplier1)));
+    }
+
+    /// @notice Checks morpho will not revert.
+    /// @param _underlying Address of the underlying to borrow.
+    /// @param _pcent Address of the underlying to borrow.
+    function getBorrowAmount(address _underlying, uint256 _pcent) internal view returns (uint256) {
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), _underlying);
+
+        return (borrowable * _pcent) / 100;
     }
 
     function bound(
         uint256 x,
         uint256 min,
         uint256 max
-    ) internal returns (uint256 result) {
+    ) internal pure returns (uint256 result) {
         require(max >= min, "MAX_LESS_THAN_MIN");
 
         uint256 size = max - min;
