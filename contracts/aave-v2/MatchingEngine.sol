@@ -84,10 +84,6 @@ abstract contract MatchingEngine is MorphoUtils {
             remainingToMatch > 0 &&
             (firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead()) != address(0)
         ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
             firstPoolSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier];
             vars.toMatch = Math.min(
                 firstPoolSupplierBalance.onPool.rayMul(vars.poolIndex),
@@ -111,6 +107,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 newPoolSupplyBalance,
                 newP2PSupplyBalance
             );
+
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
         }
 
         // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
@@ -149,10 +150,6 @@ abstract contract MatchingEngine is MorphoUtils {
             remainingToUnmatch > 0 &&
             (firstP2PSupplier = suppliersInP2P[_poolTokenAddress].getHead()) != address(0)
         ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
             firstP2PSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier];
             vars.toUnmatch = Math.min(
                 firstP2PSupplierBalance.inP2P.rayMul(vars.p2pIndex),
@@ -176,6 +173,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 newPoolSupplyBalance,
                 newP2PSupplyBalance
             );
+
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
         }
 
         // Safe unchecked because _amount >= remainingToUnmatch.
@@ -212,10 +214,6 @@ abstract contract MatchingEngine is MorphoUtils {
             remainingToMatch > 0 &&
             (firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead()) != address(0)
         ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
             firstPoolBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower];
             vars.toMatch = Math.min(
                 firstPoolBorrowerBalance.onPool.rayMul(vars.poolIndex),
@@ -239,6 +237,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 newPoolBorrowBalance,
                 newP2PBorrowBalance
             );
+
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
         }
 
         // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
@@ -277,10 +280,6 @@ abstract contract MatchingEngine is MorphoUtils {
             remainingToUnmatch > 0 &&
             (firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead()) != address(0)
         ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
             firstP2PBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower];
             vars.toUnmatch = Math.min(
                 firstP2PBorrowerBalance.inP2P.rayMul(vars.p2pIndex),
@@ -304,6 +303,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 newPoolBorrowBalance,
                 newP2PBorrowBalance
             );
+
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
         }
 
         // Safe unchecked because _amount >= remainingToUnmatch.
