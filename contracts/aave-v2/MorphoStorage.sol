@@ -26,6 +26,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
+    uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max proportion of reserve fee claimable by the DAO at once (90% in basis points).
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant BORROWING_MASK =
