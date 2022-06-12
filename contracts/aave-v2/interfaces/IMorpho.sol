@@ -42,7 +42,7 @@ interface IMorpho {
     function pool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (uint256);
-    function userMarketsBitmask(address) external view returns (uint256);
+    function userMarkets(address) external view returns (uint256);
 
     /// UTILS ///
 
