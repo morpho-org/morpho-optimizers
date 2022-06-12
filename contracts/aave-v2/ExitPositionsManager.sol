@@ -136,8 +136,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _amount
         );
 
-        if (!_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw))
-            revert UnauthorisedWithdraw();
+        if (
+            _isBorrowingAny(_supplier) &&
+            !_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw)
+        ) revert UnauthorisedWithdraw();
 
         _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
