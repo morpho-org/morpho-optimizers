@@ -209,4 +209,12 @@ contract TestGovernance is TestSetup {
         morpho.setPauseStatusClaimRewards(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
+
+    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setPauseStatusForAllMarkets(true);
+
+        morpho.setPauseStatusForAllMarkets(true);
+    }
 }
