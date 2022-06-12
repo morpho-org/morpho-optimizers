@@ -20,6 +20,11 @@ contract Morpho is MorphoGovernance {
     /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed, bool indexed _traded);
 
+    /// ERRRORS ///
+
+    /// @notice Thrown when the claim rewards is paused.
+    error ClaimRewardsPaused();
+
     /// EXTERNAL ///
 
     /// @notice Supplies underlying tokens in a specific market.
@@ -181,6 +186,7 @@ contract Morpho is MorphoGovernance {
         external
         nonReentrant
     {
+        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
         uint256 amountOfRewards = rewardsManager.claimRewards(_assets, msg.sender);
 
         if (amountOfRewards == 0) revert AmountIsZero();
