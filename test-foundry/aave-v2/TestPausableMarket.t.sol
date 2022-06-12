@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestPausableMarket is TestSetup {
+    address[] aAaveArray = [aAave];
+    address[] aDaiArray = [aDai];
+
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setPauseStatus(aDai, true);
@@ -84,8 +87,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aDai, 1);
 
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aAaveArray);
     }
 
     function testShouldDisableAllMarketsWhenGloballyPaused(uint8 _random1, uint8 _random2) public {
@@ -146,8 +148,7 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        morpho.claimToTreasury(aDai, 1 ether);
+        morpho.claimToTreasury(aDaiArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -168,8 +169,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aAave, 1 ether);
 
-        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aAaveArray);
     }
 
     function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
@@ -203,9 +203,7 @@ contract TestPausableMarket is TestSetup {
         liquidator.approve(usdc, toLiquidate);
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        // Does not revert because the market is paused.
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aAaveArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -228,7 +226,6 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aAave, 1 ether);
 
-        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aAaveArray);
     }
 }
