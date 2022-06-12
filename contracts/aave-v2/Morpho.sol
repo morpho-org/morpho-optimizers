@@ -185,18 +185,15 @@ contract Morpho is MorphoGovernance {
 
         if (amountOfRewards == 0) revert AmountIsZero();
 
-        ERC20 rewardToken = ERC20(aaveIncentivesController.REWARD_TOKEN());
-
-        // If there is not enough reward tokens on the contract, claim them. Else, continue.
-        if (rewardToken.balanceOf(address(this)) < amountOfRewards)
-            aaveIncentivesController.claimRewards(_assets, type(uint256).max, address(this));
-
         if (_tradeForMorphoToken) {
+            ERC20 rewardToken = ERC20(aaveIncentivesController.REWARD_TOKEN());
+
+            aaveIncentivesController.claimRewards(_assets, amountOfRewards, address(this));
             rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
             incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
             emit RewardsClaimed(msg.sender, amountOfRewards, true);
         } else {
-            rewardToken.safeTransfer(msg.sender, amountOfRewards);
+            aaveIncentivesController.claimRewards(_assets, amountOfRewards, msg.sender);
             emit RewardsClaimed(msg.sender, amountOfRewards, false);
         }
     }
