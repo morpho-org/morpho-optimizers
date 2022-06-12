@@ -124,14 +124,12 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     }
 
     /// @notice Trades COMP tokens for MORPHO tokens and sends them to the receiver.
+    /// @dev The amount of rewards to trade for MORPHO tokens is supposed to have been transferred to this contract before calling the function.
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.
     function tradeRewardTokensForMorphoTokens(address _receiver, uint256 _amount) external {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
-
-        // Transfer reward tokens to the DAO.
-        rewardToken.safeTransferFrom(msg.sender, morphoDao, _amount);
 
         // Add a bonus on MORPHO rewards.
         uint256 amountOut = (oracle.consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
