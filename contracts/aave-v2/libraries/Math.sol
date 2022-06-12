@@ -10,6 +10,7 @@ library Math {
         return a < b ? a : b;
     }
 
+    /// @dev Returns max(a-b, 0).
     function zeroFloorSub(uint256 a, uint256 b) internal pure returns (uint256) {
         unchecked {
             return a > b ? a - b : 0;
