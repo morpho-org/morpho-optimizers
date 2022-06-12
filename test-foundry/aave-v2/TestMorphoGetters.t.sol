@@ -104,7 +104,7 @@ contract TestMorphoGetters is TestSetup {
         }
     }
 
-    function testGetAllMarkets() public {
+    function testGetMarketsCreated() public {
         for (uint256 i; i < pools.length; i++) {
             assertEq(morpho.marketsCreated(i), pools[i]);
         }
