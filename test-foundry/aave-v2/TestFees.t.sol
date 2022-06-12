@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestFees is TestSetup {
+    using PercentageMath for uint256;
     using WadRayMath for uint256;
 
     function testShouldRevertWhenClaimingZeroAmount() public {
@@ -83,9 +84,9 @@ contract TestFees is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         (uint256 newSupplyIndex, uint256 newBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
 
-        uint256 expectedFees = toBorrow.rayMul(
-            newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex)
-        );
+        uint256 expectedFees = toBorrow
+        .rayMul(newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex))
+        .percentMul(morpho.MAX_CLAIMABLE_RESERVE());
 
         supplier1.repay(aDai, type(uint256).max);
         morpho.claimToTreasury(aDai, type(uint256).max);
