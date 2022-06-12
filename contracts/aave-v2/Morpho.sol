@@ -191,10 +191,8 @@ contract Morpho is MorphoGovernance {
             aaveIncentivesController.claimRewards(_assets, amountOfRewards, address(this));
             rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
             incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
-            emit RewardsClaimed(msg.sender, amountOfRewards, true);
-        } else {
-            aaveIncentivesController.claimRewards(_assets, amountOfRewards, msg.sender);
-            emit RewardsClaimed(msg.sender, amountOfRewards, false);
-        }
+        } else aaveIncentivesController.claimRewards(_assets, amountOfRewards, msg.sender);
+
+        emit RewardsClaimed(msg.sender, amountOfRewards, _tradeForMorphoToken);
     }
 }
