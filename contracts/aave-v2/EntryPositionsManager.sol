@@ -51,7 +51,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     /// ERRORS ///
 
-    /// @notice Thrown when borrowing on pool is not enabled on a specific market.
+    /// @notice Thrown when borrowing is impossible, because it is not enabled on pool for this specific market.
     error BorrowingNotEnabled();
 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
@@ -105,7 +105,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
                 vars.remainingToSupply
-            );
+            ); // In underlying.
 
             uint256 remainingToSupplyInPoolUnit = vars.remainingToSupply.rayDiv(
                 vars.poolBorrowIndex
@@ -199,7 +199,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
                 remainingToBorrow
-            );
+            ); // In underlying.
 
             uint256 remainingToBorrowInPoolUnit = remainingToBorrow.rayDiv(poolSupplyIndex);
             delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(remainingToBorrowInPoolUnit);
