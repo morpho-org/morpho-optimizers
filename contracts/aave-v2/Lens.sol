@@ -114,10 +114,10 @@ contract Lens {
         Types.LiquidityData memory data;
         Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getAllMarkets();
-        uint256 numberOfCreatedMarkets = createdMarkets.length;
+        address[] memory createdMarkets = morpho.getMarketsCreated();
+        uint256 numberOfMarketsCreated = createdMarkets.length;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
+        for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = createdMarkets[i];
 
             if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(_user, poolToken)) {
@@ -207,10 +207,10 @@ contract Lens {
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getAllMarkets();
-        uint256 numberOfCreatedMarkets = createdMarkets.length;
+        address[] memory createdMarkets = morpho.getMarketsCreated();
+        uint256 numberOfMarketsCreated = createdMarkets.length;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
+        for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = createdMarkets[i];
 
             if (_isSupplyingOrBorrowing(_user, poolToken)) {

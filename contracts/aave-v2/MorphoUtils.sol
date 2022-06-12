@@ -59,9 +59,9 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Returns all created markets.
+    /// @notice Returns all markets created.
     /// @return marketsCreated_ The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory) {
+    function getMarketsCreated() external view returns (address[] memory) {
         return marketsCreated;
     }
 

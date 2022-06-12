@@ -268,12 +268,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _borrowedAmount
     ) internal returns (bool) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfCreatedMarkets = marketsCreated.length;
+        uint256 numberOfMarketsCreated = marketsCreated.length;
 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
+        for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
             if (_isSupplyingOrBorrowing(_user, poolToken)) {
