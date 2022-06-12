@@ -317,10 +317,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingToWithdraw
             ); // In underlying.
 
-            uint256 remainingToWithdrawInPoolUnit = vars.remainingToWithdraw.rayDiv(
-                vars.poolSupplyIndex
+            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
+                vars.remainingToWithdraw.rayDiv(vars.poolSupplyIndex)
             );
-            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(remainingToWithdrawInPoolUnit);
             delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             vars.toWithdraw += matchedDelta;
             vars.remainingToWithdraw -= matchedDelta;
@@ -474,8 +473,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingToRepay
             ); // In underlying.
 
-            uint256 remainingToRepayInPoolUnit = vars.remainingToRepay.rayDiv(vars.poolBorrowIndex);
-            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(remainingToRepayInPoolUnit);
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToRepay.rayDiv(vars.poolBorrowIndex)
+            );
             delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
             vars.toRepay += matchedDelta;
             vars.remainingToRepay -= matchedDelta;
