@@ -34,7 +34,7 @@ contract TestInterestRateFuzzing is InterestRatesManager, DSTest {
                 ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / RAY)
             : 0;
         uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (((_params.delta.p2pBorrowDelta * _params.poolBorrowIndex) / RAY) * RAY) /
+            ? (((_params.delta.p2pBorrowDelta * _params.lastPoolBorrowIndex) / RAY) * RAY) /
                 ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / RAY)
             : 0;
         p2pSupplyIndex_ =
@@ -49,6 +49,7 @@ contract TestInterestRateFuzzing is InterestRatesManager, DSTest {
             RAY;
     }
 
+    // prettier-ignore
     function testFuzzInterestRates(
         uint64 _1,
         uint64 _2,
@@ -78,33 +79,14 @@ contract TestInterestRateFuzzing is InterestRatesManager, DSTest {
 
         hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex);
         hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex);
-        hevm.assume(
-            (_poolBorrowIndex * RAY) / _lastPoolBorrowIndex >
-                (_poolSupplyIndex * RAY) / _lastPoolSupplyIndex
-        );
-        hevm.assume(
-            (_p2pSupplyAmount * _p2pSupplyIndex) / RAY > (_p2pSupplyDelta * _poolSupplyIndex) / RAY
-        );
-        hevm.assume(
-            (_p2pBorrowAmount * _p2pBorrowIndex) / RAY > (_p2pBorrowDelta * _poolBorrowIndex) / RAY
-        );
+        hevm.assume(_poolBorrowIndex * RAY / _lastPoolBorrowIndex > _poolSupplyIndex * RAY / _lastPoolSupplyIndex);
+        hevm.assume(_p2pSupplyAmount * _p2pSupplyIndex / RAY > _p2pSupplyDelta * _poolSupplyIndex / RAY);
+        hevm.assume(_p2pBorrowAmount * _p2pBorrowIndex / RAY > _p2pBorrowDelta * _poolBorrowIndex / RAY);
 
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
-            _p2pSupplyIndex,
-            _p2pBorrowIndex,
-            _poolSupplyIndex,
-            _poolBorrowIndex,
-            _lastPoolSupplyIndex,
-            _lastPoolBorrowIndex,
-            _reserveFactor,
-            _p2pIndexCursor,
-            Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount)
-        );
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(
-            params
-        );
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);
         assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 400);
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 400);
     }

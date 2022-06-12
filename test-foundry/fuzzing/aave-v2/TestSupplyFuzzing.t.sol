@@ -41,7 +41,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         hevm.assume(_randomModulo > 0);
         AssetVars memory vars;
 
-        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_suppliedAToken);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getSupplyAsset(_suppliedAToken);
         (vars.borrowedAToken, vars.borrowedUnderlying) = getAsset(_borrowedAToken);
 
         uint256 suppliedAmount = _suppliedAmount;
@@ -52,11 +52,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
         borrower1.supply(vars.suppliedAToken, suppliedAmount);
 
-        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            vars.borrowedAToken
-        );
-
+        uint256 borrowable = getBorrowAmount(vars.borrowedAToken, 95);
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
         assumeBorrowAmountIsCorrect(vars.borrowedAToken, borrowedAmount);
         borrower1.borrow(vars.borrowedAToken, borrowedAmount);
@@ -73,7 +69,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _random1
     ) public {
         AssetVars memory vars;
-        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getSupplyAsset(_supplyAsset);
         (vars.collateralAToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
@@ -106,7 +102,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _random1
     ) public {
         AssetVars memory vars;
-        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getSupplyAsset(_supplyAsset);
         (vars.collateralAToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
@@ -151,7 +147,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _random1
     ) public {
         AssetVars memory vars;
-        (vars.suppliedAToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.suppliedAToken, vars.suppliedUnderlying) = getSupplyAsset(_supplyAsset);
         (vars.collateralAToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         uint256 amountPerBorrower = _suppliedAmount / (2 * NMAX);
