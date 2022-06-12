@@ -61,12 +61,12 @@ interface IMorpho {
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
-    function setPauseStatus(address _poolTokenAddress, bool _p2pDisabled) external;
     function setP2PDisabled(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
-    function setPauseStatus(address _poolTokenAddress) external;
-    function setPartialPauseStatus(address _poolTokenAddress) external;
+    function setPauseStatusForAllMarkets(bool _newStatus) external;
+    function setPauseStatus(address _poolTokenAddress, bool _newStatus) external;
+    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external;
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager)
         external;

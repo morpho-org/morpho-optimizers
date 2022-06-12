@@ -22,6 +22,22 @@ contract TestPausableMarket is TestSetup {
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
+    function testAllMarketsPauseUnpause() public {
+        morpho.setPauseStatusForAllMarkets(true);
+
+        for (uint256 i; i < pools.length; ++i) {
+            (, bool isPaused, ) = morpho.marketStatus(pools[i]);
+            assertTrue(isPaused, "paused is false");
+        }
+
+        morpho.setPauseStatusForAllMarkets(false);
+
+        for (uint256 i; i < pools.length; ++i) {
+            (, bool isPaused, ) = morpho.marketStatus(pools[i]);
+            assertFalse(isPaused, "paused is true");
+        }
+    }
+
     function testPauseUnpause() public {
         morpho.setPauseStatus(aDai, true);
         (, bool isPaused, ) = morpho.marketStatus(aDai);
@@ -72,8 +88,31 @@ contract TestPausableMarket is TestSetup {
         morpho.claimToTreasury(aAave, 1 ether);
     }
 
+    function testShouldDisableAllMarketsWhenGloballyPaused(uint8 _random1, uint8 _random2) public {
+        morpho.setPauseStatusForAllMarkets(true);
+
+        uint256 poolsLength = pools.length;
+        address market1 = pools[_random1 % poolsLength];
+        address market2 = pools[_random2 % poolsLength];
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.supply(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.borrow(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.withdraw(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.repay(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.liquidate(market1, market2, address(supplier1), 1);
+    }
+
     function testShouldDisableMarketWhenPaused() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, amount);
