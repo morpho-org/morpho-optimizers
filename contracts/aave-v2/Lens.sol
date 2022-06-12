@@ -649,7 +649,7 @@ contract Lens {
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         return
-            morpho.userMarketsBitmask(_user) &
+            morpho.userMarkets(_user) &
                 (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
             0;
     }
