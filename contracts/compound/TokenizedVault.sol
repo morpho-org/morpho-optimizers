@@ -26,14 +26,19 @@ contract TokenizedVault is ERC4626Upgradeable {
     ICToken public poolToken;
 
     function initialize(
-        IMorpho _morpho,
-        ICToken _poolToken,
-        string memory _name,
-        string memory _symbol
+        address _morphoAddress,
+        address _poolTokenAddress,
+        string calldata _name,
+        string calldata _symbol
     ) external initializer {
-        __ERC4626_init(ERC20(_poolToken.underlying()), _name, _symbol);
-        morpho = _morpho;
-        poolToken = _poolToken;
+        morpho = IMorpho(_morphoAddress);
+        poolToken = ICToken(_poolTokenAddress);
+
+        __ERC4626_init(
+            ERC20(_poolTokenAddress == morpho.cEth() ? morpho.wEth() : poolToken.underlying()),
+            _name,
+            _symbol
+        );
     }
 
     function totalAssets() public view override returns (uint256) {
