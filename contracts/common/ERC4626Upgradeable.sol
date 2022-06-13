@@ -41,12 +41,18 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
     function __ERC4626_init(
         ERC20 _asset,
         string memory _name,
-        string memory _symbol
+        string memory _symbol,
+        uint256 _initialDeposit
     ) internal onlyInitializing {
-        __Context_init();
-        __Ownable_init();
-        __ERC20_init(_name, _symbol);
+        __Ownable_init_unchained();
+        __ERC20_init_unchained(_name, _symbol);
         asset = _asset;
+
+        // Sacrifice an initial seed of shares to ensure a healthy amount of precision in minting shares.
+        // Set to 0 at your own risk.
+        // Caller must have approved the asset to this contract's address.
+        // See: https://github.com/Rari-Capital/solmate/issues/178
+        if (_initialDeposit > 0) deposit(_initialDeposit, address(0));
     }
 
     /// ERRORS ///

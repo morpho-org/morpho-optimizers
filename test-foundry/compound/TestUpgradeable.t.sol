@@ -222,6 +222,6 @@ contract TestUpgradeable is TestSetup {
 
     function testTokenizedVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        mcWethImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH");
+        mcWethImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0);
     }
 }

@@ -29,7 +29,8 @@ contract TokenizedVault is ERC4626Upgradeable {
         address _morphoAddress,
         address _poolTokenAddress,
         string calldata _name,
-        string calldata _symbol
+        string calldata _symbol,
+        uint256 _initialDeposit
     ) external initializer {
         morpho = IMorpho(_morphoAddress);
         poolToken = ICToken(_poolTokenAddress);
@@ -37,7 +38,8 @@ contract TokenizedVault is ERC4626Upgradeable {
         __ERC4626_init(
             ERC20(_poolTokenAddress == morpho.cEth() ? morpho.wEth() : poolToken.underlying()),
             _name,
-            _symbol
+            _symbol,
+            _initialDeposit
         );
     }
 
