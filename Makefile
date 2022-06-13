@@ -69,7 +69,7 @@ ansi-s-%:
 
 html-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
-	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-test $* | aha --black > trace.html
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvvvv -c test-foundry/${PROTOCOL} --match-test $* | aha --black > trace.html
 
 config:
 	forge config

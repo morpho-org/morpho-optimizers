@@ -45,11 +45,11 @@ contract TestSetup is Config, Utils, stdCheats {
 
     Morpho internal morphoImplV1;
     IRewardsManager internal rewardsManagerImplV1;
-    TokenizedVault internal mcEthTokenizedVaultImplV1;
+    TokenizedVault internal mcWethImplV1;
 
-    TokenizedVault internal mcEthTokenizedVault;
-    TokenizedVault internal mcDaiTokenizedVault;
-    TokenizedVault internal mcUsdtTokenizedVault;
+    TokenizedVault internal mcWeth;
+    TokenizedVault internal mcDai;
+    TokenizedVault internal mcUsdt;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -115,19 +115,13 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        mcEthTokenizedVaultImplV1 = new TokenizedVault();
-        mcEthTokenizedVault = TokenizedVault(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(mcEthTokenizedVaultImplV1),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
+        mcWethImplV1 = new TokenizedVault();
+        mcWeth = TokenizedVault(
+            address(new TransparentUpgradeableProxy(address(mcWethImplV1), address(proxyAdmin), ""))
         );
-        mcEthTokenizedVault.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH");
+        mcWeth.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH");
 
-        mcDaiTokenizedVault = TokenizedVault(
+        mcDai = TokenizedVault(
             address(
                 new TransparentUpgradeableProxy(
                     address(new TokenizedVault()),
@@ -136,9 +130,9 @@ contract TestSetup is Config, Utils, stdCheats {
                 )
             )
         );
-        mcDaiTokenizedVault.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI");
+        mcDai.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI");
 
-        mcUsdtTokenizedVault = TokenizedVault(
+        mcUsdt = TokenizedVault(
             address(
                 new TransparentUpgradeableProxy(
                     address(new TokenizedVault()),
@@ -147,7 +141,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 )
             )
         );
-        mcUsdtTokenizedVault.initialize(address(morpho), cUsdt, "MorphoCompoundUSDT", "mcUSDT");
+        mcUsdt.initialize(address(morpho), cUsdt, "MorphoCompoundUSDT", "mcUSDT");
 
         /// Create markets ///
 

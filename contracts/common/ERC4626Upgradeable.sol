@@ -34,19 +34,19 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
 
     /// STORAGE ///
 
-    ERC20 public underlyingToken;
+    ERC20 public asset;
 
     constructor() initializer {}
 
     function __ERC4626_init(
-        ERC20 _underlyingToken,
+        ERC20 _asset,
         string memory _name,
         string memory _symbol
     ) internal onlyInitializing {
         __Context_init();
         __Ownable_init();
         __ERC20_init(_name, _symbol);
-        underlyingToken = _underlyingToken;
+        asset = _asset;
     }
 
     /// ERRORS ///
@@ -58,7 +58,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
     /// PUBLIC ///
 
     function decimals() public view override returns (uint8) {
-        return underlyingToken.decimals();
+        return asset.decimals();
     }
 
     function deposit(uint256 _amount, address _receiver) public virtual returns (uint256 shares) {
@@ -66,7 +66,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
         if ((shares = previewDeposit(_amount)) == 0) revert ShareIsZero();
 
         // Need to transfer before minting or ERC777s could reenter.
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        asset.safeTransferFrom(msg.sender, address(this), _amount);
 
         _mint(_receiver, shares);
 
@@ -79,7 +79,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
         _amount = previewMint(_shares); // No need to check for rounding error, previewMint rounds up.
 
         // Need to transfer before minting or ERC777s could reenter.
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        asset.safeTransferFrom(msg.sender, address(this), _amount);
 
         _mint(_receiver, _shares);
 
@@ -103,7 +103,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
 
         emit Withdraw(msg.sender, _receiver, _owner, _amount, shares);
 
-        underlyingToken.safeTransfer(_receiver, _amount);
+        asset.safeTransfer(_receiver, _amount);
     }
 
     function redeem(
@@ -122,7 +122,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
 
         emit Withdraw(msg.sender, _receiver, _owner, amount, _shares);
 
-        underlyingToken.safeTransfer(_receiver, amount);
+        asset.safeTransfer(_receiver, amount);
     }
 
     function totalAssets() public view virtual returns (uint256);
