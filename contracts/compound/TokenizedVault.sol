@@ -57,7 +57,7 @@ contract TokenizedVault is ERC4626Upgradeable {
     }
 
     function afterDeposit(uint256 _amount, uint256) internal override {
-        underlyingToken.safeApprove(address(morpho), _amount);
+        asset.safeApprove(address(morpho), _amount);
         morpho.supply(address(poolToken), address(this), _amount);
     }
 
@@ -73,7 +73,7 @@ contract TokenizedVault is ERC4626Upgradeable {
 
         ISwapRouter.ExactInputSingleParams memory swapParams = ISwapRouter.ExactInputSingleParams({
             tokenIn: address(comp),
-            tokenOut: address(underlyingToken),
+            tokenOut: address(asset),
             fee: swapFee,
             recipient: address(this),
             deadline: block.timestamp,
@@ -83,9 +83,9 @@ contract TokenizedVault is ERC4626Upgradeable {
         });
 
         comp.safeApprove(address(SWAP_ROUTER), rewardsAmount);
-        uint256 amountOut = SWAP_ROUTER.exactInputSingle(swapParams);
+        rewardsAmount = SWAP_ROUTER.exactInputSingle(swapParams);
 
-        underlyingToken.safeApprove(address(morpho), amountOut);
-        morpho.supply(address(poolToken), address(this), amountOut);
+        asset.safeApprove(address(morpho), rewardsAmount);
+        morpho.supply(address(poolToken), address(this), rewardsAmount);
     }
 }

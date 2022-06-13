@@ -79,24 +79,24 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testUpgradeTokenizedVault() public {
-        TransparentUpgradeableProxy mcEthTokenizedVaultProxy = TransparentUpgradeableProxy(
-            payable(address(mcEthTokenizedVault))
+        TransparentUpgradeableProxy mcWethProxy = TransparentUpgradeableProxy(
+            payable(address(mcWeth))
         );
-        TokenizedVault mcEthTokenizedVaultImplV2 = new TokenizedVault();
+        TokenizedVault mcWethImplV2 = new TokenizedVault();
 
         hevm.record();
-        proxyAdmin.upgrade(mcEthTokenizedVaultProxy, address(mcEthTokenizedVaultImplV2));
-        (, bytes32[] memory writes) = hevm.accesses(address(mcEthTokenizedVault));
+        proxyAdmin.upgrade(mcWethProxy, address(mcWethImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(mcWeth));
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
         address newImplem = bytes32ToAddress(
             hevm.load(
-                address(mcEthTokenizedVault),
+                address(mcWeth),
                 bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
             )
         );
-        assertEq(newImplem, address(mcEthTokenizedVaultImplV2));
+        assertEq(newImplem, address(mcWethImplV2));
     }
 
     function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
@@ -128,26 +128,18 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallTokenizedVault() public {
-        TransparentUpgradeableProxy mcEthTokenizedVaultProxy = TransparentUpgradeableProxy(
-            payable(address(mcEthTokenizedVault))
+        TransparentUpgradeableProxy mcWethProxy = TransparentUpgradeableProxy(
+            payable(address(mcWeth))
         );
-        TokenizedVault mcEthTokenizedVaultImplV2 = new TokenizedVault();
+        TokenizedVault mcWethImplV2 = new TokenizedVault();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(
-            mcEthTokenizedVaultProxy,
-            payable(address(mcEthTokenizedVaultImplV2)),
-            ""
-        );
+        proxyAdmin.upgradeAndCall(mcWethProxy, payable(address(mcWethImplV2)), "");
 
         // Revert for wrong data not wrong caller.
         hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(
-            mcEthTokenizedVaultProxy,
-            payable(address(mcEthTokenizedVaultImplV2)),
-            ""
-        );
+        proxyAdmin.upgradeAndCall(mcWethProxy, payable(address(mcWethImplV2)), "");
     }
 
     function testRewardsManagerImplementationsShouldBeInitialized() public {
@@ -230,6 +222,6 @@ contract TestUpgradeable is TestSetup {
 
     function testTokenizedVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        mcEthTokenizedVaultImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH");
+        mcWethImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH");
     }
 }

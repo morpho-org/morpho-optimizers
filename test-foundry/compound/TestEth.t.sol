@@ -106,7 +106,7 @@ contract TestEth is TestSetup {
         supplier1.withdraw(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(borrower1));
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(supplier1));
 
         assertEq(onPool, 0);
         assertEq(inP2P, 0);
@@ -231,9 +231,9 @@ contract TestEth is TestSetup {
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cEth);
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(borrowedPrice)
+            .div(collateralPrice);
 
         uint256 expectedOnPool = collateralOnPool -
             amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
@@ -289,9 +289,9 @@ contract TestEth is TestSetup {
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cDai);
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(borrowedPrice)
+            .div(collateralPrice);
 
         uint256 expectedOnPool = collateralOnPool -
             amountToSeize.div(ICToken(cEth).exchangeRateCurrent());
@@ -305,5 +305,44 @@ contract TestEth is TestSetup {
         (address underlying, , , , , , , ) = lens.getMarketConfiguration(cEth);
 
         assertEq(underlying, wEth);
+    }
+
+    function testShouldDepositEthOnVault() public {
+        uint256 toSupply = 100 ether;
+
+        uint256 poolSupplyIndex = ICToken(cEth).exchangeRateCurrent();
+        uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
+
+        uint256 balanceBefore = supplier1.balanceOf(wEth);
+        supplier1.approve(wEth, address(mcWeth), toSupply);
+        supplier1.depositVault(mcWeth, toSupply);
+        uint256 balanceAfter = supplier1.balanceOf(wEth);
+
+        testEquality(ERC20(cEth).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(mcWeth));
+
+        assertEq(inP2P, 0);
+        testEquality(onPool, expectedOnPool);
+        testEquality(balanceAfter, balanceBefore - toSupply);
+    }
+
+    function testShouldWithdrawEthOnVault() public {
+        uint256 toSupply = 1 ether;
+
+        uint256 poolSupplyIndex = ICToken(cEth).exchangeRateCurrent();
+        uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
+
+        uint256 balanceBefore = supplier1.balanceOf(wEth);
+        supplier1.approve(wEth, address(mcWeth), toSupply);
+        supplier1.depositVault(mcWeth, toSupply);
+        supplier1.withdrawVault(mcWeth, expectedOnPool.mul(poolSupplyIndex));
+        uint256 balanceAfter = supplier1.balanceOf(wEth);
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(mcWeth));
+
+        assertEq(onPool, 0);
+        assertEq(inP2P, 0);
+        assertApproxEq(balanceAfter, balanceBefore, 1e9);
     }
 }
