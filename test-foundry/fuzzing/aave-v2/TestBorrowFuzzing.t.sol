@@ -133,4 +133,41 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         assumeBorrowAmountIsCorrect(secondAsset, borrowedAmount);
         borrower1.borrow(secondAsset, borrowedAmount);
     }
+
+    function testBorrow5(
+        uint128 _amountSupplied,
+        uint128 _amountCollateral,
+        uint8 _matchedAsset,
+        uint8 _collateralAsset,
+        uint8 _random1
+    ) public {
+        hevm.assume(_random1 != 0);
+        (address matchedAsset, address matchedUnderlying) = getSupplyAsset(_matchedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+
+        uint256 amountSupplied = _amountSupplied;
+        uint256 amountCollateral = _amountCollateral;
+
+        amountCollateral = getSupplyAmount(collateralUnderlying, amountCollateral);
+        borrower1.approve(collateralUnderlying, amountCollateral);
+        borrower1.supply(collateralAsset, amountCollateral);
+
+        uint256 borrowable = getBorrowAmount(matchedAsset, 95);
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
+        hevm.assume(borrowedAmount + 1000 < borrowable); // +5 to cover for rounding error
+        assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
+
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
+        createSigners(NMAX);
+
+        uint256 amountPerSupplier = (amountSupplied / NMAX) + 1;
+        amountPerSupplier = getSupplyAmount(matchedUnderlying, amountPerSupplier);
+
+        for (uint256 i = 0; i < NMAX; i++) {
+            suppliers[i].approve(matchedUnderlying, amountPerSupplier);
+            suppliers[i].supply(matchedAsset, amountPerSupplier);
+        }
+
+        borrower1.borrow(matchedAsset, borrowedAmount);
+    }
 }

@@ -242,6 +242,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
+        hevm.label(address(customOracle), "CustomOracle");
 
         hevm.store(
             address(lendingPoolAddressesProvider),
@@ -372,9 +373,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
         // Account for decrementing x to make max inclusive.
         if (max == type(uint256).max && x != 0) result++;
-
-        // emit log_named_uint("Bound entry", x);
-        // emit log_named_uint("Bound result", result);
     }
 
     /// @notice Checks morpho will not revert.
