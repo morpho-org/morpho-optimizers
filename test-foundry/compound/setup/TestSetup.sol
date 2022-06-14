@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@contracts/compound/interfaces/compound/ICompound.sol";
-import "@contracts/compound/interfaces/ICompRewardsLens.sol";
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
@@ -12,7 +11,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/IncentivesVault.sol";
 import "@contracts/compound/RewardsManager.sol";
-import "@contracts/compound/CompRewardsLens.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
@@ -42,7 +40,6 @@ contract TestSetup is Config, Utils, stdCheats {
     TransparentUpgradeableProxy internal rewardsManagerProxy;
     IRewardsManager internal rewardsManagerImplV1;
     IRewardsManager internal rewardsManager;
-    ICompRewardsLens internal compRewardsLens;
     IPositionsManager internal positionsManager;
     Lens internal lensImplV1;
     Lens internal lens;
@@ -148,8 +145,6 @@ contract TestSetup is Config, Utils, stdCheats {
         rewardsManager.initialize(address(morpho));
 
         morpho.setRewardsManager(rewardsManager);
-
-        compRewardsLens = new CompRewardsLens(address(morpho));
     }
 
     function createMarket(address _cToken) internal {

@@ -22,10 +22,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
-        uint256 unclaimedRewards = compRewardsLens.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         uint256 index = comptroller.compSupplyState(cDai).index;
 
@@ -58,10 +55,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
-        uint256 unclaimedRewards = compRewardsLens.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         testEquality(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -70,7 +64,7 @@ contract TestRewards is TestSetup {
         supplier2.supply(cDai, toSupply);
 
         hevm.roll(block.number + 1_000);
-        unclaimedRewards = compRewardsLens.getUserUnclaimedRewards(cTokens, address(supplier1));
+        unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         supplier1.claimRewards(cTokens, false);
         index = comptroller.compSupplyState(cDai).index;
@@ -120,17 +114,14 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
-        uint256 unclaimedRewards = compRewardsLens.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         testEquality(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         hevm.roll(block.number + 1_000);
 
-        unclaimedRewards = compRewardsLens.getUserUnclaimedRewards(cTokens, address(supplier1));
+        unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         supplier1.claimRewards(cTokens, false);
         index = comptroller.compBorrowState(cUsdc).index;
@@ -198,13 +189,13 @@ contract TestRewards is TestSetup {
         tokensInArray[1] = cEth;
         tokensInArray[2] = cUsdc;
 
-        uint256 unclaimedRewardsForDaiView = compRewardsLens.getUserUnclaimedRewards(
+        uint256 unclaimedRewardsForDaiView = lens.getUserUnclaimedRewards(
             daiInArray,
             address(supplier1)
         );
         assertGt(unclaimedRewardsForDaiView, 0);
 
-        uint256 allUnclaimedRewardsView = compRewardsLens.getUserUnclaimedRewards(
+        uint256 allUnclaimedRewardsView = lens.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
@@ -217,10 +208,7 @@ contract TestRewards is TestSetup {
         );
         assertEq(allUnclaimedRewards, allUnclaimedRewards, "wrong rewards amount");
 
-        allUnclaimedRewardsView = compRewardsLens.getUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
+        allUnclaimedRewardsView = lens.getUserUnclaimedRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewardsView, 0, "unclaimed rewards not null");
 
         hevm.prank(address(morpho));
@@ -367,8 +355,8 @@ contract TestRewards is TestSetup {
         supplier2.withdraw(cUsdc, to6Decimals(bigAmount));
 
         assertEq(
-            compRewardsLens.getUserUnclaimedRewards(markets, address(supplier1)),
-            compRewardsLens.getUserUnclaimedRewards(markets, address(supplier2))
+            lens.getUserUnclaimedRewards(markets, address(supplier1)),
+            lens.getUserUnclaimedRewards(markets, address(supplier2))
         );
     }
 
@@ -494,7 +482,7 @@ contract TestRewards is TestSetup {
         supplier1.compoundSupply(cDai, amount);
         hevm.roll(block.number + 5_000);
 
-        uint256 updatedIndex = compRewardsLens.getUpdatedSupplyIndex(cDai);
+        uint256 updatedIndex = lens.getUpdatedCompSupplyIndex(cDai);
 
         supplier1.compoundSupply(cDai, amount / 10); // Update compSupplyState.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
@@ -516,7 +504,7 @@ contract TestRewards is TestSetup {
         hevm.roll(block.number + 5_000);
 
         ICToken(cDai).accrueInterest();
-        uint256 updatedIndex = compRewardsLens.getUpdatedBorrowIndex(cDai);
+        uint256 updatedIndex = lens.getUpdatedCompBorrowIndex(cDai);
 
         borrower1.compoundBorrow(cDai, amount / 10); // Update compBorrowState.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
