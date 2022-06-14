@@ -14,3 +14,8 @@ certoraRun \
     --optimistic_loop \
     --cache morpho \
     --msg "PMFC $1"
+
+
+    # notes:
+    # keep the cache name common among run scripts, will save a bunch on the setup time 
+    # (pre processing the contracts and specs before submitting to the solver)
