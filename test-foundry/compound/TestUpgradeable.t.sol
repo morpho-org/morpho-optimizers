@@ -11,9 +11,6 @@ contract TestUpgradeable is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        TransparentUpgradeableProxy morphoProxy = TransparentUpgradeableProxy(
-            payable(address(morpho))
-        );
         Morpho morphoImplV2 = new Morpho();
 
         hevm.record();
@@ -32,9 +29,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeMorpho() public {
-        TransparentUpgradeableProxy morphoProxy = TransparentUpgradeableProxy(
-            payable(address(morpho))
-        );
         Morpho morphoImplV2 = new Morpho();
 
         hevm.prank(address(supplier1));
@@ -45,9 +39,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallMorpho() public {
-        TransparentUpgradeableProxy morphoProxy = TransparentUpgradeableProxy(
-            payable(address(morpho))
-        );
         Morpho morphoImplV2 = new Morpho();
 
         hevm.prank(address(supplier1));
@@ -58,9 +49,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testUpgradeRewardsManager() public {
-        TransparentUpgradeableProxy rewardsManagerProxy = TransparentUpgradeableProxy(
-            payable(address(rewardsManager))
-        );
         RewardsManager rewardsManagerImplV2 = new RewardsManager();
 
         hevm.record();
@@ -79,9 +67,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testUpgradeTokenizedVault() public {
-        TransparentUpgradeableProxy mcWethProxy = TransparentUpgradeableProxy(
-            payable(address(mcWeth))
-        );
         TokenizedVault mcWethImplV2 = new TokenizedVault();
 
         hevm.record();
@@ -100,9 +85,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
-        TransparentUpgradeableProxy rewardsManagerProxy = TransparentUpgradeableProxy(
-            payable(address(rewardsManager))
-        );
         RewardsManager rewardsManagerImplV2 = new RewardsManager();
 
         hevm.prank(address(supplier1));
@@ -113,9 +95,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallRewardsManager() public {
-        TransparentUpgradeableProxy rewardsManagerProxy = TransparentUpgradeableProxy(
-            payable(address(rewardsManager))
-        );
         RewardsManager rewardsManagerImplV2 = new RewardsManager();
 
         hevm.prank(address(supplier1));
@@ -128,9 +107,6 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallTokenizedVault() public {
-        TransparentUpgradeableProxy mcWethProxy = TransparentUpgradeableProxy(
-            payable(address(mcWeth))
-        );
         TokenizedVault mcWethImplV2 = new TokenizedVault();
 
         hevm.prank(address(supplier1));
@@ -222,6 +198,6 @@ contract TestUpgradeable is TestSetup {
 
     function testTokenizedVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        mcWethImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0);
+        mcWethImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0, 10);
     }
 }
