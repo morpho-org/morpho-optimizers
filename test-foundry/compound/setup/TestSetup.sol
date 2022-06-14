@@ -14,7 +14,7 @@ import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
-import "@contracts/compound/TokenizedVault.sol";
+import "@contracts/compound/SupplyVault.sol";
 import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/lens/Lens.sol";
 
@@ -35,25 +35,25 @@ contract TestSetup is Config, Utils, stdCheats {
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
-    TransparentUpgradeableProxy internal morphoProxy;
     TransparentUpgradeableProxy internal rewardsManagerProxy;
-    TransparentUpgradeableProxy internal mcWethProxy;
+    TransparentUpgradeableProxy internal wethSupplyVaultProxy;
+    TransparentUpgradeableProxy internal morphoProxy;
     TransparentUpgradeableProxy internal lensProxy;
 
-    Morpho internal morphoImplV1;
     IRewardsManager internal rewardsManagerImplV1;
-    TokenizedVault internal mcWethImplV1;
-
-    Morpho internal morpho;
-    InterestRatesManager internal interestRatesManager;
-    IRewardsManager internal rewardsManager;
-    IPositionsManager internal positionsManager;
+    SupplyVault internal wethSupplyVaultImplV1;
+    Morpho internal morphoImplV1;
     Lens internal lensImplV1;
+
+    InterestRatesManager internal interestRatesManager;
+    IPositionsManager internal positionsManager;
+    IRewardsManager internal rewardsManager;
+    Morpho internal morpho;
     Lens internal lens;
 
-    TokenizedVault internal mcWeth;
-    TokenizedVault internal mcDai;
-    TokenizedVault internal mcUsdt;
+    SupplyVault internal wethSupplyVault;
+    SupplyVault internal daiSupplyVault;
+    SupplyVault internal usdcSupplyVault;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -118,36 +118,28 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        mcWethImplV1 = new TokenizedVault();
-        mcWethProxy = new TransparentUpgradeableProxy(
-            address(mcWethImplV1),
+        wethSupplyVaultImplV1 = new SupplyVault();
+        wethSupplyVaultProxy = new TransparentUpgradeableProxy(
+            address(wethSupplyVaultImplV1),
             address(proxyAdmin),
             ""
         );
-        mcWeth = TokenizedVault(address(mcWethProxy));
-        mcWeth.initialize(address(morpho), cEth, "MorphoCompoundWETH", "mcWETH", 0, 10);
+        wethSupplyVault = SupplyVault(address(wethSupplyVaultProxy));
+        wethSupplyVault.initialize(address(morpho), cEth, "MorphoCompoundWETH", "mcWETH", 0, 10);
 
-        mcDai = TokenizedVault(
+        daiSupplyVault = SupplyVault(
             address(
-                new TransparentUpgradeableProxy(
-                    address(new TokenizedVault()),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(new SupplyVault()), address(proxyAdmin), "")
             )
         );
-        mcDai.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI", 0, 10);
+        daiSupplyVault.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI", 0, 10);
 
-        mcUsdt = TokenizedVault(
+        usdcSupplyVault = SupplyVault(
             address(
-                new TransparentUpgradeableProxy(
-                    address(new TokenizedVault()),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(new SupplyVault()), address(proxyAdmin), "")
             )
         );
-        mcUsdt.initialize(address(morpho), cUsdt, "MorphoCompoundUSDT", "mcUSDT", 0, 10);
+        usdcSupplyVault.initialize(address(morpho), cUsdc, "MorphoCompoundUSDC", "mcUSDC", 0, 10);
 
         /// Create markets ///
 
