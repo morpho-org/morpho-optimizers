@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/common/ERC4626Upgradeable.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-
-import "./libraries/CompoundMath.sol";
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMorpho.sol";
+
+import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
+
+import "@contracts/common/ERC4626Upgradeable.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 /// @title TokenizedVault.
 /// @author Morpho Labs.
@@ -43,26 +44,6 @@ contract TokenizedVault is ERC4626Upgradeable {
         );
     }
 
-    function totalAssets() public view override returns (uint256) {
-        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
-            address(poolToken),
-            address(this)
-        );
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(address(poolToken));
-        uint256 poolSupplyIndex = poolToken.exchangeRateStored();
-
-        return supplyBalance.onPool.mul(poolSupplyIndex) + supplyBalance.inP2P.mul(p2pSupplyIndex);
-    }
-
-    function beforeWithdraw(uint256 _amount, uint256) internal override {
-        morpho.withdraw(address(poolToken), _amount);
-    }
-
-    function afterDeposit(uint256 _amount, uint256) internal override {
-        asset.safeApprove(address(morpho), _amount);
-        morpho.supply(address(poolToken), address(this), _amount);
-    }
-
     /// EXTERNAL ///
 
     function claimRewards(uint24 swapFee) external returns (uint256 rewardsAmount) {
@@ -89,5 +70,27 @@ contract TokenizedVault is ERC4626Upgradeable {
 
         asset.safeApprove(address(morpho), rewardsAmount);
         morpho.supply(address(poolToken), address(this), rewardsAmount);
+    }
+
+    /// PUBLIC ///
+
+    function totalAssets() public view override returns (uint256) {
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+            address(poolToken),
+            address(this)
+        );
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(address(poolToken));
+        uint256 poolSupplyIndex = poolToken.exchangeRateStored();
+
+        return supplyBalance.onPool.mul(poolSupplyIndex) + supplyBalance.inP2P.mul(p2pSupplyIndex);
+    }
+
+    function _beforeWithdraw(uint256 _amount, uint256) internal override {
+        morpho.withdraw(address(poolToken), _amount);
+    }
+
+    function _afterDeposit(uint256 _amount, uint256) internal override {
+        asset.safeApprove(address(morpho), _amount);
+        morpho.supply(address(poolToken), address(this), _amount);
     }
 }
