@@ -35,17 +35,21 @@ contract TestSetup is Config, Utils, stdCheats {
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
+    TransparentUpgradeableProxy internal morphoProxy;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
+    TransparentUpgradeableProxy internal mcWethProxy;
+    TransparentUpgradeableProxy internal lensProxy;
+
+    Morpho internal morphoImplV1;
+    IRewardsManager internal rewardsManagerImplV1;
+    TokenizedVault internal mcWethImplV1;
+
     Morpho internal morpho;
     InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
     IPositionsManager internal positionsManager;
     Lens internal lensImplV1;
     Lens internal lens;
-    TransparentUpgradeableProxy internal lensProxy;
-
-    Morpho internal morphoImplV1;
-    IRewardsManager internal rewardsManagerImplV1;
-    TokenizedVault internal mcWethImplV1;
 
     TokenizedVault internal mcWeth;
     TokenizedVault internal mcDai;
@@ -92,13 +96,12 @@ contract TestSetup is Config, Utils, stdCheats {
         proxyAdmin = new ProxyAdmin();
 
         morphoImplV1 = new Morpho();
-        morpho = Morpho(
-            payable(
-                address(
-                    new TransparentUpgradeableProxy(address(morphoImplV1), address(proxyAdmin), "")
-                )
-            )
+        morphoProxy = new TransparentUpgradeableProxy(
+            address(morphoImplV1),
+            address(proxyAdmin),
+            ""
         );
+        morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
             positionsManager,
             interestRatesManager,
@@ -116,10 +119,13 @@ contract TestSetup is Config, Utils, stdCheats {
         morpho.setTreasuryVault(address(treasuryVault));
 
         mcWethImplV1 = new TokenizedVault();
-        mcWeth = TokenizedVault(
-            address(new TransparentUpgradeableProxy(address(mcWethImplV1), address(proxyAdmin), ""))
+        mcWethProxy = new TransparentUpgradeableProxy(
+            address(mcWethImplV1),
+            address(proxyAdmin),
+            ""
         );
-        mcWeth.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0, 10);
+        mcWeth = TokenizedVault(address(mcWethProxy));
+        mcWeth.initialize(address(morpho), cEth, "MorphoCompoundWETH", "mcWETH", 0, 10);
 
         mcDai = TokenizedVault(
             address(
@@ -169,15 +175,12 @@ contract TestSetup is Config, Utils, stdCheats {
         morpho.setIncentivesVault(incentivesVault);
 
         rewardsManagerImplV1 = new RewardsManager();
-        rewardsManager = RewardsManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(rewardsManagerImplV1),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
+        rewardsManagerProxy = new TransparentUpgradeableProxy(
+            address(rewardsManagerImplV1),
+            address(proxyAdmin),
+            ""
         );
+        rewardsManager = RewardsManager(address(rewardsManagerProxy));
         rewardsManager.initialize(address(morpho));
 
         morpho.setRewardsManager(rewardsManager);
