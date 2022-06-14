@@ -17,34 +17,46 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
 
     /// EVENTS ///
 
-    event Deposit(
-        address indexed caller,
-        address indexed owner,
-        uint256 underlyingAmount,
-        uint256 shares
-    );
+    /// @notice Emitted when the successful supply through Morpho is made.
+    /// @param caller The caller funding the deposit.
+    /// @param owner The owner of the shares minted.
+    /// @param assets The amount of assets deposited to the vault (in underlying).
+    /// @param shares The amount of shares minted for `owner`.
+    event Deposit(address indexed caller, address indexed owner, uint256 assets, uint256 shares);
 
+    /// @notice Emitted when the successful supply through Morpho is made.
+    /// @param caller The caller burning the shares.
+    /// @param receiver The receiver of the underlying amount.
+    /// @param owner The owner of the shares burned.
+    /// @param assets The amount of assets withdrawn from the vault (in underlying).
+    /// @param shares The amount of shares burned on behalf of `owner`.
     event Withdraw(
         address indexed caller,
         address indexed receiver,
         address indexed owner,
-        uint256 underlyingAmount,
+        uint256 assets,
         uint256 shares
     );
 
     /// ERRORS ///
 
+    /// @notice Thrown when the share of the vault corresponding to a given amount is zero (too small compared to the value of existing shares).
     error ShareIsZero();
 
+    /// @notice Thrown when the amount of assets corresponding to a given amount of shares is zero (too small).
     error AmountIsZero();
 
     /// STORAGE ///
 
-    ERC20 public asset;
+    ERC20 public asset; // The underlying asset used to supply through Morpho.
 
     /// CONSTRUCTOR ///
 
+    /// @notice Constructs the contract.
+    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
     constructor() initializer {}
+
+    /// UPGRADE ///
 
     function __ERC4626_init(
         ERC20 _asset,

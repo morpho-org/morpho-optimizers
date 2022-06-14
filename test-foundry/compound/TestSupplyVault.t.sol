@@ -153,30 +153,37 @@ contract TestSupplyVault is TestSetup {
     }
 
     function testShouldClaimAndFoldRewards() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, address(daiSupplyVault), amount);
         supplier1.depositVault(daiSupplyVault, amount);
 
-        (, uint256 balanceInP2PBefore) = morpho.supplyBalanceInOf(cDai, address(daiSupplyVault));
-
         hevm.roll(block.number + 1_000);
 
-        (uint256 rewardsAmount, ) = daiSupplyVault.claimRewards(3000);
-        (, uint256 balanceInP2PAfter) = morpho.supplyBalanceInOf(cDai, address(daiSupplyVault));
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+        morpho.updateP2PIndexes(cDai);
+        (, uint256 balanceOnPoolBefore) = morpho.supplyBalanceInOf(cDai, address(daiSupplyVault));
 
-        assertGt(rewardsAmount, 0);
-        assertApproxEq(
-            balanceInP2PAfter,
-            balanceInP2PBefore + rewardsAmount.div(p2pSupplyIndex),
-            1e9
+        (uint256 rewardsAmount, uint256 rewardsFee) = daiSupplyVault.harvest(
+            daiSupplyVault.maxHarvestingSlippage()
         );
-        assertEq(ERC20(comptroller.getCompAddress()).balanceOf(address(daiSupplyVault)), 0);
+        uint256 expectedRewardsFee = ((rewardsAmount + rewardsFee) *
+            daiSupplyVault.harvestingFee()) / daiSupplyVault.MAX_BASIS_POINTS();
+
+        (, uint256 balanceOnPoolAfter) = morpho.supplyBalanceInOf(cDai, address(daiSupplyVault));
+
+        assertGt(rewardsAmount, 0, "rewards amount is zero");
+        assertEq(
+            balanceOnPoolAfter,
+            balanceOnPoolBefore + rewardsAmount.div(ICToken(cDai).exchangeRateCurrent()),
+            "unexpected balance on pool"
+        );
+        assertEq(ERC20(comp).balanceOf(address(daiSupplyVault)), 0, "comp amount is not zero");
+        assertEq(rewardsFee, expectedRewardsFee, "unexpected rewards fee amount");
+        assertEq(ERC20(dai).balanceOf(address(this)), rewardsFee, "unexpected fee collected");
     }
 
     function testShouldClaimAndRedeemRewards() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, address(daiSupplyVault), amount);
         uint256 shares = supplier1.depositVault(daiSupplyVault, amount);
@@ -184,17 +191,67 @@ contract TestSupplyVault is TestSetup {
         hevm.roll(block.number + 1_000);
 
         morpho.updateP2PIndexes(cDai);
-
+        (, uint256 balanceOnPoolBefore) = morpho.supplyBalanceInOf(cDai, address(daiSupplyVault));
         uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
 
-        (uint256 rewardsAmount, uint256 rewardsFee) = daiSupplyVault.claimRewards(3000);
+        (uint256 rewardsAmount, uint256 rewardsFee) = daiSupplyVault.harvest(
+            daiSupplyVault.maxHarvestingSlippage()
+        );
+        uint256 expectedRewardsFee = ((rewardsAmount + rewardsFee) *
+            daiSupplyVault.harvestingFee()) / daiSupplyVault.MAX_BASIS_POINTS();
+
         supplier1.redeemVault(daiSupplyVault, shares);
         uint256 balanceAfter = ERC20(dai).balanceOf(address(supplier1));
 
-        assertEq(ERC20(dai).balanceOf(address(daiSupplyVault)), 0);
-        assertGt(balanceAfter, balanceBefore + rewardsAmount);
+        assertEq(ERC20(dai).balanceOf(address(daiSupplyVault)), 0, "non zero dai balance on vault");
+        assertGt(
+            balanceAfter,
+            balanceBefore + balanceOnPoolBefore + rewardsAmount,
+            "unexpected dai balance"
+        );
+        assertEq(rewardsFee, expectedRewardsFee, "unexpected rewards fee amount");
+        assertEq(ERC20(dai).balanceOf(address(this)), rewardsFee, "unexpected fee collected");
+    }
 
-        assertEq(ERC20(dai).balanceOf(address(this)), rewardsFee);
-        assertEq(rewardsFee, ((rewardsAmount + rewardsFee) * 10) / 10_000);
+    function testShouldNotAllowOracleDumpManipulation() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, address(daiSupplyVault), amount);
+        supplier1.depositVault(daiSupplyVault, amount);
+
+        hevm.roll(block.number + 1_000);
+
+        uint256 flashloanAmount = 1_000 ether;
+        ISwapRouter swapRouter = daiSupplyVault.SWAP_ROUTER();
+
+        tip(comp, address(this), flashloanAmount);
+        ERC20(comp).approve(address(swapRouter), flashloanAmount);
+        swapRouter.exactInputSingle(
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: comp,
+                tokenOut: wEth,
+                fee: daiSupplyVault.compSwapFee(),
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: flashloanAmount,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            })
+        );
+
+        hevm.expectRevert("Too little received");
+        daiSupplyVault.harvest(100);
+    }
+
+    function testShouldNotAllowZeroSlippage() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, address(daiSupplyVault), amount);
+        supplier1.depositVault(daiSupplyVault, amount);
+
+        hevm.roll(block.number + 1_000);
+
+        hevm.expectRevert("Too little received");
+        daiSupplyVault.harvest(0);
     }
 }

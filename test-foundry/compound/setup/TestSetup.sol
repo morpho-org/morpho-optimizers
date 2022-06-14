@@ -8,6 +8,7 @@ import "@contracts/common/interfaces/ISwapManager.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 import "@contracts/compound/IncentivesVault.sol";
 import "@contracts/compound/RewardsManager.sol";
@@ -36,12 +37,12 @@ contract TestSetup is Config, Utils, stdCheats {
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy internal rewardsManagerProxy;
-    TransparentUpgradeableProxy internal wethSupplyVaultProxy;
+    TransparentUpgradeableProxy internal wEthSupplyVaultProxy;
     TransparentUpgradeableProxy internal morphoProxy;
     TransparentUpgradeableProxy internal lensProxy;
 
     IRewardsManager internal rewardsManagerImplV1;
-    SupplyVault internal wethSupplyVaultImplV1;
+    SupplyVault internal wEthSupplyVaultImplV1;
     Morpho internal morphoImplV1;
     Lens internal lensImplV1;
 
@@ -51,7 +52,7 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho internal morpho;
     Lens internal lens;
 
-    SupplyVault internal wethSupplyVault;
+    SupplyVault internal wEthSupplyVault;
     SupplyVault internal daiSupplyVault;
     SupplyVault internal usdcSupplyVault;
 
@@ -118,28 +119,61 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        wethSupplyVaultImplV1 = new SupplyVault();
-        wethSupplyVaultProxy = new TransparentUpgradeableProxy(
-            address(wethSupplyVaultImplV1),
+        wEthSupplyVaultImplV1 = new SupplyVault();
+        wEthSupplyVaultProxy = new TransparentUpgradeableProxy(
+            address(wEthSupplyVaultImplV1),
             address(proxyAdmin),
             ""
         );
-        wethSupplyVault = SupplyVault(address(wethSupplyVaultProxy));
-        wethSupplyVault.initialize(address(morpho), cEth, "MorphoCompoundWETH", "mcWETH", 0, 10);
+        wEthSupplyVault = SupplyVault(address(wEthSupplyVaultProxy));
+        wEthSupplyVault.initialize(
+            address(morpho),
+            cEth,
+            "MorphoCompoundWETH",
+            "mcWETH",
+            0,
+            3000,
+            0,
+            50,
+            100,
+            cComp
+        );
 
         daiSupplyVault = SupplyVault(
             address(
                 new TransparentUpgradeableProxy(address(new SupplyVault()), address(proxyAdmin), "")
             )
         );
-        daiSupplyVault.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI", 0, 10);
+        daiSupplyVault.initialize(
+            address(morpho),
+            cDai,
+            "MorphoCompoundDAI",
+            "mcDAI",
+            0,
+            3000,
+            500,
+            50,
+            100,
+            cComp
+        );
 
         usdcSupplyVault = SupplyVault(
             address(
                 new TransparentUpgradeableProxy(address(new SupplyVault()), address(proxyAdmin), "")
             )
         );
-        usdcSupplyVault.initialize(address(morpho), cUsdc, "MorphoCompoundUSDC", "mcUSDC", 0, 10);
+        usdcSupplyVault.initialize(
+            address(morpho),
+            cUsdc,
+            "MorphoCompoundUSDC",
+            "mcUSDC",
+            0,
+            3000,
+            500,
+            50,
+            100,
+            cComp
+        );
 
         /// Create markets ///
 
@@ -149,6 +183,7 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cUsdt);
         createMarket(cBat);
         createMarket(cEth);
+        createMarket(cComp);
 
         hevm.roll(block.number + 1);
 
@@ -267,6 +302,7 @@ contract TestSetup is Config, Utils, stdCheats {
         for (uint256 i = 0; i < pools.length; i++) {
             customOracle.setUnderlyingPrice(pools[i], oracle.getUnderlyingPrice(pools[i]));
         }
+
         return customOracle;
     }
 
