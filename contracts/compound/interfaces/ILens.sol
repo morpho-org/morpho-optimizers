@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./compound/ICompound.sol";
+import "./IRewardsManager.sol";
 import "./IMorpho.sol";
 
 interface ILens {
@@ -10,6 +11,31 @@ interface ILens {
     function WAD() external view returns (uint256);
 
     function morpho() external view returns (IMorpho);
+
+    function comptroller() external view returns (IComptroller);
+
+    function rewardsManager() external view returns (IRewardsManager);
+
+    function getUserUnclaimedRewards(address[] calldata _poolTokenAddresses, address _user)
+        external
+        view
+        returns (uint256 unclaimedRewards);
+
+    function getAccruedSupplierComp(
+        address _supplier,
+        address _poolTokenAddress,
+        uint256 _balance
+    ) external view returns (uint256);
+
+    function getAccruedBorrowerComp(
+        address _borrower,
+        address _poolTokenAddress,
+        uint256 _balance
+    ) external view returns (uint256);
+
+    function getUpdatedCompSupplyIndex(address _poolTokenAddress) external view returns (uint256);
+
+    function getUpdatedCompBorrowIndex(address _poolTokenAddress) external view returns (uint256);
 
     function isMarketCreated(address _poolTokenAddress) external view returns (bool);
 
