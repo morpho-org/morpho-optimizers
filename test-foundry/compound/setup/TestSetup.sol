@@ -119,7 +119,7 @@ contract TestSetup is Config, Utils, stdCheats {
         mcWeth = TokenizedVault(
             address(new TransparentUpgradeableProxy(address(mcWethImplV1), address(proxyAdmin), ""))
         );
-        mcWeth.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0);
+        mcWeth.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0, 10);
 
         mcDai = TokenizedVault(
             address(
@@ -130,7 +130,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 )
             )
         );
-        mcDai.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI", 0);
+        mcDai.initialize(address(morpho), cDai, "MorphoCompoundDAI", "mcDAI", 0, 10);
 
         mcUsdt = TokenizedVault(
             address(
@@ -141,7 +141,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 )
             )
         );
-        mcUsdt.initialize(address(morpho), cUsdt, "MorphoCompoundUSDT", "mcUSDT", 0);
+        mcUsdt.initialize(address(morpho), cUsdt, "MorphoCompoundUSDT", "mcUSDT", 0, 10);
 
         /// Create markets ///
 
