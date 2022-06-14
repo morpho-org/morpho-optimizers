@@ -49,13 +49,21 @@ test-common:
 
 contract-% c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-contract $* > trace.ansi
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $*
+
+ansi-c-%:
+	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $* > trace.ansi
 
 html-c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-contract $* | aha --black > trace.html
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $* | aha --black > trace.html
 
 single-% s-%:
+	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvvvv -c test-foundry/${PROTOCOL} --match-test $*
+
+ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvvvv -c test-foundry/${PROTOCOL} --match-test $* > trace.ansi
 
