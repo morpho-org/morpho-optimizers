@@ -5,12 +5,14 @@ pragma solidity 0.8.7;
 // methods for the spec to access internal state, or may override some of the
 // more complex methods in the original contract.
 
-import "../munged/compound/PositionsManager.sol";
+import "../../munged/compound/PositionsManager.sol";
 
 contract PositionsManagerHarness is PositionsManager {
-    constructor(address _compoundMarketsManager, address _proxyComptrollerAddress)
-        PositionsManager(_compoundMarketsManager, _proxyComptrollerAddress)
-    {}
+    // constructor(address _compoundMarketsManager, address _proxyComptrollerAddress)
+    //     PositionsManager(_compoundMarketsManager, _proxyComptrollerAddress)
+    // {} // previous constructor, kept for reference
+
+    constructor() {}
 
     // any helpers or modifications to existing functions go here
 }
