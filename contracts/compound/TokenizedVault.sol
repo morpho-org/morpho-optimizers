@@ -18,6 +18,10 @@ contract TokenizedVault is ERC4626Upgradeable {
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
+    /// EVENTS ///
+
+    event ClaimingFeeSet(uint16 _newClaimingFee);
+
     /// STORAGE ///
 
     ISwapRouter public constant SWAP_ROUTER =
@@ -25,16 +29,20 @@ contract TokenizedVault is ERC4626Upgradeable {
 
     IMorpho public morpho;
     ICToken public poolToken;
+    uint16 public claimingFee;
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
 
     function initialize(
         address _morphoAddress,
         address _poolTokenAddress,
         string calldata _name,
         string calldata _symbol,
-        uint256 _initialDeposit
+        uint256 _initialDeposit,
+        uint16 _claimingFee
     ) external initializer {
         morpho = IMorpho(_morphoAddress);
         poolToken = ICToken(_poolTokenAddress);
+        claimingFee = _claimingFee;
 
         __ERC4626_init(
             ERC20(_poolTokenAddress == morpho.cEth() ? morpho.wEth() : poolToken.underlying()),
@@ -46,13 +54,16 @@ contract TokenizedVault is ERC4626Upgradeable {
 
     /// EXTERNAL ///
 
-    function claimRewards(uint24 swapFee) external returns (uint256 rewardsAmount) {
+    function claimRewards(uint16 swapFee)
+        external
+        returns (uint256 rewardsAmount_, uint256 rewardsFee_)
+    {
         address[] memory poolTokenAddresses = new address[](1);
         poolTokenAddresses[0] = address(poolToken);
         morpho.claimRewards(poolTokenAddresses, false);
 
         ERC20 comp = ERC20(morpho.comptroller().getCompAddress());
-        rewardsAmount = comp.balanceOf(address(this));
+        rewardsAmount_ = comp.balanceOf(address(this));
 
         ISwapRouter.ExactInputSingleParams memory swapParams = ISwapRouter.ExactInputSingleParams({
             tokenIn: address(comp),
@@ -60,16 +71,26 @@ contract TokenizedVault is ERC4626Upgradeable {
             fee: swapFee,
             recipient: address(this),
             deadline: block.timestamp,
-            amountIn: rewardsAmount,
+            amountIn: rewardsAmount_,
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0
         });
 
-        comp.safeApprove(address(SWAP_ROUTER), rewardsAmount);
-        rewardsAmount = SWAP_ROUTER.exactInputSingle(swapParams);
+        comp.safeApprove(address(SWAP_ROUTER), rewardsAmount_);
+        rewardsAmount_ = SWAP_ROUTER.exactInputSingle(swapParams);
 
-        asset.safeApprove(address(morpho), rewardsAmount);
-        morpho.supply(address(poolToken), address(this), rewardsAmount);
+        rewardsFee_ = (rewardsAmount_ * claimingFee) / MAX_BASIS_POINTS;
+        rewardsAmount_ -= rewardsFee_;
+
+        asset.safeApprove(address(morpho), rewardsAmount_);
+        morpho.supply(address(poolToken), address(this), rewardsAmount_);
+
+        asset.safeTransfer(msg.sender, rewardsFee_);
+    }
+
+    function setClaimingFee(uint16 _newClaimingFee) external onlyOwner {
+        claimingFee = _newClaimingFee;
+        emit ClaimingFeeSet(_newClaimingFee);
     }
 
     /// PUBLIC ///

@@ -136,7 +136,7 @@ contract TestTokenizedVault is TestSetup {
 
         hevm.roll(block.number + 1_000);
 
-        uint256 rewardsAmount = mcDai.claimRewards(3000);
+        (uint256 rewardsAmount, ) = mcDai.claimRewards(3000);
         (, uint256 balanceInP2PAfter) = morpho.supplyBalanceInOf(cDai, address(mcDai));
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
 
@@ -157,13 +157,18 @@ contract TestTokenizedVault is TestSetup {
 
         hevm.roll(block.number + 1_000);
 
+        morpho.updateP2PIndexes(cDai);
+
         uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
 
-        uint256 rewardsAmount = mcDai.claimRewards(3000);
+        (uint256 rewardsAmount, uint256 rewardsFee) = mcDai.claimRewards(3000);
         supplier1.redeemVault(mcDai, shares);
         uint256 balanceAfter = ERC20(dai).balanceOf(address(supplier1));
 
         assertEq(ERC20(dai).balanceOf(address(mcDai)), 0);
         assertGt(balanceAfter, balanceBefore + rewardsAmount);
+
+        assertEq(ERC20(dai).balanceOf(address(this)), rewardsFee);
+        assertEq(rewardsFee, ((rewardsAmount + rewardsFee) * 10) / 10_000);
     }
 }
