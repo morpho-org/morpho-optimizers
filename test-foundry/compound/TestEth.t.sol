@@ -300,4 +300,10 @@ contract TestEth is TestSetup {
         testEquality(balanceAfter, balanceBefore + amountToSeize, "amount seized");
         assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
+
+    function testShouldGetEthMarketConfiguration() public {
+        (address underlying, , , , , , ) = lens.getMarketConfiguration(cEth);
+
+        assertEq(underlying, wEth);
+    }
 }

@@ -162,7 +162,9 @@ contract Lens is ILens {
             uint256 collateralFactor_
         )
     {
-        underlying_ = ICToken(_poolTokenAddress).underlying();
+        underlying_ = _poolTokenAddress == morpho.cEth()
+            ? morpho.wEth()
+            : ICToken(_poolTokenAddress).underlying();
         Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
         isCreated_ = marketStatus.isCreated;
         p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
