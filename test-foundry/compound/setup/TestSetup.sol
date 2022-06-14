@@ -44,7 +44,9 @@ contract TestSetup is Config, Utils, stdCheats {
     IRewardsManager internal rewardsManager;
     ICompRewardsLens internal compRewardsLens;
     IPositionsManager internal positionsManager;
+    Lens internal lensImplV1;
     Lens internal lens;
+    TransparentUpgradeableProxy internal lensProxy;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -107,7 +109,9 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        lens = new Lens(address(morpho));
+        lensImplV1 = new Lens();
+        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
+        lens = Lens(address(lensProxy));
 
         /// Create markets ///
 
