@@ -100,10 +100,10 @@ contract SupplyVault is ERC4626Upgradeable {
             address(poolToken),
             address(this)
         );
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(address(poolToken));
-        uint256 poolSupplyIndex = poolToken.exchangeRateStored();
 
-        return supplyBalance.onPool.mul(poolSupplyIndex) + supplyBalance.inP2P.mul(p2pSupplyIndex);
+        return
+            supplyBalance.onPool.mul(poolToken.exchangeRateStored()) +
+            supplyBalance.inP2P.mul(morpho.p2pSupplyIndex(address(poolToken)));
     }
 
     function _beforeWithdraw(uint256 _amount, uint256) internal override {
