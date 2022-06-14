@@ -37,3 +37,7 @@ yarn-error.log*
 *.ansi
 *.html
 lcov.*
+
+#certora
+.certora*
+last_conf*

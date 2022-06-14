@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
-import {ICompoundOracle} from "../munged/compound/interfaces/compound/ICompound.sol";
-
-contract SymbolicOracle is ICompoundOracle {
+contract SymbolicOracle {
     mapping(address => uint256) public underlyingPrice;
     mapping(address => mapping(address => uint256)) public unclaimedRewards;
 
-    function getUnderlyingPrice(address _token) external view override returns (uint256) {
+    function getUnderlyingPrice(address _token) external view returns (uint256) {
         return underlyingPrice[_token];
     }
 
+    // this function is specifically for usage in the spec, you can also directly assign prices to the underlyingPrice mapping
     function setUnderlyingPrice(address _token, uint256 _price) public {
         underlyingPrice[_token] = _price;
     }
