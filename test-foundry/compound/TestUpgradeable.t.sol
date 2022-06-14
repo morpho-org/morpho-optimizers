@@ -67,21 +67,21 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testUpgradeSupplyVault() public {
-        SupplyVault wethSupplyVaultImplV2 = new SupplyVault();
+        SupplyVault wEthSupplyVaultImplV2 = new SupplyVault();
 
         hevm.record();
-        proxyAdmin.upgrade(wethSupplyVaultProxy, address(wethSupplyVaultImplV2));
-        (, bytes32[] memory writes) = hevm.accesses(address(wethSupplyVault));
+        proxyAdmin.upgrade(wEthSupplyVaultProxy, address(wEthSupplyVaultImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(wEthSupplyVault));
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
         address newImplem = bytes32ToAddress(
             hevm.load(
-                address(wethSupplyVault),
+                address(wEthSupplyVault),
                 bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
             )
         );
-        assertEq(newImplem, address(wethSupplyVaultImplV2));
+        assertEq(newImplem, address(wEthSupplyVaultImplV2));
     }
 
     function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
@@ -107,21 +107,21 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallSupplyVault() public {
-        SupplyVault wethSupplyVaultImplV2 = new SupplyVault();
+        SupplyVault wEthSupplyVaultImplV2 = new SupplyVault();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         proxyAdmin.upgradeAndCall(
-            wethSupplyVaultProxy,
-            payable(address(wethSupplyVaultImplV2)),
+            wEthSupplyVaultProxy,
+            payable(address(wEthSupplyVaultImplV2)),
             ""
         );
 
         // Revert for wrong data not wrong caller.
         hevm.expectRevert("Address: low-level delegate call failed");
         proxyAdmin.upgradeAndCall(
-            wethSupplyVaultProxy,
-            payable(address(wethSupplyVaultImplV2)),
+            wEthSupplyVaultProxy,
+            payable(address(wEthSupplyVaultImplV2)),
             ""
         );
     }
@@ -206,13 +206,17 @@ contract TestUpgradeable is TestSetup {
 
     function testSupplyVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        wethSupplyVaultImplV1.initialize(
+        wEthSupplyVaultImplV1.initialize(
             address(morpho),
             cEth,
             "MorphoCompoundETH",
             "mcETH",
             0,
-            10
+            3000,
+            0,
+            10,
+            100,
+            cComp
         );
     }
 }
