@@ -9,11 +9,13 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./libraries/CompoundMath.sol";
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 /// @title Lens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice User accessible getters.
-contract Lens is ILens {
+contract Lens is ILens, OwnableUpgradeable {
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -39,22 +41,26 @@ contract Lens is ILens {
         uint256 p2pDelta; // Sum of all stored peer-to-peer in supply or borrow (in peer-to-peer unit).
     }
 
-    /// STORAGE ///
-
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
-    uint256 public constant WAD = 1e18;
-    IMorpho public immutable morpho;
-
-    /// CONSTRUCTOR ///
-
-    constructor(address _morphoAddress) {
-        morpho = IMorpho(_morphoAddress);
-    }
-
     /// ERRORS ///
 
     /// @notice Thrown when the Compound's oracle failed.
     error CompoundOracleFailed();
+
+    /// STORAGE ///
+
+    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
+    uint256 public constant WAD = 1e18;
+    IMorpho public morpho;
+
+    /// CONSTRUCTOR ///
+
+    constructor() initializer {}
+
+    function initialize(address _morphoAddress) external initializer {
+        __Ownable_init_unchained();
+
+        morpho = IMorpho(_morphoAddress);
+    }
 
     ///////////////////////////////////
     ///           GETTERS           ///
