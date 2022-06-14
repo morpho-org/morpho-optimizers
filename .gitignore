@@ -35,3 +35,7 @@ yarn-error.log*
 # traces
 *.ansi
 *.html
+
+#certora
+.certora*
+last_conf*
