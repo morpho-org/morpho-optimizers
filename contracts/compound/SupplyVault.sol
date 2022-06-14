@@ -10,11 +10,11 @@ import "./libraries/Types.sol";
 import "@contracts/common/ERC4626Upgradeable.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-/// @title TokenizedVault.
+/// @title SupplyVault.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice ERC4626-upgradeable tokenized Vault implementation for Morpho-Compound.
-contract TokenizedVault is ERC4626Upgradeable {
+contract SupplyVault is ERC4626Upgradeable {
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 

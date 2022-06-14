@@ -314,13 +314,13 @@ contract TestEth is TestSetup {
         uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
 
         uint256 balanceBefore = supplier1.balanceOf(wEth);
-        supplier1.approve(wEth, address(mcWeth), toSupply);
-        supplier1.depositVault(mcWeth, toSupply);
+        supplier1.approve(wEth, address(wethSupplyVault), toSupply);
+        supplier1.depositVault(wethSupplyVault, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
         testEquality(ERC20(cEth).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(mcWeth));
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(wethSupplyVault));
 
         assertEq(inP2P, 0);
         testEquality(onPool, expectedOnPool);
@@ -334,12 +334,12 @@ contract TestEth is TestSetup {
         uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
 
         uint256 balanceBefore = supplier1.balanceOf(wEth);
-        supplier1.approve(wEth, address(mcWeth), toSupply);
-        supplier1.depositVault(mcWeth, toSupply);
-        supplier1.withdrawVault(mcWeth, expectedOnPool.mul(poolSupplyIndex));
+        supplier1.approve(wEth, address(wethSupplyVault), toSupply);
+        supplier1.depositVault(wethSupplyVault, toSupply);
+        supplier1.withdrawVault(wethSupplyVault, expectedOnPool.mul(poolSupplyIndex));
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(mcWeth));
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(wethSupplyVault));
 
         assertEq(onPool, 0);
         assertEq(inP2P, 0);

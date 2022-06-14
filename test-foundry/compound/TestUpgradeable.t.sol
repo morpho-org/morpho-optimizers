@@ -66,22 +66,22 @@ contract TestUpgradeable is TestSetup {
         assertEq(newImplem, address(rewardsManagerImplV2));
     }
 
-    function testUpgradeTokenizedVault() public {
-        TokenizedVault mcWethImplV2 = new TokenizedVault();
+    function testUpgradeSupplyVault() public {
+        SupplyVault wethSupplyVaultImplV2 = new SupplyVault();
 
         hevm.record();
-        proxyAdmin.upgrade(mcWethProxy, address(mcWethImplV2));
-        (, bytes32[] memory writes) = hevm.accesses(address(mcWeth));
+        proxyAdmin.upgrade(wethSupplyVaultProxy, address(wethSupplyVaultImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(wethSupplyVault));
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
         address newImplem = bytes32ToAddress(
             hevm.load(
-                address(mcWeth),
+                address(wethSupplyVault),
                 bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
             )
         );
-        assertEq(newImplem, address(mcWethImplV2));
+        assertEq(newImplem, address(wethSupplyVaultImplV2));
     }
 
     function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
@@ -106,16 +106,24 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgradeAndCall(rewardsManagerProxy, payable(address(rewardsManagerImplV2)), "");
     }
 
-    function testOnlyProxyOwnerCanUpgradeAndCallTokenizedVault() public {
-        TokenizedVault mcWethImplV2 = new TokenizedVault();
+    function testOnlyProxyOwnerCanUpgradeAndCallSupplyVault() public {
+        SupplyVault wethSupplyVaultImplV2 = new SupplyVault();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(mcWethProxy, payable(address(mcWethImplV2)), "");
+        proxyAdmin.upgradeAndCall(
+            wethSupplyVaultProxy,
+            payable(address(wethSupplyVaultImplV2)),
+            ""
+        );
 
         // Revert for wrong data not wrong caller.
         hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(mcWethProxy, payable(address(mcWethImplV2)), "");
+        proxyAdmin.upgradeAndCall(
+            wethSupplyVaultProxy,
+            payable(address(wethSupplyVaultImplV2)),
+            ""
+        );
     }
 
     function testRewardsManagerImplementationsShouldBeInitialized() public {
@@ -196,8 +204,15 @@ contract TestUpgradeable is TestSetup {
         assertEq(_initialized, 1);
     }
 
-    function testTokenizedVaultImplementationsShouldBeInitialized() public {
+    function testSupplyVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        mcWethImplV1.initialize(address(morpho), cEth, "MorphoCompoundETH", "mcETH", 0, 10);
+        wethSupplyVaultImplV1.initialize(
+            address(morpho),
+            cEth,
+            "MorphoCompoundETH",
+            "mcETH",
+            0,
+            10
+        );
     }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
 import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/TokenizedVault.sol";
+import "@contracts/compound/SupplyVault.sol";
 import "@contracts/compound/InterestRatesManager.sol";
 
 contract User {
@@ -124,41 +124,32 @@ contract User {
         );
     }
 
-    function depositVault(TokenizedVault tokenizedVault, uint256 _amount)
-        external
-        returns (uint256)
-    {
+    function depositVault(SupplyVault tokenizedVault, uint256 _amount) external returns (uint256) {
         return tokenizedVault.deposit(_amount, address(this));
     }
 
-    function mintVault(TokenizedVault tokenizedVault, uint256 _shares) external returns (uint256) {
+    function mintVault(SupplyVault tokenizedVault, uint256 _shares) external returns (uint256) {
         return tokenizedVault.mint(_shares, address(this));
     }
 
-    function withdrawVault(TokenizedVault tokenizedVault, uint256 _amount)
-        external
-        returns (uint256)
-    {
+    function withdrawVault(SupplyVault tokenizedVault, uint256 _amount) external returns (uint256) {
         return tokenizedVault.withdraw(_amount, address(this), address(this));
     }
 
     function withdrawVault(
-        TokenizedVault tokenizedVault,
+        SupplyVault tokenizedVault,
         uint256 _amount,
         address _owner
     ) external returns (uint256) {
         return tokenizedVault.withdraw(_amount, address(this), _owner);
     }
 
-    function redeemVault(TokenizedVault tokenizedVault, uint256 _shares)
-        external
-        returns (uint256)
-    {
+    function redeemVault(SupplyVault tokenizedVault, uint256 _shares) external returns (uint256) {
         return tokenizedVault.redeem(_shares, address(this), address(this));
     }
 
     function redeemVault(
-        TokenizedVault tokenizedVault,
+        SupplyVault tokenizedVault,
         uint256 _shares,
         address _owner
     ) external returns (uint256) {
