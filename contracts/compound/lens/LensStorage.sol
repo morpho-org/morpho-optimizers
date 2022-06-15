@@ -4,13 +4,13 @@ pragma solidity ^0.8.0;
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
 
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage is ContextUpgradeable {
+abstract contract LensStorage is Initializable {
     /// STORAGE ///
 
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
@@ -19,4 +19,10 @@ abstract contract LensStorage is ContextUpgradeable {
     IMorpho public morpho;
     IComptroller public comptroller;
     IRewardsManager public rewardsManager;
+
+    /// CONSTRUCTOR ///
+
+    /// @notice Constructs the contract.
+    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
+    constructor() initializer {}
 }
