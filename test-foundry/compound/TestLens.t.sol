@@ -700,7 +700,7 @@ contract TestLens is TestSetup {
             cDai
         );
         assertTrue(reserveFactor == expectedReserveFactor);
-        assertTrue(reserveFactor == expectedReserveFactor);
+        assertTrue(p2pIndexCursor == expectedP2PIndexCursor);
         (, uint256 expectedCollateralFactor, ) = morpho.comptroller().markets(cDai);
         assertTrue(collateralFactor == expectedCollateralFactor);
     }
