@@ -78,7 +78,7 @@ interface ILens {
             uint256 newPoolBorrowIndex
         );
 
-    function getRates(address _poolTokenAddress)
+    function getRatesPerBlock(address _poolTokenAddress)
         external
         view
         returns (
@@ -116,6 +116,16 @@ interface ILens {
             uint256 balanceInP2P,
             uint256 totalBalance
         );
+
+    function getUpdatedUserSupplyRatePerBlock(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (uint256);
+
+    function getUpdatedUserBorrowRatePerBlock(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (uint256);
 
     function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external

@@ -784,14 +784,14 @@ contract TestLens is TestSetup {
         }
     }
 
-    function testGetRates() public {
+    function testGetRatesPerBlock() public {
         hevm.roll(block.number + 1_000);
         (
             uint256 p2pSupplyRate,
             uint256 p2pBorrowRate,
             uint256 poolSupplyRate,
             uint256 poolBorrowRate
-        ) = lens.getRates(cDai);
+        ) = lens.getRatesPerBlock(cDai);
 
         (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(cDai);
         uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
@@ -1084,5 +1084,128 @@ contract TestLens is TestSetup {
      */
     function testNoRepayLiquidation() public {
         testLiquidation(0, 0.5 ether);
+    }
+
+    function testSupplyRateShouldEqual0WhenNoSupply() public {
+        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+            address(supplier1),
+            cDai
+        );
+
+        assertEq(supplyRatePerBlock, 0);
+    }
+
+    function testBorrowRateShouldEqual0WhenNoBorrow() public {
+        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+            address(borrower1),
+            cDai
+        );
+
+        assertEq(borrowRatePerBlock, 0);
+    }
+
+    function testUserSupplyRateShouldEqualPoolRateWhenNotMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+            address(supplier1),
+            cDai
+        );
+
+        assertApproxEq(supplyRatePerBlock, ICToken(cDai).supplyRatePerBlock(), 1);
+    }
+
+    function testUserBorrowRateShouldEqualPoolRateWhenNotMatched() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+
+        borrower1.approve(dai, amount);
+        borrower1.borrow(cDai, amount);
+
+        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+            address(borrower1),
+            cDai
+        );
+
+        assertApproxEq(borrowRatePerBlock, ICToken(cDai).borrowRatePerBlock(), 1);
+    }
+
+    function testUserSupplyBorrowRatesShouldEqualP2PRatesWhenFullyMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(cEth, amount);
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(dai, amount);
+        borrower1.borrow(cDai, amount);
+
+        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+            address(supplier1),
+            cDai
+        );
+        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+            address(borrower1),
+            cDai
+        );
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerBlock(cDai);
+
+        assertApproxEq(supplyRatePerBlock, p2pSupplyRate, 1, "unexpected supply rate");
+        assertApproxEq(borrowRatePerBlock, p2pBorrowRate, 1, "unexpected borrow rate");
+    }
+
+    function testUserSupplyRateShouldEqualMidrateWhenHalfMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(cEth, amount);
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(dai, amount / 2);
+        borrower1.borrow(cDai, amount / 2);
+
+        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+            address(supplier1),
+            cDai
+        );
+        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerBlock(cDai);
+
+        assertApproxEq(supplyRatePerBlock, (p2pSupplyRate + poolSupplyRate) / 2, 1);
+    }
+
+    function testUserBorrowRateShouldEqualMidrateWhenHalfMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(cEth, amount);
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+
+        supplier1.approve(dai, amount / 2);
+        supplier1.supply(cDai, amount / 2);
+
+        borrower1.approve(dai, amount);
+        borrower1.borrow(cDai, amount);
+
+        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+            address(borrower1),
+            cDai
+        );
+        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerBlock(cDai);
+
+        assertApproxEq(borrowRatePerBlock, (p2pBorrowRate + poolBorrowRate) / 2, 1);
     }
 }
