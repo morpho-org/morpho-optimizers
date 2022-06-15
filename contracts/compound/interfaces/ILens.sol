@@ -58,7 +58,8 @@ interface ILens {
             bool p2pDisabled_,
             bool isPaused_,
             bool isPartiallyPaused_,
-            uint256 reserveFactor_,
+            uint16 reserveFactor_,
+            uint16 p2pIndexCursor_,
             uint256 collateralFactor_
         );
 

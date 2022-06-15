@@ -47,7 +47,7 @@ abstract contract MarketsLens is LensStorage {
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
     /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes were updated.
-    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in scaled balance).
+    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in cToken).
     /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in cdUnit).
     /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer unit).
     /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer unit).
@@ -82,7 +82,8 @@ abstract contract MarketsLens is LensStorage {
     /// @return p2pDisabled_ Whether user are put in peer-to-peer or not.
     /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
-    /// @return reserveFactor_ The reserve actor applied to this market.
+    /// @return reserveFactor_ The reserve factor applied to this market.
+    /// @return p2pIndexCursor_ The p2p index cursor applied to this market.
     /// @return collateralFactor_ The pool collateral factor also used by Morpho.
     function getMarketConfiguration(address _poolTokenAddress)
         external
@@ -93,19 +94,25 @@ abstract contract MarketsLens is LensStorage {
             bool p2pDisabled_,
             bool isPaused_,
             bool isPartiallyPaused_,
-            uint256 reserveFactor_,
+            uint16 reserveFactor_,
+            uint16 p2pIndexCursor_,
             uint256 collateralFactor_
         )
     {
         underlying_ = _poolTokenAddress == morpho.cEth()
             ? morpho.wEth()
             : ICToken(_poolTokenAddress).underlying();
+
         Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
         isCreated_ = marketStatus.isCreated;
         p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
         isPaused_ = marketStatus.isPaused;
         isPartiallyPaused_ = marketStatus.isPartiallyPaused;
-        reserveFactor_ = morpho.marketParameters(_poolTokenAddress).reserveFactor;
+
+        Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+        reserveFactor_ = marketParams.reserveFactor;
+        p2pIndexCursor_ = marketParams.p2pIndexCursor;
+
         (, collateralFactor_, ) = comptroller.markets(_poolTokenAddress);
     }
 }
