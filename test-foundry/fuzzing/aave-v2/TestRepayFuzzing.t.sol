@@ -47,7 +47,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         hevm.assume(_random3 > 10);
 
         (address suppliedAsset, address suppliedUnderlying) = getSupplyAsset(_suppliedAsset);
-        (address borrowedAsset, address borrowedUnderlying) = getSupplyAsset(_borrowedAsset);
+        (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
         uint256 supplied = getSupplyAmount(suppliedUnderlying, _supplied);
         borrower1.approve(suppliedUnderlying, supplied);
@@ -69,6 +69,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         // Borrower2 has his debt waiting on pool.
         borrower2.approve(suppliedUnderlying, supplied);
         borrower2.supply(suppliedAsset, supplied);
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower2.borrow(borrowedAsset, borrowedAmount);
 
         // Borrower1 repays a random amount.
