@@ -15,7 +15,7 @@ import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
 import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/Lens.sol";
+import "@contracts/compound/lens/Lens.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -106,10 +106,6 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        lensImplV1 = new Lens();
-        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
-        lens = Lens(address(lensProxy));
-
         /// Create markets ///
 
         createMarket(cDai);
@@ -145,6 +141,11 @@ contract TestSetup is Config, Utils, stdCheats {
         rewardsManager.initialize(address(morpho));
 
         morpho.setRewardsManager(rewardsManager);
+
+        lensImplV1 = new Lens();
+        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
+        lens = Lens(address(lensProxy));
+        lens.initialize(address(morpho));
     }
 
     function createMarket(address _cToken) internal {
