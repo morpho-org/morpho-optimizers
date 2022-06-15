@@ -34,7 +34,7 @@ abstract contract IndexesLens is MarketsLens {
     /// @return p2pBorrowRate_ The market's peer-to-peer borrow rate per block (in wad).
     /// @return poolSupplyRate_ The market's pool supply rate per block (in wad).
     /// @return poolBorrowRate_ The market's pool borrow rate per block (in wad).
-    function getRates(address _poolTokenAddress)
+    function getRatesPerBlock(address _poolTokenAddress)
         public
         view
         returns (
