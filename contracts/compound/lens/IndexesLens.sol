@@ -26,7 +26,7 @@ abstract contract IndexesLens is MarketsLens {
         Types.Delta delta; // The deltas and peer-to-peer amounts.
     }
 
-    /// EXTERNAL ///
+    /// PUBLIC ///
 
     /// @notice Computes and returns peer-to-peer and pool rates for a specific market (without taking into account deltas!).
     /// @param _poolTokenAddress The market address.
@@ -101,8 +101,6 @@ abstract contract IndexesLens is MarketsLens {
             }
         }
     }
-
-    /// PUBLIC ///
 
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolTokenAddress The address of the market.
