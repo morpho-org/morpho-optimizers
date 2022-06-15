@@ -8,15 +8,7 @@ import "./RewardsLens.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice This contract exposes an API to query on-chain data related to the Morpho Protocol, its markets and its users.
 contract Lens is RewardsLens {
-    /// CONSTRUCTOR ///
-
-    /// @notice Constructs the contract.
-    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
-    constructor() initializer {}
-
     function initialize(address _morphoAddress) external initializer {
-        __Context_init_unchained();
-
         morpho = IMorpho(_morphoAddress);
         comptroller = IComptroller(morpho.comptroller());
         rewardsManager = IRewardsManager(morpho.rewardsManager());
