@@ -6,6 +6,8 @@ import "./IRewardsManager.sol";
 import "./IMorpho.sol";
 
 interface ILens {
+    /// STORAGE ///
+
     function MAX_BASIS_POINTS() external view returns (uint256);
 
     function WAD() external view returns (uint256);
@@ -16,26 +18,7 @@ interface ILens {
 
     function rewardsManager() external view returns (IRewardsManager);
 
-    function getUserUnclaimedRewards(address[] calldata _poolTokenAddresses, address _user)
-        external
-        view
-        returns (uint256 unclaimedRewards);
-
-    function getAccruedSupplierComp(
-        address _supplier,
-        address _poolTokenAddress,
-        uint256 _balance
-    ) external view returns (uint256);
-
-    function getAccruedBorrowerComp(
-        address _borrower,
-        address _poolTokenAddress,
-        uint256 _balance
-    ) external view returns (uint256);
-
-    function getUpdatedCompSupplyIndex(address _poolTokenAddress) external view returns (uint256);
-
-    function getUpdatedCompBorrowIndex(address _poolTokenAddress) external view returns (uint256);
+    /// MARKETS ///
 
     function isMarketCreated(address _poolTokenAddress) external view returns (bool);
 
@@ -79,6 +62,22 @@ interface ILens {
             uint256 collateralFactor_
         );
 
+    /// INDEXES ///
+
+    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256);
+
+    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256);
+
+    function getIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
+        external
+        view
+        returns (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        );
+
     function getRates(address _poolTokenAddress)
         external
         view
@@ -88,6 +87,8 @@ interface ILens {
             uint256 poolSupplyRate_,
             uint256 poolBorrowRate_
         );
+
+    /// USERS ///
 
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         external
@@ -135,20 +136,6 @@ interface ILens {
         ICompoundOracle _oracle
     ) external view returns (Types.AssetLiquidityData memory assetData);
 
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256);
-
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256);
-
-    function getIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
-        external
-        view
-        returns (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        );
-
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
         external
         view
@@ -160,4 +147,27 @@ interface ILens {
         address _poolTokenCollateralAddress,
         address[] memory _updatedMarkets
     ) external view returns (uint256 toRepay);
+
+    /// REWARDS ///
+
+    function getUserUnclaimedRewards(address[] calldata _poolTokenAddresses, address _user)
+        external
+        view
+        returns (uint256 unclaimedRewards);
+
+    function getAccruedSupplierComp(
+        address _supplier,
+        address _poolTokenAddress,
+        uint256 _balance
+    ) external view returns (uint256);
+
+    function getAccruedBorrowerComp(
+        address _borrower,
+        address _poolTokenAddress,
+        uint256 _balance
+    ) external view returns (uint256);
+
+    function getUpdatedCompSupplyIndex(address _poolTokenAddress) external view returns (uint256);
+
+    function getUpdatedCompBorrowIndex(address _poolTokenAddress) external view returns (uint256);
 }
