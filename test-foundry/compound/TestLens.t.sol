@@ -1208,4 +1208,55 @@ contract TestLens is TestSetup {
 
         assertApproxEq(borrowRatePerBlock, (p2pBorrowRate + poolBorrowRate) / 2, 1);
     }
+
+    function testSupplyRateShouldEqualPoolRateWithFullDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(dai, amount);
+        borrower1.borrow(cDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 100);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(cDai, type(uint256).max);
+
+        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerBlock(cDai);
+
+        assertApproxEq(p2pSupplyRate, poolSupplyRate, 1);
+    }
+
+    function testBorrowRateShouldEqualPoolRateWithFullDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(dai, amount);
+        borrower1.borrow(cDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 100);
+
+        supplier1.withdraw(cDai, type(uint256).max);
+
+        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerBlock(cDai);
+
+        assertApproxEq(p2pBorrowRate, poolBorrowRate, 1);
+    }
 }

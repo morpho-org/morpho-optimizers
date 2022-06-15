@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../libraries/CompoundMath.sol";
 
 import "./MarketsLens.sol";
+import "forge-std/console.sol";
 
 /// @title IndexesLens.
 /// @author Morpho Labs.
@@ -55,14 +56,51 @@ abstract contract IndexesLens is MarketsLens {
             marketParams.p2pIndexCursor *
             poolBorrowRate_) / MAX_BASIS_POINTS;
 
-        p2pSupplyRate_ =
-            p2pRate -
-            (marketParams.reserveFactor * (p2pRate - poolSupplyRate_)) /
-            MAX_BASIS_POINTS;
-        p2pBorrowRate_ =
-            p2pRate +
-            (marketParams.reserveFactor * (poolBorrowRate_ - p2pRate)) /
-            MAX_BASIS_POINTS;
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = getIndexes(_poolTokenAddress, true);
+
+        {
+            p2pSupplyRate_ =
+                p2pRate -
+                ((p2pRate - poolSupplyRate_) * marketParams.reserveFactor) /
+                MAX_BASIS_POINTS;
+
+            if (delta.p2pSupplyDelta > 0 && delta.p2pSupplyAmount > 0) {
+                uint256 shareOfTheSupplyDelta = CompoundMath.min(
+                    (delta.p2pSupplyDelta.mul(newPoolSupplyIndex)).div(
+                        (delta.p2pSupplyAmount).mul(newP2PSupplyIndex)
+                    ),
+                    WAD // To avoid shareOfTheSupplyDelta > 1 with rounding errors.
+                );
+                p2pSupplyRate_ =
+                    p2pSupplyRate_.mul(WAD - shareOfTheSupplyDelta) +
+                    poolSupplyRate_.mul(shareOfTheSupplyDelta);
+            }
+        }
+
+        {
+            p2pBorrowRate_ =
+                p2pRate +
+                ((poolBorrowRate_ - p2pRate) * marketParams.reserveFactor) /
+                MAX_BASIS_POINTS;
+
+            if (delta.p2pBorrowDelta > 0 && delta.p2pBorrowAmount > 0) {
+                uint256 shareOfTheBorrowDelta = CompoundMath.min(
+                    (delta.p2pBorrowDelta.mul(newPoolBorrowIndex)).div(
+                        (delta.p2pBorrowAmount).mul(newP2PBorrowIndex)
+                    ),
+                    WAD // To avoid shareOfTheBorrowDelta > 1 with rounding errors.
+                );
+                p2pBorrowRate_ =
+                    p2pBorrowRate_.mul(WAD - shareOfTheBorrowDelta) +
+                    poolBorrowRate_.mul(shareOfTheBorrowDelta);
+            }
+        }
     }
 
     /// INDEXES ///

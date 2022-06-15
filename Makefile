@@ -61,7 +61,7 @@ html-c-%:
 
 single-% s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
-	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvvvv -c test-foundry/${PROTOCOL} --match-test $*
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-test $*
 
 ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
