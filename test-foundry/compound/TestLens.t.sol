@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/Lens.sol";
+import "@contracts/compound/lens/Lens.sol";
 import "@contracts/compound/interfaces/IMorpho.sol";
 
 import "./setup/TestSetup.sol";
