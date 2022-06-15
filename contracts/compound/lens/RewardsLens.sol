@@ -15,7 +15,7 @@ abstract contract RewardsLens is UsersLens {
     /// ERRORS ///
 
     /// @notice Thrown when an invalid cToken address is passed to compute accrued rewards.
-    error InvalidCToken();
+    error InvalidPoolToken();
 
     /// EXTERNAL ///
 
@@ -33,7 +33,7 @@ abstract contract RewardsLens is UsersLens {
             address cTokenAddress = _poolTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
-            if (!isListed) revert InvalidCToken();
+            if (!isListed) revert InvalidPoolToken();
 
             unclaimedRewards += getAccruedSupplierComp(
                 _user,
