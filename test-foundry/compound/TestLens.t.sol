@@ -683,7 +683,8 @@ contract TestLens is TestSetup {
             bool p2pDisabled,
             bool isPaused,
             bool isPartiallyPaused,
-            uint256 reserveFactor,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor,
             uint256 collateralFactor
         ) = lens.getMarketConfiguration(cDai);
         assertTrue(underlying == ICToken(cDai).underlying());
@@ -695,7 +696,10 @@ contract TestLens is TestSetup {
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
-        (uint16 expectedReserveFactor, ) = morpho.marketParameters(cDai);
+        (uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor) = morpho.marketParameters(
+            cDai
+        );
+        assertTrue(reserveFactor == expectedReserveFactor);
         assertTrue(reserveFactor == expectedReserveFactor);
         (, uint256 expectedCollateralFactor, ) = morpho.comptroller().markets(cDai);
         assertTrue(collateralFactor == expectedCollateralFactor);

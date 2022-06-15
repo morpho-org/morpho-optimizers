@@ -302,7 +302,7 @@ contract TestEth is TestSetup {
     }
 
     function testShouldGetEthMarketConfiguration() public {
-        (address underlying, , , , , , ) = lens.getMarketConfiguration(cEth);
+        (address underlying, , , , , , , ) = lens.getMarketConfiguration(cEth);
 
         assertEq(underlying, wEth);
     }
