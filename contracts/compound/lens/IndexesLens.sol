@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "../libraries/CompoundMath.sol";
 
 import "./MarketsLens.sol";
-import "forge-std/console.sol";
 
 /// @title IndexesLens.
 /// @author Morpho Labs.
@@ -103,7 +102,7 @@ abstract contract IndexesLens is MarketsLens {
         }
     }
 
-    /// INDEXES ///
+    /// PUBLIC ///
 
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolTokenAddress The address of the market.
