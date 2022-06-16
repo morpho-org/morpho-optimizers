@@ -209,7 +209,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 poolSupplyIndex, ) = _computePoolIndexes(_poolTokenAddress);
+        (uint256 poolSupplyIndex, ) = _computeUpdatedPoolIndexes(_poolTokenAddress);
 
         balanceOnPool = morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
             poolSupplyIndex
@@ -236,7 +236,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (, uint256 newBorrowIndex) = _computePoolIndexes(_poolTokenAddress);
+        (, uint256 newBorrowIndex) = _computeUpdatedPoolIndexes(_poolTokenAddress);
 
         balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
             newBorrowIndex
