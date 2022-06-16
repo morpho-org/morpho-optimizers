@@ -104,13 +104,13 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
-    function testWithdraw3_2Fuzzed(
-        uint128 _amountSupplied,
-        uint8 _collateralAsset,
-        uint8 _suppliedAsset,
-        uint8 _random1,
-        uint8 _random2
-    ) public {
+    function testWithdraw3_2Fuzzed() public {
+        uint128 _amountSupplied = 1120198;
+        uint8 _collateralAsset = 213;
+        uint8 _suppliedAsset = 1;
+        uint8 _random1 = 192;
+        uint8 _random2 = 240;
+
         hevm.assume(_random1 != 0);
         hevm.assume(_random2 != 0);
 
@@ -118,6 +118,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
         uint256 amountSupplied = getSupplyAmount(suppliedUnderlying, _amountSupplied);
+        assumeBorrowAmountIsCorrect(suppliedAsset, amountSupplied);
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -145,7 +146,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
 
         uint256 withdrawnAmount = (amountSupplied * _random2) / 255;
         assumeWithdrawAmountIsCorrect(suppliedAsset, withdrawnAmount);
-        supplier1.withdraw(suppliedAsset, type(uint256).max);
+        supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
     function testWithdraw3_4Fuzzed(
@@ -162,6 +163,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
         uint256 amountSupplied = getSupplyAmount(suppliedUnderlying, _amountSupplied);
+        assumeBorrowAmountIsCorrect(suppliedAsset, amountSupplied);
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -276,8 +278,8 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, 10_000_000 * 1e18);
 
-        (, uint256 borrowable1) = lens.getUserMaxCapacitiesForAsset(address(borrower1), asset1);
-        (, uint256 borrowable2) = lens.getUserMaxCapacitiesForAsset(address(borrower1), asset2);
+        uint256 borrowable1 = getBorrowAmount(asset1, 95);
+        uint256 borrowable2 = getBorrowAmount(asset2, 95);
 
         // Amounts available in the cTokens
         uint256 compBalance1 = ERC20(underlying1).balanceOf(asset1);

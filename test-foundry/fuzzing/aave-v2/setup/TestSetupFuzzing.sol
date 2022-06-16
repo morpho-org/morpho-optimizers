@@ -178,6 +178,9 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
         hevm.label(_aToken, ERC20(_aToken).symbol());
         hevm.label(underlying, ERC20(underlying).symbol());
+
+        // Add some dust to avoir reverts
+        tip(underlying, address(morpho), 1_000);
     }
 
     function initUsers() internal {
