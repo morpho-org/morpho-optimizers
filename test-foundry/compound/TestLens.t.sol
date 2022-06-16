@@ -1562,8 +1562,6 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        // hevm.roll(block.number + 1000);
-
         (
             uint256 borrowRatePerBlock,
             uint256 balanceOnPool,
