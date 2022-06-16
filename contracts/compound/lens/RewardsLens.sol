@@ -3,13 +3,13 @@ pragma solidity ^0.8.0;
 
 import "../libraries/CompoundMath.sol";
 
-import "./UsersLens.sol";
+import "./RatesLens.sol";
 
 /// @title RewardsLens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol rewards distribution.
-abstract contract RewardsLens is UsersLens {
+abstract contract RewardsLens is RatesLens {
     using CompoundMath for uint256;
 
     /// ERRORS ///

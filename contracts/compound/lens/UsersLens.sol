@@ -87,50 +87,6 @@ abstract contract UsersLens is IndexesLens {
         }
     }
 
-    /// @notice Returns the supply rate per block a given user is currently experiencing on a given market.
-    /// @param _user The user to compute the supply rate per block for.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return The supply rate per block the user is currently experiencing (in wad).
-    function getUpdatedUserSupplyRatePerBlock(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getUpdatedUserSupplyBalance(_user, _poolTokenAddress);
-        if (totalBalance == 0) return 0;
-
-        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
-
-        return
-            (poolSupplyRate.mul(balanceOnPool) + p2pSupplyRate.mul(balanceInP2P)).div(totalBalance);
-    }
-
-    /// @notice Returns the borrow rate per block a given user is currently experiencing on a given market.
-    /// @param _user The user to compute the borrow rate per block for.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return The borrow rate per block the user is currently experiencing (in wad).
-    function getUpdatedUserBorrowRatePerBlock(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getUpdatedUserBorrowBalance(_user, _poolTokenAddress);
-        if (totalBalance == 0) return 0;
-
-        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
-
-        return
-            (poolBorrowRate.mul(balanceOnPool) + p2pBorrowRate.mul(balanceInP2P)).div(totalBalance);
-    }
-
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.

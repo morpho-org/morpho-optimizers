@@ -79,16 +79,6 @@ interface ILens {
             uint256 newPoolBorrowIndex
         );
 
-    function getRatesPerBlock(address _poolTokenAddress)
-        external
-        view
-        returns (
-            uint256 p2pSupplyRate_,
-            uint256 p2pBorrowRate_,
-            uint256 poolSupplyRate_,
-            uint256 poolBorrowRate_
-        );
-
     /// USERS ///
 
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
@@ -117,16 +107,6 @@ interface ILens {
             uint256 balanceInP2P,
             uint256 totalBalance
         );
-
-    function getUpdatedUserSupplyRatePerBlock(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256);
-
-    function getUpdatedUserBorrowRatePerBlock(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256);
 
     function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external
@@ -158,6 +138,38 @@ interface ILens {
         address _poolTokenCollateralAddress,
         address[] memory _updatedMarkets
     ) external view returns (uint256 toRepay);
+
+    /// RATES ///
+
+    function getRatesPerBlock(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 p2pSupplyRate_,
+            uint256 p2pBorrowRate_,
+            uint256 poolSupplyRate_,
+            uint256 poolBorrowRate_
+        );
+
+    function getUpdatedUserSupplyRatePerBlock(address _poolTokenAddress, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getUpdatedUserBorrowRatePerBlock(address _poolTokenAddress, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getNextUserSupplyRatePerBlock(address _poolTokenAddress, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getNextUserBorrowRatePerBlock(address _poolTokenAddress, address _user)
+        external
+        view
+        returns (uint256);
 
     /// REWARDS ///
 
