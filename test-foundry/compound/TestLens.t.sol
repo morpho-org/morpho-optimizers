@@ -706,7 +706,13 @@ contract TestLens is TestSetup {
     }
 
     function testGetOutdatedIndexes() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
         (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
@@ -726,7 +732,13 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedIndexes() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,
@@ -1366,6 +1378,7 @@ contract TestLens is TestSetup {
         ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount);
 
         uint256 expectedSupplyRatePerBlock = ICToken(cDai).supplyRatePerBlock();
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
 
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEq(
@@ -1374,9 +1387,17 @@ contract TestLens is TestSetup {
             1,
             "unexpected supply rate per block"
         );
-        assertApproxEq(balanceOnPool, amount, 1e9, "unexpected pool balance");
+        assertEq(
+            balanceOnPool,
+            amount.div(poolSupplyIndex).mul(poolSupplyIndex),
+            "unexpected pool balance"
+        );
         assertEq(balanceInP2P, 0, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(
+            totalBalance,
+            amount.div(poolSupplyIndex).mul(poolSupplyIndex),
+            "unexpected total balance"
+        );
     }
 
     function testNextBorrowRateShouldEqualPoolRateWhenNoSupplierOnPool() public {
@@ -1398,9 +1419,9 @@ contract TestLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEq(balanceOnPool, amount, 1e9, "unexpected pool balance");
+        assertApproxEq(balanceOnPool, amount, 1, "unexpected pool balance");
         assertEq(balanceInP2P, 0, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertApproxEq(totalBalance, amount, 1, "unexpected total balance");
     }
 
     function testNextSupplyRateShouldEqualP2PRateWhenFullMatch() public {
@@ -1421,6 +1442,11 @@ contract TestLens is TestSetup {
 
         (uint256 p2pSupplyRatePerBlock, , , ) = lens.getRatesPerBlock(cDai);
 
+        morpho.updateP2PIndexes(cDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+
+        uint256 expectedBalanceInP2P = amount.div(p2pSupplyIndex).mul(p2pSupplyIndex);
+
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEq(
             supplyRatePerBlock,
@@ -1429,8 +1455,8 @@ contract TestLens is TestSetup {
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
     }
 
     function testNextBorrowRateShouldEqualP2PRateWhenFullMatch() public {
@@ -1450,6 +1476,11 @@ contract TestLens is TestSetup {
 
         (, uint256 p2pBorrowRatePerBlock, , ) = lens.getRatesPerBlock(cDai);
 
+        morpho.updateP2PIndexes(cDai);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
+
+        uint256 expectedBalanceInP2P = amount.div(p2pBorrowIndex).mul(p2pBorrowIndex);
+
         assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertApproxEq(
             borrowRatePerBlock,
@@ -1457,9 +1488,9 @@ contract TestLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEq(balanceOnPool, 0, 1e9, "unexpected pool balance"); // compound rounding error at supply
-        assertApproxEq(balanceInP2P, amount, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertApproxEq(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding error at supply
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
     }
 
     function testNextSupplyRateShouldEqualMidrateWhenHalfMatch() public {
@@ -1480,6 +1511,12 @@ contract TestLens is TestSetup {
             cDai
         );
 
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+
+        uint256 expectedBalanceOnPool = (amount / 2).div(poolSupplyIndex).mul(poolSupplyIndex);
+        uint256 expectedBalanceInP2P = (amount / 2).div(p2pSupplyIndex).mul(p2pSupplyIndex);
+
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEq(
             supplyRatePerBlock,
@@ -1487,9 +1524,13 @@ contract TestLens is TestSetup {
             1,
             "unexpected supply rate per block"
         );
-        assertApproxEq(balanceOnPool, amount / 2, 1e9, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount / 2, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            "unexpected total balance"
+        );
     }
 
     function testNextBorrowRateShouldEqualMidrateWhenHalfMatch() public {
@@ -1509,6 +1550,12 @@ contract TestLens is TestSetup {
             cDai
         );
 
+        uint256 poolBorrowIndex = ICToken(cDai).borrowIndex();
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
+
+        uint256 expectedBalanceOnPool = (amount / 2).div(poolBorrowIndex).mul(poolBorrowIndex);
+        uint256 expectedBalanceInP2P = (amount / 2).div(p2pBorrowIndex).mul(p2pBorrowIndex);
+
         assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertApproxEq(
             borrowRatePerBlock,
@@ -1516,9 +1563,14 @@ contract TestLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEq(balanceOnPool, amount / 2, 1e9, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount / 2, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertApproxEq(balanceOnPool, expectedBalanceOnPool, 1e9, "unexpected pool balance");
+        assertApproxEq(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            1e9,
+            "unexpected total balance"
+        );
     }
 
     function testNextSupplyRateShouldEqualP2PRateWhenDoubleSupply() public {
@@ -1540,6 +1592,9 @@ contract TestLens is TestSetup {
 
         (uint256 p2pSupplyRatePerBlock, , , ) = lens.getRatesPerBlock(cDai);
 
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+        uint256 expectedBalanceInP2P = amount.div(p2pSupplyIndex).mul(p2pSupplyIndex);
+
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEq(
             supplyRatePerBlock,
@@ -1547,9 +1602,9 @@ contract TestLens is TestSetup {
             1,
             "unexpected supply rate per block"
         );
-        assertApproxEq(balanceOnPool, 0, 1e9, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertApproxEq(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEq(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
     }
 
     function testNextBorrowRateShouldEqualP2PRateWhenDoubleBorrow() public {
@@ -1571,6 +1626,9 @@ contract TestLens is TestSetup {
 
         (, uint256 p2pBorrowRatePerBlock, , ) = lens.getRatesPerBlock(cDai);
 
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
+        uint256 expectedBalanceInP2P = amount.div(p2pBorrowIndex).mul(p2pBorrowIndex);
+
         assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertApproxEq(
             borrowRatePerBlock,
@@ -1578,9 +1636,9 @@ contract TestLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEq(balanceOnPool, 0, 1e9, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertApproxEq(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding errors
+        assertApproxEq(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEq(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
     }
 
     function testNextSupplyRateShouldEqualP2PRateWithFullBorrowDeltaAndNoBorrowerOnPool() public {
@@ -1610,6 +1668,9 @@ contract TestLens is TestSetup {
 
         (uint256 p2pSupplyRatePerBlock, , , ) = lens.getRatesPerBlock(cDai);
 
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+        uint256 expectedBalanceInP2P = amount.div(p2pSupplyIndex).mul(p2pSupplyIndex);
+
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEq(
             supplyRatePerBlock,
@@ -1617,9 +1678,9 @@ contract TestLens is TestSetup {
             1,
             "unexpected supply rate per block"
         );
-        assertApproxEq(balanceOnPool, 0, 1e9, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
     }
 
     function testNextBorrowRateShouldEqualP2PRateWithFullSupplyDeltaAndNoSupplierOnPool() public {
@@ -1650,6 +1711,9 @@ contract TestLens is TestSetup {
 
         (, uint256 p2pBorrowRatePerBlock, , ) = lens.getRatesPerBlock(cDai);
 
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
+        uint256 expectedBalanceInP2P = amount.div(p2pBorrowIndex).mul(p2pBorrowIndex);
+
         assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertApproxEq(
             borrowRatePerBlock,
@@ -1657,9 +1721,9 @@ contract TestLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEq(balanceOnPool, 0, 1e9, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount, 1e9, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
     }
 
     function testNextSupplyRateShouldEqualMidrateWithHalfBorrowDeltaAndNoBorrowerOnPool() public {
@@ -1680,6 +1744,12 @@ contract TestLens is TestSetup {
 
         supplier1.withdraw(cDai, type(uint256).max);
 
+        uint256 daiBorrowdelta; // should be (amount / 2) but compound rounding leads to a slightly different amount which we need to compute
+        {
+            (, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+            daiBorrowdelta = p2pBorrowDelta.mul(ICToken(cDai).borrowIndex());
+        }
+
         (
             uint256 supplyRatePerBlock,
             uint256 balanceOnPool,
@@ -1691,6 +1761,14 @@ contract TestLens is TestSetup {
             cDai
         );
 
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+
+        uint256 expectedBalanceOnPool = (amount - daiBorrowdelta).div(poolSupplyIndex).mul(
+            poolSupplyIndex
+        );
+        uint256 expectedBalanceInP2P = daiBorrowdelta.div(p2pSupplyIndex).mul(p2pSupplyIndex);
+
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEq(
             supplyRatePerBlock,
@@ -1698,9 +1776,13 @@ contract TestLens is TestSetup {
             100,
             "unexpected supply rate per block"
         );
-        assertApproxEq(balanceOnPool, amount / 2, 1e15, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount / 2, 1e15, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            "unexpected total balance"
+        );
     }
 
     function testNextBorrowRateShouldEqualMidrateWithHalfSupplyDeltaAndNoSupplierOnPool() public {
@@ -1722,6 +1804,12 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
 
+        uint256 daiSupplydelta; // should be (amount / 2) but compound rounding leads to a slightly different amount which we need to compute
+        {
+            (uint256 p2pSupplyDelta, , , ) = morpho.deltas(cDai);
+            daiSupplydelta = p2pSupplyDelta.mul(ICToken(cDai).exchangeRateCurrent());
+        }
+
         (
             uint256 borrowRatePerBlock,
             uint256 balanceOnPool,
@@ -1733,6 +1821,14 @@ contract TestLens is TestSetup {
             cDai
         );
 
+        uint256 poolBorrowIndex = ICToken(cDai).borrowIndex();
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
+
+        uint256 expectedBalanceOnPool = (amount - daiSupplydelta).div(poolBorrowIndex).mul(
+            poolBorrowIndex
+        );
+        uint256 expectedBalanceInP2P = daiSupplydelta.div(p2pBorrowIndex).mul(p2pBorrowIndex);
+
         assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertApproxEq(
             borrowRatePerBlock,
@@ -1740,8 +1836,12 @@ contract TestLens is TestSetup {
             100,
             "unexpected borrow rate per block"
         );
-        assertApproxEq(balanceOnPool, amount / 2, 1e15, "unexpected pool balance");
-        assertApproxEq(balanceInP2P, amount / 2, 1e15, "unexpected p2p balance");
-        assertApproxEq(totalBalance, amount, 1e9, "unexpected total balance");
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            "unexpected total balance"
+        );
     }
 }

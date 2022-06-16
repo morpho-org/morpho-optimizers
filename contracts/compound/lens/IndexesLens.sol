@@ -28,7 +28,7 @@ abstract contract IndexesLens is MarketsLens {
                 _poolTokenAddress
             );
 
-            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
+            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computeUpdatedPoolIndexes(
                 _poolTokenAddress
             );
 
@@ -68,7 +68,7 @@ abstract contract IndexesLens is MarketsLens {
                 _poolTokenAddress
             );
 
-            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
+            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computeUpdatedPoolIndexes(
                 _poolTokenAddress
             );
 
@@ -118,7 +118,9 @@ abstract contract IndexesLens is MarketsLens {
             newPoolSupplyIndex = cToken.exchangeRateStored();
             newPoolBorrowIndex = cToken.borrowIndex();
         } else {
-            (newPoolSupplyIndex, newPoolBorrowIndex) = _computePoolIndexes(_poolTokenAddress);
+            (newPoolSupplyIndex, newPoolBorrowIndex) = _computeUpdatedPoolIndexes(
+                _poolTokenAddress
+            );
         }
 
         if (
@@ -173,7 +175,7 @@ abstract contract IndexesLens is MarketsLens {
     /// @param _poolTokenAddress The address of the market.
     /// @return newPoolSupplyIndex_ The supply index.
     /// @return newPoolBorrowIndex_ The borrow index.
-    function _computePoolIndexes(address _poolTokenAddress)
+    function _computeUpdatedPoolIndexes(address _poolTokenAddress)
         internal
         view
         returns (uint256 newPoolSupplyIndex_, uint256 newPoolBorrowIndex_)
