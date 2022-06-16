@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import "../libraries/InterestRatesModel.sol";
 import "../libraries/CompoundMath.sol";
 
 import "./MarketsLens.sol";
@@ -11,24 +12,6 @@ import "./MarketsLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol market indexes & rates.
 abstract contract IndexesLens is MarketsLens {
     using CompoundMath for uint256;
-
-    /// STRUCTS ///
-
-    struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
-        uint256 p2pMedianGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
-    }
-
-    struct P2PIndexComputeParams {
-        uint256 poolGrowthFactor; // The pool's index growth factor (in wad).
-        uint256 p2pMedianGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
-        uint112 lastPoolIndex; // The pool's last stored index.
-        uint256 lastP2PIndex; // Morpho's last stored peer-to-peer index.
-        uint256 p2pDelta; // The peer-to-peer delta for the given market (in cToken).
-        uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
-        uint16 reserveFactor; // The reserve factor of the given market (in peer-to-peer unit).
-    }
 
     /// PUBLIC ///
 
@@ -49,7 +32,8 @@ abstract contract IndexesLens is MarketsLens {
                 _poolTokenAddress
             );
 
-            GrowthFactors memory growthFactors = _computeGrowthFactors(
+            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
+            .computeGrowthFactors(
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 lastPoolIndexes,
@@ -57,8 +41,8 @@ abstract contract IndexesLens is MarketsLens {
             );
 
             return
-                _computeP2PSupplyIndex(
-                    P2PIndexComputeParams({
+                InterestRatesModel.computeP2PSupplyIndex(
+                    InterestRatesModel.P2PIndexComputeParams({
                         poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                         p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
                         lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
@@ -88,7 +72,8 @@ abstract contract IndexesLens is MarketsLens {
                 _poolTokenAddress
             );
 
-            GrowthFactors memory growthFactors = _computeGrowthFactors(
+            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
+            .computeGrowthFactors(
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 lastPoolIndexes,
@@ -96,8 +81,8 @@ abstract contract IndexesLens is MarketsLens {
             );
 
             return
-                _computeP2PBorrowIndex(
-                    P2PIndexComputeParams({
+                InterestRatesModel.computeP2PBorrowIndex(
+                    InterestRatesModel.P2PIndexComputeParams({
                         poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                         p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
                         lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
@@ -149,15 +134,16 @@ abstract contract IndexesLens is MarketsLens {
                 _poolTokenAddress
             );
 
-            GrowthFactors memory growthFactors = _computeGrowthFactors(
+            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
+            .computeGrowthFactors(
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 lastPoolIndexes,
                 marketParams.p2pIndexCursor
             );
 
-            newP2PSupplyIndex = _computeP2PSupplyIndex(
-                P2PIndexComputeParams({
+            newP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
+                InterestRatesModel.P2PIndexComputeParams({
                     poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                     p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
                     lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
@@ -167,8 +153,8 @@ abstract contract IndexesLens is MarketsLens {
                     reserveFactor: marketParams.reserveFactor
                 })
             );
-            newP2PBorrowIndex = _computeP2PBorrowIndex(
-                P2PIndexComputeParams({
+            newP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
+                InterestRatesModel.P2PIndexComputeParams({
                     poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                     p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
                     lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
@@ -222,89 +208,5 @@ abstract contract IndexesLens is MarketsLens {
             ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
             : cToken.initialExchangeRateMantissa();
         newPoolBorrowIndex_ = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
-    }
-
-    /// @notice Computes and returns the new growth factors associated to a given pool's supply/borrow index & Morpho's peer-to-peer index.
-    /// @param _newPoolSupplyIndex The pool's last current supply index.
-    /// @param _newPoolBorrowIndex The pool's last current borrow index.
-    /// @param _lastPoolIndexes The pool's last stored indexes.
-    /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
-    /// @return growthFactors_ The pool's indexes growth factor (in wad).
-    function _computeGrowthFactors(
-        uint256 _newPoolSupplyIndex,
-        uint256 _newPoolBorrowIndex,
-        Types.LastPoolIndexes memory _lastPoolIndexes,
-        uint16 _p2pIndexCursor
-    ) internal pure returns (GrowthFactors memory growthFactors_) {
-        growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.div(
-            _lastPoolIndexes.lastSupplyPoolIndex
-        );
-        growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(
-            _lastPoolIndexes.lastBorrowPoolIndex
-        );
-        growthFactors_.p2pMedianGrowthFactor =
-            ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-                growthFactors_.poolSupplyGrowthFactor +
-                _p2pIndexCursor *
-                growthFactors_.poolBorrowGrowthFactor) /
-            MAX_BASIS_POINTS;
-    }
-
-    /// @notice Computes and returns the new peer-to-peer supply index of a market given its parameters.
-    /// @param _params The computation parameters.
-    /// @return newP2PSupplyIndex_ The updated peer-to-peer index.
-    function _computeP2PSupplyIndex(P2PIndexComputeParams memory _params)
-        internal
-        pure
-        returns (uint256 newP2PSupplyIndex_)
-    {
-        uint256 p2pGrowthFactor = _params.p2pMedianGrowthFactor -
-            (_params.reserveFactor * (_params.p2pMedianGrowthFactor - _params.poolGrowthFactor)) /
-            MAX_BASIS_POINTS;
-
-        if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PSupplyIndex_ = _params.lastP2PIndex.mul(p2pGrowthFactor);
-        } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
-                (_params.p2pDelta.mul(_params.lastPoolIndex)).div(
-                    (_params.p2pAmount).mul(_params.lastP2PIndex)
-                ),
-                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
-            );
-
-            newP2PSupplyIndex_ = _params.lastP2PIndex.mul(
-                (WAD - shareOfTheDelta).mul(p2pGrowthFactor) +
-                    shareOfTheDelta.mul(_params.poolGrowthFactor)
-            );
-        }
-    }
-
-    /// @notice Computes and returns the new peer-to-peer borrow index of a market given its parameters.
-    /// @param _params The computation parameters.
-    /// @return newP2PBorrowIndex_ The updated peer-to-peer index.
-    function _computeP2PBorrowIndex(P2PIndexComputeParams memory _params)
-        internal
-        pure
-        returns (uint256 newP2PBorrowIndex_)
-    {
-        uint256 p2pGrowthFactor = _params.p2pMedianGrowthFactor +
-            (_params.reserveFactor * (_params.poolGrowthFactor - _params.p2pMedianGrowthFactor)) /
-            MAX_BASIS_POINTS;
-
-        if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PBorrowIndex_ = _params.lastP2PIndex.mul(p2pGrowthFactor);
-        } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
-                (_params.p2pDelta.mul(_params.lastPoolIndex)).div(
-                    (_params.p2pAmount).mul(_params.lastP2PIndex)
-                ),
-                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
-            );
-
-            newP2PBorrowIndex_ = _params.lastP2PIndex.mul(
-                (WAD - shareOfTheDelta).mul(p2pGrowthFactor) +
-                    shareOfTheDelta.mul(_params.poolGrowthFactor)
-            );
-        }
     }
 }
