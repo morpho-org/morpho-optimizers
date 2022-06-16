@@ -15,12 +15,12 @@ library InterestRatesModel {
     struct GrowthFactors {
         uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
         uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
-        uint256 p2pMedianGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
+        uint256 p2pGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
     }
 
     struct P2PIndexComputeParams {
         uint256 poolGrowthFactor; // The pool's index growth factor (in wad).
-        uint256 p2pMedianGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
+        uint256 p2pGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
         uint112 lastPoolIndex; // The pool's last stored index.
         uint256 lastP2PIndex; // Morpho's last stored peer-to-peer index.
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in cToken).
@@ -30,7 +30,7 @@ library InterestRatesModel {
 
     struct P2PRateComputeParams {
         uint256 poolRate; // The pool's index growth factor (in wad).
-        uint256 p2pMedianRate; // Morpho peer-to-peer's median index growth factor (in wad).
+        uint256 p2pRate; // Morpho peer-to-peer's median index growth factor (in wad).
         uint256 poolIndex; // The pool's last stored index.
         uint256 p2pIndex; // Morpho's last stored peer-to-peer index.
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in cToken).
@@ -56,7 +56,7 @@ library InterestRatesModel {
         growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(
             _lastPoolIndexes.lastBorrowPoolIndex
         );
-        growthFactors_.p2pMedianGrowthFactor =
+        growthFactors_.p2pGrowthFactor =
             ((MAX_BASIS_POINTS - _p2pIndexCursor) *
                 growthFactors_.poolSupplyGrowthFactor +
                 _p2pIndexCursor *
@@ -72,12 +72,12 @@ library InterestRatesModel {
         pure
         returns (uint256 newP2PSupplyIndex_)
     {
-        uint256 p2pGrowthFactor = _params.p2pMedianGrowthFactor -
-            (_params.reserveFactor * (_params.p2pMedianGrowthFactor - _params.poolGrowthFactor)) /
+        uint256 p2pSupplyGrowthFactor = _params.p2pGrowthFactor -
+            (_params.reserveFactor * (_params.p2pGrowthFactor - _params.poolGrowthFactor)) /
             MAX_BASIS_POINTS;
 
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PSupplyIndex_ = _params.lastP2PIndex.mul(p2pGrowthFactor);
+            newP2PSupplyIndex_ = _params.lastP2PIndex.mul(p2pSupplyGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
                 (_params.p2pDelta.mul(_params.lastPoolIndex)).div(
@@ -87,7 +87,7 @@ library InterestRatesModel {
             );
 
             newP2PSupplyIndex_ = _params.lastP2PIndex.mul(
-                (WAD - shareOfTheDelta).mul(p2pGrowthFactor) +
+                (WAD - shareOfTheDelta).mul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.mul(_params.poolGrowthFactor)
             );
         }
@@ -101,12 +101,12 @@ library InterestRatesModel {
         pure
         returns (uint256 newP2PBorrowIndex_)
     {
-        uint256 p2pGrowthFactor = _params.p2pMedianGrowthFactor +
-            (_params.reserveFactor * (_params.poolGrowthFactor - _params.p2pMedianGrowthFactor)) /
+        uint256 p2pBorrowGrowthFactor = _params.p2pGrowthFactor +
+            (_params.reserveFactor * (_params.poolGrowthFactor - _params.p2pGrowthFactor)) /
             MAX_BASIS_POINTS;
 
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PBorrowIndex_ = _params.lastP2PIndex.mul(p2pGrowthFactor);
+            newP2PBorrowIndex_ = _params.lastP2PIndex.mul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
                 (_params.p2pDelta.mul(_params.lastPoolIndex)).div(
@@ -116,7 +116,7 @@ library InterestRatesModel {
             );
 
             newP2PBorrowIndex_ = _params.lastP2PIndex.mul(
-                (WAD - shareOfTheDelta).mul(p2pGrowthFactor) +
+                (WAD - shareOfTheDelta).mul(p2pBorrowGrowthFactor) +
                     shareOfTheDelta.mul(_params.poolGrowthFactor)
             );
         }
@@ -131,8 +131,8 @@ library InterestRatesModel {
         returns (uint256 p2pSupplyRate_)
     {
         p2pSupplyRate_ =
-            _params.p2pMedianRate -
-            ((_params.p2pMedianRate - _params.poolRate) * _params.reserveFactor) /
+            _params.p2pRate -
+            ((_params.p2pRate - _params.poolRate) * _params.reserveFactor) /
             MAX_BASIS_POINTS;
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
@@ -158,8 +158,8 @@ library InterestRatesModel {
         returns (uint256 p2pBorrowRate_)
     {
         p2pBorrowRate_ =
-            _params.p2pMedianRate +
-            ((_params.poolRate - _params.p2pMedianRate) * _params.reserveFactor) /
+            _params.p2pRate +
+            ((_params.poolRate - _params.p2pRate) * _params.reserveFactor) /
             MAX_BASIS_POINTS;
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {

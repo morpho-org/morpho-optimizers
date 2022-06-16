@@ -206,7 +206,7 @@ abstract contract RatesLens is UsersLens {
         poolBorrowRate_ = cToken.borrowRatePerBlock();
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-        uint256 p2pMedianRate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
+        uint256 p2pRate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
             poolSupplyRate_ +
             marketParams.p2pIndexCursor *
             poolBorrowRate_) / MAX_BASIS_POINTS;
@@ -221,7 +221,7 @@ abstract contract RatesLens is UsersLens {
 
         p2pSupplyRate_ = InterestRatesModel.computeP2PSupplyRatePerBlock(
             InterestRatesModel.P2PRateComputeParams({
-                p2pMedianRate: p2pMedianRate,
+                p2pRate: p2pRate,
                 poolRate: poolSupplyRate_,
                 poolIndex: newPoolSupplyIndex,
                 p2pIndex: newP2PSupplyIndex,
@@ -233,7 +233,7 @@ abstract contract RatesLens is UsersLens {
 
         p2pBorrowRate_ = InterestRatesModel.computeP2PBorrowRatePerBlock(
             InterestRatesModel.P2PRateComputeParams({
-                p2pMedianRate: p2pMedianRate,
+                p2pRate: p2pRate,
                 poolRate: poolBorrowRate_,
                 poolIndex: newPoolBorrowIndex,
                 p2pIndex: newP2PBorrowIndex,

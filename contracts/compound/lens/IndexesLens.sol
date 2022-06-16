@@ -44,7 +44,7 @@ abstract contract IndexesLens is MarketsLens {
                 InterestRatesModel.computeP2PSupplyIndex(
                     InterestRatesModel.P2PIndexComputeParams({
                         poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
-                        p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
+                        p2pGrowthFactor: growthFactors.p2pGrowthFactor,
                         lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
                         lastP2PIndex: morpho.p2pSupplyIndex(_poolTokenAddress),
                         p2pDelta: delta.p2pSupplyDelta,
@@ -84,7 +84,7 @@ abstract contract IndexesLens is MarketsLens {
                 InterestRatesModel.computeP2PBorrowIndex(
                     InterestRatesModel.P2PIndexComputeParams({
                         poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
-                        p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
+                        p2pGrowthFactor: growthFactors.p2pGrowthFactor,
                         lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
                         lastP2PIndex: morpho.p2pBorrowIndex(_poolTokenAddress),
                         p2pDelta: delta.p2pBorrowDelta,
@@ -145,7 +145,7 @@ abstract contract IndexesLens is MarketsLens {
             newP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
                 InterestRatesModel.P2PIndexComputeParams({
                     poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
-                    p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
+                    p2pGrowthFactor: growthFactors.p2pGrowthFactor,
                     lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
                     lastP2PIndex: morpho.p2pSupplyIndex(_poolTokenAddress),
                     p2pDelta: delta.p2pSupplyDelta,
@@ -156,7 +156,7 @@ abstract contract IndexesLens is MarketsLens {
             newP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
                 InterestRatesModel.P2PIndexComputeParams({
                     poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
-                    p2pMedianGrowthFactor: growthFactors.p2pMedianGrowthFactor,
+                    p2pGrowthFactor: growthFactors.p2pGrowthFactor,
                     lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
                     lastP2PIndex: morpho.p2pBorrowIndex(_poolTokenAddress),
                     p2pDelta: delta.p2pBorrowDelta,
