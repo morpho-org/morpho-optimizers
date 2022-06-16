@@ -47,10 +47,10 @@ abstract contract MarketsLens is LensStorage {
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
     /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes were updated.
-    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in cToken).
-    /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in cdUnit).
-    /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer unit).
-    /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer unit).
+    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in pool supply unit).
+    /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in pool borrow unit).
+    /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer supply unit).
+    /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer borrow unit).
     function getMarketData(address _poolTokenAddress)
         external
         view

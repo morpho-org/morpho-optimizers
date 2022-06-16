@@ -23,9 +23,9 @@ library InterestRatesModel {
         uint256 p2pGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
         uint112 lastPoolIndex; // The pool's last stored index.
         uint256 lastP2PIndex; // Morpho's last stored peer-to-peer index.
-        uint256 p2pDelta; // The peer-to-peer delta for the given market (in cToken).
+        uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
-        uint16 reserveFactor; // The reserve factor of the given market (in peer-to-peer unit).
+        uint16 reserveFactor; // The reserve factor of the given market (in bps).
     }
 
     struct P2PRateComputeParams {
@@ -33,9 +33,9 @@ library InterestRatesModel {
         uint256 p2pRate; // Morpho peer-to-peer's median index growth factor (in wad).
         uint256 poolIndex; // The pool's last stored index.
         uint256 p2pIndex; // Morpho's last stored peer-to-peer index.
-        uint256 p2pDelta; // The peer-to-peer delta for the given market (in cToken).
+        uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
-        uint16 reserveFactor; // The reserve factor of the given market (in peer-to-peer unit).
+        uint16 reserveFactor; // The reserve factor of the given market (in bps).
     }
 
     /// @notice Computes and returns the new growth factors associated to a given pool's supply/borrow index & Morpho's peer-to-peer index.
