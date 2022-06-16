@@ -209,6 +209,12 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
 
         uint256 amountSupplied = getSupplyAmount(suppliedUnderlying, _amountSupplied);
 
+        // Ensure that we don't create a Delta bigger than what we can Hard Withdraw on pool
+        amountSupplied = Math.min(
+            amountSupplied,
+            IERC20(suppliedUnderlying).balanceOf(suppliedAsset) - 1000
+        );
+
         // 2e6 allows only 10 unmatch borrowers.
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 2e6, 2e6);
 

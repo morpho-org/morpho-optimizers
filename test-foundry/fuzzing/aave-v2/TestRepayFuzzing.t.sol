@@ -74,7 +74,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
 
         // Borrower1 repays a random amount.
         uint256 repaidAmount = (borrowedAmount * _random3) / 255;
-        assumeRepayAmountIsCorrect(repaidAmount);
+        assumeRepayAmountIsCorrect(borrowedUnderlying, repaidAmount);
         borrower1.approve(borrowedUnderlying, repaidAmount);
         borrower1.repay(borrowedAsset, repaidAmount);
     }
@@ -173,7 +173,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
 
         // Borrower1 repays a random amount.
         uint256 repaidAmount = (borrowAmount * _random2) / 255;
-        assumeRepayAmountIsCorrect(repaidAmount);
+        assumeRepayAmountIsCorrect(borrowedUnderlying, repaidAmount);
         borrower1.approve(borrowedUnderlying, type(uint256).max);
         borrower1.repay(borrowedAsset, type(uint256).max);
     }
