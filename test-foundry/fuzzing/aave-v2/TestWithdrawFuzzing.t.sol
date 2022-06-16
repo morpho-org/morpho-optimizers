@@ -104,13 +104,13 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
-    function testWithdraw3_2Fuzzed() public {
-        uint128 _amountSupplied = 1120198;
-        uint8 _collateralAsset = 213;
-        uint8 _suppliedAsset = 1;
-        uint8 _random1 = 192;
-        uint8 _random2 = 240;
-
+    function testWithdraw3_2Fuzzed(
+        uint128 _amountSupplied,
+        uint8 _collateralAsset,
+        uint8 _suppliedAsset,
+        uint8 _random1,
+        uint8 _random2
+    ) public {
         hevm.assume(_random1 != 0);
         hevm.assume(_random2 != 0);
 
