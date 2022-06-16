@@ -206,7 +206,7 @@ abstract contract RatesLens is UsersLens {
         poolBorrowRate_ = cToken.borrowRatePerBlock();
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-        uint256 p2pRate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
+        uint256 p2pMedianRate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
             poolSupplyRate_ +
             marketParams.p2pIndexCursor *
             poolBorrowRate_) / MAX_BASIS_POINTS;
@@ -219,41 +219,29 @@ abstract contract RatesLens is UsersLens {
             uint256 newPoolBorrowIndex
         ) = getIndexes(_poolTokenAddress, true);
 
-        p2pSupplyRate_ =
-            p2pRate -
-            ((p2pRate - poolSupplyRate_) * marketParams.reserveFactor) /
-            MAX_BASIS_POINTS;
+        p2pSupplyRate_ = InterestRatesModel.computeP2PSupplyRatePerBlock(
+            InterestRatesModel.P2PRateComputeParams({
+                p2pMedianRate: p2pMedianRate,
+                poolRate: poolSupplyRate_,
+                poolIndex: newPoolSupplyIndex,
+                p2pIndex: newP2PSupplyIndex,
+                p2pDelta: delta.p2pSupplyDelta,
+                p2pAmount: delta.p2pSupplyAmount,
+                reserveFactor: marketParams.reserveFactor
+            })
+        );
 
-        if (delta.p2pSupplyDelta > 0 && delta.p2pSupplyAmount > 0) {
-            uint256 shareOfTheSupplyDelta = CompoundMath.min(
-                (delta.p2pSupplyDelta.mul(newPoolSupplyIndex)).div(
-                    (delta.p2pSupplyAmount).mul(newP2PSupplyIndex)
-                ),
-                WAD // To avoid shareOfTheSupplyDelta > 1 with rounding errors.
-            );
-
-            p2pSupplyRate_ =
-                p2pSupplyRate_.mul(WAD - shareOfTheSupplyDelta) +
-                poolSupplyRate_.mul(shareOfTheSupplyDelta);
-        }
-
-        p2pBorrowRate_ =
-            p2pRate +
-            ((poolBorrowRate_ - p2pRate) * marketParams.reserveFactor) /
-            MAX_BASIS_POINTS;
-
-        if (delta.p2pBorrowDelta > 0 && delta.p2pBorrowAmount > 0) {
-            uint256 shareOfTheBorrowDelta = CompoundMath.min(
-                (delta.p2pBorrowDelta.mul(newPoolBorrowIndex)).div(
-                    (delta.p2pBorrowAmount).mul(newP2PBorrowIndex)
-                ),
-                WAD // To avoid shareOfTheBorrowDelta > 1 with rounding errors.
-            );
-
-            p2pBorrowRate_ =
-                p2pBorrowRate_.mul(WAD - shareOfTheBorrowDelta) +
-                poolBorrowRate_.mul(shareOfTheBorrowDelta);
-        }
+        p2pBorrowRate_ = InterestRatesModel.computeP2PBorrowRatePerBlock(
+            InterestRatesModel.P2PRateComputeParams({
+                p2pMedianRate: p2pMedianRate,
+                poolRate: poolBorrowRate_,
+                poolIndex: newPoolBorrowIndex,
+                p2pIndex: newP2PBorrowIndex,
+                p2pDelta: delta.p2pBorrowDelta,
+                p2pAmount: delta.p2pBorrowAmount,
+                reserveFactor: marketParams.reserveFactor
+            })
+        );
     }
 
     /// @notice Returns the supply rate per block a given user is currently experiencing on a given market.
