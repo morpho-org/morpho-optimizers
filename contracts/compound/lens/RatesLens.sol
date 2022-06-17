@@ -294,7 +294,7 @@ abstract contract RatesLens is UsersLens {
 
     /// INTERNAL ///
 
-    /// @notice Returns the supply rate per block experienced on a market based on a given position distribution.
+    /// @dev Returns the supply rate per block experienced on a market based on a given position distribution.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P` and `_totalBalance`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
@@ -316,7 +316,7 @@ abstract contract RatesLens is UsersLens {
             );
     }
 
-    /// @notice Returns the borrow rate per block experienced on a market based on a given position distribution.
+    /// @dev Returns the borrow rate per block experienced on a market based on a given position distribution.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P` and `_totalBalance`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
