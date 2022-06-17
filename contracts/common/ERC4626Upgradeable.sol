@@ -82,10 +82,16 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
 
     /// PUBLIC ///
 
+    /// @notice Returns the number of decimals of the vault's shares.
+    /// @return The number of decimals of the ERC20 token associated to the vault.
     function decimals() public view override returns (uint8) {
         return asset.decimals();
     }
 
+    /// @notice Deposits a given amount of the underlying asset to the vault, minting shares for the receiver.
+    /// @param _amount The amount of underlying asset to deposit.
+    /// @param _receiver The address of the owner of the shares minted.
+    /// @return shares_ The number of shares minted, associated to the deposit.
     function deposit(uint256 _amount, address _receiver) public virtual returns (uint256 shares_) {
         // Check for rounding error since we round down in previewDeposit.
         if ((shares_ = previewDeposit(_amount)) == 0) revert ShareIsZero();
@@ -100,6 +106,10 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
         _afterDeposit(_amount, shares_);
     }
 
+    /// @notice Mints a given amount of shares to the receiver, computing the associated required amount of the underlying asset.
+    /// @param _shares The amount of shares to mint.
+    /// @param _receiver The address of the owner of the shares minted.
+    /// @return amount_ The amount of the underlying asset deposited.
     function mint(uint256 _shares, address _receiver) public virtual returns (uint256 amount_) {
         amount_ = previewMint(_shares); // No need to check for rounding error, previewMint rounds up.
 
@@ -113,6 +123,11 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
         _afterDeposit(amount_, _shares);
     }
 
+    /// @notice Withdraws a given amount of the underlying asset from the vault, burning shares of the owner.
+    /// @param _amount The amount of the underlying asset to withdraw.
+    /// @param _receiver The address of the receiver of the funds.
+    /// @param _owner The address of the owner of the shares redeemed.
+    /// @return shares_ The number of shares burned.
     function withdraw(
         uint256 _amount,
         address _receiver,
@@ -131,6 +146,11 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
         asset.safeTransfer(_receiver, _amount);
     }
 
+    /// @notice Burns a given amount of shares of the owner, computing the associated amount of the underlying asset to withdraw.
+    /// @param _shares The amount of shares to redeem.
+    /// @param _receiver The address of the receiver of the funds.
+    /// @param _owner The address of the owner of the shares redeemed.
+    /// @return amount_ The amount of the underlying asset withdrawn.
     function redeem(
         uint256 _shares,
         address _receiver,
@@ -150,6 +170,8 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable {
         asset.safeTransfer(_receiver, amount_);
     }
 
+    /// @notice Returns the total amount of the underlying asset deposited through the vault.
+    /// @return The total amount of the underlying asset deposited through the vault.
     function totalAssets() public view virtual returns (uint256);
 
     function convertToShares(uint256 _amount) public view virtual returns (uint256) {
