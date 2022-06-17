@@ -4,14 +4,13 @@ pragma solidity ^0.8.0;
 import {ERC20, SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /// @title ERC4626Upgradeable.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice ERC4626 tokenized Vault abstract upgradeable implementation, heavily inspired by Solmate's non-upgradeable implementation (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
-abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
+abstract contract ERC4626Upgradeable is ERC20Upgradeable {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -64,8 +63,7 @@ abstract contract ERC4626Upgradeable is ERC20Upgradeable, OwnableUpgradeable {
         string memory _symbol,
         uint256 _initialDeposit
     ) internal onlyInitializing {
-        __Ownable_init_unchained();
-        __ERC20_init_unchained(_name, _symbol);
+        __ERC20_init(_name, _symbol);
         __ERC4626_init_unchained(_asset, _initialDeposit);
     }
 
