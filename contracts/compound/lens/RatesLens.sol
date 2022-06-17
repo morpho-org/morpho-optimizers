@@ -3,9 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
-import "../interfaces/ILens.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../libraries/CompoundMath.sol";
 
 import "./UsersLens.sol";

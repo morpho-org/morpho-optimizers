@@ -3,9 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
-import "../interfaces/ILens.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../libraries/CompoundMath.sol";
 
 import "./IndexesLens.sol";
@@ -133,7 +131,7 @@ abstract contract UsersLens is IndexesLens {
 
         withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
         if (assetData.collateralFactor != 0) {
-            withdrawable = Math.min(
+            withdrawable = CompoundMath.min(
                 withdrawable,
                 differenceInUnderlying.div(assetData.collateralFactor)
             );
