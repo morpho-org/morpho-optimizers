@@ -34,14 +34,16 @@ install:
 	@curl -L https://foundry.paradigm.xyz | bash
 	@foundryup
 
-	chmod +x ./scripts/deploy-compound.sh
-	chmod +x ./scripts/open-market.sh
+	chmod +x ./scripts/**/*.sh
 
 deploy:
-	./scripts/deploy-${PROTOCOL}.sh
+	./scripts/${PROTOCOL}/deploy.sh
 
-open-market:
-	./scripts/open-market.sh
+initialize:
+	./scripts/${PROTOCOL}/initialize.sh
+
+create-market:
+	./scripts/create-market.sh
 
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
