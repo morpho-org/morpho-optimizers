@@ -8,14 +8,14 @@ import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
 
 import "@contracts/common/ERC4626Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "forge-std/console.sol";
 
 /// @title SupplyVault.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice ERC4626-upgradeable tokenized Vault implementation for Morpho-Compound.
-contract SupplyVault is ERC4626Upgradeable {
+contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
@@ -90,6 +90,7 @@ contract SupplyVault is ERC4626Upgradeable {
         wEth = morpho.wEth();
         cComp = _cComp;
 
+        __Ownable_init();
         __ERC4626_init(
             ERC20(isEth ? wEth : poolToken.underlying()),
             _name,
