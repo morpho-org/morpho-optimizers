@@ -42,7 +42,7 @@ contract TestSetup is Config, Utils, stdCheats {
     TransparentUpgradeableProxy internal lensProxy;
 
     IRewardsManager internal rewardsManagerImplV1;
-    SupplyVault internal wEthSupplyVaultImplV1;
+    SupplyVault internal supplyVaultImplV1;
     Morpho internal morphoImplV1;
     Lens internal lensImplV1;
 
@@ -119,9 +119,9 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        wEthSupplyVaultImplV1 = new SupplyVault();
+        supplyVaultImplV1 = new SupplyVault();
         wEthSupplyVaultProxy = new TransparentUpgradeableProxy(
-            address(wEthSupplyVaultImplV1),
+            address(supplyVaultImplV1),
             address(proxyAdmin),
             ""
         );
@@ -141,7 +141,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         daiSupplyVault = SupplyVault(
             address(
-                new TransparentUpgradeableProxy(address(new SupplyVault()), address(proxyAdmin), "")
+                new TransparentUpgradeableProxy(address(supplyVaultImplV1), address(proxyAdmin), "")
             )
         );
         daiSupplyVault.initialize(
@@ -159,7 +159,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         usdcSupplyVault = SupplyVault(
             address(
-                new TransparentUpgradeableProxy(address(new SupplyVault()), address(proxyAdmin), "")
+                new TransparentUpgradeableProxy(address(supplyVaultImplV1), address(proxyAdmin), "")
             )
         );
         usdcSupplyVault.initialize(
