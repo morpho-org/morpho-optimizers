@@ -206,7 +206,7 @@ contract TestUpgradeable is TestSetup {
 
     function testSupplyVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        wEthSupplyVaultImplV1.initialize(
+        supplyVaultImplV1.initialize(
             address(morpho),
             cEth,
             "MorphoCompoundETH",
