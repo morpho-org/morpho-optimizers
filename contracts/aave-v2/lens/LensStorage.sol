@@ -30,7 +30,6 @@ abstract contract LensStorage is Initializable {
     IMorpho public morpho;
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public pool;
-    IRewardsManager public rewardsManager;
 
     /// CONSTRUCTOR ///
 
