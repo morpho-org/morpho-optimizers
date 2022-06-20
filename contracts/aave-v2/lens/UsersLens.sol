@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "../interfaces/IMorpho.sol";
-
-import "../libraries/aave/PercentageMath.sol";
-import "../libraries/aave/WadRayMath.sol";
-import "../libraries/Math.sol";
-
 import "./IndexesLens.sol";
 
 /// @title UsersLens.
@@ -14,6 +8,7 @@ import "./IndexesLens.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol users and their positions.
 abstract contract UsersLens is IndexesLens {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
@@ -158,7 +153,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUserSupplyBalance(address _user, address _poolTokenAddress)
+    function getUpdatedUserSupplyBalance(address _user, address _poolTokenAddress)
         public
         view
         returns (
