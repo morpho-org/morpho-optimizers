@@ -13,13 +13,15 @@ then
     read -p "           Morpho-Compound's InterestRatesManager address on ${NETWORK}? " -r MORPHO_INTEREST_RATES_MANAGER_ADDRESS
     read -p "           Compound's Comptroller address on ${NETWORK}? " -r COMPTROLLER_ADDRESS
     read -p "           Morpho-Compound's defaultMaxGasForMatching on ${NETWORK}? " -r DEFAULT_MAX_GAS_FOR_MATCHING
+    read -p "           Morpho-Compound's dustThreshold on ${NETWORK}? " -r DUST_THRESHOLD
+    read -p "           Morpho-Compound's maxSortedUsers on ${NETWORK}? " -r MAX_SORTED_USERS
     read -p "           ${NETWORK}'s cETH address? " -r CETH_ADDRESS
     read -p "           ${NETWORK}'s wETH address? " -r WETH_ADDRESS
 
-	echo "Initializing Morpho-Compound's Proxy on ${NETWORK} at ${MORPHO_PROXY_ADDRESS}, with 1 dustThreshold & 16 maxSortedUsers..."
+	echo "Initializing Morpho-Compound's Proxy on ${NETWORK} at ${MORPHO_PROXY_ADDRESS}, with ${DEFAULT_MAX_GAS_FOR_MATCHING} defaultMaxGasForMatching, ${DUST_THRESHOLD} dustThreshold & ${MAX_SORTED_USERS} maxSortedUsers..."
 
     POSITIONS_MANAGERO_INTEREST_RATES_MANAGER_COMPTROLLER_ADDRESS=$(cast abi-encode "tuple(address,address,address)" "${MORPHO_POSITIONS_MANAGER_ADDRESS}" "${MORPHO_INTEREST_RATES_MANAGER_ADDRESS}" "${COMPTROLLER_ADDRESS}")
-    DUST_THRESHOLD_MAX_SORTED_USERS=$(cast abi-encode "tuple(uint256,uint256)" 1 16)
+    DUST_THRESHOLD_MAX_SORTED_USERS=$(cast abi-encode "tuple(uint256,uint256)" "${DUST_THRESHOLD}" "${MAX_SORTED_USERS}")
     DEFAULT_MAX_GAS_FOR_MATCHING=$(cast abi-encode "tuple(uint64,uint64,uint64,uint64)" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}")
     CETH_WETH_ADDRESS=$(cast abi-encode "tuple(address,address)" "${CETH_ADDRESS}" "${WETH_ADDRESS}")
 
@@ -45,6 +47,9 @@ then
     cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
         "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}" \
         "initialize(address)" "${MORPHO_PROXY_ADDRESS}"
+    cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
+        "${MORPHO_PROXY_ADDRESS}" \
+        "setRewardsManager(address)" "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}"
 
     echo "🎉 RewardsManager Proxy initialized!"
 fi
