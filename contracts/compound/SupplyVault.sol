@@ -3,13 +3,13 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMorpho.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
 
 import "@contracts/common/ERC4626Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 /// @title SupplyVault.
 /// @author Morpho Labs.
@@ -37,8 +37,18 @@ contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
     /// @param newMaxHarvestingSlippage The new maximum slippage allowed when swapping rewards for the underlying token (in bps).
     event MaxHarvestingSlippageSet(uint16 newMaxHarvestingSlippage);
 
+    /// ERRORS ///
+
+    /// @notice Thrown when the input is above the maximum basis points value (100%).
+    error ExceedsMaxBasisPoints();
+
+    /// @notice Thrown when the input is above the maximum UniswapV3 pool fee value (100%).
+    error ExceedsMaxUniswapV3Fee();
+
     /// STORAGE ///
 
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
+    uint24 public constant MAX_UNISWAP_FEE = 1_000_000; // 100% in UniswapV3 fee units.
     ISwapRouter public constant SWAP_ROUTER =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The address of UniswapV3SwapRouter.
 
@@ -53,7 +63,6 @@ contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
     uint24 public assetSwapFee; // The fee taken by the UniswapV3Pool for swapping WETH for the underlying asset (in UniswapV3 fee unit).
     uint16 public harvestingFee; // The fee taken by the claimer when harvesting the vault (in bps).
     uint16 public maxHarvestingSlippage; // The maximum slippage allowed when swapping rewards for the underlying asset (in bps).
-    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
 
     /// UPGRADE ///
 
@@ -99,6 +108,44 @@ contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
         );
     }
 
+    /// GOVERNANCE ///
+
+    /// @notice Sets the fee taken by the UniswapV3Pool for swapping COMP rewards for WETH.
+    /// @param _newCompSwapFee The new comp swap fee (in UniswapV3 fee unit).
+    function setCompSwapFee(uint16 _newCompSwapFee) external onlyOwner {
+        if (_newCompSwapFee > MAX_UNISWAP_FEE) revert ExceedsMaxUniswapV3Fee();
+
+        compSwapFee = _newCompSwapFee;
+        emit CompSwapFeeSet(_newCompSwapFee);
+    }
+
+    /// @notice Sets the fee taken by the UniswapV3Pool for swapping WETH for the underlying asset.
+    /// @param _newAssetSwapFee The new asset swap fee (in UniswapV3 fee unit).
+    function setAssetSwapFee(uint16 _newAssetSwapFee) external onlyOwner {
+        if (_newAssetSwapFee > MAX_UNISWAP_FEE) revert ExceedsMaxUniswapV3Fee();
+
+        assetSwapFee = _newAssetSwapFee;
+        emit AssetSwapFeeSet(_newAssetSwapFee);
+    }
+
+    /// @notice Sets the fee taken by the claimer from the total amount of COMP rewards when harvesting the vault.
+    /// @param _newHarvestingFee The new harvesting fee (in bps).
+    function setHarvestingFee(uint16 _newHarvestingFee) external onlyOwner {
+        if (_newHarvestingFee > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+
+        harvestingFee = _newHarvestingFee;
+        emit HarvestingFeeSet(_newHarvestingFee);
+    }
+
+    /// @notice Sets the maximum slippage allowed when swapping rewards for the underlying token.
+    /// @param _newMaxHarvestingSlippage The new maximum slippage allowed when swapping rewards for the underlying token (in bps).
+    function setMaxHarvestingSlippage(uint16 _newMaxHarvestingSlippage) external onlyOwner {
+        if (_newMaxHarvestingSlippage > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+
+        maxHarvestingSlippage = _newMaxHarvestingSlippage;
+        emit MaxHarvestingSlippageSet(_newMaxHarvestingSlippage);
+    }
+
     /// EXTERNAL ///
 
     /// @notice Harvests the vault: claims rewards from the underlying pool, swaps them for the underlying asset and supply them through Morpho.
@@ -126,10 +173,10 @@ contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
 
             ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
             amountOutMinimum = rewardsAmount_
-            .mul(oracle.getUnderlyingPrice(cComp))
-            .div(oracle.getUnderlyingPrice(poolTokenAddress))
-            .mul(MAX_BASIS_POINTS - CompoundMath.min(_maxSlippage, maxHarvestingSlippage))
-            .div(MAX_BASIS_POINTS);
+                .mul(oracle.getUnderlyingPrice(cComp))
+                .div(oracle.getUnderlyingPrice(poolTokenAddress))
+                .mul(MAX_BASIS_POINTS - CompoundMath.min(_maxSlippage, maxHarvestingSlippage))
+                .div(MAX_BASIS_POINTS);
         }
 
         comp.safeApprove(address(SWAP_ROUTER), rewardsAmount_);
@@ -158,34 +205,6 @@ contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
         morpho.supply(poolTokenAddress, address(this), rewardsAmount_);
 
         asset.safeTransfer(msg.sender, rewardsFee_);
-    }
-
-    /// @notice Sets the fee taken by the UniswapV3Pool for swapping COMP rewards for WETH.
-    /// @param _newCompSwapFee The new comp swap fee (in UniswapV3 fee unit).
-    function setCompSwapFee(uint16 _newCompSwapFee) external onlyOwner {
-        compSwapFee = _newCompSwapFee;
-        emit CompSwapFeeSet(_newCompSwapFee);
-    }
-
-    /// @notice Sets the fee taken by the UniswapV3Pool for swapping WETH for the underlying asset.
-    /// @param _newAssetSwapFee The new asset swap fee (in UniswapV3 fee unit).
-    function setAssetSwapFee(uint16 _newAssetSwapFee) external onlyOwner {
-        assetSwapFee = _newAssetSwapFee;
-        emit AssetSwapFeeSet(_newAssetSwapFee);
-    }
-
-    /// @notice Sets the fee taken by the claimer from the total amount of COMP rewards when harvesting the vault.
-    /// @param _newHarvestingFee The new harvesting fee (in bps).
-    function setHarvestingFee(uint16 _newHarvestingFee) external onlyOwner {
-        harvestingFee = _newHarvestingFee;
-        emit HarvestingFeeSet(_newHarvestingFee);
-    }
-
-    /// @notice Sets the maximum slippage allowed when swapping rewards for the underlying token.
-    /// @param _newMaxHarvestingSlippage The new maximum slippage allowed when swapping rewards for the underlying token (in bps).
-    function setMaxHarvestingSlippage(uint16 _newMaxHarvestingSlippage) external onlyOwner {
-        maxHarvestingSlippage = _newMaxHarvestingSlippage;
-        emit MaxHarvestingSlippageSet(_newMaxHarvestingSlippage);
     }
 
     /// PUBLIC ///
