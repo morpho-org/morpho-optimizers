@@ -1815,7 +1815,7 @@ contract TestLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerBlock, , uint256 poolBorrowRatePerBlock) = lens.getRatesPerBlock(
             cDai
