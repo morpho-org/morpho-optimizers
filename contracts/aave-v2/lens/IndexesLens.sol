@@ -2,8 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "../libraries/InterestRatesModel.sol";
-import "../libraries/aave/PercentageMath.sol";
-import "../libraries/aave/WadRayMath.sol";
 
 import "./MarketsLens.sol";
 
