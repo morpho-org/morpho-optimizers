@@ -6,6 +6,12 @@ import "../interfaces/aave/ILendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../interfaces/IMorpho.sol";
 
+import "../libraries/aave/ReserveConfiguration.sol";
+import "../libraries/aave/PercentageMath.sol";
+import "../libraries/aave/WadRayMath.sol";
+import "../libraries/aave/DataTypes.sol";
+import "../libraries/Math.sol";
+
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LensStorage.
