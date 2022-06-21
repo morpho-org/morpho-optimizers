@@ -107,16 +107,29 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         // Compute peer-to-peer growth factors
 
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
-            poolSupplyGrowthFactor +
-            _params.p2pIndexCursor *
-            poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
-        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
-            (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
-            MAX_BASIS_POINTS;
-        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
-            (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
+        uint256 p2pSupplyGrowthFactor;
+        uint256 p2pBorrowGrowthFactor;
+        // Two cases:
+        //  - poolSupplyGrowthFactor <= poolBorrowGrowthFactor: we compute the growth factor with the classic formulas.
+        //  - poolSupplyGrowthFactor > poolBorrowGrowthFactor (happens because someone sent underlying tokens to the
+        //    cToken contract): the peer-to-peer growth factors are set to the pool borrow growth factor.
+        if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
+            uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
+                poolSupplyGrowthFactor +
+                _params.p2pIndexCursor *
+                poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+            p2pSupplyGrowthFactor =
+                p2pGrowthFactor -
+                (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
+                MAX_BASIS_POINTS;
+            p2pBorrowGrowthFactor =
+                p2pGrowthFactor +
+                (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
+                MAX_BASIS_POINTS;
+        } else {
+            p2pSupplyGrowthFactor = poolBorrowGrowthFactor;
+            p2pBorrowGrowthFactor = poolBorrowGrowthFactor;
+        }
 
         // Compute new peer-to-peer supply index
 
