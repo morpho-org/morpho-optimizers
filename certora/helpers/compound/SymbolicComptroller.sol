@@ -36,7 +36,7 @@ contract SymbolicComptroller {
         uint32 block;
     }
 
-    CToken[] public allMarkets;
+    SymbolicCToken[] public allMarkets;
     uint256 public compRate;
     mapping(address => uint256) public compSpeeds;
     mapping(address => CompMarketState) public symbolicCompSupplyState;
@@ -59,30 +59,25 @@ contract SymbolicComptroller {
 
     /// FUNCTIONS ///
 
-    mapping(address => ICToken[]) public getAssetsInRes;
+    mapping(address => SymbolicCToken[]) public getAssetsInRes;
 
-    function getAssetsIn(address account) external view returns (ICToken[] memory) {}
+    function getAssetsIn(address account) external view returns (SymbolicCToken[] memory) {}
 
     mapping(address => mapping(address => bool)) public checkMembershipRet;
 
-    function checkMembership(address account, address cToken)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function checkMembership(address account, address cToken) external view returns (bool) {
         return checkMembershipRet[cToken][account];
     }
 
     mapping(address => uint256[]) public enterMarketsRet;
 
-    function enterMarkets(address[] calldata cTokens) external override returns (uint256[] memory) {
+    function enterMarkets(address[] calldata cTokens) external returns (uint256[] memory) {
         return enterMarketsRet[cTokens[0]];
     }
 
     mapping(address => uint256) public exitMarketRet;
 
-    function exitMarket(address cToken) external override returns (uint256) {
+    function exitMarket(address cToken) external returns (uint256) {
         return exitMarketRet[cToken];
     }
 
@@ -93,7 +88,7 @@ contract SymbolicComptroller {
         address cToken,
         address minter,
         uint256 mintAmount
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return mintAllowedRet[cToken][minter][mintAmount];
     }
 
@@ -102,7 +97,7 @@ contract SymbolicComptroller {
         address, // minter
         uint256 mintAmount,
         uint256 // mintTokens
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = mintAmount;
     }
@@ -113,7 +108,7 @@ contract SymbolicComptroller {
         address cToken,
         address redeemer,
         uint256 redeemTokens
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return redeemAllowedRet[cToken][redeemer][redeemTokens];
     }
 
@@ -122,7 +117,7 @@ contract SymbolicComptroller {
         address, // redeemer
         uint256 redeemAmount,
         uint256 // redeemTokens
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = redeemAmount;
     }
@@ -133,7 +128,7 @@ contract SymbolicComptroller {
         address cToken,
         address borrower,
         uint256 borrowAmount
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return borrowAllowedRet[cToken][borrower][borrowAmount];
     }
 
@@ -141,7 +136,7 @@ contract SymbolicComptroller {
         address,
         address,
         uint256 borrowAmount
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = borrowAmount;
     }
@@ -154,7 +149,7 @@ contract SymbolicComptroller {
         address payer,
         address borrower,
         uint256 repayAmount
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return repayBorrowAllowedRet[cToken][payer][borrower][repayAmount];
     }
 
@@ -164,7 +159,7 @@ contract SymbolicComptroller {
         address, // borrower
         uint256 repayAmount,
         uint256 // borrowerIndex
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = repayAmount;
     }
@@ -186,7 +181,7 @@ contract SymbolicComptroller {
         address liquidator,
         address borrower,
         uint256 repayAmount
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return
             liquidateBorrowAllowedRet[cTokenBorrowed][cTokenCollateral][liquidator][borrower][
                 repayAmount
@@ -200,7 +195,7 @@ contract SymbolicComptroller {
         address, // borrower
         uint256, // repayAmount
         uint256 seizeTokens
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = seizeTokens;
     }
@@ -222,7 +217,7 @@ contract SymbolicComptroller {
         address liquidator,
         address borrower,
         uint256 seizeTokens
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return seizeAllowedRet[cTokenCollateral][cTokenBorrowed][liquidator][borrower][seizeTokens];
     }
 
@@ -232,7 +227,7 @@ contract SymbolicComptroller {
         address, // liquidator
         address, // borrower
         uint256 seizeTokens
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = seizeTokens;
     }
@@ -252,7 +247,7 @@ contract SymbolicComptroller {
         address src,
         address dst,
         uint256 transferTokens
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         return transferAllowedRet[cToken][src][dst][transferTokens];
     }
 
@@ -261,7 +256,7 @@ contract SymbolicComptroller {
         address, // src
         address, // dst
         uint256 transferTokens
-    ) external override {
+    ) external {
         // solhint-disable-next-line
         uint256 val = transferTokens;
     }
@@ -277,7 +272,7 @@ contract SymbolicComptroller {
         address cTokenBorrowed,
         address cTokenCollateral,
         uint256 repayAmount
-    ) external view override returns (uint256, uint256) {
+    ) external view returns (uint256, uint256) {
         return (
             liquidateCalculateSeizeTokens1[cTokenBorrowed][cTokenCollateral][repayAmount],
             liquidateCalculateSeizeTokens2[cTokenBorrowed][cTokenCollateral][repayAmount]
@@ -291,7 +286,6 @@ contract SymbolicComptroller {
     function getAccountLiquidity(address account)
         external
         view
-        override
         returns (
             uint256,
             uint256,
@@ -325,7 +319,6 @@ contract SymbolicComptroller {
         uint256 v2
     )
         external
-        override
         returns (
             uint256,
             uint256,
