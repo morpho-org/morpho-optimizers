@@ -3,13 +3,14 @@
 make -C certora munged
 
 certoraRun \
-    certora/harness/compound/PositionsManagerHarness.sol \
+    certora/munged/compound/PositionsManager.sol \
+    certora/munged/compound/RewardsManager.sol \
     certora/helpers/compound/DummyPoolTokenImpl.sol \
     certora/helpers/compound/DummyPoolTokenA.sol \
     certora/helpers/compound/DummyPoolTokenB.sol \
     certora/helpers/compound/SymbolicOracle.sol \
     certora/helpers/compound/SymbolicComptroller.sol \
-    --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
+    --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
     --solc solc8.7 \
     --loop_iter 2 \
     --optimistic_loop \
@@ -20,3 +21,5 @@ certoraRun \
     # notes:
     # keep the cache name common among run scripts, will save a bunch on the setup time 
     # (pre processing the contracts and specs before submitting to the solver)
+
+        # certora/harness/compound/PositionsManagerHarness.sol \

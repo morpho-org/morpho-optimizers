@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "./SymbolicOracle.sol";
 import "./SymbolicCToken.sol";
 
-// TODO: symbolic behavior
-
 contract SymbolicComptroller {
     /// STORAGE ///
 
