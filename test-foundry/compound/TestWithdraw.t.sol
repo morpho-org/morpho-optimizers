@@ -717,4 +717,17 @@ contract TestWithdraw is TestSetup {
 
         assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
     }
+
+    function testAttackTransferToCToken() public {
+        uint256 amount = 500_000e6;
+        supplier1.approve(usdc, amount);
+        supplier1.supply(cUsdc, amount);
+
+        hevm.roll(block.number + 1);
+
+        hevm.prank(address(supplier1));
+        ERC20(usdc).transfer(cUsdc, 200e6);
+
+        supplier1.withdraw(cUsdc, type(uint256).max);
+    }
 }
