@@ -5,8 +5,6 @@ import "./setup/TestSetup.sol";
 
 contract TestBitmask is TestSetup {
     function testOneUserSupplyMany() public {
-        createMarket(aWeth);
-
         supplier1.approve(dai, 42 ether);
         supplier1.supply(aDai, 42 ether);
 
@@ -36,8 +34,6 @@ contract TestBitmask is TestSetup {
     }
 
     function testOneUserBorrowMany() public {
-        createMarket(aWeth);
-
         borrower1.approve(dai, 42 ether);
         borrower1.supply(aDai, 42 ether);
 
