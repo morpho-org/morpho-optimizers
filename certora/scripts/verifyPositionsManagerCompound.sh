@@ -8,6 +8,7 @@ certoraRun \
     certora/helpers/compound/DummyPoolTokenA.sol \
     certora/helpers/compound/DummyPoolTokenB.sol \
     certora/helpers/compound/SymbolicOracle.sol \
+    certora/helpers/compound/SymbolicComptroller.sol \
     --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
     --solc solc8.7 \
     --loop_iter 2 \

@@ -12,7 +12,24 @@ using DummyPoolTokenImpl as poolToken // for summarization
 using SymbolicOracle as oracle
 
 methods {
+    // external functions of the contract
+    supplyLogic(address, address, address, uint256, uint256)
+    liquidateLogic(address, address, address, uint256)
+    borrowLogic(address, uint256, uint256)
+    withdrawLogic(address, uint256, address, address, uint256)
+    repayLogic(address, address, address, uint256, uint256)
 
+    // summarized these IWETH functions as NONDET until a better solution is made
+    deposit() => NONDET;
+    withdraw(uint256) => NONDET;
+
+    // summarization of comptroller functions used. The symbolic is included so it will dispatch to it
+    closeFactorMantissa() => DISPATCHER(true);
+    liquidationIncentiveMantissa() => DISPATCHER(true);
+    oracle() => DISPATCHER(true);
+
+
+    // library functions we are summarizing
     mul(uint256 x, uint256 y) => _mul(x, y);
     div(uint256 x, uint256 y) => _div(x, y);
 }
