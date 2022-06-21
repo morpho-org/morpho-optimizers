@@ -56,4 +56,23 @@ fi
 
 
 echo "---"
+read -p "⚡❓ Initialize Morpho-Compound's Lens Proxy on ${NETWORK}? " -n 1 -r
+echo
+
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    read -p "           Morpho-Compound's Lens Proxy address on ${NETWORK}? " -r MORPHO_REWARDS_MANAGER_PROXY_ADDRESS
+    read -p "           Morpho-Compound's Proxy address on ${NETWORK}? " -r MORPHO_PROXY_ADDRESS
+
+	echo "Initializing Morpho-Compound's Lens Proxy on ${NETWORK} at ${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}..."
+
+    cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
+        "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}" \
+        "initialize(address)" "${MORPHO_PROXY_ADDRESS}"
+
+    echo "🎉 Lens Proxy initialized!"
+fi
+
+
+echo "---"
 echo "🎉 Initialization completed!"
