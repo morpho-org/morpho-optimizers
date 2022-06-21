@@ -10,6 +10,7 @@ using DummyPoolTokenA as tokenA // for referencing specific tokens
 using DummyPoolTokenB as tokenB 
 using DummyPoolTokenImpl as poolToken // for summarization
 using SymbolicOracle as oracle
+using SymbolicComptroller as comptroller
 
 methods {
     // external functions of the contract
@@ -27,9 +28,17 @@ methods {
     closeFactorMantissa() => DISPATCHER(true);
     liquidationIncentiveMantissa() => DISPATCHER(true);
     oracle() => DISPATCHER(true);
+    markets(address) returns (comptroller.Market) => DISPATCHER(true);
 
+    // rewards manager functions
+    accrueUserSupplyUnclaimedRewards(address, address, uint256) => DISPATCHER(true); // inline the function
+    accrueUserBorrowUnclaimedRewards(address, address, uint256) => DISPATCHER(true);
 
-    // library functions we are summarizing
+    delegatecall(bytes) => NONDET; // we can't handle this right now, need a workaround
+
+    // functions we are summarizing
+    // whenever the tool encounters mul or div, it will return an arbitrary value that follows the axioms 
+    // within the corresponding ghost
     mul(uint256 x, uint256 y) => _mul(x, y);
     div(uint256 x, uint256 y) => _div(x, y);
 }
