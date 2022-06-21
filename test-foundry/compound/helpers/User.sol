@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
 import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/SupplyHarvestVault.sol";
 import "@contracts/compound/InterestRatesManager.sol";
+import "@contracts/compound/vaults/SupplyHarvestVault.sol";
 
 contract User {
     using SafeTransferLib for ERC20;

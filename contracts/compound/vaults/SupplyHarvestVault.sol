@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IMorpho.sol";
+import "../interfaces/compound/ICompound.sol";
+import "../interfaces/IMorpho.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "./libraries/CompoundMath.sol";
-import "./libraries/Types.sol";
+import "../libraries/CompoundMath.sol";
+import "../libraries/Types.sol";
 
-import "@contracts/common/ERC4626Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./SupplyVaultUpgradeable.sol";
 
 /// @title SupplyHarvestVault.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice ERC4626-upgradeable tokenized Vault implementation for Morpho-Compound.
-contract SupplyHarvestVault is ERC4626Upgradeable, OwnableUpgradeable {
+/// @notice ERC4626-upgradeable tokenized Vault implementation for Morpho-Compound, which can harvest accrued COMP rewards, swap them and re-supply them through Morpho-Compound.
+contract SupplyHarvestVault is SupplyVaultUpgradeable {
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
@@ -52,13 +51,8 @@ contract SupplyHarvestVault is ERC4626Upgradeable, OwnableUpgradeable {
     ISwapRouter public constant SWAP_ROUTER =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The address of UniswapV3SwapRouter.
 
-    IMorpho public morpho; // The main Morpho contract.
-    ICToken public poolToken; // The pool token corresponding to the market to supply through this vault.
-
-    address public wEth; // The address of WETH token.
     address public cComp; // The address of cCOMP token.
 
-    bool public isEth; // Whether the underlying asset is WETH.
     uint24 public compSwapFee; // The fee taken by the UniswapV3Pool for swapping COMP rewards for WETH (in UniswapV3 fee unit).
     uint24 public assetSwapFee; // The fee taken by the UniswapV3Pool for swapping WETH for the underlying asset (in UniswapV3 fee unit).
     uint16 public harvestingFee; // The fee taken by the claimer when harvesting the vault (in bps).
@@ -88,24 +82,13 @@ contract SupplyHarvestVault is ERC4626Upgradeable, OwnableUpgradeable {
         uint16 _maxHarvestingSlippage,
         address _cComp
     ) external initializer {
-        morpho = IMorpho(_morphoAddress);
-        poolToken = ICToken(_poolTokenAddress);
+        __SupplyVault_init(_morphoAddress, _poolTokenAddress, _name, _symbol, _initialDeposit);
         compSwapFee = _compSwapFee;
         assetSwapFee = _assetSwapFee;
         harvestingFee = _harvestingFee;
         maxHarvestingSlippage = _maxHarvestingSlippage;
 
-        isEth = _poolTokenAddress == morpho.cEth();
-        wEth = morpho.wEth();
         cComp = _cComp;
-
-        __Ownable_init();
-        __ERC4626_init(
-            ERC20(isEth ? wEth : poolToken.underlying()),
-            _name,
-            _symbol,
-            _initialDeposit
-        );
     }
 
     /// GOVERNANCE ///
@@ -205,29 +188,5 @@ contract SupplyHarvestVault is ERC4626Upgradeable, OwnableUpgradeable {
         morpho.supply(poolTokenAddress, address(this), rewardsAmount_);
 
         asset.safeTransfer(msg.sender, rewardsFee_);
-    }
-
-    /// PUBLIC ///
-
-    function totalAssets() public view override returns (uint256) {
-        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
-            address(poolToken),
-            address(this)
-        );
-
-        return
-            supplyBalance.onPool.mul(poolToken.exchangeRateStored()) +
-            supplyBalance.inP2P.mul(morpho.p2pSupplyIndex(address(poolToken)));
-    }
-
-    /// INTERNAL ///
-
-    function _beforeWithdraw(uint256 _amount, uint256) internal override {
-        morpho.withdraw(address(poolToken), _amount);
-    }
-
-    function _afterDeposit(uint256 _amount, uint256) internal override {
-        asset.safeApprove(address(morpho), _amount);
-        morpho.supply(address(poolToken), address(this), _amount);
     }
 }

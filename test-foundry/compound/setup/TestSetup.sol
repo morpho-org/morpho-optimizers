@@ -15,9 +15,9 @@ import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
-import "@contracts/compound/SupplyHarvestVault.sol";
 import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/lens/Lens.sol";
+import "@contracts/compound/vaults/SupplyHarvestVault.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
