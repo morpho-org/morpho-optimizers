@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./SymbolicInterestRateModel.sol";
 import "./SymbolicComptroller.sol";
@@ -82,7 +82,7 @@ contract SymbolicCToken {
     mapping(address => uint256) public borrowBalanceCurrentRet;
 
     function borrowBalanceCurrent(address account) external returns (uint256) {
-        totalBorrowsCurrentRet[account];
+        borrowBalanceCurrentRet[account];
     }
 
     mapping(address => uint256) public borrowBalanceStoredRet;
@@ -188,7 +188,7 @@ contract SymbolicCToken {
     mapping(address => uint256) public _setPendingAdminRet;
 
     function _setPendingAdmin(address payable newPendingAdmin) external returns (uint256) {
-        return _setPendingAdmin[newPendingAdmin];
+        return _setPendingAdminRet[newPendingAdmin];
     }
 
     uint256 public _acceptAdminRet;
@@ -197,30 +197,30 @@ contract SymbolicCToken {
         return _acceptAdminRet;
     }
 
-    mapping(SymbolicComptroller => uint256) public _setComptrollerRep;
+    mapping(SymbolicComptroller => uint256) public _setComptrollerRet;
 
-    function _setComptroller(SymbonlicComptroller newComptroller) external returns (uint256) {
-        return _setComptrollerRep[newComptroller];
+    function _setComptroller(SymbolicComptroller newComptroller) external returns (uint256) {
+        return _setComptrollerRet[newComptroller];
     }
 
-    mapping(uint256 => uint256) public _setReserveFactorRep;
+    mapping(uint256 => uint256) public _setReserveFactorRet;
 
     function _setReserveFactor(uint256 newReserveFactorMantissa) external returns (uint256) {
-        return _setReserveFactor[newReserveFactorMantissa];
+        return _setReserveFactorRet[newReserveFactorMantissa];
     }
 
-    mapping(uint256 => uint256) public _reduceReservesRep;
+    mapping(uint256 => uint256) public _reduceReservesRet;
 
     function _reduceReserves(uint256 reduceAmount) external returns (uint256) {
-        return _reduceReservesRep[reduceAmount];
+        return _reduceReservesRet[reduceAmount];
     }
 
-    mapping(SymbolicInterestRateModel => uint256) public _setInterestRateModelRep;
+    mapping(SymbolicInterestRateModel => uint256) public _setInterestRateModelRet;
 
     function _setInterestRateModel(SymbolicInterestRateModel newInterestRateModel)
         external
         returns (uint256)
     {
-        return _setInterestRateModelRep[newInterestRateModel];
+        return _setInterestRateModelRet[newInterestRateModel];
     }
 }
