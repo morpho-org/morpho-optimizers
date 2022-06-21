@@ -4,9 +4,9 @@
 
 COMMIT_MSG=$(head -n 1 "$1")
 
-BRANCH_NAME=$(git branch | grep "*" | sed "s/* //")
+BRANCH_NAME=$(git branch --show-current)
 APPEND_COMMIT_MSG=" (${BRANCH_NAME##*/})"
 
-if ! test "$COMMIT_MSG" != "${COMMIT_MSG#*"$APPEND_COMMIT_MSG"}"; then
-    echo "$COMMIT_MSG$APPEND_COMMIT_MSG\n$(tail -n +2 "$1")" > "$1"
+if test "$COMMIT_MSG" = "${COMMIT_MSG%"$APPEND_COMMIT_MSG"}"; then
+    echo -e "$COMMIT_MSG$APPEND_COMMIT_MSG\n$(tail -n +2 "$1")" > "$1"
 fi
