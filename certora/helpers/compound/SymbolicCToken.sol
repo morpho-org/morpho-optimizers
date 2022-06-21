@@ -30,7 +30,7 @@ contract SymbolicCToken {
     mapping(address => mapping(uint256 => bool)) public approveRet;
 
     function approve(address spender, uint256 amount) external returns (bool) {
-        approveRet[spender][amount];
+        return approveRet[spender][amount];
     }
 
     mapping(address => mapping(address => uint256)) public allowanceRet;
@@ -51,6 +51,11 @@ contract SymbolicCToken {
         return balanceOfUnderlyingRet[owner];
     }
 
+    mapping(address => uint256) accountSnapshotA;
+    mapping(address => uint256) accountSnapshotB;
+    mapping(address => uint256) accountSnapshotC;
+    mapping(address => uint256) accountSnapshotD;
+
     function getAccountSnapshot(address account)
         external
         view
@@ -59,7 +64,14 @@ contract SymbolicCToken {
             uint256,
             uint256,
             uint256
-        );
+        )
+    {
+        uint256 valA = accountSnapshotA[account];
+        uint256 valB = accountSnapshotB[account];
+        uint256 valC = accountSnapshotC[account];
+        uint256 valD = accountSnapshotD[account];
+        return (valA, valB, valC, valD);
+    }
 
     uint256 public borrowRatePerBlockRet;
 
@@ -82,13 +94,13 @@ contract SymbolicCToken {
     mapping(address => uint256) public borrowBalanceCurrentRet;
 
     function borrowBalanceCurrent(address account) external returns (uint256) {
-        borrowBalanceCurrentRet[account];
+        return borrowBalanceCurrentRet[account];
     }
 
     mapping(address => uint256) public borrowBalanceStoredRet;
 
     function borrowBalanceStored(address account) external view returns (uint256) {
-        borrowBalanceStoredRet[account];
+        return borrowBalanceStoredRet[account];
     }
 
     uint256 public exchangeRateCurrentRet;
@@ -155,13 +167,11 @@ contract SymbolicCToken {
         return underlyingRet;
     }
 
-    mapping(uint256 => address) public mintRet;
-
-    function mint(uint256) external returns (uint256) {
-        return mintRet;
+    function mint(uint256 amount) external returns (uint256) {
+        return 0; // return success
     }
 
-    mapping(uint256 => address) public redeemUnderlyingRet;
+    mapping(uint256 => uint256) public redeemUnderlyingRet;
 
     function redeemUnderlying(uint256 a) external returns (uint256) {
         return redeemUnderlyingRet[a];
