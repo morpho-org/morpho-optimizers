@@ -6,15 +6,17 @@ This repository contains the core smart contracts for the Morpho Protocol V1 �
 
 ---
 
-## Testing with Foundry 🔨
+## Testing with [Foundry](https://github.com/foundry-rs/foundry) 🔨
 
 Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
 
-For testing, first, install dependencies (node_modules, git submodules, [foundry](https://github.com/gakonst/foundry)) with:
+For testing, make sure `yarn` and `foundry` are installed and install dependencies (node_modules, git submodules) with:
 
 ```bash
 make install
 ```
+
+Alternatively, if you only want to set up
 
 Refer to the `env.example` for the required environment variable.
 
