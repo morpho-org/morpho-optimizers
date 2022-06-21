@@ -70,6 +70,23 @@ fi
 
 
 echo "---"
+read -p "🚀❓ Deploy Morpho-Compound's Lens Implementation on ${NETWORK}? " -n 1 -r
+echo
+
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+	echo "Deploying Morpho-Compound's Lens Implementation on $NETWORK..."
+
+	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
+        --contracts contracts/compound \
+        --optimize contracts/compound/Lens.sol:Lens \
+        --verify
+
+    echo "🎉 Lens Implementation deployed!"
+fi
+
+
+echo "---"
 read -p "🚀❓ Deploy Morpho-Compound's ProxyAdmin on ${NETWORK}? " -n 1 -r
 echo
 
@@ -129,22 +146,23 @@ fi
 
 
 echo "---"
-read -p "🚀❓ Deploy Morpho-Compound's Lens on ${NETWORK}? " -n 1 -r
+read -p "🚀❓ Deploy Morpho-Compound's Lens Proxy on ${NETWORK}? " -n 1 -r
 echo
 
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    read -p "       Morpho-Compound's Proxy address on ${NETWORK}? " -r MORPHO_PROXY_ADDRESS
+    read -p "       Morpho-Compound's Lens Implementation address? " -r MORPHO_LENS_IMPL_ADDRESS
+    read -p "       Morpho-Compound's ProxyAdmin address on ${NETWORK}? " -r MORPHO_PROXY_ADMIN_ADDRESS
 
-	echo "Deploying Morpho-Compound's Lens for Proxy at ${MORPHO_PROXY_ADDRESS} on $NETWORK..."
+	echo "Deploying Morpho-Compound's Lens Proxy on ${NETWORK} for Implementation at ${MORPHO_LENS_IMPL_ADDRESS}, owned by ${MORPHO_PROXY_ADMIN_ADDRESS}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts contracts/compound \
-        --optimize contracts/compound/Lens.sol:Lens \
+        --contracts node_modules/@openzeppelin/contracts/proxy \
+        --optimize node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy \
         --verify \
-        --constructor-args "${MORPHO_PROXY_ADDRESS}"
+        --constructor-args "${MORPHO_LENS_IMPL_ADDRESS}" "${MORPHO_PROXY_ADMIN_ADDRESS}" ""
 
-    echo "🎉 Lens deployed!"
+    echo "🎉 Lens Proxy deployed!"
 fi
 
 
