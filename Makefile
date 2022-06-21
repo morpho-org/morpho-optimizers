@@ -30,11 +30,10 @@ endif
 
 install:
 	@yarn
-	@git submodule update --init --recursive
-	@curl -L https://foundry.paradigm.xyz | bash
 	@foundryup
+	@git submodule update --init --recursive
 
-	chmod +x ./scripts/**/*.sh
+	@chmod +x ./scripts/**/*.sh
 
 deploy:
 	./scripts/${PROTOCOL}/deploy.sh
@@ -97,4 +96,4 @@ config:
 	@forge config
 
 
-.PHONY: test config common
+.PHONY: test config common foundry
