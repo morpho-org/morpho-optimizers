@@ -585,8 +585,8 @@ contract TestLens is TestSetup {
     function testGetOutdatedIndexes() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + (31 * 24 * 60 * 4));
@@ -615,8 +615,8 @@ contract TestLens is TestSetup {
     function testGetIndexes() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + (31 * 24 * 60 * 4));
@@ -1089,8 +1089,8 @@ contract TestLens is TestSetup {
     function testUserBorrowRateShouldEqualPoolRateWhenNotMatched() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
@@ -1104,14 +1104,14 @@ contract TestLens is TestSetup {
     function testUserSupplyBorrowRatesShouldEqualP2PRatesWhenFullyMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wEth, amount);
-        supplier1.supply(aWeth, amount);
+        supplier1.approve(wbtc, amount);
+        supplier1.supply(aWbtc, amount);
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
@@ -1125,14 +1125,14 @@ contract TestLens is TestSetup {
     function testUserSupplyRateShouldEqualMidrateWhenHalfMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wEth, amount);
-        supplier1.supply(aWeth, amount);
+        supplier1.approve(wbtc, amount);
+        supplier1.supply(aWbtc, amount);
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount / 2);
 
         uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
@@ -1144,10 +1144,10 @@ contract TestLens is TestSetup {
     function testUserBorrowRateShouldEqualMidrateWhenHalfMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wEth, amount);
-        supplier1.supply(aWeth, amount);
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        supplier1.approve(wbtc, amount);
+        supplier1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
 
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
@@ -1162,8 +1162,8 @@ contract TestLens is TestSetup {
     function testSupplyRateShouldEqualPoolRateWithFullSupplyDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -1186,8 +1186,8 @@ contract TestLens is TestSetup {
     function testBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -1266,8 +1266,8 @@ contract TestLens is TestSetup {
     function testNextBorrowRateShouldEqualCurrentRateWhenNoNewBorrow() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 1000);
@@ -1359,8 +1359,8 @@ contract TestLens is TestSetup {
     function testNextSupplyRateShouldEqualP2PRateWhenFullMatch() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 1000);
@@ -1428,8 +1428,8 @@ contract TestLens is TestSetup {
     function testNextSupplyRateShouldEqualMidrateWhenHalfMatch() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount / 2);
 
         (
@@ -1515,8 +1515,8 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount / 2);
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         (
@@ -1546,8 +1546,8 @@ contract TestLens is TestSetup {
     function testNextBorrowRateShouldEqualP2PRateWhenDoubleBorrow() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount / 2);
 
         supplier1.approve(dai, amount);
@@ -1580,8 +1580,8 @@ contract TestLens is TestSetup {
     function testNextSupplyRateShouldEqualP2PRateWithFullBorrowDeltaAndNoBorrowerOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -1622,8 +1622,8 @@ contract TestLens is TestSetup {
     function testNextBorrowRateShouldEqualP2PRateWithFullSupplyDeltaAndNoSupplierOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -1665,8 +1665,8 @@ contract TestLens is TestSetup {
     function testNextSupplyRateShouldEqualMidrateWithHalfBorrowDeltaAndNoBorrowerOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount / 2);
 
         supplier1.approve(dai, amount / 2);
@@ -1724,8 +1724,8 @@ contract TestLens is TestSetup {
     function testNextBorrowRateShouldEqualMidrateWithHalfSupplyDeltaAndNoSupplierOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(wbtc, amount);
+        borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount / 2);
 
         supplier1.approve(dai, amount / 2);
