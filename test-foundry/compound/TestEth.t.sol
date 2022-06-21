@@ -314,13 +314,16 @@ contract TestEth is TestSetup {
         uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
 
         uint256 balanceBefore = supplier1.balanceOf(wEth);
-        supplier1.approve(wEth, address(wEthSupplyVault), toSupply);
-        supplier1.depositVault(wEthSupplyVault, toSupply);
+        supplier1.approve(wEth, address(wEthSupplyHarvestVault), toSupply);
+        supplier1.depositVault(wEthSupplyHarvestVault, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
         testEquality(ERC20(cEth).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(wEthSupplyVault));
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(
+            cEth,
+            address(wEthSupplyHarvestVault)
+        );
 
         assertEq(inP2P, 0);
         testEquality(onPool, expectedOnPool);
@@ -334,12 +337,15 @@ contract TestEth is TestSetup {
         uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
 
         uint256 balanceBefore = supplier1.balanceOf(wEth);
-        supplier1.approve(wEth, address(wEthSupplyVault), toSupply);
-        supplier1.depositVault(wEthSupplyVault, toSupply);
-        supplier1.withdrawVault(wEthSupplyVault, expectedOnPool.mul(poolSupplyIndex));
+        supplier1.approve(wEth, address(wEthSupplyHarvestVault), toSupply);
+        supplier1.depositVault(wEthSupplyHarvestVault, toSupply);
+        supplier1.withdrawVault(wEthSupplyHarvestVault, expectedOnPool.mul(poolSupplyIndex));
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(wEthSupplyVault));
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(
+            cEth,
+            address(wEthSupplyHarvestVault)
+        );
 
         assertEq(onPool, 0);
         assertEq(inP2P, 0);
@@ -349,21 +355,27 @@ contract TestEth is TestSetup {
     function testShouldClaimAndFoldRewardsOnEthVault() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wEth, address(wEthSupplyVault), amount);
-        supplier1.depositVault(wEthSupplyVault, amount);
+        supplier1.approve(wEth, address(wEthSupplyHarvestVault), amount);
+        supplier1.depositVault(wEthSupplyHarvestVault, amount);
 
         hevm.roll(block.number + 1_000);
 
         morpho.updateP2PIndexes(cEth);
-        (, uint256 balanceOnPoolBefore) = morpho.supplyBalanceInOf(cEth, address(wEthSupplyVault));
+        (, uint256 balanceOnPoolBefore) = morpho.supplyBalanceInOf(
+            cEth,
+            address(wEthSupplyHarvestVault)
+        );
 
-        (uint256 rewardsAmount, uint256 rewardsFee) = wEthSupplyVault.harvest(
-            wEthSupplyVault.maxHarvestingSlippage()
+        (uint256 rewardsAmount, uint256 rewardsFee) = wEthSupplyHarvestVault.harvest(
+            wEthSupplyHarvestVault.maxHarvestingSlippage()
         );
         uint256 expectedRewardsFee = ((rewardsAmount + rewardsFee) *
-            wEthSupplyVault.harvestingFee()) / wEthSupplyVault.MAX_BASIS_POINTS();
+            wEthSupplyHarvestVault.harvestingFee()) / wEthSupplyHarvestVault.MAX_BASIS_POINTS();
 
-        (, uint256 balanceOnPoolAfter) = morpho.supplyBalanceInOf(cEth, address(wEthSupplyVault));
+        (, uint256 balanceOnPoolAfter) = morpho.supplyBalanceInOf(
+            cEth,
+            address(wEthSupplyHarvestVault)
+        );
 
         assertGt(rewardsAmount, 0, "rewards amount is zero");
         assertEq(
@@ -371,7 +383,11 @@ contract TestEth is TestSetup {
             balanceOnPoolBefore + rewardsAmount.div(ICToken(cEth).exchangeRateCurrent()),
             "unexpected balance on pool"
         );
-        assertEq(ERC20(comp).balanceOf(address(wEthSupplyVault)), 0, "comp amount is not zero");
+        assertEq(
+            ERC20(comp).balanceOf(address(wEthSupplyHarvestVault)),
+            0,
+            "comp amount is not zero"
+        );
         assertEq(rewardsFee, expectedRewardsFee, "unexpected rewards fee amount");
         assertEq(ERC20(wEth).balanceOf(address(this)), rewardsFee, "unexpected fee collected");
     }

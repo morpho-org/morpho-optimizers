@@ -15,7 +15,7 @@ import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
-import "@contracts/compound/SupplyVault.sol";
+import "@contracts/compound/SupplyHarvestVault.sol";
 import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/lens/Lens.sol";
 
@@ -37,12 +37,12 @@ contract TestSetup is Config, Utils, stdCheats {
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy internal rewardsManagerProxy;
-    TransparentUpgradeableProxy internal wEthSupplyVaultProxy;
+    TransparentUpgradeableProxy internal wEthSupplyHarvestVaultProxy;
     TransparentUpgradeableProxy internal morphoProxy;
     TransparentUpgradeableProxy internal lensProxy;
 
     IRewardsManager internal rewardsManagerImplV1;
-    SupplyVault internal supplyVaultImplV1;
+    SupplyHarvestVault internal supplyHarvestVaultImplV1;
     Morpho internal morphoImplV1;
     Lens internal lensImplV1;
 
@@ -52,9 +52,9 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho internal morpho;
     Lens internal lens;
 
-    SupplyVault internal wEthSupplyVault;
-    SupplyVault internal daiSupplyVault;
-    SupplyVault internal usdcSupplyVault;
+    SupplyHarvestVault internal wEthSupplyHarvestVault;
+    SupplyHarvestVault internal daiSupplyHarvestVault;
+    SupplyHarvestVault internal usdcSupplyHarvestVault;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -119,14 +119,14 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
-        supplyVaultImplV1 = new SupplyVault();
-        wEthSupplyVaultProxy = new TransparentUpgradeableProxy(
-            address(supplyVaultImplV1),
+        supplyHarvestVaultImplV1 = new SupplyHarvestVault();
+        wEthSupplyHarvestVaultProxy = new TransparentUpgradeableProxy(
+            address(supplyHarvestVaultImplV1),
             address(proxyAdmin),
             ""
         );
-        wEthSupplyVault = SupplyVault(address(wEthSupplyVaultProxy));
-        wEthSupplyVault.initialize(
+        wEthSupplyHarvestVault = SupplyHarvestVault(address(wEthSupplyHarvestVaultProxy));
+        wEthSupplyHarvestVault.initialize(
             address(morpho),
             cEth,
             "MorphoCompoundWETH",
@@ -139,12 +139,16 @@ contract TestSetup is Config, Utils, stdCheats {
             cComp
         );
 
-        daiSupplyVault = SupplyVault(
+        daiSupplyHarvestVault = SupplyHarvestVault(
             address(
-                new TransparentUpgradeableProxy(address(supplyVaultImplV1), address(proxyAdmin), "")
+                new TransparentUpgradeableProxy(
+                    address(supplyHarvestVaultImplV1),
+                    address(proxyAdmin),
+                    ""
+                )
             )
         );
-        daiSupplyVault.initialize(
+        daiSupplyHarvestVault.initialize(
             address(morpho),
             cDai,
             "MorphoCompoundDAI",
@@ -157,12 +161,16 @@ contract TestSetup is Config, Utils, stdCheats {
             cComp
         );
 
-        usdcSupplyVault = SupplyVault(
+        usdcSupplyHarvestVault = SupplyHarvestVault(
             address(
-                new TransparentUpgradeableProxy(address(supplyVaultImplV1), address(proxyAdmin), "")
+                new TransparentUpgradeableProxy(
+                    address(supplyHarvestVaultImplV1),
+                    address(proxyAdmin),
+                    ""
+                )
             )
         );
-        usdcSupplyVault.initialize(
+        usdcSupplyHarvestVault.initialize(
             address(morpho),
             cUsdc,
             "MorphoCompoundUSDC",
