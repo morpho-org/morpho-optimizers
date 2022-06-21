@@ -826,7 +826,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
                     ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
                 );
-                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             }
 
             delta.p2pSupplyAmount -= unmatched.div(vars.p2pSupplyIndex);
