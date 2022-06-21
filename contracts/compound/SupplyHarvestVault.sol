@@ -11,11 +11,11 @@ import "./libraries/Types.sol";
 import "@contracts/common/ERC4626Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-/// @title SupplyVault.
+/// @title SupplyHarvestVault.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice ERC4626-upgradeable tokenized Vault implementation for Morpho-Compound.
-contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
+contract SupplyHarvestVault is ERC4626Upgradeable, OwnableUpgradeable {
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
@@ -173,10 +173,10 @@ contract SupplyVault is ERC4626Upgradeable, OwnableUpgradeable {
 
             ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
             amountOutMinimum = rewardsAmount_
-                .mul(oracle.getUnderlyingPrice(cComp))
-                .div(oracle.getUnderlyingPrice(poolTokenAddress))
-                .mul(MAX_BASIS_POINTS - CompoundMath.min(_maxSlippage, maxHarvestingSlippage))
-                .div(MAX_BASIS_POINTS);
+            .mul(oracle.getUnderlyingPrice(cComp))
+            .div(oracle.getUnderlyingPrice(poolTokenAddress))
+            .mul(MAX_BASIS_POINTS - CompoundMath.min(_maxSlippage, maxHarvestingSlippage))
+            .div(MAX_BASIS_POINTS);
         }
 
         comp.safeApprove(address(SWAP_ROUTER), rewardsAmount_);

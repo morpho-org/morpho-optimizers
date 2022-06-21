@@ -66,22 +66,22 @@ contract TestUpgradeable is TestSetup {
         assertEq(newImplem, address(rewardsManagerImplV2));
     }
 
-    function testUpgradeSupplyVault() public {
-        SupplyVault wEthSupplyVaultImplV2 = new SupplyVault();
+    function testUpgradeSupplyHarvestVault() public {
+        SupplyHarvestVault wEthSupplyHarvestVaultImplV2 = new SupplyHarvestVault();
 
         hevm.record();
-        proxyAdmin.upgrade(wEthSupplyVaultProxy, address(wEthSupplyVaultImplV2));
-        (, bytes32[] memory writes) = hevm.accesses(address(wEthSupplyVault));
+        proxyAdmin.upgrade(wEthSupplyHarvestVaultProxy, address(wEthSupplyHarvestVaultImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(wEthSupplyHarvestVault));
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
         address newImplem = bytes32ToAddress(
             hevm.load(
-                address(wEthSupplyVault),
+                address(wEthSupplyHarvestVault),
                 bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
             )
         );
-        assertEq(newImplem, address(wEthSupplyVaultImplV2));
+        assertEq(newImplem, address(wEthSupplyHarvestVaultImplV2));
     }
 
     function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
@@ -106,22 +106,22 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgradeAndCall(rewardsManagerProxy, payable(address(rewardsManagerImplV2)), "");
     }
 
-    function testOnlyProxyOwnerCanUpgradeAndCallSupplyVault() public {
-        SupplyVault wEthSupplyVaultImplV2 = new SupplyVault();
+    function testOnlyProxyOwnerCanUpgradeAndCallSupplyHarvestVault() public {
+        SupplyHarvestVault wEthSupplyHarvestVaultImplV2 = new SupplyHarvestVault();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         proxyAdmin.upgradeAndCall(
-            wEthSupplyVaultProxy,
-            payable(address(wEthSupplyVaultImplV2)),
+            wEthSupplyHarvestVaultProxy,
+            payable(address(wEthSupplyHarvestVaultImplV2)),
             ""
         );
 
         // Revert for wrong data not wrong caller.
         hevm.expectRevert("Address: low-level delegate call failed");
         proxyAdmin.upgradeAndCall(
-            wEthSupplyVaultProxy,
-            payable(address(wEthSupplyVaultImplV2)),
+            wEthSupplyHarvestVaultProxy,
+            payable(address(wEthSupplyHarvestVaultImplV2)),
             ""
         );
     }
@@ -204,9 +204,9 @@ contract TestUpgradeable is TestSetup {
         assertEq(_initialized, 1);
     }
 
-    function testSupplyVaultImplementationsShouldBeInitialized() public {
+    function testSupplyHarvestVaultImplementationsShouldBeInitialized() public {
         hevm.expectRevert("Initializable: contract is already initialized");
-        supplyVaultImplV1.initialize(
+        supplyHarvestVaultImplV1.initialize(
             address(morpho),
             cEth,
             "MorphoCompoundETH",
