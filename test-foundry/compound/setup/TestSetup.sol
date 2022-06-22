@@ -23,11 +23,11 @@ import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
 import "@config/Config.sol";
+import "forge-std/console.sol";
+import "forge-std/Vm.sol";
 
-contract TestSetup is Config, Utils, stdCheats {
+contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
@@ -196,10 +196,10 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function fillUserBalances(User _user) internal {
-        tip(dai, address(_user), INITIAL_BALANCE * WAD);
-        tip(wEth, address(_user), INITIAL_BALANCE * WAD);
-        tip(usdt, address(_user), INITIAL_BALANCE * 1e6);
-        tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
+        deal(dai, address(_user), INITIAL_BALANCE * WAD);
+        deal(wEth, address(_user), INITIAL_BALANCE * WAD);
+        deal(usdt, address(_user), INITIAL_BALANCE * 1e6);
+        deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
     function setContractsLabels() internal {

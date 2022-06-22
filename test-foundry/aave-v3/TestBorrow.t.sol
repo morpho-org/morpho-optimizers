@@ -79,7 +79,7 @@ contract TestBorrow is TestSetup {
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
 
-        assertApproxEq(onPool, expectedOnPool, 1e15, "on pool");
+        assertApproxEqAbs(onPool, expectedOnPool, 1e15, "on pool");
     }
 
     // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
@@ -135,7 +135,7 @@ contract TestBorrow is TestSetup {
     // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
     function testBorrow6() public {
         // TODO: fix that.
-        tip(dai, address(morpho), 1);
+        deal(dai, address(morpho), 1);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
