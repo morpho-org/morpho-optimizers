@@ -9,11 +9,10 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "../common/helpers/MorphoToken.sol";
 import "./helpers/DumbOracle.sol";
-import "forge-std/stdlib.sol";
+import "forge-std/Test.sol";
 import "@config/Config.sol";
-import "ds-test/test.sol";
 
-contract TestIncentivesVault is Config, DSTest, stdCheats {
+contract TestIncentivesVault is Test, Config {
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -109,7 +108,7 @@ contract TestIncentivesVault is Config, DSTest, stdCheats {
     function testOnlyMorphoShouldTriggerCompConvertFunction() public {
         incentivesVault.setMorphoDao(address(1));
         uint256 amount = 100;
-        tip(COMP, address(morpho), amount);
+        deal(COMP, address(morpho), amount);
 
         hevm.prank(morpho);
         ERC20(COMP).safeApprove(address(incentivesVault), amount);
@@ -124,7 +123,7 @@ contract TestIncentivesVault is Config, DSTest, stdCheats {
     function testShouldGiveTheRightAmountOfRewards() public {
         incentivesVault.setMorphoDao(address(1));
         uint256 toApprove = 1_000 ether;
-        tip(COMP, address(morpho), toApprove);
+        deal(COMP, address(morpho), toApprove);
 
         hevm.prank(morpho);
         ERC20(COMP).safeApprove(address(incentivesVault), toApprove);

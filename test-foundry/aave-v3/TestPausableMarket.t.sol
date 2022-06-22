@@ -102,7 +102,7 @@ contract TestPausableMarket is TestSetup {
 
     function testShouldDisableMarketWhenPaused() public {
         // TODO: fix that.
-        tip(usdt, address(morpho), 1);
+        deal(usdt, address(morpho), 1);
 
         uint256 amount = 10000 ether;
 
