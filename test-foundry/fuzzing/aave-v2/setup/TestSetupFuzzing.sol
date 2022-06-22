@@ -211,9 +211,9 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         for (uint256 i; i < pools.length; i++) {
             address token = getUnderlying(pools[i]);
             if (token == wEth) {
-                tip(token, address(_user), uint256(5856057446759574251267521) / 2);
+                deal(token, address(_user), uint256(5856057446759574251267521) / 2);
             } else {
-                tip(token, address(_user), ERC20(token).totalSupply() / 2);
+                deal(token, address(_user), ERC20(token).totalSupply() / 2);
             }
         }
     }

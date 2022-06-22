@@ -54,7 +54,7 @@ contract TestRounding is TestSetup {
     // However, some underlying amounts can turn out to be null when expressed in cToken units (see testRoundingError2).
     // Still, the function is executed. mint, borrow, repayBorrow are fine, but redeemUnderlying reverts.
     function testRoundingError3() public {
-        tip(dai, address(this), 1e20);
+        deal(dai, address(this), 1e20);
         ERC20(dai).approve(cDai, type(uint64).max);
 
         // mint 1 cDai, doesn't revert

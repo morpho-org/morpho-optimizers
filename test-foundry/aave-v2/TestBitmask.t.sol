@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
-import {MorphoStorage} from "@contracts/aave-v2/MorphoStorage.sol";
 
 contract TestBitmask is TestSetup {
     function testOneUserSupplyMany() public {

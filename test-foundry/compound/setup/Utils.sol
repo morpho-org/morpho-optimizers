@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "@contracts/compound/libraries/CompoundMath.sol";
 
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
 
-contract Utils is DSTest {
+contract Utils is Test {
     using CompoundMath for uint256;
 
     uint256 internal constant WAD = 1e18;
@@ -28,7 +28,7 @@ contract Utils is DSTest {
     }
 
     function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertApproxEq(_firstValue, _secondValue, 20);
+        assertApproxEqAbs(_firstValue, _secondValue, 20);
     }
 
     function testEquality(
@@ -36,11 +36,11 @@ contract Utils is DSTest {
         uint256 _secondValue,
         string memory err
     ) internal {
-        assertApproxEq(_firstValue, _secondValue, 20, err);
+        assertApproxEqAbs(_firstValue, _secondValue, 20, err);
     }
 
     function testEqualityLarge(uint256 _firstValue, uint256 _secondValue) internal {
-        assertApproxEq(_firstValue, _secondValue, 1e16);
+        assertApproxEqAbs(_firstValue, _secondValue, 1e16);
     }
 
     function testEqualityLarge(
@@ -48,7 +48,7 @@ contract Utils is DSTest {
         uint256 _secondValue,
         string memory err
     ) internal {
-        assertApproxEq(_firstValue, _secondValue, 1e16, err);
+        assertApproxEqAbs(_firstValue, _secondValue, 1e16, err);
     }
 
     /// @dev compounds track balances deposited by dividing the amount by a rate to obtain cToken Units.

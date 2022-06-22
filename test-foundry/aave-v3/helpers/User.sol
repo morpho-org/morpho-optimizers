@@ -5,10 +5,9 @@ import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 
 import "@contracts/aave-v3/Morpho.sol";
-import "forge-std/stdlib.sol";
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
 
-contract User is stdCheats, DSTest {
+contract User is Test {
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);

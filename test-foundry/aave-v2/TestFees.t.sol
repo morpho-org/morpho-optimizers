@@ -68,7 +68,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(gainedByDAO, expectedFees, (expectedFees * 1) / 100000, "Fees collected");
+        assertApproxEqAbs(gainedByDAO, expectedFees, (expectedFees * 1) / 100000, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {

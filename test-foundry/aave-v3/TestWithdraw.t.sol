@@ -287,7 +287,7 @@ contract TestWithdraw is TestSetup {
     // The supplier is matched to 2 x NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`. Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     function testWithdraw3_4() public {
         // TODO: fix that.
-        tip(dai, address(morpho), 1);
+        deal(dai, address(morpho), 1);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -520,7 +520,7 @@ contract TestWithdraw is TestSetup {
                     shareOfTheDelta.rayMul(newVars.NVD).rayDiv(oldVars.NVD)
             );
 
-            assertApproxEq(
+            assertApproxEqAbs(
                 expectedBP2PER,
                 newVars.BP2PER,
                 (expectedBP2PER * 2) / 100,
@@ -536,7 +536,7 @@ contract TestWithdraw is TestSetup {
                     aDai,
                     address(borrowers[i])
                 );
-                assertApproxEq(
+                assertApproxEqAbs(
                     p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
                     expectedBorrowBalanceInUnderlying,
                     (expectedBorrowBalanceInUnderlying * 2) / 100,
@@ -620,7 +620,7 @@ contract TestWithdraw is TestSetup {
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
     function testWithdrawWhileAttackerSendsAToken() public {
         Attacker attacker = new Attacker(pool);
-        tip(dai, address(attacker), type(uint256).max / 2);
+        deal(dai, address(attacker), type(uint256).max / 2);
 
         uint256 toSupply = 100 ether;
         uint256 collateral = 2 * toSupply;

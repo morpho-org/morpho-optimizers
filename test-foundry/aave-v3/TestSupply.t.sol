@@ -246,7 +246,7 @@ contract TestSupply is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier2));
 
-        assertApproxEq(onPool, expectedOnPool, 1, "on pool");
+        assertApproxEqAbs(onPool, expectedOnPool, 1, "on pool");
         assertEq(inP2P, 0, "in peer-to-peer");
     }
 }
