@@ -497,7 +497,7 @@ contract TestRepay is TestSetup {
                 ) + shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
             );
 
-            assertApproxEq(
+            assertApproxEqAbs(
                 expectedSP2PER,
                 newVars.SP2PER,
                 (expectedSP2PER * 2) / 100,
@@ -513,7 +513,7 @@ contract TestRepay is TestSetup {
                     aDai,
                     address(suppliers[i])
                 );
-                assertApproxEq(
+                assertApproxEqAbs(
                     p2pUnitToUnderlying(inP2PSupplier, newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
                     (expectedSupplyBalanceInUnderlying * 2) / 100,
@@ -609,7 +609,7 @@ contract TestRepay is TestSetup {
         .scaledBalanceOf(address(morpho));
 
         // Repay on-behalf of Morpho
-        tip(usdt, address(this), amount / 2);
+        deal(usdt, address(this), amount / 2);
         ERC20(usdt).approve(address(pool), amount / 2);
         pool.repay(usdt, amount / 2, 2, address(morpho));
 

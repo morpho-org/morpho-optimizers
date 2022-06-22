@@ -96,7 +96,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(
+        assertApproxEqAbs(
             gainedByDAO,
             (expectedFees * 9_000) / MAX_BASIS_POINTS,
             (expectedFees * 1) / 100000,

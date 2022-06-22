@@ -123,7 +123,7 @@ contract TestLens is TestSetup {
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
         assertEq(assetData.reserveDecimals, reserveDecimals, "reserveDecimals");
         assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
-        assertApproxEq(assetData.collateralValue, collateralValue, 2, "collateralValue");
+        assertApproxEqAbs(assetData.collateralValue, collateralValue, 2, "collateralValue");
         assertEq(assetData.debtValue, debtValue, "debtValue");
     }
 
@@ -408,20 +408,20 @@ contract TestLens is TestSetup {
             expectedStates.debtValue
         );
 
-        assertApproxEq(
+        assertApproxEqAbs(
             states.collateralValue,
             expectedStates.collateralValue,
             1000,
             "collateralValue"
         );
         assertEq(states.debtValue, expectedStates.debtValue, "debtValue");
-        assertApproxEq(
+        assertApproxEqAbs(
             states.liquidationThresholdValue,
             expectedStates.liquidationThresholdValue,
             1000,
             "liquidationThresholdValue"
         );
-        assertApproxEq(
+        assertApproxEqAbs(
             states.maxLoanToValue,
             expectedStates.maxLoanToValue,
             1000,
@@ -432,12 +432,12 @@ contract TestLens is TestSetup {
 
     function testLiquidityDataWithMultipleAssets() public {
         // TODO: fix that.
-        tip(usdt, address(morpho), 1);
+        deal(usdt, address(morpho), 1);
 
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(100 ether);
 
-        tip(usdt, address(borrower1), to6Decimals(amount));
+        deal(usdt, address(borrower1), to6Decimals(amount));
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
         borrower1.approve(usdt, to6Decimals(amount));

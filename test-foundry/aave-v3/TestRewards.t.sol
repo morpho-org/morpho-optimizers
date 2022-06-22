@@ -320,7 +320,7 @@ contract TestRewards is TestSetup {
         uint256 protocolUnclaimedRewards = IRewardsController(rewardsControllerAddress)
         .getUserRewards(tokensInArray, address(morpho), wavax);
 
-        assertApproxEq(protocolUnclaimedRewards, 0, 2);
+        assertApproxEqAbs(protocolUnclaimedRewards, 0, 2);
     }
 
     function interactWithAave() internal {

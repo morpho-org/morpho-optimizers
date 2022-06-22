@@ -190,23 +190,23 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         compRewardsLens = new CompRewardsLens(address(morpho));
 
         // Tip the Morpho contract to ensure that there are no dust errors on withdraw
-        tip(aave, address(morpho), 10**ERC20(aave).decimals());
-        tip(dai, address(morpho), 10**ERC20(dai).decimals());
-        tip(usdc, address(morpho), 10**ERC20(usdc).decimals());
-        tip(usdt, address(morpho), 10**ERC20(usdt).decimals());
-        tip(wbtc, address(morpho), 10**ERC20(wbtc).decimals());
-        tip(wEth, address(morpho), 10**ERC20(wEth).decimals());
-        tip(comp, address(morpho), 10**ERC20(comp).decimals());
-        tip(bat, address(morpho), 10**ERC20(bat).decimals());
-        tip(tusd, address(morpho), 10**ERC20(tusd).decimals());
-        tip(uni, address(morpho), 10**ERC20(uni).decimals());
-        tip(zrx, address(morpho), 10**ERC20(zrx).decimals());
-        tip(link, address(morpho), 10**ERC20(link).decimals());
-        tip(mkr, address(morpho), 10**ERC20(mkr).decimals());
-        tip(fei, address(morpho), 10**ERC20(fei).decimals());
-        tip(yfi, address(morpho), 10**ERC20(yfi).decimals());
-        tip(usdp, address(morpho), 10**ERC20(usdp).decimals());
-        tip(sushi, address(morpho), 10**ERC20(sushi).decimals());
+        deal(aave, address(morpho), 10**ERC20(aave).decimals());
+        deal(dai, address(morpho), 10**ERC20(dai).decimals());
+        deal(usdc, address(morpho), 10**ERC20(usdc).decimals());
+        deal(usdt, address(morpho), 10**ERC20(usdt).decimals());
+        deal(wbtc, address(morpho), 10**ERC20(wbtc).decimals());
+        deal(wEth, address(morpho), 10**ERC20(wEth).decimals());
+        deal(comp, address(morpho), 10**ERC20(comp).decimals());
+        deal(bat, address(morpho), 10**ERC20(bat).decimals());
+        deal(tusd, address(morpho), 10**ERC20(tusd).decimals());
+        deal(uni, address(morpho), 10**ERC20(uni).decimals());
+        deal(zrx, address(morpho), 10**ERC20(zrx).decimals());
+        deal(link, address(morpho), 10**ERC20(link).decimals());
+        deal(mkr, address(morpho), 10**ERC20(mkr).decimals());
+        deal(fei, address(morpho), 10**ERC20(fei).decimals());
+        deal(yfi, address(morpho), 10**ERC20(yfi).decimals());
+        deal(usdp, address(morpho), 10**ERC20(usdp).decimals());
+        deal(sushi, address(morpho), 10**ERC20(sushi).decimals());
     }
 
     function createMarket(address _cToken) internal {
@@ -264,9 +264,9 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     function fillUserBalances(User _user) internal {
         for (uint256 i; i < tokens.length; i++) {
             if (tokens[i] == wEth) {
-                tip(tokens[i], address(_user), uint256(5856057446759574251267521) / 2); // wEth totalSupply() returns a weird value on pinned block
+                deal(tokens[i], address(_user), uint256(5856057446759574251267521) / 2); // wEth totalSupply() returns a weird value on pinned block
             } else {
-                tip(tokens[i], address(_user), ERC20(tokens[i]).totalSupply() / 2);
+                deal(tokens[i], address(_user), ERC20(tokens[i]).totalSupply() / 2);
             }
         }
     }
