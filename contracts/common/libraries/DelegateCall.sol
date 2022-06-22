@@ -11,6 +11,9 @@ library DelegateCall {
     /// @notice Thrown when a low delegate call has failed without error message.
     error LowLevelDelegateCallFailed();
 
+    /// @notice Thrown when the target is not a contract.
+    error TargetIsNotContract();
+
     /// INTERNAL ///
 
     /// @dev Performs a low-level delegate call to the `_target` contract.
@@ -22,6 +25,8 @@ library DelegateCall {
         internal
         returns (bytes memory)
     {
+        if (_target.code.length == 0) revert TargetIsNotContract();
+
         (bool success, bytes memory returndata) = _target.delegatecall(_data);
         if (success) return returndata;
         else {
