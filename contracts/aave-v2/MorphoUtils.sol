@@ -117,8 +117,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        uint256 bmask = borrowMask[_market];
-        return userMarkets[_user] & (bmask | (bmask << 1)) != 0;
+        return supplyMarket[_user][_market] || borrowMarket[_user][_market];
     }
 
     /// @dev Returns if a user is borrowing on a given market.
@@ -126,7 +125,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
     function _isBorrowing(address _user, address _market) internal view returns (bool) {
-        return userMarkets[_user] & borrowMask[_market] != 0;
+        return borrowMarket[_user][_market];
     }
 
     /// @dev Returns if a user is supplying on a given market.
@@ -134,14 +133,14 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
     function _isSupplying(address _user, address _market) internal view returns (bool) {
-        return userMarkets[_user] & (borrowMask[_market] << 1) != 0;
+        return supplyMarket[_user][_market];
     }
 
     /// @dev Returns if a user has been borrowing from any market.
     /// @param _user The user to check for.
     /// @return True if the user has been borrowing on any market, false otherwise.
     function _isBorrowingAny(address _user) internal view returns (bool) {
-        return userMarkets[_user] & BORROWING_MASK != 0;
+        return isBorrower[_user];
     }
 
     /// @notice Sets if the user is borrowing on a market.
@@ -153,8 +152,26 @@ abstract contract MorphoUtils is MorphoStorage {
         address _market,
         bool _borrowing
     ) internal {
-        if (_borrowing) userMarkets[_user] |= borrowMask[_market];
-        else userMarkets[_user] &= ~borrowMask[_market];
+        if (_borrowing) {
+            if (!borrowMarket[_user][_market]) {
+                userMarkets[_user].push(_user);
+                borrowMarket[_user][_market] = true;
+            }
+        } else {
+            if (!borrowMarket[_user][_market]) {
+                uint256 i;
+                while (userMarkets[_user][i] != _market) {
+                    unchecked {
+                        ++i;
+                    }
+                }
+                borrowMarket[_user][_market] = false;
+
+                uint256 length = userMarkets[_user].length;
+                if (i != length - 1) userMarkets[_user][i] = userMarkets[_user][length - 1];
+                userMarkets[_user].pop();
+            }
+        }
     }
 
     /// @notice Sets if the user is supplying on a market.
@@ -166,8 +183,26 @@ abstract contract MorphoUtils is MorphoStorage {
         address _market,
         bool _supplying
     ) internal {
-        if (_supplying) userMarkets[_user] |= borrowMask[_market] << 1;
-        else userMarkets[_user] &= ~(borrowMask[_market] << 1);
+        if (_supplying) {
+            if (!supplyMarket[_user][_market]) {
+                userMarkets[_user].push(_user);
+                supplyMarket[_user][_market] = true;
+            }
+        } else {
+            if (!supplyMarket[_user][_market]) {
+                uint256 i;
+                while (userMarkets[_user][i] != _market) {
+                    unchecked {
+                        ++i;
+                    }
+                }
+                supplyMarket[_user][_market] = false;
+
+                uint256 length = userMarkets[_user].length;
+                if (i != length - 1) userMarkets[_user][i] = userMarkets[_user][length - 1];
+                userMarkets[_user].pop();
+            }
+        }
     }
 
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).

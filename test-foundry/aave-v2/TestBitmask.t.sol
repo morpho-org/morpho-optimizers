@@ -158,19 +158,18 @@ contract TestBitmask is TestSetup {
     }
 
     function isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        uint256 bmask = morpho.borrowMask(_market);
-        return morpho.userMarkets(_user) & (bmask | (bmask << 1)) != 0;
+        return morpho.supplyMarket(_user, _market) || morpho.borrowMarket(_user, _market);
     }
 
     function isBorrowing(address _user, address _market) internal view returns (bool) {
-        return morpho.userMarkets(_user) & morpho.borrowMask(_market) != 0;
+        return morpho.borrowMarket(_user, _market);
     }
 
     function isSupplying(address _user, address _market) internal view returns (bool) {
-        return morpho.userMarkets(_user) & (morpho.borrowMask(_market) << 1) != 0;
+        return morpho.supplyMarket(_user, _market);
     }
 
     function isBorrowingAny(address _user) internal view returns (bool) {
-        return morpho.userMarkets(_user) & morpho.BORROWING_MASK() != 0;
+        return morpho.isBorrower(_user);
     }
 }

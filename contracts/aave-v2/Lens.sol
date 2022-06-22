@@ -648,10 +648,7 @@ contract Lens {
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        return
-            morpho.userMarkets(_user) &
-                (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
-            0;
+        return morpho.supplyMarket(_user, _market) || morpho.borrowMarket(_user, _market);
     }
 
     function calculateLinearInterest(uint256 rate, uint256 lastUpdateTimestamp)
