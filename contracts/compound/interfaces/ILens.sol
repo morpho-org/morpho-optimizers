@@ -127,6 +127,11 @@ interface ILens {
         ICompoundOracle _oracle
     ) external view returns (Types.AssetLiquidityData memory assetData);
 
+    function getUserHealthFactor(address _user, address[] memory _updatedMarkets)
+        external
+        view
+        returns (uint256);
+
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
         external
         view
