@@ -445,9 +445,13 @@ abstract contract UsersLens is IndexesLens {
         uint256 _p2pSupplyIndex,
         uint256 _poolSupplyIndex
     ) internal view returns (uint256) {
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+            _poolTokenAddress,
+            _user
+        );
+
         return
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(_p2pSupplyIndex) +
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(_poolSupplyIndex);
+            supplyBalance.inP2P.mul(_p2pSupplyIndex) + supplyBalance.onPool.mul(_poolSupplyIndex);
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
@@ -460,8 +464,12 @@ abstract contract UsersLens is IndexesLens {
         uint256 _p2pBorrowIndex,
         uint256 _poolBorrowIndex
     ) internal view returns (uint256) {
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
+            _poolTokenAddress,
+            _user
+        );
+
         return
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(_p2pBorrowIndex) +
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(_poolBorrowIndex);
+            borrowBalance.inP2P.mul(_p2pBorrowIndex) + borrowBalance.onPool.mul(_poolBorrowIndex);
     }
 }
