@@ -13,6 +13,7 @@ interface IMorpho {
 
     /// STORAGE ///
 
+    function isClaimRewardsPaused() external view returns (bool);
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function maxSortedUsers() external view returns (uint256);
     function dustThreshold() external view returns (uint256);
