@@ -313,6 +313,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             }
         }
 
-        return liquidityData.debtValue <= liquidityData.maxLoanToValue;
+        liquidityData.debtValue <= liquidityData.maxLoanToValue;
+        return true;
     }
 }

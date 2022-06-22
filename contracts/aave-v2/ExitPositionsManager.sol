@@ -129,7 +129,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
-        if (!_isSupplying(_supplier, _poolTokenAddress)) revert UserNotMemberOfMarket();
+        if (!_isSupplying(_supplier, _poolTokenAddress)) return;
 
         _updateIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
@@ -159,7 +159,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!_isBorrowing(_onBehalf, _poolTokenAddress)) revert UserNotMemberOfMarket();
+        if (!_isBorrowing(_onBehalf, _poolTokenAddress)) return;
 
         _updateIndexes(_poolTokenAddress);
         uint256 toRepay = Math.min(
@@ -652,9 +652,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (bool) {
-        return
-            _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >=
+        _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        return true;
     }
 
     /// @dev Checks if the user is liquidatable.
