@@ -6,10 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestFees is TestSetup {
     using CompoundMath for uint256;
 
-    function testShouldRevertWhenClaimingZeroAmount() public {
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(cDai, 1 ether);
-    }
+    address[] cDaiArray = [cDai];
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
         hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
@@ -27,20 +24,9 @@ contract TestFees is TestSetup {
     }
 
     function testOwnerShouldBeAbleToClaimFees() public {
-        morpho.setReserveFactor(cDai, 1000); // 10%
-
-        // Increase blocks so that rates update.
-        hevm.roll(block.number + 1);
-
         uint256 balanceBefore = ERC20(dai).balanceOf(morpho.treasuryVault());
-        supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(cDai, 100 ether);
-        supplier1.borrow(cDai, 50 ether);
-
-        move1000BlocksForward(cDai);
-
-        supplier1.repay(cDai, type(uint256).max);
-        morpho.claimToTreasury(cDai, 1 ether);
+        _createFeeOnMorpho(1_000);
+        morpho.claimToTreasury(cDaiArray);
         uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
@@ -50,18 +36,10 @@ contract TestFees is TestSetup {
         // Set treasury vault to 0x.
         morpho.setTreasuryVault(address(0));
 
-        morpho.setReserveFactor(cDai, 1_000); // 10%
-
-        supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(cDai, 100 * WAD);
-        supplier1.borrow(cDai, 50 * WAD);
-
-        hevm.roll(block.number + 1_000);
-
-        supplier1.repay(cDai, type(uint256).max);
+        _createFeeOnMorpho(1_000);
 
         hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
-        morpho.claimToTreasury(cDai, 1 ether);
+        morpho.claimToTreasury(cDaiArray);
     }
 
     function testShouldCollectTheRightAmountOfFees() public {
@@ -92,7 +70,7 @@ contract TestFees is TestSetup {
         move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
-        morpho.claimToTreasury(cDai, type(uint256).max);
+        morpho.claimToTreasury(cDaiArray);
         uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
@@ -105,24 +83,40 @@ contract TestFees is TestSetup {
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
-        morpho.setReserveFactor(cDai, 0);
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
 
-        // Increase blocks so that rates update.
-        hevm.roll(block.number + 1);
+        _createFeeOnMorpho(0);
 
-        uint256 balanceBefore = ERC20(dai).balanceOf(morpho.treasuryVault());
-        supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(cDai, 100 * WAD);
-        supplier1.borrow(cDai, 50 * WAD);
+        morpho.claimToTreasury(cDaiArray);
 
-        hevm.roll(block.number + 100);
+        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore);
+    }
 
-        supplier1.repay(cDai, type(uint256).max);
-        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
-        morpho.claimToTreasury(cDai, 1 ether);
-        uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
+    function testShouldNotClaimFeesIfMarketIsPaused() public {
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
+        _createFeeOnMorpho(1_000);
 
-        testEquality(balanceBefore, balanceAfter);
+        // Pause market.
+        morpho.setPauseStatus(cDai, true);
+
+        morpho.claimToTreasury(cDaiArray);
+
+        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore);
+    }
+
+    function testShouldNotClaimFeesIfMarketIsPartiallyPaused() public {
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
+        _createFeeOnMorpho(1_000);
+
+        // Partially pause market.
+        morpho.setPartialPauseStatus(cDai, true);
+
+        morpho.claimToTreasury(cDaiArray);
+
+        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore);
     }
 
     function testShouldPayFee() public {
@@ -162,5 +156,22 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         supplier2.repay(cDai, type(uint256).max);
+    }
+
+    /// HELPERS ///
+
+    function _createFeeOnMorpho(uint16 _factor) internal {
+        morpho.setReserveFactor(cDai, _factor);
+
+        // Increase blocks so that rates update.
+        hevm.roll(block.number + 1);
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, 100 * WAD);
+        supplier1.borrow(cDai, 50 * WAD);
+
+        move1000BlocksForward(cDai);
+
+        supplier1.repay(cDai, type(uint256).max);
     }
 }
