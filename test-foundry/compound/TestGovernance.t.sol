@@ -201,9 +201,9 @@ contract TestGovernance is TestSetup {
     function testOnlyOwnerCanSetClaimRewardsStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusClaimRewards(true);
+        morpho.setClaimRewardsPauseStatus(true);
 
-        morpho.setPauseStatusClaimRewards(true);
+        morpho.setClaimRewardsPauseStatus(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
 }
