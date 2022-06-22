@@ -31,7 +31,7 @@ contract TestInterestRates is InterestRatesManager, Test {
                 ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / WAD)
             : 0;
         uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (((_params.delta.p2pBorrowDelta * _params.poolBorrowIndex) / WAD) * WAD) /
+            ? (((_params.delta.p2pBorrowDelta * _params.lastPoolBorrowIndex) / WAD) * WAD) /
                 ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / WAD)
             : 0;
         p2pSupplyIndex_ =
