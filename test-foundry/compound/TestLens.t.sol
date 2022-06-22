@@ -749,6 +749,30 @@ contract TestLens is TestSetup {
         assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
     }
 
+    function testGetUpdatedIndexesWithTransferToCTokenContract() public {
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
+
+        hevm.prank(address(supplier1));
+        ERC20(dai).transfer(cDai, 100 ether);
+
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(cDai, true);
+
+        morpho.updateP2PIndexes(cDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), "p2p borrow indexes different");
+        assertEq(
+            newPoolSupplyIndex,
+            ICToken(cDai).exchangeRateCurrent(),
+            "pool supply indexes different"
+        );
+        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
+    }
+
     function testGetUpdatedP2PSupplyIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
         uint256 newP2PSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
