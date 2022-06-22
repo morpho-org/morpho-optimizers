@@ -190,6 +190,56 @@ abstract contract UsersLens is IndexesLens {
         toRepay = maxROIRepay > maxRepayable ? maxRepayable : maxROIRepay;
     }
 
+    /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
+    /// @param _user The user to check.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
+    /// @return the health factor of the given user (in wad).
+    function getUserHealthFactor(address _user, address[] memory _updatedMarkets)
+        public
+        view
+        returns (uint256)
+    {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+
+        uint256 maxDebtValue;
+        uint256 debtValue;
+
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        uint256 nbUpdatedMarkets = _updatedMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
+            address poolTokenEntered = enteredMarkets[i];
+
+            bool shouldUpdateIndexes;
+            for (uint256 j; j < nbUpdatedMarkets; ) {
+                if (_updatedMarkets[j] == poolTokenEntered) {
+                    shouldUpdateIndexes = true;
+                    break;
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                shouldUpdateIndexes,
+                oracle
+            );
+
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return maxDebtValue.div(debtValue);
+    }
+
     /// PUBLIC ///
 
     /// @notice Returns the balance in underlying of a given user in a given market.
@@ -335,7 +385,7 @@ abstract contract UsersLens is IndexesLens {
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
     /// @param _user The user to check.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return isLiquidatable_ whether or not the user is liquidatable.
+    /// @return whether or not the user is liquidatable.
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
         public
         view
