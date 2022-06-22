@@ -44,6 +44,16 @@ contract TestRewards is TestSetup {
         testEquality(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
+    function testShouldRevertWhenClaimRewardsIsPaused() public {
+        address[] memory cDaiInArray = new address[](1);
+        cDaiInArray[0] = cDai;
+
+        morpho.setPauseStatusClaimRewards(true);
+
+        hevm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
+        morpho.claimRewards(cDaiInArray, false);
+    }
+
     function testShouldGetRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
