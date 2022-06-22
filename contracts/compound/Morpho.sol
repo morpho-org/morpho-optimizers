@@ -180,27 +180,26 @@ contract Morpho is MorphoGovernance {
     /// @notice Claims rewards for the given assets.
     /// @param _cTokenAddresses The cToken addresses to claim rewards from.
     /// @param _tradeForMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
-    /// @return claimedAmount The amount of rewards claimed (in COMP).
+    /// @return amountOfRewards The amount of rewards claimed (in COMP).
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken)
         external
         nonReentrant
-        returns (uint256 claimedAmount)
+        returns (uint256 amountOfRewards)
     {
-        claimedAmount = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
+        amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
-        if (claimedAmount > 0) {
+        if (amountOfRewards > 0) {
             ERC20 comp = ERC20(comptroller.getCompAddress());
-            // If there is not enough COMP tokens on the contract, claim them. Else, continue.
-            if (comp.balanceOf(address(this)) < claimedAmount)
-                comptroller.claimComp(address(this), _cTokenAddresses);
+
+            comptroller.claimComp(address(this), _cTokenAddresses);
 
             if (_tradeForMorphoToken) {
-                comp.safeApprove(address(incentivesVault), claimedAmount);
-                incentivesVault.tradeCompForMorphoTokens(msg.sender, claimedAmount);
-                emit RewardsClaimedAndTraded(msg.sender, claimedAmount);
+                comp.safeApprove(address(incentivesVault), amountOfRewards);
+                incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
+                emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
             } else {
-                comp.safeTransfer(msg.sender, claimedAmount);
-                emit RewardsClaimed(msg.sender, claimedAmount);
+                comp.safeTransfer(msg.sender, amountOfRewards);
+                emit RewardsClaimed(msg.sender, amountOfRewards);
             }
         }
     }
