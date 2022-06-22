@@ -61,7 +61,7 @@ interface IMorpho {
     function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external;
     function setPauseStatus(address _poolTokenAddress) external;
     function setPartialPauseStatus(address _poolTokenAddress) external;
-    function claimToTreasury(address _poolTokenAddress, uint256 _amount) external;
+    function claimToTreasury(address[] calldata _poolTokenAddresses) external;
     function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _params) external;
 
     /// USERS ///
