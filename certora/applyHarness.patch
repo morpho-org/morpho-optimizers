@@ -1,12 +1,12 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-06-21 18:20:01.000000000 -0700
++++ .gitignore	2022-06-21 18:22:00.000000000 -0700
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
 --- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/MorphoGovernance.sol	2022-06-21 18:20:01.000000000 -0700
++++ compound/MorphoGovernance.sol	2022-06-21 18:22:00.000000000 -0700
 @@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -18,7 +18,7 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
  
 diff -ruN compound/MorphoGovernance.sol.orig compound/MorphoGovernance.sol.orig
 --- compound/MorphoGovernance.sol.orig	1969-12-31 16:00:00.000000000 -0800
-+++ compound/MorphoGovernance.sol.orig	2022-06-21 18:20:01.000000000 -0700
++++ compound/MorphoGovernance.sol.orig	2022-06-21 18:22:00.000000000 -0700
 @@ -0,0 +1,336 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -358,7 +358,7 @@ diff -ruN compound/MorphoGovernance.sol.orig compound/MorphoGovernance.sol.orig
 +}
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 --- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/PositionsManager.sol	2022-06-21 18:20:01.000000000 -0700
++++ compound/PositionsManager.sol	2022-06-21 18:22:00.000000000 -0700
 @@ -213,7 +213,7 @@
          address _onBehalf,
          uint256 _amount,
@@ -406,8 +406,14 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
              !userMembership[_poolTokenCollateralAddress][_borrower]
 diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
 --- compound/RewardsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/RewardsManager.sol	2022-06-21 18:21:33.000000000 -0700
-@@ -17,9 +17,9 @@
++++ compound/RewardsManager.sol	2022-06-21 20:21:32.000000000 -0700
+@@ -1,4 +1,5 @@
+ // SPDX-License-Identifier: GNU AGPLv3
++// HARNESS: added override to functions that were outlined in the IRewardsManager to stop the compiler errors when running verification
+ pragma solidity ^0.8.0;
+ 
+ import "./interfaces/IRewardsManager.sol";
+@@ -17,9 +18,9 @@
  
      /// STORAGE ///
  
@@ -420,7 +426,7 @@ diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
      mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
      mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
  
-@@ -52,7 +52,7 @@
+@@ -52,7 +53,7 @@
  
      /// @notice Initializes the RewardsManager contract.
      /// @param _morpho The address of Morpho's main contract's proxy.
@@ -429,7 +435,7 @@ diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
          morpho = IMorpho(_morpho);
          comptroller = IComptroller(morpho.comptroller());
      }
-@@ -63,7 +63,7 @@
+@@ -63,7 +64,7 @@
      /// @param _cTokenAddress The cToken address.
      /// @return The local COMP supply state.
      function getLocalCompSupplyState(address _cTokenAddress)
@@ -438,7 +444,7 @@ diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
          view
          returns (IComptroller.CompMarketState memory)
      {
-@@ -74,7 +74,7 @@
+@@ -74,7 +75,7 @@
      /// @param _cTokenAddress The cToken address.
      /// @return The local COMP borrow state.
      function getLocalCompBorrowState(address _cTokenAddress)
@@ -447,7 +453,7 @@ diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
          view
          returns (IComptroller.CompMarketState memory)
      {
-@@ -87,7 +87,7 @@
+@@ -87,7 +88,7 @@
      /// @param _cTokenAddresses The cToken addresses for which to claim rewards.
      /// @param _user The address of the user.
      function claimRewards(address[] calldata _cTokenAddresses, address _user)
@@ -456,7 +462,7 @@ diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
          onlyMorpho
          returns (uint256 totalUnclaimedRewards)
      {
-@@ -103,7 +103,7 @@
+@@ -103,7 +104,7 @@
          address _user,
          address _cTokenAddress,
          uint256 _userBalance
@@ -465,7 +471,7 @@ diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
          _updateSupplyIndex(_cTokenAddress);
          userUnclaimedCompRewards[_user] += _accrueSupplierComp(_user, _cTokenAddress, _userBalance);
      }
-@@ -116,7 +116,7 @@
+@@ -116,7 +117,7 @@
          address _user,
          address _cTokenAddress,
          uint256 _userBalance
