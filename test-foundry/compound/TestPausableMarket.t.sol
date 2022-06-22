@@ -81,6 +81,29 @@ contract TestPausableMarket is TestSetup {
         morpho.claimToTreasury(cDaiArray, amountArray);
     }
 
+    function testShouldDisableAllMarketsWhenGloballyPaused(uint8 _random1, uint8 _random2) public {
+        morpho.setPauseStatusForAllMarkets(true);
+
+        uint256 poolsLength = pools.length;
+        address market1 = pools[_random1 % poolsLength];
+        address market2 = pools[_random2 % poolsLength];
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.supply(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.borrow(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.withdraw(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.repay(market1, 1);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.liquidate(market1, market2, address(supplier1), 1);
+    }
+
     function testShouldDisableMarketWhenPaused() public {
         uint256 amount = 10_000 ether;
 
