@@ -68,7 +68,11 @@ contract TestSetup is Config, Utils, stdCheats {
         initContracts();
         setContractsLabels();
         initUsers();
+
+        onSetUp();
     }
+
+    function onSetUp() public virtual {}
 
     function initContracts() internal {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
