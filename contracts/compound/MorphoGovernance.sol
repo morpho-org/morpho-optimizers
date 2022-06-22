@@ -232,6 +232,23 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
+    /// @notice Sets the pause status for all markets.
+    /// @param _newStatus The new status to set.
+    function setPauseStatusForAllMarkets(bool _newStatus) external onlyOwner {
+        uint256 numberOfMarketsCreated = marketsCreated.length;
+
+        for (uint256 i; i < numberOfMarketsCreated; ) {
+            address poolToken = marketsCreated[i];
+
+            marketStatus[poolToken].isPaused = _newStatus;
+            emit PauseStatusSet(poolToken, _newStatus);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     /// @param _newStatus The new status to set.
