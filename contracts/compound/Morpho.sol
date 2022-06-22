@@ -16,12 +16,13 @@ contract Morpho is MorphoGovernance {
     /// @notice Emitted when a user claims rewards.
     /// @param _user The address of the claimer.
     /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
+    /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
+    event RewardsClaimed(address indexed _user, uint256 _amountClaimed, bool indexed _traded);
 
-    /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
-    /// @param _user The address of the claimer.
-    /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndTraded(address indexed _user, uint256 _amountSent);
+    /// ERRRORS ///
+
+    /// @notice Thrown when the claim rewards is paused.
+    error ClaimRewardsPaused();
 
     /// EXTERNAL ///
 
@@ -184,6 +185,7 @@ contract Morpho is MorphoGovernance {
         external
         nonReentrant
     {
+        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
         uint256 amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
         if (amountOfRewards == 0) revert AmountIsZero();
@@ -196,11 +198,9 @@ contract Morpho is MorphoGovernance {
         if (_tradeForMorphoToken) {
             comp.safeApprove(address(incentivesVault), amountOfRewards);
             incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
-            emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
-        } else {
-            comp.safeTransfer(msg.sender, amountOfRewards);
-            emit RewardsClaimed(msg.sender, amountOfRewards);
-        }
+        } else comp.safeTransfer(msg.sender, amountOfRewards);
+
+        emit RewardsClaimed(msg.sender, amountOfRewards, _tradeForMorphoToken);
     }
 
     /// @notice Allows to receive ETH.
