@@ -74,6 +74,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newStatus The new partial pause status of the market.
     event PartialPauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
+    /// @notice Emitted when claiming rewards is paused or unpaused.
+    /// @param _newStatus The new claiming rewards status.
+    event ClaimRewardsStatusSet(bool _newStatus);
+
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
     /// @param _reserveFactor The reserve factor set for this market.
@@ -262,6 +266,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     {
         p2pDisabled[_poolTokenAddress] = _newStatus;
         emit P2PStatusSet(_poolTokenAddress, _newStatus);
+    }
+
+    /// @notice Sets the pause status on claiming rewards.
+    /// @param _newStatus The new status to set.
+    function setPauseStatusClaimRewards(bool _newStatus) external onlyOwner {
+        isClaimRewardsPaused = _newStatus;
+        emit ClaimRewardsStatusSet(_newStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
