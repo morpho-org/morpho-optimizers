@@ -513,4 +513,25 @@ contract TestRewards is TestSetup {
 
         assertEq(updatedIndex, compoundAfter.index);
     }
+
+    function testShouldAllowClaimingRewardsOfMarketAlreadyClaimed() public {
+        uint256 amount = to6Decimals(1 ether);
+        address[] memory cUsdcArray = new address[](1);
+        cUsdcArray[0] = cUsdc;
+        address[] memory cUsdtArray = new address[](1);
+        cUsdtArray[0] = cUsdt;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, amount);
+        supplier2.approve(usdc, type(uint256).max);
+        supplier2.supply(cUsdc, amount);
+        supplier3.approve(usdt, type(uint256).max);
+        supplier3.supply(cUsdt, amount / 2);
+
+        hevm.roll(block.number + 100_000);
+
+        supplier1.claimRewards(cUsdcArray, false);
+        supplier3.claimRewards(cUsdtArray, false);
+        supplier2.claimRewards(cUsdcArray, false);
+    }
 }
