@@ -838,6 +838,120 @@ contract TestLens is TestSetup {
         assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
     }
 
+    function testHealthFactorAbove1() public {
+        uint256 amount = 10_000 ether;
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setUnderlyingPrice(cUsdc, 1e30);
+        oracle.setUnderlyingPrice(cDai, 1e18);
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        (, uint256 usdcCollateralFactor, ) = comptroller.markets(cUsdc);
+
+        uint256 healthFactor = lens.getUserHealthFactor(address(borrower1), new address[](0));
+        uint256 expectedHealthFactor = (2 * amount).mul(usdcCollateralFactor).div(amount);
+
+        assertApproxEq(healthFactor, expectedHealthFactor, 1e8);
+    }
+
+    function testHealthFactorAbove1WhenHalfMatched() public {
+        uint256 amount = 10_000 ether;
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setUnderlyingPrice(cUsdc, 1e30);
+        oracle.setUnderlyingPrice(cDai, 1e18);
+
+        supplier1.approve(dai, amount / 2);
+        supplier1.supply(cDai, amount / 2);
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        (, uint256 usdcCollateralFactor, ) = comptroller.markets(cUsdc);
+
+        uint256 healthFactor = lens.getUserHealthFactor(address(borrower1), new address[](0));
+        uint256 expectedHealthFactor = (2 * amount).mul(usdcCollateralFactor).div(amount);
+
+        assertApproxEq(healthFactor, expectedHealthFactor, 1e8);
+    }
+
+    function testHealthFactorAbove1WithUpdatedMarkets() public {
+        uint256 amount = 10_000 ether;
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setUnderlyingPrice(cUsdc, 1e30);
+        oracle.setUnderlyingPrice(cDai, 1e18);
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 10_000);
+
+        address[] memory updatedMarkets = new address[](1);
+        uint256 healthFactorNotUpdated = lens.getUserHealthFactor(
+            address(borrower1),
+            updatedMarkets
+        );
+
+        updatedMarkets[0] = cUsdc;
+
+        uint256 healthFactorUsdcUpdated = lens.getUserHealthFactor(
+            address(borrower1),
+            updatedMarkets
+        );
+
+        updatedMarkets[0] = cDai;
+
+        uint256 healthFactorDaiUpdated = lens.getUserHealthFactor(
+            address(borrower1),
+            updatedMarkets
+        );
+
+        assertGt(
+            healthFactorUsdcUpdated,
+            healthFactorNotUpdated,
+            "health factor lower when updating cUsdc"
+        );
+        assertLt(
+            healthFactorDaiUpdated,
+            healthFactorNotUpdated,
+            "health factor higher when updating cDai"
+        );
+    }
+
+    function testHealthFactorEqual1() public {
+        uint256 amount = 10_000 ether;
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setUnderlyingPrice(cUsdc, 1e30);
+        oracle.setUnderlyingPrice(cDai, 1e18);
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        uint256 borrower1HealthFactor = lens.getUserHealthFactor(
+            address(borrower1),
+            new address[](0)
+        );
+
+        borrower2.approve(usdc, to6Decimals(2 * amount));
+        borrower2.supply(cUsdc, to6Decimals(2 * amount));
+        borrower2.borrow(cDai, amount.mul(borrower1HealthFactor));
+
+        uint256 borrower2HealthFactor = lens.getUserHealthFactor(
+            address(borrower2),
+            new address[](0)
+        );
+
+        assertEq(borrower2HealthFactor, 1e18);
+    }
+
     function testComputeLiquidation() public {
         uint256 amount = 10_000 ether;
 
