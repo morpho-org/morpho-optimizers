@@ -197,4 +197,13 @@ contract TestGovernance is TestSetup {
         morpho.setTreasuryVault(treasuryVaultV2);
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
+
+    function testOnlyOwnerCanSetClaimRewardsStatus() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setPauseStatusClaimRewards(true);
+
+        morpho.setPauseStatusClaimRewards(true);
+        assertTrue(morpho.isClaimRewardsPaused());
+    }
 }
