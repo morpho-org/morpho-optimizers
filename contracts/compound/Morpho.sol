@@ -21,7 +21,7 @@ contract Morpho is MorphoGovernance {
 
     /// ERRRORS ///
 
-    /// @notice Thrown when the claim rewards is paused.
+    /// @notice Thrown when claiming rewards is paused.
     error ClaimRewardsPaused();
 
     /// EXTERNAL ///
