@@ -6,4 +6,3 @@ forge-std/=lib/forge-std/src/
 @aave/periphery-v3/=lib/aave-v3-periphery/
 
 @contracts/=contracts/
-@config/=config/${PROTOCOL}/${NETWORK}/
