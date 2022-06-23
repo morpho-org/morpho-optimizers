@@ -320,25 +320,36 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
-    /// @dev No more than 90% of the accumulated fees are claimable at once.
-    /// @param _poolTokenAddress The address of the market on which to claim the reserve fee.
-    /// @param _amount The amount of underlying to claim.
-    function claimToTreasury(address _poolTokenAddress, uint256 _amount)
+    /// @param _poolTokenAddresses The addresses of the pool token addresses on which to claim the reserve fee.
+    /// @param _amounts The list of amount of underlying to claim on each market.
+    function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts)
         external
         onlyOwner
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
+        uint256 numberOfMarkets = _poolTokenAddresses.length;
 
-        if (underlyingBalance == 0) revert AmountIsZero();
+        for (uint256 i; i < numberOfMarkets; ) {
+            address poolToken = _poolTokenAddresses[i];
+            uint256 amount = _amounts[i];
+            unchecked {
+                ++i;
+            }
 
-        uint256 amountToClaim = Math.min(_amount, underlyingToken.balanceOf(address(this)));
+            Types.MarketStatus memory status = marketStatus[poolToken];
+            if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
-        underlyingToken.safeTransfer(treasuryVault, amountToClaim);
-        emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
+            ERC20 underlyingToken = ERC20(IAToken(poolToken).UNDERLYING_ASSET_ADDRESS());
+            uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
+
+            if (underlyingBalance == 0) continue;
+
+            uint256 toClaim = Math.min(amount, underlyingBalance);
+
+            underlyingToken.safeTransfer(treasuryVault, toClaim);
+            emit ReserveFeeClaimed(poolToken, toClaim);
+        }
     }
 
     /// @notice Creates a new market to borrow/supply in.
