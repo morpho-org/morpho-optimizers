@@ -25,9 +25,4 @@ contract Config {
     address constant poolDataProviderAddress = 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654;
     address constant poolAddressesProviderAddress = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address constant rewardsControllerAddress = 0x929EC64c34a17401F460460D4B9390518E5B473e;
-
-    // Uniswap V3
-
-    uint24 constant MORPHO_UNIV3_FEE = 3000;
-    uint24 constant REWARD_UNIV3_FEE = 3000;
 }
