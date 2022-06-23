@@ -838,6 +838,24 @@ contract TestLens is TestSetup {
         assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
     }
 
+    function testHealthFactorBelow1() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setUnderlyingPrice(cUsdc, 0.6e30);
+        oracle.setUnderlyingPrice(cDai, 1e18);
+
+        bool isLiquidatable = lens.isLiquidatable(address(borrower1), new address[](0));
+        uint256 healthFactor = lens.getUserHealthFactor(address(borrower1), new address[](0));
+
+        assertTrue(isLiquidatable);
+        assertLt(healthFactor, 1e18);
+    }
+
     function testHealthFactorAbove1() public {
         uint256 amount = 10_000 ether;
 
