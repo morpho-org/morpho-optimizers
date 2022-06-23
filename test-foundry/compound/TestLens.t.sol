@@ -1973,4 +1973,49 @@ contract TestLens is TestSetup {
             "unexpected total balance"
         );
     }
+
+    function testRatesShouldBeConstantWhenSupplyDeltaWithoutInteraction() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount / 2);
+
+        borrower2.approve(wEth, amount);
+        borrower2.supply(cEth, amount);
+        borrower2.borrow(cDai, amount / 2);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 1);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(cDai, type(uint256).max);
+
+        (
+            uint256 p2pSupplyRateBefore,
+            uint256 p2pBorrowRateBefore,
+            uint256 poolSupplyRateBefore,
+            uint256 poolBorrowRateBefore
+        ) = lens.getRatesPerBlock(cDai);
+
+        hevm.roll(block.number + 1_000_000);
+
+        (
+            uint256 p2pSupplyRateAfter,
+            uint256 p2pBorrowRateAfter,
+            uint256 poolSupplyRateAfter,
+            uint256 poolBorrowRateAfter
+        ) = lens.getRatesPerBlock(cDai);
+
+        assertEq(p2pSupplyRateBefore, p2pSupplyRateAfter);
+        assertEq(p2pBorrowRateBefore, p2pBorrowRateAfter);
+        assertEq(poolSupplyRateBefore, poolSupplyRateAfter);
+        assertEq(poolBorrowRateBefore, poolBorrowRateAfter);
+    }
 }
