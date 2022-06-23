@@ -33,58 +33,6 @@ abstract contract UsersLens is IndexesLens {
         return morpho.getEnteredMarkets(_user);
     }
 
-    /// @notice Returns the collateral value, debt value and max debt value of a given user.
-    /// @param _user The user to determine liquidity for.
-    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return collateralValue The collateral value of the user.
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum possible debt value of the user.
-    function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
-        external
-        view
-        returns (
-            uint256 collateralValue,
-            uint256 debtValue,
-            uint256 maxDebtValue
-        )
-    {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
-
-            bool shouldUpdateIndexes;
-            for (uint256 j; j < nbUpdatedMarkets; ) {
-                if (_updatedMarkets[j] == poolTokenEntered) {
-                    shouldUpdateIndexes = true;
-                    break;
-                }
-
-                unchecked {
-                    ++j;
-                }
-            }
-
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                shouldUpdateIndexes,
-                oracle
-            );
-
-            collateralValue += assetData.collateralValue;
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.
@@ -190,20 +138,39 @@ abstract contract UsersLens is IndexesLens {
         toRepay = maxROIRepay > maxRepayable ? maxRepayable : maxROIRepay;
     }
 
-    /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
-    /// @param _user The user to check.
+    /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
+    /// @param _user The user of whom to get the health factor.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     /// @return the health factor of the given user (in wad).
-    function getUserHealthFactor(address _user, address[] memory _updatedMarkets)
-        public
+    function getUserHealthFactor(address _user, address[] calldata _updatedMarkets)
+        external
         view
         returns (uint256)
     {
+        (, uint256 debtValue, uint256 maxDebtValue) = getUserBalanceStates(_user, _updatedMarkets);
+
+        return maxDebtValue.div(debtValue);
+    }
+
+    /// PUBLIC ///
+
+    /// @notice Returns the collateral value, debt value and max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
+    /// @return collateralValue The collateral value of the user.
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum possible debt value of the user.
+    function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
+        public
+        view
+        returns (
+            uint256 collateralValue,
+            uint256 debtValue,
+            uint256 maxDebtValue
+        )
+    {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-
-        uint256 maxDebtValue;
-        uint256 debtValue;
 
         uint256 nbEnteredMarkets = enteredMarkets.length;
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
@@ -229,6 +196,7 @@ abstract contract UsersLens is IndexesLens {
                 oracle
             );
 
+            collateralValue += assetData.collateralValue;
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
 
@@ -236,11 +204,7 @@ abstract contract UsersLens is IndexesLens {
                 ++i;
             }
         }
-
-        return maxDebtValue.div(debtValue);
     }
-
-    /// PUBLIC ///
 
     /// @notice Returns the balance in underlying of a given user in a given market.
     /// @param _user The user to determine balances of.
