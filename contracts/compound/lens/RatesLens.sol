@@ -28,11 +28,11 @@ abstract contract RatesLens is UsersLens {
 
     /// @notice Computes and returns the current average supply rate per block experienced on a given market.
     /// @param _poolTokenAddress The market address.
-    /// @return The market's average supply rate per block (in wad).
+    /// @return avgSupplyRate The market's average supply rate per block (in wad).
     function getAverageSupplyRatePerBlock(address _poolTokenAddress)
         external
         view
-        returns (uint256)
+        returns (uint256 avgSupplyRate)
     {
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
         (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(
@@ -45,19 +45,19 @@ abstract contract RatesLens is UsersLens {
         uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex) -
             delta.p2pSupplyDelta.mul(poolSupplyIndex);
 
-        return
-            (poolSupplyRate.mul(poolSupply) + p2pSupplyRate.mul(p2pSupply)).div(
+        if (poolSupply > 0 || p2pSupply > 0)
+            avgSupplyRate = (poolSupplyRate.mul(poolSupply) + p2pSupplyRate.mul(p2pSupply)).div(
                 poolSupply + p2pSupply
             );
     }
 
     /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
     /// @param _poolTokenAddress The market address.
-    /// @return The market's average borrow rate per block (in wad).
+    /// @return avgBorrowRate The market's average borrow rate per block (in wad).
     function getAverageBorrowRatePerBlock(address _poolTokenAddress)
         external
         view
-        returns (uint256)
+        returns (uint256 avgBorrowRate)
     {
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
         (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(
@@ -70,8 +70,8 @@ abstract contract RatesLens is UsersLens {
         uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex) -
             delta.p2pBorrowDelta.mul(poolBorrowIndex);
 
-        return
-            (poolBorrowRate.mul(poolBorrow) + p2pBorrowRate.mul(p2pBorrow)).div(
+        if (poolBorrow > 0 || p2pBorrow > 0)
+            avgBorrowRate = (poolBorrowRate.mul(poolBorrow) + p2pBorrowRate.mul(p2pBorrow)).div(
                 poolBorrow + p2pBorrow
             );
     }
