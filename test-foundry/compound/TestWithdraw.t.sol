@@ -718,7 +718,7 @@ contract TestWithdraw is TestSetup {
         assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
     }
 
-    function testAttackTransferToCToken() public {
+    function testShouldNotFreezeMarketWithExchangeRatePump() public {
         uint256 amount = 500_000e6;
         supplier1.approve(usdc, amount);
         supplier1.supply(cUsdc, amount);

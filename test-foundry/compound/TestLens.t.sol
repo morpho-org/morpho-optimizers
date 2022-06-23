@@ -764,6 +764,8 @@ contract TestLens is TestSetup {
         hevm.prank(address(supplier1));
         ERC20(dai).transfer(cDai, 100 ether);
 
+        hevm.roll(block.number + 1);
+
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,
