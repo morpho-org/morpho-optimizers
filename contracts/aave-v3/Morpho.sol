@@ -18,13 +18,18 @@ contract Morpho is MorphoGovernance {
     /// @param _user The address of the claimer.
     /// @param _reward The reward token address.
     /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address indexed _user, address _reward, uint256 _amountClaimed);
+    /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
+    event RewardsClaimed(
+        address indexed _user,
+        address _reward,
+        uint256 _amountClaimed,
+        bool indexed _traded
+    );
 
-    /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
-    /// @param _user The address of the claimer.
-    /// @param _reward The reward token address.
-    /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndTraded(address indexed _user, address _reward, uint256 _amountSent);
+    /// ERRORS ///
+
+    /// @notice Thrown when claiming rewards is paused.
+    error ClaimRewardsPaused();
 
     /// EXTERNAL ///
 
@@ -187,6 +192,7 @@ contract Morpho is MorphoGovernance {
         external
         nonReentrant
     {
+        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
         (address[] memory rewardsList, uint256[] memory claimedAmounts) = rewardsManager
         .claimRewards(_assets, msg.sender);
         uint256 rewardsListLength = rewardsList.length;
@@ -199,7 +205,12 @@ contract Morpho is MorphoGovernance {
 
                 if (claimedAmount > 0) {
                     ERC20(rewardsList[i]).safeApprove(address(incentivesVault), claimedAmount);
-                    emit RewardsClaimedAndTraded(msg.sender, rewardsList[i], claimedAmount);
+                    emit RewardsClaimed(
+                        msg.sender,
+                        rewardsList[i],
+                        claimedAmount,
+                        _tradeForMorphoToken
+                    );
                 }
 
                 unchecked {
@@ -216,7 +227,12 @@ contract Morpho is MorphoGovernance {
                 uint256 claimedAmount = claimedAmounts[i];
                 if (claimedAmount > 0) {
                     ERC20(rewardsList[i]).safeTransfer(msg.sender, claimedAmount);
-                    emit RewardsClaimed(msg.sender, rewardsList[i], claimedAmount);
+                    emit RewardsClaimed(
+                        msg.sender,
+                        rewardsList[i],
+                        claimedAmount,
+                        _tradeForMorphoToken
+                    );
                 }
 
                 unchecked {
