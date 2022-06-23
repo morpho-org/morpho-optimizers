@@ -66,10 +66,7 @@ library InterestRatesModel {
         growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(
             _lastPoolIndexes.lastBorrowPoolIndex
         );
-        // Two cases:
-        //  - poolSupplyGrowthFactor <= poolBorrowGrowthFactor: we compute the growth factor with the classic formulas.
-        //  - poolSupplyGrowthFactor > poolBorrowGrowthFactor (happens because someone sent underlying tokens to the
-        //    cToken contract): the peer-to-peer growth factors are set to the pool borrow growth factor.
+
         if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {
             uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
                 growthFactors_.poolSupplyGrowthFactor +
@@ -84,6 +81,8 @@ library InterestRatesModel {
                 (_reserveFactor * (growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor)) /
                 MAX_BASIS_POINTS;
         } else {
+            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
+            // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.
             growthFactors_.p2pSupplyGrowthFactor = growthFactors_.poolBorrowGrowthFactor;
             growthFactors_.p2pBorrowGrowthFactor = growthFactors_.poolBorrowGrowthFactor;
         }
