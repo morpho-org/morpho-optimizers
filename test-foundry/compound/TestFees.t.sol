@@ -158,6 +158,29 @@ contract TestFees is TestSetup {
         supplier2.repay(cDai, type(uint256).max);
     }
 
+    function testShouldNotClaimCompRewards() public {
+        uint256 amount = 1_000 ether;
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
+        supplier2.approve(dai, type(uint256).max);
+        supplier2.supply(cDai, amount);
+
+        move1000BlocksForward(cDai);
+
+        // Claim rewards for supplier1 and supplier2. Only COMP rewards for supplier2 are left on the contract.
+        supplier1.claimRewards(cDaiArray, false);
+
+        // Try to claim COMP to treasury.
+        uint256 balanceBefore = ERC20(comp).balanceOf(address(morpho));
+        address[] memory cCompArray = new address[](1);
+        cCompArray[0] = cComp;
+        morpho.claimToTreasury(cCompArray);
+        uint256 balanceAfter = ERC20(comp).balanceOf(address(morpho));
+
+        assertEq(balanceAfter, balanceBefore);
+    }
+
     /// HELPERS ///
 
     function _createFeeOnMorpho(uint16 _factor) internal {
