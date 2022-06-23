@@ -20,25 +20,6 @@ contract Config {
     address constant usdp = 0x8E870D67F660D95d5be530380D0eC0bd388289E1;
     address constant sushi = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2;
 
-    // Aave
-
-    address constant aAave = 0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B;
-    address constant aDai = 0x028171bCA77440897B824Ca71D1c56caC55b68A3;
-    address constant aUsdc = 0xBcca60bB61934080951369a648Fb03DF4F96263C;
-    address constant aUsdt = 0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811;
-    address constant aWbtc = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
-    address constant aWeth = 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e;
-
-    address constant stableDebtDai = 0x778A13D3eeb110A4f7bb6529F99c000119a08E92;
-    address constant variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
-    address constant variableDebtUsdc = 0x619beb58998eD2278e08620f97007e1116D5D25b;
-
-    address constant poolAddressesProviderAddress = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
-    address constant aaveIncentivesControllerAddress = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
-    address constant swapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-
-    // Compound
-
     address constant cAave = 0xe65cdB6479BaC1e22340E4E755fAE7E509EcD06c;
     address constant cDai = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address constant cUsdc = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
@@ -58,9 +39,4 @@ contract Config {
     address constant cSushi = 0x4B0181102A0112A2ef11AbEE5563bb4a3176c9d7;
 
     address constant comptrollerAddress = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
-
-    // Swap Manager Config
-
-    uint24 constant MORPHO_UNIV3_FEE = 3000;
-    uint24 constant REWARD_UNIV3_FEE = 10000;
 }

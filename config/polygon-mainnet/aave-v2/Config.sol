@@ -25,9 +25,4 @@ contract Config {
     address constant poolAddressesProviderAddress = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
     address constant aaveIncentivesControllerAddress = 0x357D51124f59836DeD84c8a1730D72B749d8BC23;
     address constant swapRouterAddress = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
-    // Uniswap V3
-
-    uint24 constant MORPHO_UNIV3_FEE = 3000;
-    uint24 constant REWARD_UNIV3_FEE = 3000;
 }
