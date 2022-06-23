@@ -10,10 +10,6 @@ FOUNDRY_FORK_BLOCK_NUMBER?=14292587
 
 DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 
-ifeq (${NETWORK}, eth-mainnet)
-  DAPP_REMAPPINGS=@config/=config/${NETWORK}/
-endif
-
 ifeq (${NETWORK}, polygon-mainnet)
   FOUNDRY_FORK_BLOCK_NUMBER=29116728
 endif
