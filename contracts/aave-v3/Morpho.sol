@@ -199,45 +199,29 @@ contract Morpho is MorphoGovernance {
 
         rewardsController.claimAllRewardsToSelf(_assets);
 
-        if (_tradeForMorphoToken) {
-            for (uint256 i; i < rewardsListLength; ) {
-                uint256 claimedAmount = claimedAmounts[i];
+        for (uint256 i; i < rewardsListLength; ) {
+            uint256 claimedAmount = claimedAmounts[i];
 
-                if (claimedAmount > 0) {
+            if (claimedAmount > 0) {
+                if (_tradeForMorphoToken) {
                     ERC20(rewardsList[i]).safeApprove(address(incentivesVault), claimedAmount);
-                    emit RewardsClaimed(
+                    incentivesVault.tradeRewardTokensForMorphoTokens(
                         msg.sender,
-                        rewardsList[i],
-                        claimedAmount,
-                        _tradeForMorphoToken
+                        rewardsList,
+                        claimedAmounts
                     );
-                }
+                } else ERC20(rewardsList[i]).safeTransfer(msg.sender, claimedAmount);
 
-                unchecked {
-                    ++i;
-                }
+                emit RewardsClaimed(
+                    msg.sender,
+                    rewardsList[i],
+                    claimedAmount,
+                    _tradeForMorphoToken
+                );
             }
-            incentivesVault.tradeRewardTokensForMorphoTokens(
-                msg.sender,
-                rewardsList,
-                claimedAmounts
-            );
-        } else {
-            for (uint256 i; i < rewardsListLength; ) {
-                uint256 claimedAmount = claimedAmounts[i];
-                if (claimedAmount > 0) {
-                    ERC20(rewardsList[i]).safeTransfer(msg.sender, claimedAmount);
-                    emit RewardsClaimed(
-                        msg.sender,
-                        rewardsList[i],
-                        claimedAmount,
-                        _tradeForMorphoToken
-                    );
-                }
 
-                unchecked {
-                    ++i;
-                }
+            unchecked {
+                ++i;
             }
         }
     }
