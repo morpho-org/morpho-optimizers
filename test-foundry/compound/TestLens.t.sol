@@ -854,7 +854,7 @@ contract TestLens is TestSetup {
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1), new address[](0));
         uint256 expectedHealthFactor = (2 * amount).mul(usdcCollateralFactor).div(amount);
 
-        assertApproxEq(healthFactor, expectedHealthFactor, 1e8);
+        assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e8);
     }
 
     function testHealthFactorAbove1WhenHalfMatched() public {
@@ -876,7 +876,7 @@ contract TestLens is TestSetup {
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1), new address[](0));
         uint256 expectedHealthFactor = (2 * amount).mul(usdcCollateralFactor).div(amount);
 
-        assertApproxEq(healthFactor, expectedHealthFactor, 1e8);
+        assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e8);
     }
 
     function testHealthFactorAbove1WithUpdatedMarkets() public {
