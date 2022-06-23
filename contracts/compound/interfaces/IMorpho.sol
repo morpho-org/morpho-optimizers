@@ -55,6 +55,9 @@ interface IMorpho {
     function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
+    function setPauseStatusForAllMarkets(bool _newStatus) external;
+    function setPauseStatus(address _poolTokenAddress, bool _newStatus) external;
+    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external;
     function setPauseStatus(address _poolTokenAddress) external;
     function setPartialPauseStatus(address _poolTokenAddress) external;
     function claimToTreasury(address _poolTokenAddress, uint256 _amount) external;
