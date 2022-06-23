@@ -127,7 +127,7 @@ interface ILens {
         ICompoundOracle _oracle
     ) external view returns (Types.AssetLiquidityData memory assetData);
 
-    function getUserHealthFactor(address _user, address[] memory _updatedMarkets)
+    function getUserHealthFactor(address _user, address[] calldata _updatedMarkets)
         external
         view
         returns (uint256);
@@ -141,7 +141,7 @@ interface ILens {
         address _user,
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
-        address[] memory _updatedMarkets
+        address[] calldata _updatedMarkets
     ) external view returns (uint256 toRepay);
 
     /// RATES ///
