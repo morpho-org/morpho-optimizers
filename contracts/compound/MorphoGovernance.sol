@@ -293,15 +293,13 @@ abstract contract MorphoGovernance is MorphoUtils {
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
             ERC20 underlyingToken = _getUnderlying(poolToken);
-            uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
+            uint256 toClaim = (underlyingToken.balanceOf(address(this)) * MAX_CLAIMABLE_RESERVE) /
+                MAX_BASIS_POINTS;
 
-            if (underlyingBalance == 0) continue;
+            if (toClaim == 0) continue;
 
-            underlyingToken.safeTransfer(
-                treasuryVault,
-                (underlyingBalance * MAX_CLAIMABLE_RESERVE) / MAX_BASIS_POINTS
-            );
-            emit ReserveFeeClaimed(poolToken, underlyingBalance);
+            underlyingToken.safeTransfer(treasuryVault, toClaim);
+            emit ReserveFeeClaimed(poolToken, toClaim);
         }
     }
 
