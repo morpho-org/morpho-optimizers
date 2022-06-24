@@ -15,6 +15,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// EVENTS ///
 
@@ -318,15 +319,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingToWithdraw
             ); // In underlying.
 
-            uint256 remainingToWithdrawInPoolUnit = vars.remainingToWithdraw.rayDiv(
-                vars.poolSupplyIndex
+            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
+                vars.remainingToWithdraw.rayDiv(vars.poolSupplyIndex)
             );
-            // Safe unchecked because the substraction is done iff delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit.
-            unchecked {
-                delta.p2pSupplyDelta = delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit
-                    ? delta.p2pSupplyDelta - remainingToWithdrawInPoolUnit
-                    : 0;
-            }
             delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             vars.toWithdraw += matchedDelta;
             vars.remainingToWithdraw -= matchedDelta;
@@ -480,13 +475,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingToRepay
             ); // In underlying.
 
-            uint256 remainingToRepayInPoolUnit = vars.remainingToRepay.rayDiv(vars.poolBorrowIndex);
-            // Safe unchecked because the substraction is done iff delta.p2pBorrowDelta > remainingToRepayInPoolUnit.
-            unchecked {
-                delta.p2pBorrowDelta = delta.p2pBorrowDelta > remainingToRepayInPoolUnit
-                    ? delta.p2pBorrowDelta - remainingToRepayInPoolUnit
-                    : 0;
-            }
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToRepay.rayDiv(vars.poolBorrowIndex)
+            );
             delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
             vars.toRepay += matchedDelta;
             vars.remainingToRepay -= matchedDelta;
@@ -497,7 +488,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
-            vars.feeToRepay = Math.safeSub(
+            vars.feeToRepay = Math.zeroFloorSub(
                 (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
                     delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)),
                 (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -

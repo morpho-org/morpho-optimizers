@@ -15,6 +15,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// EVENTS ///
 
@@ -104,15 +105,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 vars.remainingToSupply
             ); // In underlying.
 
-            uint256 remainingToSupplyInPoolUnit = vars.remainingToSupply.rayDiv(
-                vars.poolBorrowIndex
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToSupply.rayDiv(vars.poolBorrowIndex)
             );
-            // Safe unchecked because the substraction is done iff delta.p2pBorrowDelta > remainingToSupplyInPoolUnit.
-            unchecked {
-                delta.p2pBorrowDelta = delta.p2pBorrowDelta > remainingToSupplyInPoolUnit
-                    ? delta.p2pBorrowDelta - remainingToSupplyInPoolUnit
-                    : 0;
-            }
             vars.toRepay += matchedDelta;
             vars.remainingToSupply -= matchedDelta;
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
@@ -203,13 +198,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 remainingToBorrow
             ); // In underlying.
 
-            uint256 remainingToBorrowInPoolUnit = remainingToBorrow.rayDiv(poolSupplyIndex);
-            // Safe unchecked because the substraction is done iff delta.p2pSupplyDelta > remainingToBorrowInPoolUnit.
-            unchecked {
-                delta.p2pSupplyDelta = delta.p2pSupplyDelta > remainingToBorrowInPoolUnit
-                    ? delta.p2pSupplyDelta - remainingToBorrowInPoolUnit
-                    : 0;
-            }
+            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
+                remainingToBorrow.rayDiv(poolSupplyIndex)
+            );
             toWithdraw += matchedDelta;
             remainingToBorrow -= matchedDelta;
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
