@@ -341,11 +341,8 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         uint256 numberOfMarkets = _poolTokenAddresses.length;
 
-        for (uint256 i; i < numberOfMarkets; ) {
+        for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokenAddresses[i];
-            unchecked {
-                ++i;
-            }
 
             Types.MarketStatus memory status = marketStatus[poolToken];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
@@ -355,7 +352,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
             if (underlyingBalance == 0) continue;
 
-            uint256 toClaim = Math.min(_amounts[i - 1], underlyingBalance);
+            uint256 toClaim = Math.min(_amounts[i], underlyingBalance);
 
             underlyingToken.safeTransfer(treasuryVault, toClaim);
             emit ReserveFeeClaimed(poolToken, toClaim);
