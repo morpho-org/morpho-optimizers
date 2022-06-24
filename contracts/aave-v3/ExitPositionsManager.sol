@@ -652,7 +652,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _withdrawnAmount
     ) internal returns (bool) {
         return
-            _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >
+            _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
