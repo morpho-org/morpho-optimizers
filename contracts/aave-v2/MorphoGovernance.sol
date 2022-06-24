@@ -311,7 +311,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets the pause status on claiming rewards.
     /// @param _newStatus The new status to set.
-    function setPauseStatusClaimRewards(bool _newStatus) external onlyOwner {
+    function setClaimRewardsPauseStatus(bool _newStatus) external onlyOwner {
         isClaimRewardsPaused = _newStatus;
         emit ClaimRewardsPauseStatusSet(_newStatus);
     }
