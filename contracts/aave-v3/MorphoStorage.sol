@@ -33,7 +33,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         0x5555555555555555555555555555555555555555555555555555555555555555;
     uint256 public constant MAX_NB_OF_MARKETS = 128;
 
-    bool public isClaimRewardsPaused; // Whether it's possible to claim rewards or not.
+    bool public isClaimRewardsPaused; // Whether claiming rewards is paused or not.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
 
