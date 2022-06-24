@@ -343,7 +343,6 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         for (uint256 i; i < numberOfMarkets; ) {
             address poolToken = _poolTokenAddresses[i];
-            uint256 amount = _amounts[i];
             unchecked {
                 ++i;
             }
@@ -356,7 +355,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
             if (underlyingBalance == 0) continue;
 
-            uint256 toClaim = Math.min(amount, underlyingBalance);
+            uint256 toClaim = Math.min(_amounts[i - 1], underlyingBalance);
 
             underlyingToken.safeTransfer(treasuryVault, toClaim);
             emit ReserveFeeClaimed(poolToken, toClaim);
