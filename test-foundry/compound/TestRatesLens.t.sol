@@ -904,7 +904,7 @@ contract TestRatesLens is TestSetup {
         uint256 avgSupplyRate = lens.getAverageSupplyRatePerBlock(cUsdc);
         uint256 poolSupplyRate = ICToken(cUsdc).supplyRatePerBlock();
 
-        assertApproxEqAbs(avgSupplyRate, poolSupplyRate, 1);
+        assertApproxEqAbs(avgSupplyRate, poolSupplyRate, 2);
     }
 
     function testAverageBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
