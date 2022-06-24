@@ -321,7 +321,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddresses The addresses of the pool token addresses on which to claim the reserve fee.
-    /// @param _amounts The list of amount of underlying to claim on each market.
+    /// @param _amounts The list of amounts of underlying tokens to claim on each market.
     function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts)
         external
         onlyOwner
