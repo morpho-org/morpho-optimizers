@@ -13,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 abstract contract LensStorage is Initializable {
     /// STORAGE ///
 
-    uint256 public constant BLOCKS_PER_YEAR = 10_000; // Compound's BLOCKS_PER_YEAR.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
