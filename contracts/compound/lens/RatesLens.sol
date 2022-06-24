@@ -35,20 +35,16 @@ abstract contract RatesLens is UsersLens {
         returns (uint256 avgSupplyRate)
     {
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
-        (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(
-            _poolTokenAddress,
-            false
-        );
+        (uint256 p2pSupplyIndex, , , ) = getIndexes(_poolTokenAddress, false);
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
         ICToken poolToken = ICToken(_poolTokenAddress);
 
         uint256 poolSupply = poolToken.balanceOf(address(morpho)).mul(
             poolToken.exchangeRateStored()
         );
-        uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex) -
-            delta.p2pSupplyDelta.mul(poolSupplyIndex);
+        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
+        uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
 
-        // cannot factor by .div(poolSupply + p2pSupply) because it leads to rounding errors
         if (poolSupply > 0)
             avgSupplyRate += poolSupplyRate.mul(poolSupply.div(poolSupply + p2pSupply));
         if (p2pSupply > 0)
@@ -64,18 +60,14 @@ abstract contract RatesLens is UsersLens {
         returns (uint256 avgBorrowRate)
     {
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
-        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(
-            _poolTokenAddress,
-            false
-        );
+        (, uint256 p2pBorrowIndex, , ) = getIndexes(_poolTokenAddress, false);
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
         ICToken poolToken = ICToken(_poolTokenAddress);
 
         uint256 poolBorrow = poolToken.borrowBalanceStored(address(morpho));
-        uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex) -
-            delta.p2pBorrowDelta.mul(poolBorrowIndex);
+        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
+        uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
 
-        // cannot factor by .div(poolBorrow + p2pBorrow) because it leads to rounding errors
         if (poolBorrow > 0)
             avgBorrowRate += poolBorrowRate.mul(poolBorrow.div(poolBorrow + p2pBorrow));
         if (p2pBorrow > 0)
