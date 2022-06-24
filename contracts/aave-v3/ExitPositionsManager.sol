@@ -189,7 +189,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowedAddress);
         _updateIndexes(_poolTokenCollateralAddress);
 
-        if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
+        if (_isBorrowingAny(_borrower) && !_liquidationAllowed(_borrower))
+            revert UnauthorisedLiquidate();
 
         LiquidateVars memory vars;
         address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
