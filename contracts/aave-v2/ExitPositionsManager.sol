@@ -284,7 +284,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     supplyBalanceInOf[_poolTokenAddress][_supplier].onPool == 0
                 ) _setSupplying(_supplier, _poolTokenAddress, false);
 
-                _withdrawFromPool(underlyingToken, _poolTokenAddress, vars.toWithdraw); // Reverts on error.
+                if (vars.toWithdraw > 0)
+                    _withdrawFromPool(underlyingToken, _poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
 
                 emit Withdrawn(

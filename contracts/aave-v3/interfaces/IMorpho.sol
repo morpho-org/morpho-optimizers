@@ -34,7 +34,7 @@ interface IMorpho {
     function pool() external view returns (IPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (uint256);
-    function userMarketsBitmask(address) external view returns (uint256);
+    function userMarkets(address) external view returns (uint256);
 
     /// UTILS ///
 
@@ -42,7 +42,7 @@ interface IMorpho {
 
     /// GETTERS ///
 
-    function getAllMarkets() external view returns (address[] memory marketsCreated_);
+    function getMarketsCreated() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head);
     function getNext(address _poolTokenAddress, Types.PositionType _positionType, address _user) external view returns (address next);
 

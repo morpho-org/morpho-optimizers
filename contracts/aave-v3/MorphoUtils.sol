@@ -42,18 +42,18 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused) revert MarketPaused();
+        Types.MarketStatus memory marketStatus = marketStatus[_poolTokenAddress];
+        if (!marketStatus.isCreated) revert MarketNotCreated();
+        if (marketStatus.isPaused) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
+        Types.MarketStatus memory marketStatus = marketStatus[_poolTokenAddress];
+        if (!marketStatus.isCreated) revert MarketNotCreated();
+        if (marketStatus.isPaused || marketStatus.isPartiallyPaused) revert MarketPaused();
         _;
     }
 
@@ -61,7 +61,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+    function getMarketsCreated() external view returns (address[] memory) {
         return marketsCreated;
     }
 
@@ -80,8 +80,8 @@ abstract contract MorphoUtils is MorphoStorage {
             head = suppliersOnPool[_poolTokenAddress].getHead();
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             head = borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            head = borrowersOnPool[_poolTokenAddress].getHead();
+        else head = borrowersOnPool[_poolTokenAddress].getHead();
+        // Borrowers on pool.
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
@@ -100,8 +100,8 @@ abstract contract MorphoUtils is MorphoStorage {
             next = suppliersOnPool[_poolTokenAddress].getNext(_user);
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             next = borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+        else next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+        // Borrowers on pool.
     }
 
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
@@ -118,7 +118,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         uint256 bmask = borrowMask[_market];
-        return userMarketsBitmask[_user] & (bmask | (bmask << 1)) != 0;
+        return userMarkets[_user] & (bmask | (bmask << 1)) != 0;
     }
 
     /// @dev Returns if a user is borrowing on a given market.
@@ -126,7 +126,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
     function _isBorrowing(address _user, address _market) internal view returns (bool) {
-        return userMarketsBitmask[_user] & borrowMask[_market] != 0;
+        return userMarkets[_user] & borrowMask[_market] != 0;
     }
 
     /// @dev Returns if a user is supplying on a given market.
@@ -134,14 +134,14 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
     function _isSupplying(address _user, address _market) internal view returns (bool) {
-        return userMarketsBitmask[_user] & (borrowMask[_market] << 1) != 0;
+        return userMarkets[_user] & (borrowMask[_market] << 1) != 0;
     }
 
     /// @dev Returns if a user has been borrowing from any market.
     /// @param _user The user to check for.
     /// @return True if the user has been borrowing on any market, false otherwise.
     function _isBorrowingAny(address _user) internal view returns (bool) {
-        return userMarketsBitmask[_user] & BORROWING_MASK != 0;
+        return userMarkets[_user] & BORROWING_MASK != 0;
     }
 
     /// @notice Sets if the user is borrowing on a market.
@@ -153,8 +153,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _market,
         bool _borrowing
     ) internal {
-        if (_borrowing) userMarketsBitmask[_user] |= borrowMask[_market];
-        else userMarketsBitmask[_user] &= ~borrowMask[_market];
+        if (_borrowing) userMarkets[_user] |= borrowMask[_market];
+        else userMarkets[_user] &= ~borrowMask[_market];
     }
 
     /// @notice Sets if the user is supplying on a market.
@@ -166,8 +166,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _market,
         bool _supplying
     ) internal {
-        if (_supplying) userMarketsBitmask[_user] |= borrowMask[_market] << 1;
-        else userMarketsBitmask[_user] &= ~(borrowMask[_market] << 1);
+        if (_supplying) userMarkets[_user] |= borrowMask[_market] << 1;
+        else userMarkets[_user] &= ~(borrowMask[_market] << 1);
     }
 
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).

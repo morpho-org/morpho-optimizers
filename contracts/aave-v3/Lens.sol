@@ -115,7 +115,7 @@ contract Lens {
         Types.LiquidityData memory data;
         Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getAllMarkets();
+        address[] memory createdMarkets = morpho.getMarketsCreated();
         uint256 numberOfCreatedMarkets = createdMarkets.length;
 
         for (uint256 i; i < numberOfCreatedMarkets; ) {
@@ -208,11 +208,11 @@ contract Lens {
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getAllMarkets();
-        uint256 numberOfCreatedMarkets = createdMarkets.length;
+        address[] memory marketsCreated = morpho.getMarketsCreated();
+        uint256 numberOfMarketsCreated = marketsCreated.length;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
+        for (uint256 i; i < numberOfMarketsCreated; ) {
+            address poolToken = marketsCreated[i];
 
             if (_isSupplyingOrBorrowing(_user, poolToken)) {
                 Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
@@ -650,7 +650,7 @@ contract Lens {
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         return
-            morpho.userMarketsBitmask(_user) &
+            morpho.userMarkets(_user) &
                 (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
             0;
     }
