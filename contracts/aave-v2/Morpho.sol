@@ -20,9 +20,9 @@ contract Morpho is MorphoGovernance {
     /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed, bool indexed _traded);
 
-    /// ERRRORS ///
+    /// ERRORS ///
 
-    /// @notice Thrown when the claim rewards is paused.
+    /// @notice Thrown when claiming rewards is paused.
     error ClaimRewardsPaused();
 
     /// EXTERNAL ///

@@ -86,7 +86,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _newStatus The new claiming rewards status.
-    event ClaimRewardsStatusSet(bool _newStatus);
+    event ClaimRewardsPauseStatusSet(bool _newStatus);
 
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
@@ -313,7 +313,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newStatus The new status to set.
     function setPauseStatusClaimRewards(bool _newStatus) external onlyOwner {
         isClaimRewardsPaused = _newStatus;
-        emit ClaimRewardsStatusSet(_newStatus);
+        emit ClaimRewardsPauseStatusSet(_newStatus);
     }
 
     /// @notice Sets a market's asset as collateral.

@@ -26,11 +26,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
 
-    /// @notice Emitted the address of the `treasuryVault` is set.
+    /// @notice Emitted when the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted the address of the `incentivesVault` is set.
+    /// @notice Emitted when the address of the `incentivesVault` is set.
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
@@ -397,7 +397,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         );
         marketParameters[poolTokenAddress] = _marketParams;
 
-        if (marketsCreated.length >= 128) revert MaxNumberOfMarkets();
+        if (marketsCreated.length >= MAX_NUMBER_OF_MARKETS) revert MaxNumberOfMarkets();
         borrowMask[poolTokenAddress] = 1 << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);
 
