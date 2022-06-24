@@ -40,15 +40,19 @@ abstract contract RatesLens is UsersLens {
             false
         );
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        ICToken poolToken = ICToken(_poolTokenAddress);
 
-        uint256 poolSupply = ICToken(_poolTokenAddress).balanceOf(address(morpho));
+        uint256 poolSupply = poolToken.balanceOf(address(morpho)).mul(
+            poolToken.exchangeRateStored()
+        );
         uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex) -
             delta.p2pSupplyDelta.mul(poolSupplyIndex);
 
-        if (poolSupply > 0 || p2pSupply > 0)
-            avgSupplyRate = (poolSupplyRate.mul(poolSupply) + p2pSupplyRate.mul(p2pSupply)).div(
-                poolSupply + p2pSupply
-            );
+        // cannot factor by .div(poolSupply + p2pSupply) because it leads to rounding errors
+        if (poolSupply > 0)
+            avgSupplyRate += poolSupplyRate.mul(poolSupply.div(poolSupply + p2pSupply));
+        if (p2pSupply > 0)
+            avgSupplyRate += p2pSupplyRate.mul(p2pSupply.div(poolSupply + p2pSupply));
     }
 
     /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
@@ -65,15 +69,17 @@ abstract contract RatesLens is UsersLens {
             false
         );
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        ICToken poolToken = ICToken(_poolTokenAddress);
 
-        uint256 poolBorrow = ICToken(_poolTokenAddress).borrowBalanceStored(address(morpho));
+        uint256 poolBorrow = poolToken.borrowBalanceStored(address(morpho));
         uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex) -
             delta.p2pBorrowDelta.mul(poolBorrowIndex);
 
-        if (poolBorrow > 0 || p2pBorrow > 0)
-            avgBorrowRate = (poolBorrowRate.mul(poolBorrow) + p2pBorrowRate.mul(p2pBorrow)).div(
-                poolBorrow + p2pBorrow
-            );
+        // cannot factor by .div(poolBorrow + p2pBorrow) because it leads to rounding errors
+        if (poolBorrow > 0)
+            avgBorrowRate += poolBorrowRate.mul(poolBorrow.div(poolBorrow + p2pBorrow));
+        if (p2pBorrow > 0)
+            avgBorrowRate += p2pBorrowRate.mul(p2pBorrow.div(poolBorrow + p2pBorrow));
     }
 
     /// @notice Returns the supply rate per block experienced on a market after having supplied the given amount on behalf of the given user.
@@ -358,10 +364,10 @@ abstract contract RatesLens is UsersLens {
 
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
 
+        // cannot factor by .div(_totalBalance) because it leads to rounding errors
         return
-            (poolSupplyRate.mul(_balanceOnPool) + p2pSupplyRate.mul(_balanceInP2P)).div(
-                _totalBalance
-            );
+            poolSupplyRate.mul(_balanceOnPool.div(_totalBalance)) +
+            p2pSupplyRate.mul(_balanceInP2P.div(_totalBalance));
     }
 
     /// @dev Returns the borrow rate per block experienced on a market based on a given position distribution.
@@ -380,9 +386,9 @@ abstract contract RatesLens is UsersLens {
 
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
 
+        // cannot factor by .div(_totalBalance) because it leads to rounding errors
         return
-            (poolBorrowRate.mul(_balanceOnPool) + p2pBorrowRate.mul(_balanceInP2P)).div(
-                _totalBalance
-            );
+            poolBorrowRate.mul(_balanceOnPool.div(_totalBalance)) +
+            p2pBorrowRate.mul(_balanceInP2P.div(_totalBalance));
     }
 }
