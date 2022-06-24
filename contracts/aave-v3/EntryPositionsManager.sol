@@ -19,14 +19,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.
-    /// @param _supplier The address of the account sending funds.
+    /// @param _from The address of the account sending funds.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Supplied(
-        address indexed _supplier,
+        address indexed _from,
         address indexed _onBehalf,
         address indexed _poolTokenAddress,
         uint256 _amount,
@@ -50,14 +50,11 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     /// ERRORS ///
 
-    /// @notice Thrown when borrowing on pool is not enabled on a specific market.
+    /// @notice Thrown when borrowing is impossible, because it is not enabled on pool for this specific market.
     error BorrowingNotEnabled();
 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
-
-    /// @notice Thrown when the address is zero.
-    error AddressIsZero();
 
     /// STRUCTS ///
 
@@ -68,23 +65,17 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toRepay;
     }
 
-    // Struct to avoid stack too deep.
-    struct BorrowAllowedVars {
-        uint256 numberOfMarketsCreated;
-        uint256 i;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
-    /// @param _supplier The address of the account sending funds.
+    /// @param _from The address of the account sending funds.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supplyLogic(
         address _poolTokenAddress,
-        address _supplier,
+        address _from,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
@@ -97,7 +88,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             _setSupplying(_onBehalf, _poolTokenAddress, true);
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
+        underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
         SupplyVars memory vars;
@@ -111,7 +102,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
                 vars.remainingToSupply
-            );
+            ); // In underlying.
 
             uint256 remainingToSupplyInPoolUnit = vars.remainingToSupply.rayDiv(
                 vars.poolBorrowIndex
@@ -168,7 +159,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         _updateSupplierInDS(_poolTokenAddress, _onBehalf);
 
         emit Supplied(
-            _supplier,
+            _from,
             _onBehalf,
             _poolTokenAddress,
             _amount,
@@ -210,7 +201,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
                 remainingToBorrow
-            );
+            ); // In underlying.
 
             uint256 remainingToBorrowInPoolUnit = remainingToBorrow.rayDiv(poolSupplyIndex);
             // Safe unchecked because the substraction is done iff delta.p2pSupplyDelta > remainingToBorrowInPoolUnit.
@@ -286,24 +277,22 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
+        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+        // In response, Morpho mirrors this behavior.
         address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-        // Aave's can enable an oracle sentinel in specific circunstances which can prevent users to borrow.
-        // in response, Morpho mirrors this behavior.
         if (
             priceOracleSentinel != address(0) &&
             !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
         ) return false;
 
-        BorrowAllowedVars memory vars;
-
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        vars.numberOfMarketsCreated = marketsCreated.length;
+        uint256 numberOfMarketsCreated = marketsCreated.length;
 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        for (vars.i; vars.i < vars.numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[vars.i];
+        for (uint256 i; i < numberOfMarketsCreated; ) {
+            address poolToken = marketsCreated[i];
 
             if (_isSupplyingOrBorrowing(_user, poolToken)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
@@ -337,7 +326,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             }
 
             unchecked {
-                ++vars.i;
+                ++i;
             }
         }
 
