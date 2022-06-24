@@ -337,11 +337,8 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         uint256 numberOfMarkets = _poolTokenAddresses.length;
 
-        for (uint256 i; i < numberOfMarkets; ) {
+        for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokenAddresses[i];
-            unchecked {
-                ++i;
-            }
 
             Types.MarketStatus memory status = marketStatus[poolToken];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
