@@ -1,27 +1,30 @@
 -include .env.local
-.EXPORT_ALL_VARIABLES:
 
-PROTOCOL?=compound
-NETWORK?=eth-mainnet
-CHAIN_ID?=1
+export PROTOCOL?=compound
+export NETWORK?=eth-mainnet
+export CHAIN_ID?=1
 
-FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-FOUNDRY_FORK_BLOCK_NUMBER?=14292587
+export FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
+export FOUNDRY_FORK_BLOCK_NUMBER?=14292587
 
-DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
+export DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
+
+ifeq (${NETWORK}, eth-mainnet)
+  export DAPP_REMAPPINGS=@config/=config/${NETWORK}/
+endif
 
 ifeq (${NETWORK}, polygon-mainnet)
-  FOUNDRY_FORK_BLOCK_NUMBER=29116728
+  export FOUNDRY_FORK_BLOCK_NUMBER=29116728
 endif
 
 ifeq (${NETWORK}, avalanche-mainnet)
-  FOUNDRY_FORK_BLOCK_NUMBER=15675271
-  FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+  export FOUNDRY_FORK_BLOCK_NUMBER=15675271
+  export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
 else
 endif
 
 ifneq (, $(filter ${NETWORK}, ropsten rinkeby))
-  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
+  export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
 endif
 
 install:
