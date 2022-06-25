@@ -18,6 +18,8 @@ contract Config {
     address constant aWeth = 0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8;
     address constant aWmatic = 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97;
 
+    address constant rewardToken = address(0);
+
     address constant stableDebtDai = 0xd94112B5B62d53C9402e7A60289c6810dEF1dC9B;
     address constant variableDebtDai = 0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC;
     address constant variableDebtUsdc = 0xFCCf3cAbbe80101232d343252614b6A3eE81C989;

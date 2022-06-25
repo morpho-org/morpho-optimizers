@@ -8,7 +8,8 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {DumbOracle} from "./helpers/DumbOracle.sol";
 import "@contracts/aave-v3/IncentivesVault.sol";
 import "../common/helpers/MorphoToken.sol";
-import "forge-std/Test.sol";
+import "../common/helpers/Chains.sol";
+import "forge-std/stdlib.sol";
 import "@config/Config.sol";
 
 contract TestIncentivesVault is Test, Config {
@@ -16,7 +17,8 @@ contract TestIncentivesVault is Test, Config {
 
     Vm public hevm = Vm(HEVM_ADDRESS);
 
-    address public REWARD_TOKEN = wavax;
+    address public REWARD_TOKEN;
+
     address public morphoDao = address(1);
     address public morpho = address(3);
     IncentivesVault public incentivesVault;
@@ -26,6 +28,11 @@ contract TestIncentivesVault is Test, Config {
     function setUp() public {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
+
+        REWARD_TOKEN = rewardToken;
+
+        // if (block.chainid == Chains.AVALANCHE_MAINNET) REWARD_TOKEN = rewardToken;
+        // else REWARD_TOKEN = address(0);
 
         incentivesVault = new IncentivesVault(
             IMorpho(address(morpho)),
@@ -101,7 +108,7 @@ contract TestIncentivesVault is Test, Config {
         incentivesVault.setPauseStatus(true);
 
         address[] memory rewards = new address[](1);
-        rewards[0] = wavax;
+        rewards[0] = REWARD_TOKEN;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 0;
 
@@ -118,7 +125,7 @@ contract TestIncentivesVault is Test, Config {
         ERC20(REWARD_TOKEN).safeApprove(address(incentivesVault), amount);
 
         address[] memory rewards = new address[](1);
-        rewards[0] = wavax;
+        rewards[0] = REWARD_TOKEN;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
@@ -139,7 +146,7 @@ contract TestIncentivesVault is Test, Config {
         uint256 amount = 100;
 
         address[] memory rewards = new address[](1);
-        rewards[0] = wavax;
+        rewards[0] = REWARD_TOKEN;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
