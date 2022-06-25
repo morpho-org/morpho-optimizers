@@ -9,12 +9,18 @@ export FOUNDRY_FORK_BLOCK_NUMBER?=14292587
 
 export DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 
+noMatchContract="GasConsumption"
+
 ifeq (${NETWORK}, eth-mainnet)
   export DAPP_REMAPPINGS=@config/=config/${NETWORK}/
 endif
 
 ifeq (${NETWORK}, polygon-mainnet)
   export FOUNDRY_FORK_BLOCK_NUMBER=29116728
+
+  ifeq (${PROTOCOL}, aave-v3)
+	noMatchContract = "(GasConsumption|Fees|IncentivesVault|Rewards)"
+  endif
 endif
 
 ifeq (${NETWORK}, avalanche-mainnet)
@@ -45,7 +51,7 @@ create-market:
 
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract ${noMatchContract} --no-match-test testFuzz
 
 test-ansi:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
