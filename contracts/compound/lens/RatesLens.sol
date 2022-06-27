@@ -26,7 +26,7 @@ abstract contract RatesLens is UsersLens {
 
     /// EXTERNAL ///
 
-    /// @notice Computes and returns the current average supply rate per block experienced on a given market.
+    /// @notice Computes and returns the current supply rate per block experienced on average on a given market.
     /// @param _poolTokenAddress The market address.
     /// @return avgSupplyRate The market's average supply rate per block (in wad).
     function getAverageSupplyRatePerBlock(address _poolTokenAddress)
@@ -73,7 +73,8 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// @notice Returns the supply rate per block experienced on a market after having supplied the given amount on behalf of the given user.
-    /// @dev The returned supply rate is only an approximation: it only takes into accounts current delta and the head of the data structure.
+    /// @dev Note: the returned supply rate is a lower bound: when supplying through Morpho-Compound,
+    /// @dev a supplier could get matched more than once instantly or later and thus benefit from a higher supply rate.
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The address of the user on behalf of whom to supply.
     /// @param _amount The amount to supply.
@@ -81,7 +82,7 @@ abstract contract RatesLens is UsersLens {
     /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return balanceInP2P The total balance matched peer-to-peer after having supplied (in underlying).
     /// @return totalBalance The total balance supplied through Morpho (in underlying).
-    function getNextSupplyRatePerBlock(
+    function getNextUserSupplyRatePerBlock(
         address _poolTokenAddress,
         address _user,
         uint256 _amount
@@ -150,7 +151,8 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// @notice Returns the borrow rate per block experienced on a market after having supplied the given amount on behalf of the given user.
-    /// @dev The returned borrow rate is only an approximation: it only takes into accounts current delta and the head of the data structure.
+    /// @dev Note: the returned borrow rate is an upper bound: when borrowing through Morpho-Compound,
+    /// @dev a borrower could get matched more than once instantly or later and thus benefit from a lower borrow rate.
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The address of the user on behalf of whom to borrow.
     /// @param _amount The amount to borrow.
@@ -158,7 +160,7 @@ abstract contract RatesLens is UsersLens {
     /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return balanceInP2P The total balance matched peer-to-peer after having supplied (in underlying).
     /// @return totalBalance The total balance supplied through Morpho (in underlying).
-    function getNextBorrowRatePerBlock(
+    function getNextUserBorrowRatePerBlock(
         address _poolTokenAddress,
         address _user,
         uint256 _amount
@@ -229,6 +231,7 @@ abstract contract RatesLens is UsersLens {
     /// PUBLIC ///
 
     /// @notice Computes and returns peer-to-peer and pool rates for a specific market.
+    /// @dev Note: prefer using getAverageSupplyRatePerBlock & getAverageBorrowRatePerBlock to get the experienced supply/borrow rate instead of this.
     /// @param _poolTokenAddress The market address.
     /// @return p2pSupplyRate_ The market's peer-to-peer supply rate per block (in wad).
     /// @return p2pBorrowRate_ The market's peer-to-peer borrow rate per block (in wad).
@@ -292,7 +295,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The user to compute the supply rate per block for.
     /// @return The supply rate per block the user is currently experiencing (in wad).
-    function getUpdatedUserSupplyRatePerBlock(address _poolTokenAddress, address _user)
+    function getCurrentUserSupplyRatePerBlock(address _poolTokenAddress, address _user)
         public
         view
         returns (uint256)
@@ -316,7 +319,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The user to compute the borrow rate per block for.
     /// @return The borrow rate per block the user is currently experiencing (in wad).
-    function getUpdatedUserBorrowRatePerBlock(address _poolTokenAddress, address _user)
+    function getCurrentUserBorrowRatePerBlock(address _poolTokenAddress, address _user)
         public
         view
         returns (uint256)
