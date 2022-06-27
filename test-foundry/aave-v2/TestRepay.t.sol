@@ -380,8 +380,10 @@ contract TestRepay is TestSetup {
     }
 
     function testDeltaRepay() public {
-        // Allows only 10 unmatch suppliers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
+        // Allows only 10 unmatch borrowers
+        if (block.chainid == Chains.POLYGON_MAINNET)
+            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
+        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -397,8 +399,8 @@ contract TestRepay is TestSetup {
 
         // 2 * NMAX suppliers supply suppliedAmount
         for (uint256 i; i < 20; i++) {
-            suppliers[i].approve(dai, suppliedAmount);
-            suppliers[i].supply(aDai, suppliedAmount);
+            suppliers[i].approve(dai, type(uint256).max);
+            suppliers[i].supply(aDai, suppliedAmount - i); // Minus i to get the right ordering.
         }
 
         {
@@ -410,8 +412,8 @@ contract TestRepay is TestSetup {
                 aDai,
                 address(borrower1)
             );
-            testEquality(onPoolBorrower, 0);
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+            assertApproxEq(onPoolBorrower, 0, 1e3);
+            assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P, 1e3);
 
             uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
             uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
@@ -448,7 +450,7 @@ contract TestRepay is TestSetup {
                 pool.getReserveNormalizedIncome(dai)
             );
             (uint256 supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta);
+            assertApproxEq(supplyP2PDelta, expectedSupplyP2PDelta, 1e3);
 
             // Supply delta matching by a new borrower
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -462,7 +464,12 @@ contract TestRepay is TestSetup {
             );
 
             (supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
+            assertApproxEq(
+                supplyP2PDelta,
+                expectedSupplyP2PDelta / 2,
+                1e3,
+                "supply delta unexpected"
+            );
             testEquality(onPoolBorrower, 0, "on pool not unexpected");
             testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "in peer-to-peer unexpected");
         }
@@ -508,7 +515,7 @@ contract TestRepay is TestSetup {
             .rayDiv(oldVars.SP2PER)
             .rayMul(expectedSP2PER);
 
-            for (uint256 i = 1; i <= 10; i++) {
+            for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
                     aDai,
                     address(suppliers[i])
@@ -524,7 +531,7 @@ contract TestRepay is TestSetup {
         }
 
         // Supply delta reduction with suppliers withdrawing
-        for (uint256 i = 1; i <= 10; i++) {
+        for (uint256 i = 10; i < 20; i++) {
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
 

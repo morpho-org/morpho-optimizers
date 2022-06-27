@@ -120,6 +120,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.supply(aDai, amount);
 
         (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
+        toBorrow = toBorrow / 2;
         supplier1.borrow(aUsdc, toBorrow);
 
         morpho.setPauseStatus(aDai, true);
