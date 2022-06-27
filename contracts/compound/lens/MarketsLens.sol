@@ -45,7 +45,8 @@ abstract contract MarketsLens is RatesLens {
         return morpho.getAllMarkets();
     }
 
-    /// @notice Returns average supply/borrow rates and amounts of underlying supplied through Morpho on the underlying pool and matched peer-to-peer, of a given market.
+    /// @notice For a given market, returns the average supply/borrow rates and amounts of underlying asset supplied and borrowed through Morpho, on the underlying pool and matched peer-to-peer.
+    /// @dev The returned values are not updated.
     /// @param _poolTokenAddress The address of the market of which to get main data.
     /// @return avgSupplyRatePerBlock The average supply rate experienced on the given market.
     /// @return avgBorrowRatePerBlock The average borrow rate experienced on the given market.
