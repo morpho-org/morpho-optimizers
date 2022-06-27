@@ -346,21 +346,21 @@ abstract contract RatesLens is UsersLens {
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P` and `_totalBalance`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
     /// @param _totalBalance The total amount of balance (should equal `_balanceOnPool + _balanceInP2P` but is used for saving gas).
-    /// @return The supply rate per block experienced by the given position (in wad).
+    /// @return supplyRatePerBlock_ The supply rate per block experienced by the given position (in wad).
     function _computeUserSupplyRatePerBlock(
         address _poolTokenAddress,
         uint256 _balanceOnPool,
         uint256 _balanceInP2P,
         uint256 _totalBalance
-    ) internal view returns (uint256) {
+    ) internal view returns (uint256 supplyRatePerBlock_) {
         if (_totalBalance == 0) return 0;
 
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
 
-        // cannot factor by .div(_totalBalance) because it leads to rounding errors
-        return
-            poolSupplyRate.mul(_balanceOnPool.div(_totalBalance)) +
-            p2pSupplyRate.mul(_balanceInP2P.div(_totalBalance));
+        if (_balanceOnPool > 0)
+            supplyRatePerBlock_ += poolSupplyRate.mul(_balanceOnPool.div(_totalBalance));
+        if (_balanceInP2P > 0)
+            supplyRatePerBlock_ += p2pSupplyRate.mul(_balanceInP2P.div(_totalBalance));
     }
 
     /// @dev Returns the borrow rate per block experienced on a market based on a given position distribution.
@@ -368,20 +368,20 @@ abstract contract RatesLens is UsersLens {
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P` and `_totalBalance`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
     /// @param _totalBalance The total amount of balance (should equal `_balanceOnPool + _balanceInP2P` but is used for saving gas).
-    /// @return The borrow rate per block experienced by the given position (in wad).
+    /// @return borrowRatePerBlock_ The borrow rate per block experienced by the given position (in wad).
     function _computeUserBorrowRatePerBlock(
         address _poolTokenAddress,
         uint256 _balanceOnPool,
         uint256 _balanceInP2P,
         uint256 _totalBalance
-    ) internal view returns (uint256) {
+    ) internal view returns (uint256 borrowRatePerBlock_) {
         if (_totalBalance == 0) return 0;
 
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
 
-        // cannot factor by .div(_totalBalance) because it leads to rounding errors
-        return
-            poolBorrowRate.mul(_balanceOnPool.div(_totalBalance)) +
-            p2pBorrowRate.mul(_balanceInP2P.div(_totalBalance));
+        if (_balanceOnPool > 0)
+            borrowRatePerBlock_ += poolBorrowRate.mul(_balanceOnPool.div(_totalBalance));
+        if (_balanceInP2P > 0)
+            borrowRatePerBlock_ += p2pBorrowRate.mul(_balanceInP2P.div(_totalBalance));
     }
 }
