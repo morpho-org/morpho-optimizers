@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail # exit on error
+export $(xargs < .env.local)
 
 
 echo "---"

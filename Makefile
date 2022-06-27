@@ -9,14 +9,14 @@ export FOUNDRY_FORK_BLOCK_NUMBER?=14292587
 
 export DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 
-noMatchContract="GasConsumption"
+NO_MATCH_CONTRACT="GasConsumption"
 
 ifeq (${NETWORK}, polygon-mainnet)
 	export FOUNDRY_FORK_BLOCK_NUMBER=22116728
 
   ifeq (${PROTOCOL}, aave-v3)
   	export FOUNDRY_FORK_BLOCK_NUMBER=29116728
-	noMatchContract = "(GasConsumption|Fees|IncentivesVault|Rewards)"
+	NO_MATCH_CONTRACT = "(GasConsumption|Fees|IncentivesVault|Rewards)"
   endif
 endif
 
@@ -52,15 +52,15 @@ create-market:
 
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract ${noMatchContract} --no-match-test testFuzz
+	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract ${NO_MATCH_CONTRACT} --no-match-test testFuzz
 
 test-ansi:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
+	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract ${NO_MATCH_CONTRACT} --no-match-test testFuzz > trace.ansi
 
 test-html:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
+	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract ${NO_MATCH_CONTRACT} --no-match-test testFuzz | aha --black > trace.html
 
 fuzz:
 	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK}
@@ -68,7 +68,7 @@ fuzz:
 
 gas-report:
 	@echo Creating gas consumption report for ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv -c test-foundry/${PROTOCOL} --gas-report --match-contract TestGasConsumption > gas_report.ansi
+	@forge test -vvv -c test-foundry/${PROTOCOL} --gas-report --match-contract GasConsumption > gas_report.ansi
 
 test-common:
 	@echo Running all common tests on ${NETWORK}
