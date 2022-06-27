@@ -51,8 +51,8 @@ abstract contract MarketsLens is RatesLens {
     /// @return avgBorrowRatePerBlock The average borrow rate experienced on the given market.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, without the supply delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, without the borrow delta (in underlying).
     function getMainMarketData(address _poolTokenAddress)
         external
         view
