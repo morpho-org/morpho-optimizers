@@ -7,16 +7,9 @@
     "contracts"
   ],
   "scripts": {
-    "deploy:hardhat": "hardhat run scripts/deploy-compound.ts --network hardhat",
-    "deploy:compound:fork-mainnet": "NETWORK=eth-mainnet hardhat run scripts/deploy-compound.ts --network forkMainnet",
-    "deploy:compound:ropsten": "NETWORK=ropsten hardhat run scripts/deploy-compound.ts --network ropsten",
     "upgrade:compound:ropsten": "NETWORK=ropsten hardhat run scripts/upgrade-compound.ts --network ropsten",
-    "deploy:compound:rinkeby": "NETWORK=rinkeby hardhat run scripts/deploy-compound.ts --network rinkeby",
     "upgrade:compound:rinkeby": "NETWORK=rinkeby hardhat run scripts/upgrade-compound.ts --network rinkeby",
-    "deploy:compound:goerli": "NETWORK=goerli hardhat run scripts/deploy-compound.ts --network goerli",
     "upgrade:compound:goerli": "NETWORK=goerli hardhat run scripts/upgrade-compound.ts --network goerli",
-    "deploy:aave:polygon": "NETWORK=polygon-mainnet hardhat run scripts/deploy-aave.ts --network polygon",
-    "deploy:aave:mumbai": "NETWORK=polygon-mumbai hardhat run scripts/deploy-aave.ts --network mumbai",
     "test:hardhat": "hardhat test",
     "lint": "yarn lint:sol && yarn lint:ts",
     "lint:ts": "eslint . --ext .ts",
