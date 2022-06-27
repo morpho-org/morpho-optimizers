@@ -188,13 +188,15 @@ contract Morpho is MorphoGovernance {
     /// @notice Claims rewards for the given assets.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     /// @param _tradeForMorphoToken Whether or not to trade reward tokens for MORPHO tokens.
+    /// @return rewardTokens The addresses of each reward token.
+    /// @return claimedAmounts The amount of rewards claimed (in reward tokens).
     function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken)
         external
         nonReentrant
+        returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
     {
         if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        (address[] memory rewardTokens, uint256[] memory claimedAmounts) = rewardsManager
-        .claimRewards(_assets, msg.sender);
+        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(_assets, msg.sender);
         uint256 rewardTokensLength = rewardTokens.length;
 
         rewardsController.claimAllRewardsToSelf(_assets);
@@ -219,6 +221,7 @@ contract Morpho is MorphoGovernance {
                 ++i;
             }
         }
+
         if (_tradeForMorphoToken)
             incentivesVault.tradeRewardTokensForMorphoTokens(
                 msg.sender,
