@@ -45,10 +45,9 @@ abstract contract RatesLens is UsersLens {
         // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
         uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
 
-        if (poolSupply > 0)
-            avgSupplyRate += poolSupplyRate.mul(poolSupply.div(poolSupply + p2pSupply));
-        if (p2pSupply > 0)
-            avgSupplyRate += p2pSupplyRate.mul(p2pSupply.div(poolSupply + p2pSupply));
+        uint256 totalSupply = poolSupply + p2pSupply;
+        if (poolSupply > 0) avgSupplyRate += poolSupplyRate.mul(poolSupply.div(totalSupply));
+        if (p2pSupply > 0) avgSupplyRate += p2pSupplyRate.mul(p2pSupply.div(totalSupply));
     }
 
     /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
@@ -68,10 +67,9 @@ abstract contract RatesLens is UsersLens {
         // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
         uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
 
-        if (poolBorrow > 0)
-            avgBorrowRate += poolBorrowRate.mul(poolBorrow.div(poolBorrow + p2pBorrow));
-        if (p2pBorrow > 0)
-            avgBorrowRate += p2pBorrowRate.mul(p2pBorrow.div(poolBorrow + p2pBorrow));
+        uint256 totalBorrow = poolBorrow + p2pBorrow;
+        if (poolBorrow > 0) avgBorrowRate += poolBorrowRate.mul(poolBorrow.div(totalBorrow));
+        if (p2pBorrow > 0) avgBorrowRate += p2pBorrowRate.mul(p2pBorrow.div(totalBorrow));
     }
 
     /// @notice Returns the supply rate per block experienced on a market after having supplied the given amount on behalf of the given user.
