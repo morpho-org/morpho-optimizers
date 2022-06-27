@@ -395,8 +395,8 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers
-        if (block.chainid == Chains.POLYGON_MAINNET || block.chainid == Chains.ETH_MAINNET)
-            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.1e6, 3e6);
+        if (block.chainid == Chains.POLYGON_MAINNET)
+            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
         else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.5e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
