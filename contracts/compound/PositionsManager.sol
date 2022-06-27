@@ -156,6 +156,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
     error SameBlockBorrowRepay();
 
+    /// @notice Thrown when this is not the right caller triggering the function.
+    error NotRightCaller();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -214,6 +217,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
+        if (msg.sender != _supplier) revert NotRightCaller();
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         _updateP2PIndexes(_poolTokenAddress);
@@ -403,6 +407,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasForMatching
     ) external {
+        if (msg.sender != _supplier) revert NotRightCaller();
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
 
