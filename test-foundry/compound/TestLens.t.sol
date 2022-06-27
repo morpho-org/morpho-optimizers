@@ -645,6 +645,28 @@ contract TestLens is TestSetup {
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
+    function testGetMainMarketData() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+        borrower1.borrow(cDai, amount / 2);
+
+        (
+            ,
+            ,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount,
+            uint256 poolSupplyAmount,
+            uint256 poolBorrowAmount
+        ) = lens.getMainMarketData(cDai);
+
+        assertApproxEqAbs(p2pSupplyAmount, p2pBorrowAmount, 1e9);
+        assertApproxEqAbs(p2pSupplyAmount, amount / 2, 1e9);
+        assertApproxEqAbs(poolSupplyAmount, amount / 2, 1e9);
+        assertApproxEqAbs(poolBorrowAmount, 0, 1e4);
+    }
+
     function testGetMarketConfiguration() public {
         (
             address underlying,
