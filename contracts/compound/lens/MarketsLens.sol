@@ -66,22 +66,12 @@ abstract contract MarketsLens is RatesLens {
             uint256 poolBorrowAmount
         )
     {
-        (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = getIndexes(_poolTokenAddress, false);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        ICToken poolToken = ICToken(_poolTokenAddress);
-
-        p2pSupplyAmount = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
-        p2pBorrowAmount = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
-        poolSupplyAmount = poolToken.balanceOf(address(morpho)).mul(poolSupplyIndex);
-        poolBorrowAmount = poolToken.borrowBalanceStored(address(morpho)).mul(poolBorrowIndex);
-
-        avgSupplyRatePerBlock = getAverageSupplyRatePerBlock(_poolTokenAddress);
-        avgBorrowRatePerBlock = getAverageBorrowRatePerBlock(_poolTokenAddress);
+        (avgSupplyRatePerBlock, p2pSupplyAmount, poolSupplyAmount) = getAverageSupplyRatePerBlock(
+            _poolTokenAddress
+        );
+        (avgBorrowRatePerBlock, p2pBorrowAmount, poolBorrowAmount) = getAverageBorrowRatePerBlock(
+            _poolTokenAddress
+        );
     }
 
     /// @notice Returns non-updated indexes, the block at which they were last updated and the total deltas of a given market.
