@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./LensStorage.sol";
+import "./RatesLens.sol";
 
 /// @title MarketsLens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol markets.
-abstract contract MarketsLens is LensStorage {
+abstract contract MarketsLens is RatesLens {
+    using CompoundMath for uint256;
+
     /// EXTERNAL ///
 
     /// @notice Checks if a market is created.
@@ -43,37 +45,77 @@ abstract contract MarketsLens is LensStorage {
         return morpho.getAllMarkets();
     }
 
-    /// @notice Returns market's data.
-    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
-    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
-    /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes were updated.
-    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in pool supply unit).
-    /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in pool borrow unit).
-    /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer supply unit).
-    /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer borrow unit).
-    function getMarketData(address _poolTokenAddress)
+    /// @notice Returns average supply/borrow rates and amounts of underlying supplied through Morpho on the underlying pool and matched peer-to-peer, of a given market.
+    /// @param _poolTokenAddress The address of the market of which to get main data.
+    /// @return avgSupplyRatePerBlock The average supply rate experienced on the given market.
+    /// @return avgBorrowRatePerBlock The average borrow rate experienced on the given market.
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool (in underlying).
+    function getMainMarketData(address _poolTokenAddress)
         external
         view
         returns (
-            uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_,
-            uint32 lastUpdateBlockNumber_,
-            uint256 p2pSupplyDelta_,
-            uint256 p2pBorrowDelta_,
-            uint256 p2pSupplyAmount_,
-            uint256 p2pBorrowAmount_
+            uint256 avgSupplyRatePerBlock,
+            uint256 avgBorrowRatePerBlock,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount,
+            uint256 poolSupplyAmount,
+            uint256 poolBorrowAmount
         )
     {
-        {
-            Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-            p2pSupplyDelta_ = delta.p2pSupplyDelta;
-            p2pBorrowDelta_ = delta.p2pBorrowDelta;
-            p2pSupplyAmount_ = delta.p2pSupplyAmount;
-            p2pBorrowAmount_ = delta.p2pBorrowAmount;
-        }
-        p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
-        p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
-        lastUpdateBlockNumber_ = morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber;
+        (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = getIndexes(_poolTokenAddress, false);
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        ICToken poolToken = ICToken(_poolTokenAddress);
+
+        p2pSupplyAmount = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
+        p2pBorrowAmount = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
+        poolSupplyAmount = poolToken.balanceOf(address(morpho)).mul(poolSupplyIndex);
+        poolBorrowAmount = poolToken.borrowBalanceStored(address(morpho)).mul(poolBorrowIndex);
+
+        avgSupplyRatePerBlock = getAverageSupplyRatePerBlock(_poolTokenAddress);
+        avgBorrowRatePerBlock = getAverageBorrowRatePerBlock(_poolTokenAddress);
+    }
+
+    /// @notice Returns non-updated indexes, the block at which they were last updated and the total deltas of a given market.
+    /// @param _poolTokenAddress The address of the market of which to get advanced data.
+    /// @return p2pSupplyIndex The peer-to-peer supply index of the given market (in wad).
+    /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in wad).
+    /// @return poolSupplyIndex The pool supply index of the given market (in wad).
+    /// @return poolBorrowIndex The pool borrow index of the given market (in wad).
+    /// @return lastUpdateBlockNumber The block number at which pool indexes were last updated.
+    /// @return p2pSupplyDelta The total supply delta (in underlying).
+    /// @return p2pBorrowDelta The total borrow delta (in underlying).
+    function getAdvancedMarketData(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex,
+            uint32 lastUpdateBlockNumber,
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta
+        )
+    {
+        (p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = getIndexes(
+            _poolTokenAddress,
+            false
+        );
+
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        p2pSupplyDelta = delta.p2pSupplyDelta.mul(poolSupplyIndex);
+        p2pBorrowDelta = delta.p2pBorrowDelta.mul(poolBorrowIndex);
+
+        Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+        lastUpdateBlockNumber = lastPoolIndexes.lastUpdateBlockNumber;
     }
 
     /// @notice Returns market's configuration.

@@ -26,52 +26,6 @@ abstract contract RatesLens is UsersLens {
 
     /// EXTERNAL ///
 
-    /// @notice Computes and returns the current supply rate per block experienced on average on a given market.
-    /// @param _poolTokenAddress The market address.
-    /// @return avgSupplyRate The market's average supply rate per block (in wad).
-    function getAverageSupplyRatePerBlock(address _poolTokenAddress)
-        external
-        view
-        returns (uint256 avgSupplyRate)
-    {
-        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
-        (uint256 p2pSupplyIndex, , , ) = getIndexes(_poolTokenAddress, false);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        ICToken poolToken = ICToken(_poolTokenAddress);
-
-        uint256 poolSupply = poolToken.balanceOf(address(morpho)).mul(
-            poolToken.exchangeRateStored()
-        );
-        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
-        uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
-
-        uint256 totalSupply = poolSupply + p2pSupply;
-        if (poolSupply > 0) avgSupplyRate += poolSupplyRate.mul(poolSupply.div(totalSupply));
-        if (p2pSupply > 0) avgSupplyRate += p2pSupplyRate.mul(p2pSupply.div(totalSupply));
-    }
-
-    /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
-    /// @param _poolTokenAddress The market address.
-    /// @return avgBorrowRate The market's average borrow rate per block (in wad).
-    function getAverageBorrowRatePerBlock(address _poolTokenAddress)
-        external
-        view
-        returns (uint256 avgBorrowRate)
-    {
-        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
-        (, uint256 p2pBorrowIndex, , ) = getIndexes(_poolTokenAddress, false);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        ICToken poolToken = ICToken(_poolTokenAddress);
-
-        uint256 poolBorrow = poolToken.borrowBalanceStored(address(morpho));
-        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
-        uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
-
-        uint256 totalBorrow = poolBorrow + p2pBorrow;
-        if (poolBorrow > 0) avgBorrowRate += poolBorrowRate.mul(poolBorrow.div(totalBorrow));
-        if (p2pBorrow > 0) avgBorrowRate += p2pBorrowRate.mul(p2pBorrow.div(totalBorrow));
-    }
-
     /// @notice Returns the supply rate per block experienced on a market after having supplied the given amount on behalf of the given user.
     /// @dev Note: the returned supply rate is a lower bound: when supplying through Morpho-Compound,
     /// @dev a supplier could get matched more than once instantly or later and thus benefit from a higher supply rate.
@@ -229,6 +183,52 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// PUBLIC ///
+
+    /// @notice Computes and returns the current supply rate per block experienced on average on a given market.
+    /// @param _poolTokenAddress The market address.
+    /// @return avgSupplyRate The market's average supply rate per block (in wad).
+    function getAverageSupplyRatePerBlock(address _poolTokenAddress)
+        public
+        view
+        returns (uint256 avgSupplyRate)
+    {
+        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
+        (uint256 p2pSupplyIndex, , , ) = getIndexes(_poolTokenAddress, false);
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        ICToken poolToken = ICToken(_poolTokenAddress);
+
+        uint256 poolSupply = poolToken.balanceOf(address(morpho)).mul(
+            poolToken.exchangeRateStored()
+        );
+        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
+        uint256 p2pSupply = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
+
+        uint256 totalSupply = poolSupply + p2pSupply;
+        if (poolSupply > 0) avgSupplyRate += poolSupplyRate.mul(poolSupply.div(totalSupply));
+        if (p2pSupply > 0) avgSupplyRate += p2pSupplyRate.mul(p2pSupply.div(totalSupply));
+    }
+
+    /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
+    /// @param _poolTokenAddress The market address.
+    /// @return avgBorrowRate The market's average borrow rate per block (in wad).
+    function getAverageBorrowRatePerBlock(address _poolTokenAddress)
+        public
+        view
+        returns (uint256 avgBorrowRate)
+    {
+        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
+        (, uint256 p2pBorrowIndex, , ) = getIndexes(_poolTokenAddress, false);
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        ICToken poolToken = ICToken(_poolTokenAddress);
+
+        uint256 poolBorrow = poolToken.borrowBalanceStored(address(morpho));
+        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
+        uint256 p2pBorrow = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
+
+        uint256 totalBorrow = poolBorrow + p2pBorrow;
+        if (poolBorrow > 0) avgBorrowRate += poolBorrowRate.mul(poolBorrow.div(totalBorrow));
+        if (p2pBorrow > 0) avgBorrowRate += p2pBorrowRate.mul(p2pBorrow.div(totalBorrow));
+    }
 
     /// @notice Computes and returns peer-to-peer and pool rates for a specific market.
     /// @dev Note: prefer using getAverageSupplyRatePerBlock & getAverageBorrowRatePerBlock to get the experienced supply/borrow rate instead of this.
