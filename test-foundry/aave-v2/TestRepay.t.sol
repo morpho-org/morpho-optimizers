@@ -412,8 +412,8 @@ contract TestRepay is TestSetup {
                 aDai,
                 address(borrower1)
             );
-            assertApproxEq(onPoolBorrower, 0, 1e3);
-            assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P, 1e3);
+            assertApproxEqAbs(onPoolBorrower, 0, 1e3);
+            assertApproxEqAbs(inP2PBorrower, expectedBorrowBalanceInP2P, 1e3);
 
             uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
             uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
@@ -450,7 +450,7 @@ contract TestRepay is TestSetup {
                 pool.getReserveNormalizedIncome(dai)
             );
             (uint256 supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            assertApproxEq(supplyP2PDelta, expectedSupplyP2PDelta, 1e3);
+            assertApproxEqAbs(supplyP2PDelta, expectedSupplyP2PDelta, 1e3);
 
             // Supply delta matching by a new borrower
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -464,7 +464,7 @@ contract TestRepay is TestSetup {
             );
 
             (supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            assertApproxEq(
+            assertApproxEqAbs(
                 supplyP2PDelta,
                 expectedSupplyP2PDelta / 2,
                 1e3,
