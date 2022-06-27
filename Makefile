@@ -12,13 +12,14 @@ export DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 noMatchContract="GasConsumption"
 
 ifeq (${NETWORK}, eth-mainnet)
-  export DAPP_REMAPPINGS=@config/=config/${NETWORK}/
+	export DAPP_REMAPPINGS=@config/=config/${NETWORK}/
 endif
 
 ifeq (${NETWORK}, polygon-mainnet)
-  export FOUNDRY_FORK_BLOCK_NUMBER=29116728
+	export FOUNDRY_FORK_BLOCK_NUMBER=22116728
 
   ifeq (${PROTOCOL}, aave-v3)
+  	export FOUNDRY_FORK_BLOCK_NUMBER=29116728
 	noMatchContract = "(GasConsumption|Fees|IncentivesVault|Rewards)"
   endif
 endif

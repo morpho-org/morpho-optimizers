@@ -410,7 +410,7 @@ contract TestRewards is TestSetup {
             aaveIncentivesControllerAddress
         ).getRewardsBalance(tokensInArray, address(morpho));
 
-        assertApproxEqAbs(protocolUnclaimedRewards, 0, 2);
+        assertApproxEqAbs(protocolUnclaimedRewards, 0, 5);
     }
 
     function interactWithAave() internal {
