@@ -7,7 +7,7 @@ contract TestRatesLens is TestSetup {
     using CompoundMath for uint256;
 
     function testSupplyRateShouldEqual0WhenNoSupply() public {
-        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+        uint256 supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             cDai,
             address(supplier1)
         );
@@ -16,7 +16,7 @@ contract TestRatesLens is TestSetup {
     }
 
     function testBorrowRateShouldEqual0WhenNoBorrow() public {
-        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+        uint256 borrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
             cDai,
             address(borrower1)
         );
@@ -30,7 +30,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+        uint256 supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             cDai,
             address(supplier1)
         );
@@ -45,7 +45,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+        uint256 borrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
             cDai,
             address(borrower1)
         );
@@ -66,11 +66,11 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+        uint256 supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             cDai,
             address(supplier1)
         );
-        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+        uint256 borrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
             cDai,
             address(borrower1)
         );
@@ -93,7 +93,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount / 2);
 
-        uint256 supplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+        uint256 supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             cDai,
             address(supplier1)
         );
@@ -114,7 +114,7 @@ contract TestRatesLens is TestSetup {
         supplier1.supply(cDai, amount / 2);
         borrower1.borrow(cDai, amount);
 
-        uint256 borrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+        uint256 borrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
             cDai,
             address(borrower1)
         );
@@ -176,7 +176,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), 0);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), 0);
 
         assertEq(supplyRatePerBlock, 0, "non zero supply rate per block");
         assertEq(balanceOnPool, 0, "non zero pool balance");
@@ -190,7 +190,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), 0);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), 0);
 
         assertEq(borrowRatePerBlock, 0, "non zero borrow rate per block");
         assertEq(balanceOnPool, 0, "non zero pool balance");
@@ -211,9 +211,9 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), 0);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), 0);
 
-        uint256 expectedSupplyRatePerBlock = lens.getUpdatedUserSupplyRatePerBlock(
+        uint256 expectedSupplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             cDai,
             address(supplier1)
         );
@@ -248,9 +248,9 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), 0);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), 0);
 
-        uint256 expectedBorrowRatePerBlock = lens.getUpdatedUserBorrowRatePerBlock(
+        uint256 expectedBorrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
             cDai,
             address(borrower1)
         );
@@ -279,7 +279,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount);
 
         uint256 expectedSupplyRatePerBlock = ICToken(cDai).supplyRatePerBlock();
         uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
@@ -312,7 +312,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(supplier1), amount);
 
         uint256 expectedBorrowRatePerBlock = ICToken(cDai).borrowRatePerBlock();
 
@@ -342,7 +342,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerBlock, , , ) = lens.getRatesPerBlock(cDai);
 
@@ -376,7 +376,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerBlock, , ) = lens.getRatesPerBlock(cDai);
 
@@ -409,7 +409,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerBlock, , uint256 poolSupplyRatePerBlock, ) = lens.getRatesPerBlock(
             cDai
@@ -448,7 +448,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerBlock, , uint256 poolBorrowRatePerBlock) = lens.getRatesPerBlock(
             cDai
@@ -492,7 +492,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount / 2);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount / 2);
 
         (uint256 p2pSupplyRatePerBlock, , , ) = lens.getRatesPerBlock(cDai);
 
@@ -526,7 +526,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), amount / 2);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), amount / 2);
 
         (, uint256 p2pBorrowRatePerBlock, , ) = lens.getRatesPerBlock(cDai);
 
@@ -568,7 +568,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerBlock, , , ) = lens.getRatesPerBlock(cDai);
 
@@ -611,7 +611,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerBlock, , ) = lens.getRatesPerBlock(cDai);
 
@@ -659,7 +659,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerBlock(cDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerBlock, , uint256 poolSupplyRatePerBlock, ) = lens.getRatesPerBlock(
             cDai
@@ -719,7 +719,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerBlock(cDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerBlock, , uint256 poolBorrowRatePerBlock) = lens.getRatesPerBlock(
             cDai
