@@ -795,13 +795,13 @@ contract TestRatesLens is TestSetup {
     }
 
     function testAverageSupplyRateShouldEqual0WhenNoSupply() public {
-        uint256 supplyRatePerBlock = lens.getAverageSupplyRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
 
         assertEq(supplyRatePerBlock, 0);
     }
 
     function testAverageBorrowRateShouldEqual0WhenNoBorrow() public {
-        uint256 borrowRatePerBlock = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
 
         assertEq(borrowRatePerBlock, 0);
     }
@@ -812,7 +812,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        uint256 supplyRatePerBlock = lens.getAverageSupplyRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, ICToken(cDai).supplyRatePerBlock(), 1);
     }
@@ -824,7 +824,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        uint256 borrowRatePerBlock = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
 
         assertApproxEqAbs(borrowRatePerBlock, ICToken(cDai).borrowRatePerBlock(), 1);
     }
@@ -842,8 +842,8 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        uint256 supplyRatePerBlock = lens.getAverageSupplyRatePerBlock(cDai);
-        uint256 borrowRatePerBlock = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, p2pSupplyRate, 1, "unexpected supply rate");
@@ -860,7 +860,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount / 2);
 
-        uint256 supplyRatePerBlock = lens.getAverageSupplyRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, (p2pSupplyRate + poolSupplyRate) / 2, 1);
@@ -876,7 +876,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        uint256 borrowRatePerBlock = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerBlock(cDai);
 
         assertApproxEqAbs(borrowRatePerBlock, (p2pBorrowRate + poolBorrowRate) / 2, 1);
@@ -901,7 +901,7 @@ contract TestRatesLens is TestSetup {
         borrower1.approve(usdc, type(uint256).max);
         borrower1.repay(cUsdc, type(uint256).max);
 
-        uint256 avgSupplyRate = lens.getAverageSupplyRatePerBlock(cUsdc);
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerBlock(cUsdc);
         uint256 poolSupplyRate = ICToken(cUsdc).supplyRatePerBlock();
 
         assertApproxEqAbs(avgSupplyRate, poolSupplyRate, 2);
@@ -925,7 +925,7 @@ contract TestRatesLens is TestSetup {
 
         supplier1.withdraw(cDai, type(uint256).max);
 
-        uint256 avgBorrowRate = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerBlock(cDai);
         uint256 poolBorrowRate = ICToken(cDai).borrowRatePerBlock();
 
         assertApproxEqAbs(avgBorrowRate, poolBorrowRate, 1);
