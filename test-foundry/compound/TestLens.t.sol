@@ -645,34 +645,6 @@ contract TestLens is TestSetup {
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
-    function testGetMarketData() public {
-        (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint32 lastUpdateBlockNumber,
-            uint256 p2pSupplyDelta_,
-            uint256 p2pBorrowDelta_,
-            uint256 p2pSupplyAmount_,
-            uint256 p2pBorrowAmount_
-        ) = lens.getMarketData(cDai);
-
-        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(cDai));
-        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(cDai));
-        (uint32 expectedLastUpdateBlockNumber, , ) = morpho.lastPoolIndexes(cDai);
-        assertEq(lastUpdateBlockNumber, expectedLastUpdateBlockNumber);
-        (
-            uint256 p2pSupplyDelta,
-            uint256 p2pBorrowDelta,
-            uint256 p2pSupplyAmount,
-            uint256 p2pBorrowAmount
-        ) = morpho.deltas(cDai);
-
-        assertEq(p2pSupplyDelta_, p2pSupplyDelta);
-        assertEq(p2pBorrowDelta_, p2pBorrowDelta);
-        assertEq(p2pSupplyAmount_, p2pSupplyAmount);
-        assertEq(p2pBorrowAmount_, p2pBorrowAmount);
-    }
-
     function testGetMarketConfiguration() public {
         (
             address underlying,
