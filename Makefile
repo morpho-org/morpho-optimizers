@@ -11,10 +11,6 @@ export DAPP_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 
 noMatchContract="GasConsumption"
 
-ifeq (${NETWORK}, eth-mainnet)
-	export DAPP_REMAPPINGS=@config/=config/${NETWORK}/
-endif
-
 ifeq (${NETWORK}, polygon-mainnet)
 	export FOUNDRY_FORK_BLOCK_NUMBER=22116728
 
