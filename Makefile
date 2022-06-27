@@ -25,8 +25,12 @@ ifeq (${NETWORK}, polygon-mainnet)
 endif
 
 ifeq (${NETWORK}, avalanche-mainnet)
-  export FOUNDRY_FORK_BLOCK_NUMBER=15675271
-  export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+	export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+	export FOUNDRY_FORK_BLOCK_NUMBER=12675271
+
+	ifeq (${PROTOCOL}, aave-v3)
+		export FOUNDRY_FORK_BLOCK_NUMBER=15675271
+	endif
 else
 endif
 

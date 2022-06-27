@@ -504,7 +504,12 @@ contract TestLens is TestSetup {
             expectedStates.debtValue
         );
 
-        assertEq(states.collateralValue, expectedStates.collateralValue, "collateralValue");
+        assertApproxEq(
+            states.collateralValue,
+            expectedStates.collateralValue,
+            1e3,
+            "collateralValue"
+        );
         assertEq(states.debtValue, expectedStates.debtValue, "debtValue");
         assertEq(
             states.liquidationThresholdValue,
