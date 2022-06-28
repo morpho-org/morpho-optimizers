@@ -25,7 +25,7 @@ contract TestRewards is TestSetup {
         supplier2.supply(cDai, toSupply);
 
         hevm.roll(block.number + 1_000);
-        supplier1.claimRewards(cTokens, false);
+        uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
 
         index = comptroller.compSupplyState(cDai).index;
 
@@ -33,6 +33,7 @@ contract TestRewards is TestSetup {
         uint256 balanceAfter = supplier1.balanceOf(comp);
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
 
+        assertEq(claimedAmount, expectedClaimed, "unexpected claimed amount");
         testEquality(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
@@ -58,10 +59,11 @@ contract TestRewards is TestSetup {
         hevm.roll(block.number + 1_000);
         unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
-        supplier1.claimRewards(cTokens, false);
+        uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
         index = comptroller.compSupplyState(cDai).index;
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+        assertEq(claimedAmount, expectedClaimed, "unexpected claimed amount");
         testEquality(unclaimedRewards, expectedClaimed);
     }
 
@@ -84,13 +86,14 @@ contract TestRewards is TestSetup {
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         hevm.roll(block.number + 1_000);
-        supplier1.claimRewards(cTokens, false);
+        uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
 
         index = comptroller.compBorrowState(cUsdc).index;
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
         uint256 balanceAfter = supplier1.balanceOf(comp);
 
+        assertEq(claimedAmount, expectedClaimed, "unexpected claimed amount");
         testEquality(balanceAfter, expectedClaimed, "balance after wrong");
     }
 
@@ -115,10 +118,11 @@ contract TestRewards is TestSetup {
 
         unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
-        supplier1.claimRewards(cTokens, false);
+        uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
         index = comptroller.compBorrowState(cUsdc).index;
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+        assertEq(claimedAmount, expectedClaimed, "unexpected claimed amount");
         testEquality(unclaimedRewards, expectedClaimed);
     }
 
@@ -212,8 +216,7 @@ contract TestRewards is TestSetup {
         assertEq(allUnclaimedRewards, 0);
     }
 
-    // TODO: investigate why this test fails.
-    function _testUsersShouldClaimRewardsIndependently() public {
+    function testUsersShouldClaimRewardsIndependently() public {
         interactWithCompound();
         interactWithMorpho();
 
@@ -264,7 +267,9 @@ contract TestRewards is TestSetup {
 
         hevm.prank(address(morpho));
         uint256 unclaimedRewards1 = rewardsManager.claimRewards(tokensInArray, address(supplier1));
+        hevm.prank(address(morpho));
         uint256 unclaimedRewards2 = rewardsManager.claimRewards(tokensInArray, address(supplier2));
+        hevm.prank(address(morpho));
         uint256 unclaimedRewards3 = rewardsManager.claimRewards(tokensInArray, address(supplier3));
 
         assertEq(unclaimedRewards1, 0);
@@ -315,7 +320,7 @@ contract TestRewards is TestSetup {
         cTokens[0] = cDai;
 
         hevm.roll(block.number + 1_000);
-        supplier1.claimRewards(cTokens, true);
+        uint256 claimedAmount = supplier1.claimRewards(cTokens, true);
 
         uint256 index = comptroller.compSupplyState(cDai).index;
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
@@ -323,6 +328,7 @@ contract TestRewards is TestSetup {
 
         uint256 morphoBalance = supplier1.balanceOf(address(morphoToken));
         uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
+        assertEq(claimedAmount, expectedClaimed);
         testEquality(morphoBalance, expectedMorphoTokens);
         testEquality(rewardBalanceBefore, rewardBalanceAfter);
     }

@@ -128,11 +128,11 @@ contract User is Test {
         morpho.setDefaultMaxGasForMatching(_maxGasForMatching);
     }
 
-    function claimRewards(address[] calldata _assets, bool _toSwap)
+    function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken)
         external
         returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
     {
-        return morpho.claimRewards(_assets, _toSwap);
+        return morpho.claimRewards(_assets, _tradeForMorphoToken);
     }
 
     function setPauseStatus(address _marketAddress, bool _newStatus) external {
