@@ -28,7 +28,7 @@ methods {
     closeFactorMantissa() => DISPATCHER(true);
     liquidationIncentiveMantissa() => DISPATCHER(true);
     oracle() => DISPATCHER(true);
-    // markets(address) returns (SymbolicComptroller.Market) => DISPATCHER(true);
+    // markets(address) returns (comptroller.Market) => DISPATCHER(true);
 
     // rewards manager functions
     accrueUserSupplyUnclaimedRewards(address, address, uint256) => DISPATCHER(true); // inline the function
