@@ -62,6 +62,14 @@ test-html:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract ${NO_MATCH_CONTRACT} --no-match-test testFuzz | aha --black > trace.html
 
+coverage:
+	@echo Create coverage report for ${PROTOCOL} tests on ${NETWORK}
+	@forge coverage -c test-foundry/${PROTOCOL} --no-match-contract ${NO_MATCH_CONTRACT} --no-match-test testFuzz
+
+coverage-lcov:
+	@echo Create coverage lcov for ${PROTOCOL} tests on ${NETWORK}
+	@forge coverage --report lcov -c test-foundry/${PROTOCOL} --no-match-contract ${NO_MATCH_CONTRACT} --no-match-test testFuzz
+
 fuzz:
 	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK}
 	@forge test -vv -c test-foundry/fuzzing/${PROTOCOL}
