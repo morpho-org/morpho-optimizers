@@ -11,7 +11,7 @@ certoraRun \
     certora/helpers/compound/SymbolicOracle.sol \
     certora/helpers/compound/SymbolicComptroller.sol \
     --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
-    --solc solc8.7 \
+    --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
     --cache morpho \

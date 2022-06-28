@@ -1,12 +1,12 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-06-21 18:22:00.000000000 -0700
++++ .gitignore	2022-06-28 11:28:11.000000000 -0700
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
 --- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/MorphoGovernance.sol	2022-06-21 18:22:00.000000000 -0700
++++ compound/MorphoGovernance.sol	2022-06-28 11:28:11.000000000 -0700
 @@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -18,7 +18,7 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
  
 diff -ruN compound/MorphoGovernance.sol.orig compound/MorphoGovernance.sol.orig
 --- compound/MorphoGovernance.sol.orig	1969-12-31 16:00:00.000000000 -0800
-+++ compound/MorphoGovernance.sol.orig	2022-06-21 18:22:00.000000000 -0700
++++ compound/MorphoGovernance.sol.orig	2022-06-28 11:28:11.000000000 -0700
 @@ -0,0 +1,336 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -358,7 +358,7 @@ diff -ruN compound/MorphoGovernance.sol.orig compound/MorphoGovernance.sol.orig
 +}
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 --- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/PositionsManager.sol	2022-06-21 18:22:00.000000000 -0700
++++ compound/PositionsManager.sol	2022-06-28 11:28:11.000000000 -0700
 @@ -213,7 +213,7 @@
          address _onBehalf,
          uint256 _amount,
@@ -404,79 +404,3 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (
              !userMembership[_poolTokenBorrowedAddress][_borrower] ||
              !userMembership[_poolTokenCollateralAddress][_borrower]
-diff -ruN compound/RewardsManager.sol compound/RewardsManager.sol
---- compound/RewardsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/RewardsManager.sol	2022-06-21 20:21:32.000000000 -0700
-@@ -1,4 +1,5 @@
- // SPDX-License-Identifier: GNU AGPLv3
-+// HARNESS: added override to functions that were outlined in the IRewardsManager to stop the compiler errors when running verification
- pragma solidity ^0.8.0;
- 
- import "./interfaces/IRewardsManager.sol";
-@@ -17,9 +18,9 @@
- 
-     /// STORAGE ///
- 
--    mapping(address => uint256) public userUnclaimedCompRewards; // The unclaimed rewards of the user.
--    mapping(address => mapping(address => uint256)) public compSupplierIndex; // The supply index of the user for a specific cToken. cToken -> user -> index.
--    mapping(address => mapping(address => uint256)) public compBorrowerIndex; // The borrow index of the user for a specific cToken. cToken -> user -> index.
-+    mapping(address => uint256) public override userUnclaimedCompRewards; // The unclaimed rewards of the user.
-+    mapping(address => mapping(address => uint256)) public override compSupplierIndex; // The supply index of the user for a specific cToken. cToken -> user -> index.
-+    mapping(address => mapping(address => uint256)) public override compBorrowerIndex; // The borrow index of the user for a specific cToken. cToken -> user -> index.
-     mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
-     mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
- 
-@@ -52,7 +53,7 @@
- 
-     /// @notice Initializes the RewardsManager contract.
-     /// @param _morpho The address of Morpho's main contract's proxy.
--    function initialize(address _morpho) external initializer {
-+    function initialize(address _morpho) external override initializer {
-         morpho = IMorpho(_morpho);
-         comptroller = IComptroller(morpho.comptroller());
-     }
-@@ -63,7 +64,7 @@
-     /// @param _cTokenAddress The cToken address.
-     /// @return The local COMP supply state.
-     function getLocalCompSupplyState(address _cTokenAddress)
--        external
-+        external override
-         view
-         returns (IComptroller.CompMarketState memory)
-     {
-@@ -74,7 +75,7 @@
-     /// @param _cTokenAddress The cToken address.
-     /// @return The local COMP borrow state.
-     function getLocalCompBorrowState(address _cTokenAddress)
--        external
-+        external override
-         view
-         returns (IComptroller.CompMarketState memory)
-     {
-@@ -87,7 +88,7 @@
-     /// @param _cTokenAddresses The cToken addresses for which to claim rewards.
-     /// @param _user The address of the user.
-     function claimRewards(address[] calldata _cTokenAddresses, address _user)
--        external
-+        external override
-         onlyMorpho
-         returns (uint256 totalUnclaimedRewards)
-     {
-@@ -103,7 +104,7 @@
-         address _user,
-         address _cTokenAddress,
-         uint256 _userBalance
--    ) external onlyMorpho {
-+    ) external override onlyMorpho {
-         _updateSupplyIndex(_cTokenAddress);
-         userUnclaimedCompRewards[_user] += _accrueSupplierComp(_user, _cTokenAddress, _userBalance);
-     }
-@@ -116,7 +117,7 @@
-         address _user,
-         address _cTokenAddress,
-         uint256 _userBalance
--    ) external onlyMorpho {
-+    ) external override onlyMorpho {
-         _updateBorrowIndex(_cTokenAddress);
-         userUnclaimedCompRewards[_user] += _accrueBorrowerComp(_user, _cTokenAddress, _userBalance);
-     }
