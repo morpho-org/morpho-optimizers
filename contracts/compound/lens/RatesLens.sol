@@ -229,13 +229,15 @@ abstract contract RatesLens is UsersLens {
         )
     {
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
-        (, uint256 p2pBorrowIndex, , ) = getIndexes(_poolTokenAddress, true);
+        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(_poolTokenAddress, true);
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
         ICToken poolToken = ICToken(_poolTokenAddress);
 
         // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
         p2pBorrowAmount = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
-        poolBorrowAmount = poolToken.borrowBalanceStored(address(morpho));
+        poolBorrowAmount = poolToken.borrowBalanceStored(address(morpho)).mul(
+            poolBorrowIndex.div(poolToken.borrowIndex())
+        );
 
         uint256 totalBorrow = p2pBorrowAmount + poolBorrowAmount;
         if (p2pBorrowAmount > 0)

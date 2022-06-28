@@ -795,15 +795,55 @@ contract TestRatesLens is TestSetup {
     }
 
     function testAverageSupplyRateShouldEqual0WhenNoSupply() public {
-        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
+        .getAverageSupplyRatePerBlock(cDai);
 
         assertEq(supplyRatePerBlock, 0);
+        assertEq(p2pSupplyAmount, 0);
+        assertEq(poolSupplyAmount, 0);
     }
 
     function testAverageBorrowRateShouldEqual0WhenNoBorrow() public {
-        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
+        .getAverageBorrowRatePerBlock(cDai);
 
         assertEq(borrowRatePerBlock, 0);
+        assertEq(p2pBorrowAmount, 0);
+        assertEq(poolBorrowAmount, 0);
+    }
+
+    function testPoolSupplyAmountShouldBeEqualToPoolAmount() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        hevm.roll(block.number + 1_000_000);
+
+        (, , uint256 poolSupplyAmount) = lens.getAverageSupplyRatePerBlock(cDai);
+
+        assertEq(
+            poolSupplyAmount,
+            ICToken(cDai).balanceOf(address(morpho)).mul(ICToken(cDai).exchangeRateCurrent())
+        );
+    }
+
+    function testPoolBorrowAmountShouldBeEqualToPoolAmount() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 1_000_000);
+
+        (, , uint256 poolBorrowAmount) = lens.getAverageBorrowRatePerBlock(cDai);
+
+        assertApproxEqAbs(
+            poolBorrowAmount,
+            ICToken(cDai).borrowBalanceCurrent(address(morpho)),
+            1e4
+        );
     }
 
     function testAverageSupplyRateShouldEqualPoolRateWhenNoMatch() public {
@@ -812,9 +852,12 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
+        .getAverageSupplyRatePerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, ICToken(cDai).supplyRatePerBlock(), 1);
+        assertApproxEqAbs(poolSupplyAmount, amount, 1e7);
+        assertEq(p2pSupplyAmount, 0);
     }
 
     function testAverageBorrowRateShouldEqualPoolRateWhenNoMatch() public {
@@ -824,9 +867,12 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
+        .getAverageBorrowRatePerBlock(cDai);
 
         assertApproxEqAbs(borrowRatePerBlock, ICToken(cDai).borrowRatePerBlock(), 1);
+        assertEq(poolBorrowAmount, amount);
+        assertEq(p2pBorrowAmount, 0);
     }
 
     function testAverageRatesShouldEqualP2PRatesWhenFullyMatched() public {
@@ -842,12 +888,18 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        (uint256 supplyRatePerBlock, , ) = lens.getAverageSupplyRatePerBlock(cDai);
-        (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
+        (uint256 supplyRatePerBlock, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
+        .getAverageSupplyRatePerBlock(cDai);
+        (uint256 borrowRatePerBlock, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
+        .getAverageBorrowRatePerBlock(cDai);
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, p2pSupplyRate, 1, "unexpected supply rate");
         assertApproxEqAbs(borrowRatePerBlock, p2pBorrowRate, 1, "unexpected borrow rate");
+        assertApproxEqAbs(poolSupplyAmount, poolBorrowAmount, 1e9);
+        assertApproxEqAbs(poolBorrowAmount, 0, 1e7);
+        assertEq(p2pSupplyAmount, p2pBorrowAmount);
+        assertApproxEqAbs(p2pBorrowAmount, amount, 1e9);
     }
 
     function testAverageSupplyRateShouldEqualMidrateWhenHalfMatched() public {
