@@ -17,7 +17,7 @@ contract TestIncentivesVault is Test, Config {
 
     Vm public hevm = Vm(HEVM_ADDRESS);
 
-    address public REWARD_TOKEN;
+    address public REWARD_TOKEN = rewardToken;
 
     address public morphoDao = address(1);
     address public morpho = address(3);
@@ -28,11 +28,6 @@ contract TestIncentivesVault is Test, Config {
     function setUp() public {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-
-        REWARD_TOKEN = rewardToken;
-
-        // if (block.chainid == Chains.AVALANCHE_MAINNET) REWARD_TOKEN = rewardToken;
-        // else REWARD_TOKEN = address(0);
 
         incentivesVault = new IncentivesVault(
             IMorpho(address(morpho)),
