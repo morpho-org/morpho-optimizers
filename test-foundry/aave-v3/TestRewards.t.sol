@@ -222,7 +222,7 @@ contract TestRewards is TestSetup {
         uint256 toSupply1 = 100 ether;
         uint256 toSupply2 = 50 * 1e6;
 
-        uint256 balanceBefore = ERC20(rewardToken).balanceOf(address(supplier1));
+        uint256 balanceBefore = supplier1.balanceOf(rewardToken);
         supplier1.approve(dai, toSupply1);
         supplier1.supply(aDai, toSupply1);
 
@@ -233,9 +233,16 @@ contract TestRewards is TestSetup {
 
         address[] memory aUsdcInArray = new address[](1);
         aUsdcInArray[0] = aUsdc;
-        supplier1.claimRewards(aUsdcInArray, false);
+        (address[] memory rewardTokens, uint256[] memory claimedAmounts) = supplier1.claimRewards(
+            aUsdcInArray,
+            false
+        );
+        assertEq(rewardTokens.length, 1);
+        assertEq(rewardTokens[0], rewardToken);
+        assertEq(claimedAmounts.length, 1);
+        assertEq(claimedAmounts[0], 0);
 
-        uint256 balanceAfter = ERC20(rewardToken).balanceOf(address(supplier1));
+        uint256 balanceAfter = supplier1.balanceOf(rewardToken);
         assertEq(balanceAfter, balanceBefore);
     }
 
