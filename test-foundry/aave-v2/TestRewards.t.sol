@@ -4,14 +4,6 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
-    function testShouldRevertClaimingZero() public {
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
-
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimRewards(aDaiInArray, false);
-    }
-
     function testShouldRevertWhenClaimRewardsIsPaused() public {
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
@@ -265,6 +257,8 @@ contract TestRewards is TestSetup {
     function testShouldNotBePossibleToClaimRewardsOnOtherMarket() public {
         uint256 toSupply = 100 ether;
         uint256 toSupply2 = 50 * 1e6;
+
+        uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
         supplier2.approve(usdc, toSupply2);
@@ -275,8 +269,10 @@ contract TestRewards is TestSetup {
         address[] memory aUsdcInArray = new address[](1);
         aUsdcInArray[0] = aUsdc;
 
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        supplier1.claimRewards(aUsdcInArray, false);
+        assertEq(supplier1.claimRewards(aUsdcInArray, false), 0);
+
+        uint256 balanceAfter = supplier1.balanceOf(REWARD_TOKEN);
+        assertEq(balanceAfter, balanceBefore);
     }
 
     function testShouldClaimRewardsOnSeveralMarketsAtOnce() public {
