@@ -191,13 +191,17 @@ contract Morpho is MorphoGovernance {
         if (isClaimRewardsPaused) revert ClaimRewardsPaused();
         claimedAmount = rewardsManager.claimRewards(_assets, msg.sender);
 
-        if (claimedAmount == 0) revert AmountIsZero();
+        if (claimedAmount > 0) {
+            if (_tradeForMorphoToken) {
+                aaveIncentivesController.claimRewards(
+                    _assets,
+                    claimedAmount,
+                    address(incentivesVault)
+                );
+                incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, claimedAmount);
+            } else aaveIncentivesController.claimRewards(_assets, claimedAmount, msg.sender);
 
-        if (_tradeForMorphoToken) {
-            aaveIncentivesController.claimRewards(_assets, claimedAmount, address(incentivesVault));
-            incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, claimedAmount);
-        } else aaveIncentivesController.claimRewards(_assets, claimedAmount, msg.sender);
-
-        emit RewardsClaimed(msg.sender, claimedAmount, _tradeForMorphoToken);
+            emit RewardsClaimed(msg.sender, claimedAmount, _tradeForMorphoToken);
+        }
     }
 }
