@@ -31,6 +31,7 @@ interface IMorpho {
     function rewardsManager() external view returns (IRewardsManager);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
+    function rewardsController() external view returns (IRewardsController);
     function addressesProvider() external view returns (IPoolAddressesProvider);
     function pool() external view returns (IPool);
     function treasuryVault() external view returns (address);
