@@ -188,20 +188,20 @@ contract Morpho is MorphoGovernance {
     {
         claimedAmount = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
-        if (claimedAmount == 0) revert AmountIsZero();
+        if (claimedAmount > 0) {
+            ERC20 comp = ERC20(comptroller.getCompAddress());
+            // If there is not enough COMP tokens on the contract, claim them. Else, continue.
+            if (comp.balanceOf(address(this)) < claimedAmount)
+                comptroller.claimComp(address(this), _cTokenAddresses);
 
-        ERC20 comp = ERC20(comptroller.getCompAddress());
-        // If there is not enough COMP tokens on the contract, claim them. Else, continue.
-        if (comp.balanceOf(address(this)) < claimedAmount)
-            comptroller.claimComp(address(this), _cTokenAddresses);
-
-        if (_tradeForMorphoToken) {
-            comp.safeApprove(address(incentivesVault), claimedAmount);
-            incentivesVault.tradeCompForMorphoTokens(msg.sender, claimedAmount);
-            emit RewardsClaimedAndTraded(msg.sender, claimedAmount);
-        } else {
-            comp.safeTransfer(msg.sender, claimedAmount);
-            emit RewardsClaimed(msg.sender, claimedAmount);
+            if (_tradeForMorphoToken) {
+                comp.safeApprove(address(incentivesVault), claimedAmount);
+                incentivesVault.tradeCompForMorphoTokens(msg.sender, claimedAmount);
+                emit RewardsClaimedAndTraded(msg.sender, claimedAmount);
+            } else {
+                comp.safeTransfer(msg.sender, claimedAmount);
+                emit RewardsClaimed(msg.sender, claimedAmount);
+            }
         }
     }
 
