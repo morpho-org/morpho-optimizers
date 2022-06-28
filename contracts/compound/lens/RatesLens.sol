@@ -28,7 +28,7 @@ abstract contract RatesLens is UsersLens {
 
     /// @notice Returns the supply rate per block experienced on a market after having supplied the given amount on behalf of the given user.
     /// @dev Note: the returned supply rate is a lower bound: when supplying through Morpho-Compound,
-    /// a supplier could get matched more than once instantly or later and thus benefit from a higher supply rate.
+    /// a supplier could be matched more than once instantly or later and thus benefit from a higher supply rate.
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The address of the user on behalf of whom to supply.
     /// @param _amount The amount to supply.
@@ -106,7 +106,7 @@ abstract contract RatesLens is UsersLens {
 
     /// @notice Returns the borrow rate per block experienced on a market after having supplied the given amount on behalf of the given user.
     /// @dev Note: the returned borrow rate is an upper bound: when borrowing through Morpho-Compound,
-    /// a borrower could get matched more than once instantly or later and thus benefit from a lower borrow rate.
+    /// a borrower could be matched more than once instantly or later and thus benefit from a lower borrow rate.
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The address of the user on behalf of whom to borrow.
     /// @param _amount The amount to borrow.
