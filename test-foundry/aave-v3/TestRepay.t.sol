@@ -469,7 +469,7 @@ contract TestRepay is TestSetup {
                 expectedSupplyP2PDelta / 2,
                 "supply delta unexpected"
             );
-            testEquality(onPoolBorrower, 0, "on pool not unexpected");
+            testEquality(onPoolBorrower, 0, "on pool unexpected");
             testEqualityLarge(
                 inP2PBorrower,
                 expectedBorrowBalanceInP2P,

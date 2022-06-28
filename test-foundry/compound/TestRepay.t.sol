@@ -519,7 +519,7 @@ contract TestRepay is TestSetup {
                 10,
                 "supply delta unexpected"
             );
-            assertEq(onPoolBorrower, 0, "on pool not unexpected");
+            assertEq(onPoolBorrower, 0, "on pool unexpected");
             assertApproxEqAbs(
                 inP2PBorrower,
                 expectedBorrowBalanceInP2P,
