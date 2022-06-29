@@ -69,7 +69,8 @@ jobs:
           key: foundry-out-aave-v3 # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test PROTOCOL=aave-v3
+        run: make test
         env:
+          PROTOCOL: aave-v3
           NETWORK: avalanche-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
