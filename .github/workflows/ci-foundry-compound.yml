@@ -6,10 +6,9 @@ on:
       - main
     paths:
       - "lib/**"
-      - "config/**"
+      - "config/eth-mainnet/compound/**"
       - "contracts/common/**"
       - "contracts/compound/**"
-      - "test/**"
       - "test-foundry/common/**"
       - "test-foundry/compound/**"
       - "*.lock"
@@ -19,10 +18,9 @@ on:
   pull_request:
     paths:
       - "lib/**"
-      - "config/**"
+      - "config/eth-mainnet/compound/**"
       - "contracts/common/**"
       - "contracts/compound/**"
-      - "test/**"
       - "test-foundry/common/**"
       - "test-foundry/compound/**"
       - "*.lock"
@@ -68,7 +66,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: "**/out"
-          key: foundry-out # always keep compiled contracts from base branch
+          key: foundry-out-compound # always keep compiled contracts from base branch
 
       - name: Run tests
         run: make test PROTOCOL=compound
