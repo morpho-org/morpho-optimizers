@@ -34,33 +34,37 @@ contract TestSetup is Config, Utils {
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
+    TransparentUpgradeableProxy public lensProxy;
     TransparentUpgradeableProxy public morphoProxy;
-    Morpho internal morphoImplV1;
-    Morpho internal morpho;
-    InterestRatesManager internal interestRatesManager;
-    TransparentUpgradeableProxy internal rewardsManagerProxy;
-    IRewardsManager internal rewardsManagerImplV1;
-    IRewardsManager internal rewardsManager;
-    IPositionsManager internal positionsManager;
-    Lens internal lensImplV1;
-    Lens internal lens;
-    TransparentUpgradeableProxy internal lensProxy;
+    TransparentUpgradeableProxy public rewardsManagerProxy;
 
+    Lens public lensImplV1;
+    Morpho public morphoImplV1;
+    IRewardsManager public rewardsManagerImplV1;
+
+    Lens public lens;
+    Morpho public morpho;
+    IPositionsManager public positionsManager;
+    InterestRatesManager public interestRatesManager;
     IncentivesVault public incentivesVault;
-    DumbOracle internal dumbOracle;
+    IRewardsManager public rewardsManager;
+
+    DumbOracle public dumbOracle;
     MorphoToken public morphoToken;
     IComptroller public comptroller;
     ICompoundOracle public oracle;
+
+    User public treasuryVault;
 
     User public supplier1;
     User public supplier2;
     User public supplier3;
     User[] public suppliers;
+
     User public borrower1;
     User public borrower2;
     User public borrower3;
     User[] public borrowers;
-    User public treasuryVault;
 
     address[] public pools;
 
