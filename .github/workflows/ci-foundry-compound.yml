@@ -69,7 +69,8 @@ jobs:
           key: foundry-out-compound # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test PROTOCOL=compound
+        run: make test
         env:
+          PROTOCOL: compound
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
