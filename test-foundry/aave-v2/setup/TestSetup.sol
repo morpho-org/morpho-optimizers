@@ -47,34 +47,39 @@ contract TestSetup is Config, Utils {
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public morphoProxy;
-    Morpho public morphoImplV1;
-    Morpho public morpho;
-    IInterestRatesManager public interestRatesManager;
     TransparentUpgradeableProxy internal rewardsManagerProxy;
+
+    Morpho public morphoImplV1;
     IRewardsManager internal rewardsManagerImplV1;
-    IRewardsManager internal rewardsManager;
+
+    Lens public lens;
+    Morpho public morpho;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
-    Lens public lens;
-    MorphoToken public morphoToken;
+    IInterestRatesManager public interestRatesManager;
+    IncentivesVault public incentivesVault;
+    IRewardsManager internal rewardsManager;
+
     address public REWARD_TOKEN =
         IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
-    IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
+    MorphoToken public morphoToken;
     ILendingPoolAddressesProvider public poolAddressesProvider;
     IPriceOracleGetter public oracle;
     ILendingPool public pool;
+
+    User public treasuryVault;
 
     User public supplier1;
     User public supplier2;
     User public supplier3;
     User[] public suppliers;
+
     User public borrower1;
     User public borrower2;
     User public borrower3;
     User[] public borrowers;
-    User public treasuryVault;
 
     address[] public pools;
 
@@ -82,7 +87,11 @@ contract TestSetup is Config, Utils {
         initContracts();
         setContractsLabels();
         initUsers();
+
+        onSetUp();
     }
+
+    function onSetUp() public virtual {}
 
     function initContracts() internal {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
