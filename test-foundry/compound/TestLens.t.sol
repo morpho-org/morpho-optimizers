@@ -869,6 +869,17 @@ contract TestLens is TestSetup {
         assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e8);
     }
 
+    function testHealthFactorShouldBeInfinityForPureSuppliers() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(usdc, to6Decimals(2 * amount));
+        supplier1.supply(cUsdc, to6Decimals(2 * amount));
+
+        uint256 healthFactor = lens.getUserHealthFactor(address(supplier1), new address[](0));
+
+        assertEq(healthFactor, type(uint256).max);
+    }
+
     function testHealthFactorAbove1WhenHalfMatched() public {
         uint256 amount = 10_000 ether;
 
