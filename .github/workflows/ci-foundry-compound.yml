@@ -1,4 +1,4 @@
-name: Solidity tests on Morpho Compound
+name: Foundry tests
 
 on:
   push:
@@ -13,6 +13,7 @@ on:
       - "test-foundry/compound/**"
       - "*.lock"
       - "Makefile"
+      - "foundry.toml"
       - "remappings.txt"
       - ".github/workflows/ci-foundry-compound.yml"
   pull_request:
@@ -25,13 +26,14 @@ on:
       - "test-foundry/compound/**"
       - "*.lock"
       - "Makefile"
+      - "foundry.toml"
       - "remappings.txt"
       - ".github/workflows/ci-foundry-compound.yml"
 
 jobs:
-  morpho-compound:
+  morpho-compound-eth-mainnet:
     if: "! github.event.pull_request.draft"
-    name: Morpho-Compound
+    name: Morpho-Compound [eth-mainnet]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
