@@ -148,6 +148,7 @@ abstract contract UsersLens is IndexesLens {
         returns (uint256)
     {
         (, uint256 debtValue, uint256 maxDebtValue) = getUserBalanceStates(_user, _updatedMarkets);
+        if (debtValue == 0) return type(uint256).max;
 
         return maxDebtValue.div(debtValue);
     }
