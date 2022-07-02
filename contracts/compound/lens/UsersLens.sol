@@ -24,11 +24,11 @@ abstract contract UsersLens is IndexesLens {
 
     /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
-    /// @return enteredMarkets_ The list of markets entered by this user.
+    /// @return enteredMarkets The list of markets entered by this user.
     function getEnteredMarkets(address _user)
         external
         view
-        returns (address[] memory enteredMarkets_)
+        returns (address[] memory enteredMarkets)
     {
         return morpho.getEnteredMarkets(_user);
     }

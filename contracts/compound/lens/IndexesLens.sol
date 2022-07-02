@@ -173,12 +173,12 @@ abstract contract IndexesLens is LensStorage {
 
     /// @dev Returns Compound's indexes, optionally computing their virtually updated values.
     /// @param _poolTokenAddress The address of the market.
-    /// @return newPoolSupplyIndex_ The supply index.
-    /// @return newPoolBorrowIndex_ The borrow index.
+    /// @return newPoolSupplyIndex The supply index.
+    /// @return newPoolBorrowIndex The borrow index.
     function _computeUpdatedPoolIndexes(address _poolTokenAddress)
         internal
         view
-        returns (uint256 newPoolSupplyIndex_, uint256 newPoolBorrowIndex_)
+        returns (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex)
     {
         ICToken cToken = ICToken(_poolTokenAddress);
 
@@ -206,9 +206,9 @@ abstract contract IndexesLens is LensStorage {
         uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
             reservesPrior;
 
-        newPoolSupplyIndex_ = totalSupply > 0
+        newPoolSupplyIndex = totalSupply > 0
             ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
             : cToken.initialExchangeRateMantissa();
-        newPoolBorrowIndex_ = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
+        newPoolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 }
