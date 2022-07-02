@@ -4,22 +4,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "lib/**"
-      - "config/eth-mainnet/compound/**"
-      - "contracts/common/**"
-      - "contracts/compound/**"
-      - "test-foundry/common/**"
-      - "test-foundry/compound/**"
-      - "*.lock"
-      - "Makefile"
-      - "foundry.toml"
-      - "remappings.txt"
-      - ".github/workflows/ci-foundry-compound.yml"
   pull_request:
     paths:
       - "lib/**"
-      - "config/eth-mainnet/compound/**"
+      - "config/**/compound/**"
       - "contracts/common/**"
       - "contracts/compound/**"
       - "test-foundry/common/**"

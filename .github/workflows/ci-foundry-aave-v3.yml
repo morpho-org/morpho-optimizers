@@ -4,22 +4,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "lib/**"
-      - "config/avalanche-mainnet/aave-v3/**"
-      - "contracts/common/**"
-      - "contracts/aave-v3/**"
-      - "test-foundry/common/**"
-      - "test-foundry/aave-v3/**"
-      - "*.lock"
-      - "Makefile"
-      - "foundry.toml"
-      - "remappings.txt"
-      - ".github/workflows/ci-foundry-aave-v3.yml"
   pull_request:
     paths:
       - "lib/**"
-      - "config/avalanche-mainnet/aave-v3/**"
+      - "config/**/aave-v3/**"
       - "contracts/common/**"
       - "contracts/aave-v3/**"
       - "test-foundry/common/**"
