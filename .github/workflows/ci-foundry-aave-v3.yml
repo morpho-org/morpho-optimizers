@@ -31,51 +31,51 @@ on:
       - ".github/workflows/ci-foundry-aave-v3.yml"
 
 jobs:
-  morpho-aave-v3-polygon-mainnet:
-    if: "! github.event.pull_request.draft"
-    name: Morpho-Aave V3 [polygon-mainnet]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+  # morpho-aave-v3-polygon-mainnet:
+  #   if: "! github.event.pull_request.draft"
+  #   name: Morpho-Aave V3 [polygon-mainnet]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
 
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "16"
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: "16"
 
-      - name: Node dependencies cache
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: yarn-${{ hashFiles('**/yarn.lock') }}
+  #     - name: Node dependencies cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: "**/node_modules"
+  #         key: yarn-${{ hashFiles('**/yarn.lock') }}
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
+  #     - name: Install dependencies
+  #       run: yarn install --frozen-lockfile
 
-      - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
-        with:
-          version: nightly
+  #     - name: Install Foundry
+  #       uses: onbjerg/foundry-toolchain@v1
+  #       with:
+  #         version: nightly
 
-      - name: Foundry fork cache
-        uses: actions/cache@v3
-        with:
-          path: "~/.foundry/cache"
-          key: foundry-${{ hashFiles('**/Makefile', '**/foundry.toml') }} # where fork block numbers & RPC are stored
+  #     - name: Foundry fork cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: "~/.foundry/cache"
+  #         key: foundry-${{ hashFiles('**/Makefile', '**/foundry.toml') }} # where fork block numbers & RPC are stored
 
-      - name: Foundry out cache
-        uses: actions/cache@v3
-        with:
-          path: "**/out"
-          key: foundry-out-aave-v3 # always keep compiled contracts from base branch
+  #     - name: Foundry out cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: "**/out"
+  #         key: foundry-out-aave-v3 # always keep compiled contracts from base branch
 
-      - name: Run tests
-        run: make test
-        env:
-          PROTOCOL: aave-v3
-          NETWORK: polygon-mainnet
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+  #     - name: Run tests
+  #       run: make test
+  #       env:
+  #         PROTOCOL: aave-v3
+  #         NETWORK: polygon-mainnet
+  #         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
   morpho-aave-v3-avalanche-mainnet:
     if: "! github.event.pull_request.draft"
     name: Morpho-Aave V3 [avalanche-mainnet]
