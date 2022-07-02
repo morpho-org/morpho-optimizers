@@ -40,8 +40,8 @@ abstract contract MarketsLens is RatesLens {
     }
 
     /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+    /// @return marketsCreated The list of market addresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated) {
         return morpho.getAllMarkets();
     }
 
@@ -110,42 +110,42 @@ abstract contract MarketsLens is RatesLens {
     }
 
     /// @notice Returns market's configuration.
-    /// @return underlying_ The underlying token address.
-    /// @return isCreated_ Whether the market is created or not.
-    /// @return p2pDisabled_ Whether user are put in peer-to-peer or not.
-    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
-    /// @return reserveFactor_ The reserve factor applied to this market.
-    /// @return p2pIndexCursor_ The p2p index cursor applied to this market.
-    /// @return collateralFactor_ The pool collateral factor also used by Morpho.
+    /// @return underlying The underlying token address.
+    /// @return isCreated Whether the market is created or not.
+    /// @return p2pDisabled Whether user are put in peer-to-peer or not.
+    /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+    /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return reserveFactor The reserve factor applied to this market.
+    /// @return p2pIndexCursor The p2p index cursor applied to this market.
+    /// @return collateralFactor The pool collateral factor also used by Morpho.
     function getMarketConfiguration(address _poolTokenAddress)
         external
         view
         returns (
-            address underlying_,
-            bool isCreated_,
-            bool p2pDisabled_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            uint16 reserveFactor_,
-            uint16 p2pIndexCursor_,
-            uint256 collateralFactor_
+            address underlying,
+            bool isCreated,
+            bool p2pDisabled,
+            bool isPaused,
+            bool isPartiallyPaused,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor,
+            uint256 collateralFactor
         )
     {
-        underlying_ = _poolTokenAddress == morpho.cEth()
+        underlying = _poolTokenAddress == morpho.cEth()
             ? morpho.wEth()
             : ICToken(_poolTokenAddress).underlying();
 
         Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        isCreated_ = marketStatus.isCreated;
-        p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
-        isPaused_ = marketStatus.isPaused;
-        isPartiallyPaused_ = marketStatus.isPartiallyPaused;
+        isCreated = marketStatus.isCreated;
+        p2pDisabled = morpho.p2pDisabled(_poolTokenAddress);
+        isPaused = marketStatus.isPaused;
+        isPartiallyPaused = marketStatus.isPartiallyPaused;
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
-        reserveFactor_ = marketParams.reserveFactor;
-        p2pIndexCursor_ = marketParams.p2pIndexCursor;
+        reserveFactor = marketParams.reserveFactor;
+        p2pIndexCursor = marketParams.p2pIndexCursor;
 
-        (, collateralFactor_, ) = comptroller.markets(_poolTokenAddress);
+        (, collateralFactor, ) = comptroller.markets(_poolTokenAddress);
     }
 }
