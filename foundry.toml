@@ -7,6 +7,6 @@ via_ir = false
 # only for the required contracts. This can reduce compile time
 # for `forge test`, but is experimental.
 sparse_mode = true
-revert_strings = "default"
+revert_strings = "debug"
 names = true
 sizes = true
