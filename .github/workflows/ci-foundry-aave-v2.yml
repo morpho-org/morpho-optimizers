@@ -1,4 +1,4 @@
-name: Solidity tests on Morpho Aave V2
+name: Foundry tests
 
 on:
   push:
@@ -13,6 +13,7 @@ on:
       - "test-foundry/aave-v2/**"
       - "*.lock"
       - "Makefile"
+      - "foundry.toml"
       - "remappings.txt"
       - ".github/workflows/ci-foundry-aave-v2.yml"
   pull_request:
@@ -25,13 +26,14 @@ on:
       - "test-foundry/aave-v2/**"
       - "*.lock"
       - "Makefile"
+      - "foundry.toml"
       - "remappings.txt"
       - ".github/workflows/ci-foundry-aave-v2.yml"
 
 jobs:
-  morpho-aave-v2:
+  morpho-aave-v2-eth-mainnet:
     if: "! github.event.pull_request.draft"
-    name: Morpho-Aave V2
+    name: Morpho-Aave V2 [eth-mainnet]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -73,4 +75,94 @@ jobs:
         env:
           PROTOCOL: aave-v2
           NETWORK: eth-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+  morpho-aave-v2-polygon-mainnet:
+    if: "! github.event.pull_request.draft"
+    name: Morpho-Aave V2 [polygon-mainnet]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Node dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Foundry fork cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.foundry/cache"
+          key: foundry-${{ hashFiles('**/Makefile', '**/foundry.toml') }} # where fork block numbers & RPC are stored
+
+      - name: Foundry out cache
+        uses: actions/cache@v3
+        with:
+          path: "**/out"
+          key: foundry-out-aave-v2 # always keep compiled contracts from base branch
+
+      - name: Run tests
+        run: make test
+        env:
+          PROTOCOL: aave-v2
+          NETWORK: polygon-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+  morpho-aave-v2-avalanche-mainnet:
+    if: "! github.event.pull_request.draft"
+    name: Morpho-Aave V2 [avalanche-mainnet]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Node dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Foundry fork cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.foundry/cache"
+          key: foundry-${{ hashFiles('**/Makefile', '**/foundry.toml') }} # where fork block numbers & RPC are stored
+
+      - name: Foundry out cache
+        uses: actions/cache@v3
+        with:
+          path: "**/out"
+          key: foundry-out-aave-v2 # always keep compiled contracts from base branch
+
+      - name: Run tests
+        run: make test
+        env:
+          PROTOCOL: aave-v2
+          NETWORK: avalanche-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
