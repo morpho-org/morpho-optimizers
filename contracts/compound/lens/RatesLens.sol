@@ -72,7 +72,7 @@ abstract contract RatesLens is UsersLens {
             }
         }
 
-        if (_amount > 0) {
+        if (_amount > 0 && !morpho.p2pDisabled(_poolTokenAddress)) {
             uint256 firstPoolBorrowerBalance = morpho
             .borrowBalanceInOf(
                 _poolTokenAddress,
@@ -150,7 +150,7 @@ abstract contract RatesLens is UsersLens {
             }
         }
 
-        if (_amount > 0) {
+        if (_amount > 0 && !morpho.p2pDisabled(_poolTokenAddress)) {
             uint256 firstPoolSupplierBalance = morpho
             .supplyBalanceInOf(
                 _poolTokenAddress,

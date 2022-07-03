@@ -477,6 +477,78 @@ contract TestRatesLens is TestSetup {
         );
     }
 
+    function testNextSupplyRateShouldEqualPoolRateWhenFullMatchButP2PDisabled() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        morpho.setP2PDisable(cDai, true);
+
+        (
+            uint256 supplyRatePerBlock,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextUserSupplyRatePerBlock(cDai, address(supplier1), amount);
+
+        uint256 expectedSupplyRatePerBlock = ICToken(cDai).supplyRatePerBlock();
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+
+        assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
+        assertApproxEqAbs(
+            supplyRatePerBlock,
+            expectedSupplyRatePerBlock,
+            1,
+            "unexpected supply rate per block"
+        );
+        assertEq(
+            balanceOnPool,
+            amount.div(poolSupplyIndex).mul(poolSupplyIndex),
+            "unexpected pool balance"
+        );
+        assertEq(balanceInP2P, 0, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            amount.div(poolSupplyIndex).mul(poolSupplyIndex),
+            "unexpected total balance"
+        );
+    }
+
+    function testNextBorrowRateShouldEqualPoolRateWhenFullMatchButP2PDisabled() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        morpho.setP2PDisable(cDai, true);
+
+        (
+            uint256 borrowRatePerBlock,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextUserBorrowRatePerBlock(cDai, address(borrower1), amount);
+
+        uint256 expectedBorrowRatePerBlock = ICToken(cDai).borrowRatePerBlock();
+
+        assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
+        assertApproxEqAbs(
+            borrowRatePerBlock,
+            expectedBorrowRatePerBlock,
+            1,
+            "unexpected borrow rate per block"
+        );
+        assertApproxEqAbs(balanceOnPool, amount, 1, "unexpected pool balance");
+        assertEq(balanceInP2P, 0, "unexpected p2p balance");
+        assertApproxEqAbs(totalBalance, amount, 1, "unexpected total balance");
+    }
+
     function testNextSupplyRateShouldEqualP2PRateWhenDoubleSupply() public {
         uint256 amount = 10_000 ether;
 
