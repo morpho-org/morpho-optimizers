@@ -498,7 +498,6 @@ contract TestRatesLens is TestSetup {
         uint256 expectedSupplyRatePerBlock = ICToken(cDai).supplyRatePerBlock();
         uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
 
-        assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertApproxEqAbs(
             supplyRatePerBlock,
             expectedSupplyRatePerBlock,
@@ -537,7 +536,6 @@ contract TestRatesLens is TestSetup {
 
         uint256 expectedBorrowRatePerBlock = ICToken(cDai).borrowRatePerBlock();
 
-        assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertApproxEqAbs(
             borrowRatePerBlock,
             expectedBorrowRatePerBlock,
