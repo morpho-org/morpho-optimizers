@@ -90,7 +90,7 @@ interface ILens {
             uint256 maxDebtValue
         );
 
-    function getUpdatedUserSupplyBalance(address _user, address _poolTokenAddress)
+    function getUpdatedUserSupplyBalance(address _poolTokenAddress, address _user)
         external
         view
         returns (
@@ -99,7 +99,7 @@ interface ILens {
             uint256 totalBalance
         );
 
-    function getUpdatedUserBorrowBalance(address _user, address _poolTokenAddress)
+    function getUpdatedUserBorrowBalance(address _poolTokenAddress, address _user)
         external
         view
         returns (
