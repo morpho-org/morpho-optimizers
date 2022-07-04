@@ -117,12 +117,12 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
         (, , uint256 totalCollateralBalance) = getUpdatedUserSupplyBalance(
-            _user,
-            _poolTokenCollateralAddress
+            _poolTokenCollateralAddress,
+            _user
         );
         (, , uint256 totalBorrowBalance) = getUpdatedUserBorrowBalance(
-            _user,
-            _poolTokenBorrowedAddress
+            _poolTokenBorrowedAddress,
+            _user
         );
 
         uint256 borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
@@ -208,12 +208,12 @@ abstract contract UsersLens is IndexesLens {
     }
 
     /// @notice Returns the balance in underlying of a given user in a given market.
-    /// @param _user The user to determine balances of.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _user The user to determine balances of.
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedUserSupplyBalance(address _user, address _poolTokenAddress)
+    function getUpdatedUserSupplyBalance(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -235,12 +235,12 @@ abstract contract UsersLens is IndexesLens {
     }
 
     /// @notice Returns the borrow balance in underlying of a given user in a given market.
-    /// @param _user The user to determine balances of.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _user The user to determine balances of.
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedUserBorrowBalance(address _user, address _poolTokenAddress)
+    function getUpdatedUserBorrowBalance(address _poolTokenAddress, address _user)
         public
         view
         returns (
