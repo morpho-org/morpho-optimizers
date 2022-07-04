@@ -148,8 +148,8 @@ contract TestInterestRates is InterestRatesManager, Test {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWhenPoolSupplyIndexHasJumpedWithDelta() public {
@@ -167,7 +167,7 @@ contract TestInterestRates is InterestRatesManager, Test {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 }
