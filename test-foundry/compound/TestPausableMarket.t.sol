@@ -8,6 +8,7 @@ contract TestPausableMarket is TestSetup {
 
     address[] cEthArray = [cEth];
     address[] cDaiArray = [cDai];
+    uint256[] public amountArray = [1 ether];
 
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -77,7 +78,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cDai, 1 ether);
 
-        morpho.claimToTreasury(cDaiArray);
+        morpho.claimToTreasury(cDaiArray, amountArray);
     }
 
     function testShouldDisableMarketWhenPaused() public {
@@ -116,7 +117,7 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
-        morpho.claimToTreasury(cDaiArray);
+        morpho.claimToTreasury(cDaiArray, amountArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -141,7 +142,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cEth, 1 ether);
 
-        morpho.claimToTreasury(cEthArray);
+        morpho.claimToTreasury(cEthArray, amountArray);
     }
 
     function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
@@ -177,7 +178,7 @@ contract TestPausableMarket is TestSetup {
         liquidator.approve(usdc, toLiquidate);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
-        morpho.claimToTreasury(cDaiArray);
+        morpho.claimToTreasury(cDaiArray, amountArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -202,6 +203,6 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cEth, 1 ether);
 
-        morpho.claimToTreasury(cEthArray);
+        morpho.claimToTreasury(cEthArray, amountArray);
     }
 }
