@@ -90,11 +90,11 @@ test-common:
 
 contract-% c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv/$*.t.sol --match-contract $*
+	@forge test -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $*
 
 ansi-c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv/$*.t.sol --match-contract $* > trace.ansi
+	@forge test -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $* > trace.ansi
 
 single-% s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
