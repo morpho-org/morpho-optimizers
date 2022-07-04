@@ -248,7 +248,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUpdatedUserSupplyBalance(address(borrower1), cDai);
+        .getUpdatedUserSupplyBalance(cDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -273,7 +273,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUpdatedUserBorrowBalance(address(borrower1), cUsdc);
+        .getUpdatedUserBorrowBalance(cUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -310,7 +310,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUpdatedUserSupplyBalance(address(borrower1), cDai);
+        .getUpdatedUserSupplyBalance(cDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -334,7 +334,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUpdatedUserBorrowBalance(address(borrower1), cUsdc);
+        .getUpdatedUserBorrowBalance(cUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -359,7 +359,7 @@ contract TestLens is TestSetup {
             matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.inP2P,
             matchedSupplierSupplyBalance.totalBalance
-        ) = lens.getUpdatedUserSupplyBalance(address(supplier1), cUsdc);
+        ) = lens.getUpdatedUserSupplyBalance(cUsdc, address(supplier1));
 
         (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cUsdc,
