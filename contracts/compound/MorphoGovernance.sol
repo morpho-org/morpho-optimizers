@@ -276,18 +276,18 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
-    /// @dev No more than 90% of the accumulated fees are claimable at once.
     /// @param _poolTokenAddresses The addresses of the pool token addresses on which to claim the reserve fee.
-    function claimToTreasury(address[] calldata _poolTokenAddresses) external onlyOwner {
+    /// @param _amounts The list of amounts of underlying tokens to claim on each market.
+    function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts)
+        external
+        onlyOwner
+    {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
         uint256 numberOfMarkets = _poolTokenAddresses.length;
 
-        for (uint256 i; i < numberOfMarkets; ) {
+        for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokenAddresses[i];
-            unchecked {
-                ++i;
-            }
 
             ERC20 underlyingToken = _getUnderlying(poolToken);
 
@@ -297,10 +297,11 @@ abstract contract MorphoGovernance is MorphoUtils {
             Types.MarketStatus memory status = marketStatus[poolToken];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
-            uint256 toClaim = (underlyingToken.balanceOf(address(this)) * MAX_CLAIMABLE_RESERVE) /
-                MAX_BASIS_POINTS;
+            uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
-            if (toClaim == 0) continue;
+            if (underlyingBalance == 0) continue;
+
+            uint256 toClaim = Math.min(_amounts[i], underlyingBalance);
 
             underlyingToken.safeTransfer(treasuryVault, toClaim);
             emit ReserveFeeClaimed(poolToken, toClaim);
