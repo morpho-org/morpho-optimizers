@@ -54,6 +54,7 @@ contract TestSetup is Config, Utils {
     Morpho public morphoImplV1;
     IRewardsManager internal rewardsManagerImplV1;
 
+    Lens public lens;
     Morpho public morpho;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
@@ -83,8 +84,6 @@ contract TestSetup is Config, Utils {
     User[] public borrowers;
 
     address[] public pools;
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
     function setUp() public {
         initContracts();
