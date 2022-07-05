@@ -18,7 +18,7 @@ interface ILens {
 
     function rewardsManager() external view returns (IRewardsManager);
 
-    // GENERAL ///
+    /// GENERAL ///
 
     function getTotalSupply()
         external

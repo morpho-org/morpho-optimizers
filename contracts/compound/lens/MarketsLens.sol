@@ -50,10 +50,10 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolTokenAddress The address of the market of which to get main data.
     /// @return avgSupplyRatePerBlock The average supply rate experienced on the given market.
     /// @return avgBorrowRatePerBlock The average borrow rate experienced on the given market.
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, without the supply delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, without the borrow delta (in underlying).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
     function getMainMarketData(address _poolTokenAddress)
         external
         view
@@ -161,17 +161,10 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
     {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(
+        (p2pSupplyAmount, poolSupplyAmount) = _computeMarketSupply(
             _poolTokenAddress,
             _computeUpdatedIndexes
         );
-
-        p2pSupplyAmount =
-            delta.p2pSupplyAmount.mul(p2pSupplyIndex) -
-            delta.p2pSupplyDelta.mul(poolSupplyIndex);
-        poolSupplyAmount = poolToken.balanceOf(address(morpho)).mul(poolSupplyIndex);
     }
 
     /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
@@ -184,18 +177,9 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
     {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(
+        (p2pBorrowAmount, poolBorrowAmount) = _computeMarketBorrow(
             _poolTokenAddress,
             _computeUpdatedIndexes
-        );
-
-        p2pBorrowAmount =
-            delta.p2pBorrowAmount.mul(p2pBorrowIndex) -
-            delta.p2pBorrowDelta.mul(poolBorrowIndex);
-        poolBorrowAmount = poolToken.borrowBalanceStored(address(morpho)).mul(
-            poolBorrowIndex.div(poolToken.borrowIndex())
         );
     }
 }
