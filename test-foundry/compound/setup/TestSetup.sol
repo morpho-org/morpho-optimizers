@@ -244,7 +244,7 @@ contract TestSetup is Config, Utils {
         return customOracle;
     }
 
-    function setDefaultMaxGasForMatchingHelper(
+    function _setDefaultMaxGasForMatching(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,

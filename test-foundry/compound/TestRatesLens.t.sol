@@ -133,9 +133,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -157,9 +155,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -625,9 +621,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -667,9 +661,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -710,9 +702,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(cDai, amount / 2);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -769,9 +759,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(cDai, amount / 2);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -834,9 +822,7 @@ contract TestRatesLens is TestSetup {
         borrower2.supply(cEth, amount);
         borrower2.borrow(cDai, amount / 2);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -1015,9 +1001,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(cUsdc, to6Decimals(amount));
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -1040,9 +1024,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
