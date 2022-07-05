@@ -359,7 +359,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                _maxGasForMatching
+                vars.maxGasForMatching
             );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
