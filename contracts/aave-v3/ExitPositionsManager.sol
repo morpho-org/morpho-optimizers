@@ -137,10 +137,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _amount
         );
 
-        if (
-            _isBorrowingAny(_supplier) &&
-            !_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw)
-        ) revert UnauthorisedWithdraw();
+        if (!_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw))
+            revert UnauthorisedWithdraw();
 
         _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
@@ -189,8 +187,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowedAddress);
         _updateIndexes(_poolTokenCollateralAddress);
 
-        if (_isBorrowingAny(_borrower) && !_liquidationAllowed(_borrower))
-            revert UnauthorisedLiquidate();
+        if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
 
         LiquidateVars memory vars;
         address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
@@ -587,14 +584,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfMarketsCreated = marketsCreated.length;
-
-        Types.AssetLiquidityData memory assetData;
-        Types.LiquidityData memory liquidityData;
-
         // If the user is not borrowing any asset, return an infinite health factor.
         if (!_isBorrowingAny(_user)) return type(uint256).max;
+
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 numberOfMarketsCreated = marketsCreated.length;
+        Types.AssetLiquidityData memory assetData;
+        Types.LiquidityData memory liquidityData;
 
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
