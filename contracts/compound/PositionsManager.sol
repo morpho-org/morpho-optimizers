@@ -552,9 +552,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = 0;
             }
 
-            _updateSupplierInDS(_poolTokenAddress, _supplier);
-
             if (vars.remainingToWithdraw == 0) {
+                _updateSupplierInDS(_poolTokenAddress, _supplier);
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
 
                 // If this value is equal to 0 the withdraw will revert on Compound.
@@ -732,7 +731,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.remainingToRepay -= vars.toRepay;
 
                 borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool = 0;
-                _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
             }
         }
 

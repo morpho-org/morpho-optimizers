@@ -277,9 +277,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.onPoolSupply,
                 vars.toWithdraw.rayDiv(vars.poolSupplyIndex)
             );
-            _updateSupplierInDS(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
+                _updateSupplierInDS(_poolTokenAddress, _supplier);
+
                 if (
                     supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P == 0 &&
                     supplyBalanceInOf[_poolTokenAddress][_supplier].onPool == 0
@@ -433,9 +434,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.borrowedOnPool,
                 vars.toRepay.rayDiv(vars.poolBorrowIndex)
             ); // In adUnit.
-            _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
             if (vars.remainingToRepay == 0) {
+                _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
                 _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
 
                 if (
