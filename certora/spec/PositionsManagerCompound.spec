@@ -25,14 +25,14 @@ methods {
     withdraw(uint256) => NONDET;
 
     // summarization of comptroller functions used. The symbolic is included so it will dispatch to it
-    closeFactorMantissa() => DISPATCHER(true);
-    liquidationIncentiveMantissa() => DISPATCHER(true);
-    oracle() => DISPATCHER(true);
+    // closeFactorMantissa() => DISPATCHER(true);
+    // liquidationIncentiveMantissa() => DISPATCHER(true);
+    // oracle() => DISPATCHER(true);
     // markets(address) returns (comptroller.Market) => DISPATCHER(true);
 
     // rewards manager functions
-    accrueUserSupplyUnclaimedRewards(address, address, uint256) => DISPATCHER(true); // inline the function
-    accrueUserBorrowUnclaimedRewards(address, address, uint256) => DISPATCHER(true);
+    accrueUserSupplyUnclaimedRewards(address, address, uint256) => NONDET; // inline the function
+    accrueUserBorrowUnclaimedRewards(address, address, uint256) => NONDET;
 
     delegatecall(bytes) => NONDET; // we can't handle this right now, need a workaround
 
