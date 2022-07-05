@@ -1281,9 +1281,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -1381,9 +1379,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        morpho.setDefaultMaxGasForMatching(
-            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
-        );
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 

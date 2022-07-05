@@ -233,7 +233,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         // 2e6 allows only 10 unmatch borrowers.
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 2e6, 2e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 2e6, 2e6);
 
         // supplier1 and 20 borrowers are matched for amountSupplied.
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
