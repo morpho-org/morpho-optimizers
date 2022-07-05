@@ -18,6 +18,9 @@ contract Config {
     address constant aWeth = 0x28424507fefb6f7f8E9D3860F56504E4e5f5f390;
     address constant aWmatic = 0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4;
 
+    address constant wrappedNativeToken = wmatic;
+    address constant aWrappedNativeToken = aWmatic;
+
     address constant stableDebtDai = 0x2238101B7014C279aaF6b408A284E49cDBd5DB55;
     address constant variableDebtDai = 0x75c4d1Fb84429023170086f06E682DcbBF537b7d;
     address constant variableDebtUsdc = 0x248960A9d75EdFa3de94F7193eae3161Eb349a12;
