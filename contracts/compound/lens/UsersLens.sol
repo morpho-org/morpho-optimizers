@@ -116,11 +116,11 @@ abstract contract UsersLens is IndexesLens {
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
-        (, , uint256 totalCollateralBalance) = getUpdatedUserSupplyBalance(
+        (, , uint256 totalCollateralBalance) = getUpdatedSupplyBalanceInOf(
             _poolTokenCollateralAddress,
             _user
         );
-        (, , uint256 totalBorrowBalance) = getUpdatedUserBorrowBalance(
+        (, , uint256 totalBorrowBalance) = getUpdatedBorrowBalanceInOf(
             _poolTokenBorrowedAddress,
             _user
         );
@@ -213,7 +213,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedUserSupplyBalance(address _poolTokenAddress, address _user)
+    function getUpdatedSupplyBalanceInOf(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -240,7 +240,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedUserBorrowBalance(address _poolTokenAddress, address _user)
+    function getUpdatedBorrowBalanceInOf(address _poolTokenAddress, address _user)
         public
         view
         returns (

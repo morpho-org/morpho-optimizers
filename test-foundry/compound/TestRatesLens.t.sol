@@ -221,7 +221,7 @@ contract TestRatesLens is TestSetup {
             uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
             uint256 expectedTotalBalance
-        ) = lens.getUpdatedUserSupplyBalance(cDai, address(supplier1));
+        ) = lens.getUpdatedSupplyBalanceInOf(cDai, address(supplier1));
 
         assertGt(supplyRatePerBlock, 0, "zero supply rate per block");
         assertEq(
@@ -258,7 +258,7 @@ contract TestRatesLens is TestSetup {
             uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
             uint256 expectedTotalBalance
-        ) = lens.getUpdatedUserBorrowBalance(cDai, address(borrower1));
+        ) = lens.getUpdatedBorrowBalanceInOf(cDai, address(borrower1));
 
         assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
         assertEq(
