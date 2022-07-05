@@ -484,7 +484,7 @@ contract TestRewards is TestSetup {
         supplier1.compoundSupply(cDai, amount);
         hevm.roll(block.number + 5_000);
 
-        uint256 updatedIndex = lens.getUpdatedCompSupplyIndex(cDai);
+        uint256 updatedIndex = lens.getCurrentCompSupplyIndex(cDai);
 
         supplier1.compoundSupply(cDai, amount / 10); // Update compSupplyState.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
@@ -506,7 +506,7 @@ contract TestRewards is TestSetup {
         hevm.roll(block.number + 5_000);
 
         ICToken(cDai).accrueInterest();
-        uint256 updatedIndex = lens.getUpdatedCompBorrowIndex(cDai);
+        uint256 updatedIndex = lens.getCurrentCompBorrowIndex(cDai);
 
         borrower1.compoundBorrow(cDai, amount / 10); // Update compBorrowState.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);

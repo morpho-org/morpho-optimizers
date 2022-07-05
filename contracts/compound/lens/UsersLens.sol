@@ -116,11 +116,11 @@ abstract contract UsersLens is IndexesLens {
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
-        (, , uint256 totalCollateralBalance) = getUpdatedSupplyBalanceInOf(
+        (, , uint256 totalCollateralBalance) = getCurrentSupplyBalanceInOf(
             _poolTokenCollateralAddress,
             _user
         );
-        (, , uint256 totalBorrowBalance) = getUpdatedBorrowBalanceInOf(
+        (, , uint256 totalBorrowBalance) = getCurrentBorrowBalanceInOf(
             _poolTokenBorrowedAddress,
             _user
         );
@@ -213,7 +213,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentSupplyBalanceInOf(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -228,7 +228,7 @@ abstract contract UsersLens is IndexesLens {
             poolSupplyIndex
         );
         balanceInP2P = morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-            getUpdatedP2PSupplyIndex(_poolTokenAddress)
+            getCurrentP2PSupplyIndex(_poolTokenAddress)
         );
 
         totalBalance = balanceOnPool + balanceInP2P;
@@ -240,7 +240,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedBorrowBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentBorrowBalanceInOf(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -255,7 +255,7 @@ abstract contract UsersLens is IndexesLens {
             newBorrowIndex
         );
         balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-            getUpdatedP2PBorrowIndex(_poolTokenAddress)
+            getCurrentP2PBorrowIndex(_poolTokenAddress)
         );
 
         totalBalance = balanceOnPool + balanceInP2P;

@@ -248,7 +248,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUpdatedSupplyBalanceInOf(cDai, address(borrower1));
+        .getCurrentSupplyBalanceInOf(cDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -273,7 +273,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUpdatedBorrowBalanceInOf(cUsdc, address(borrower1));
+        .getCurrentBorrowBalanceInOf(cUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -310,7 +310,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUpdatedSupplyBalanceInOf(cDai, address(borrower1));
+        .getCurrentSupplyBalanceInOf(cDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -334,7 +334,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUpdatedBorrowBalanceInOf(cUsdc, address(borrower1));
+        .getCurrentBorrowBalanceInOf(cUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -359,7 +359,7 @@ contract TestLens is TestSetup {
             matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.inP2P,
             matchedSupplierSupplyBalance.totalBalance
-        ) = lens.getUpdatedSupplyBalanceInOf(cUsdc, address(supplier1));
+        ) = lens.getCurrentSupplyBalanceInOf(cUsdc, address(supplier1));
 
         (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cUsdc,
@@ -751,7 +751,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PSupplyIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
@@ -759,7 +759,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PBorrowIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PBorrowIndex = lens.getUpdatedP2PBorrowIndex(cDai);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));

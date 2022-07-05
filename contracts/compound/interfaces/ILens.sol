@@ -103,9 +103,9 @@ interface ILens {
 
     /// INDEXES ///
 
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256);
+    function getCurrentP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256);
+    function getCurrentP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256);
 
     function getIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
         external
@@ -128,7 +128,7 @@ interface ILens {
             uint256 maxDebtValue
         );
 
-    function getUpdatedSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentSupplyBalanceInOf(address _poolTokenAddress, address _user)
         external
         view
         returns (
@@ -137,7 +137,7 @@ interface ILens {
             uint256 totalBalance
         );
 
-    function getUpdatedBorrowBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentBorrowBalanceInOf(address _poolTokenAddress, address _user)
         external
         view
         returns (
@@ -243,7 +243,7 @@ interface ILens {
         uint256 _balance
     ) external view returns (uint256);
 
-    function getUpdatedCompSupplyIndex(address _poolTokenAddress) external view returns (uint256);
+    function getCurrentCompSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
-    function getUpdatedCompBorrowIndex(address _poolTokenAddress) external view returns (uint256);
+    function getCurrentCompBorrowIndex(address _poolTokenAddress) external view returns (uint256);
 }
