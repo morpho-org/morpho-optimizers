@@ -18,6 +18,26 @@ interface ILens {
 
     function rewardsManager() external view returns (IRewardsManager);
 
+    // GENERAL ///
+
+    function getTotalSupply()
+        external
+        view
+        returns (
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount,
+            uint256 totalSupplyAmount
+        );
+
+    function getTotalBorrow()
+        external
+        view
+        returns (
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount,
+            uint256 totalBorrowAmount
+        );
+
     /// MARKETS ///
 
     function isMarketCreated(address _poolTokenAddress) external view returns (bool);
@@ -40,27 +60,45 @@ interface ILens {
         external
         view
         returns (
-            uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_,
-            uint32 lastUpdateBlockNumber_,
-            uint256 p2pSupplyDelta_,
-            uint256 p2pBorrowDelta_,
-            uint256 p2pSupplyAmount_,
-            uint256 p2pBorrowAmount_
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint32 lastUpdateBlockNumber,
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
         );
 
     function getMarketConfiguration(address _poolTokenAddress)
         external
         view
         returns (
-            address underlying_,
-            bool isCreated_,
-            bool p2pDisabled_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            uint16 reserveFactor_,
-            uint16 p2pIndexCursor_,
-            uint256 collateralFactor_
+            address underlying,
+            bool isCreated,
+            bool p2pDisabled,
+            bool isPaused,
+            bool isPartiallyPaused,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor,
+            uint256 collateralFactor
+        );
+
+    function getTotalMarketSupply(address _poolTokenAddress, bool _computeUpdatedIndexes)
+        external
+        view
+        returns (
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount,
+            uint256 supplyDeltaAmount
+        );
+
+    function getTotalMarketBorrow(address _poolTokenAddress, bool _computeUpdatedIndexes)
+        external
+        view
+        returns (
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount,
+            uint256 borrowDeltaAmount
         );
 
     /// INDEXES ///
@@ -160,10 +198,10 @@ interface ILens {
         external
         view
         returns (
-            uint256 p2pSupplyRate_,
-            uint256 p2pBorrowRate_,
-            uint256 poolSupplyRate_,
-            uint256 poolBorrowRate_
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
         );
 
     function getCurrentUserSupplyRatePerBlock(address _poolTokenAddress, address _user)

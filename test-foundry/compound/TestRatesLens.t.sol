@@ -803,7 +803,8 @@ contract TestRatesLens is TestSetup {
         );
         uint256 expectedBalanceInP2P = daiSupplydelta.div(p2pBorrowIndex).mul(p2pBorrowIndex);
 
-        assertGt(borrowRatePerBlock, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerBlock, p2pBorrowRatePerBlock, "borrow rate higher than p2p rate");
+        assertLt(borrowRatePerBlock, poolBorrowRatePerBlock, "borrow rate lower than pool rate");
         assertApproxEqAbs(
             borrowRatePerBlock,
             (p2pBorrowRatePerBlock + poolBorrowRatePerBlock) / 2,

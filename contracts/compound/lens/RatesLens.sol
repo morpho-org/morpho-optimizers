@@ -188,7 +188,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The market address.
     /// @return avgSupplyRatePerBlock The market's average supply rate per block (in wad).
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, without the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
     function getAverageSupplyRatePerBlock(address _poolTokenAddress)
         public
         view
@@ -218,7 +218,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The market address.
     /// @return avgBorrowRatePerBlock The market's average borrow rate per block (in wad).
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, without the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
     function getAverageBorrowRatePerBlock(address _poolTokenAddress)
         public
         view

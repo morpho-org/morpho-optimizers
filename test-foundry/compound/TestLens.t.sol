@@ -984,10 +984,7 @@ contract TestLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            cDai
-        );
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
 
         borrower1.borrow(cDai, borrowable);
 
@@ -1255,5 +1252,226 @@ contract TestLens is TestSetup {
      */
     function testNoRepayLiquidation() public {
         testLiquidation(0, 0.5 ether);
+    }
+
+    struct Amounts {
+        uint256 totalP2PSupply;
+        uint256 totalPoolSupply;
+        uint256 totalSupply;
+        uint256 totalP2PBorrow;
+        uint256 totalPoolBorrow;
+        uint256 totalBorrow;
+        uint256 daiP2PSupply;
+        uint256 daiPoolSupply;
+        uint256 daiP2PBorrow;
+        uint256 daiPoolBorrow;
+        uint256 ethP2PSupply;
+        uint256 ethPoolSupply;
+        uint256 ethP2PBorrow;
+        uint256 ethPoolBorrow;
+    }
+
+    function testTotalSupplyBorrowWithHalfSupplyDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 1);
+
+        borrower1.approve(dai, amount / 2);
+        borrower1.repay(cDai, amount / 2);
+
+        {
+            SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+            oracle.setUnderlyingPrice(cEth, 2 ether);
+            oracle.setUnderlyingPrice(cDai, 1 ether);
+        }
+
+        uint256 expectedDaiUSDInP2P = amount / 2;
+        uint256 expectedDaiUSDOnPool = amount / 2;
+        uint256 expectedEthUSDOnPool = 2 * amount;
+
+        Amounts memory amounts;
+
+        (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
+        .getTotalSupply();
+        (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
+        .getTotalBorrow();
+
+        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai, true);
+        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai, true);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth, true);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth, true);
+
+        assertApproxEqAbs(
+            amounts.totalSupply,
+            expectedEthUSDOnPool + expectedDaiUSDInP2P + expectedDaiUSDOnPool,
+            1e15,
+            "unexpected total supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalBorrow,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected total borrow"
+        );
+
+        assertApproxEqAbs(
+            amounts.totalP2PSupply,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected total p2p supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalPoolSupply,
+            expectedDaiUSDInP2P + expectedEthUSDOnPool,
+            1e14,
+            "unexpected total pool supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalP2PBorrow,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected total p2p borrow"
+        );
+        assertApproxEqAbs(amounts.totalPoolBorrow, 0, 1, "unexpected total pool borrow");
+
+        assertApproxEqAbs(
+            amounts.daiP2PSupply,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected dai p2p supply"
+        );
+        assertApproxEqAbs(
+            amounts.daiP2PBorrow,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected dai p2p borrow"
+        );
+        assertApproxEqAbs(
+            amounts.daiPoolSupply,
+            expectedDaiUSDOnPool,
+            1e9,
+            "unexpected dai pool supply"
+        );
+        assertApproxEqAbs(amounts.daiPoolBorrow, 0, 1, "unexpected dai pool borrow");
+
+        assertEq(amounts.ethP2PSupply, 0, "unexpected eth p2p supply");
+        assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
+        assertApproxEqAbs(amounts.ethPoolSupply, amount, 1e13, "unexpected eth pool supply");
+        assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
+    }
+
+    function testTotalSupplyBorrowWithHalfBorrowDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 1);
+
+        supplier1.withdraw(cDai, amount / 2);
+
+        {
+            SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+            oracle.setUnderlyingPrice(cEth, 2 ether);
+            oracle.setUnderlyingPrice(cDai, 1 ether);
+        }
+
+        uint256 expectedDaiUSDInP2P = amount / 2;
+        uint256 expectedDaiUSDOnPool = amount / 2;
+        uint256 expectedEthUSDOnPool = 2 * amount;
+
+        Amounts memory amounts;
+
+        (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
+        .getTotalSupply();
+        (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
+        .getTotalBorrow();
+
+        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai, true);
+        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai, true);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth, true);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth, true);
+
+        assertApproxEqAbs(
+            amounts.totalSupply,
+            expectedEthUSDOnPool + expectedDaiUSDInP2P,
+            1e15,
+            "unexpected total supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalBorrow,
+            expectedDaiUSDInP2P + expectedDaiUSDOnPool,
+            1e15,
+            "unexpected total borrow"
+        );
+
+        assertApproxEqAbs(
+            amounts.totalP2PSupply,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected total p2p supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalPoolSupply,
+            expectedEthUSDOnPool,
+            1e14,
+            "unexpected total pool supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalP2PBorrow,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected total p2p borrow"
+        );
+        assertApproxEqAbs(
+            amounts.totalPoolBorrow,
+            expectedDaiUSDOnPool,
+            1,
+            "unexpected total pool borrow"
+        );
+
+        assertApproxEqAbs(
+            amounts.daiP2PSupply,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected dai p2p supply"
+        );
+        assertApproxEqAbs(
+            amounts.daiP2PBorrow,
+            expectedDaiUSDInP2P,
+            1e15,
+            "unexpected dai p2p borrow"
+        );
+        assertApproxEqAbs(amounts.daiPoolSupply, 0, 1, "unexpected dai pool supply");
+        assertApproxEqAbs(
+            amounts.daiPoolBorrow,
+            expectedDaiUSDOnPool,
+            1e9,
+            "unexpected dai pool borrow"
+        );
+
+        assertEq(amounts.ethP2PSupply, 0, "unexpected eth p2p supply");
+        assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
+        assertApproxEqAbs(amounts.ethPoolSupply, amount, 1e13, "unexpected eth pool supply");
+        assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
     }
 }
