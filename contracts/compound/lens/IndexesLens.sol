@@ -19,14 +19,13 @@ abstract contract IndexesLens is LensStorage {
     /// @param _poolTokenAddress The address of the market.
     /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
     function getCurrentP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
+        Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+
+        if (block.number == lastPoolIndexes.lastUpdateBlockNumber)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
-            Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(
-                _poolTokenAddress
-            );
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computeUpdatedPoolIndexes(
                 _poolTokenAddress
@@ -59,14 +58,13 @@ abstract contract IndexesLens is LensStorage {
     /// @param _poolTokenAddress The address of the market.
     /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
     function getCurrentP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
+        Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+
+        if (block.number == lastPoolIndexes.lastUpdateBlockNumber)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
-            Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(
-                _poolTokenAddress
-            );
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computeUpdatedPoolIndexes(
                 _poolTokenAddress
@@ -123,18 +121,13 @@ abstract contract IndexesLens is LensStorage {
             );
         }
 
-        if (
-            !_computeUpdatedIndexes ||
-            block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber
-        ) {
+        Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+        if (!_computeUpdatedIndexes || block.number == lastPoolIndexes.lastUpdateBlockNumber) {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
-            Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(
-                _poolTokenAddress
-            );
 
             InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
             .computeGrowthFactors(

@@ -187,7 +187,7 @@ abstract contract RatesLens is UsersLens {
     /// @notice Computes and returns the current supply rate per block experienced on average on a given market.
     /// @param _poolTokenAddress The market address.
     /// @return avgSupplyRatePerBlock The market's average supply rate per block (in wad).
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
     function getAverageSupplyRatePerBlock(address _poolTokenAddress)
         public
@@ -199,13 +199,8 @@ abstract contract RatesLens is UsersLens {
         )
     {
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerBlock(_poolTokenAddress);
-        (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(_poolTokenAddress, true);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        ICToken poolToken = ICToken(_poolTokenAddress);
 
-        // don't need to subtract delta as it's already taken into account in the p2pSupplyRate.
-        p2pSupplyAmount = delta.p2pSupplyAmount.mul(p2pSupplyIndex);
-        poolSupplyAmount = poolToken.balanceOf(address(morpho)).mul(poolSupplyIndex);
+        (p2pSupplyAmount, poolSupplyAmount) = _computeMarketSupply(_poolTokenAddress, true);
 
         uint256 totalSupply = p2pSupplyAmount + poolSupplyAmount;
         if (p2pSupplyAmount > 0)
@@ -217,7 +212,7 @@ abstract contract RatesLens is UsersLens {
     /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
     /// @param _poolTokenAddress The market address.
     /// @return avgBorrowRatePerBlock The market's average borrow rate per block (in wad).
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
     function getAverageBorrowRatePerBlock(address _poolTokenAddress)
         public
@@ -229,15 +224,8 @@ abstract contract RatesLens is UsersLens {
         )
     {
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerBlock(_poolTokenAddress);
-        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(_poolTokenAddress, true);
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        ICToken poolToken = ICToken(_poolTokenAddress);
 
-        // don't need to subtract delta as it's already taken into account in the p2pBorrowRate.
-        p2pBorrowAmount = delta.p2pBorrowAmount.mul(p2pBorrowIndex);
-        poolBorrowAmount = poolToken.borrowBalanceStored(address(morpho)).mul(
-            poolBorrowIndex.div(poolToken.borrowIndex())
-        );
+        (p2pBorrowAmount, poolBorrowAmount) = _computeMarketBorrow(_poolTokenAddress, true);
 
         uint256 totalBorrow = p2pBorrowAmount + poolBorrowAmount;
         if (p2pBorrowAmount > 0)
@@ -356,6 +344,55 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// INTERNAL ///
+
+    /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool & peer-to-peer supply indexes
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
+    function _computeMarketSupply(address _poolTokenAddress, bool _computeUpdatedIndexes)
+        internal
+        view
+        returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
+    {
+        ICToken poolToken = ICToken(_poolTokenAddress);
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(
+            _poolTokenAddress,
+            _computeUpdatedIndexes
+        );
+
+        p2pSupplyAmount =
+            delta.p2pSupplyAmount.mul(p2pSupplyIndex) -
+            delta.p2pSupplyDelta.mul(poolSupplyIndex);
+        poolSupplyAmount = poolToken.balanceOf(address(morpho)).mul(poolSupplyIndex);
+    }
+
+    /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool & peer-to-peer borrow indexes
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
+    function _computeMarketBorrow(address _poolTokenAddress, bool _computeUpdatedIndexes)
+        internal
+        view
+        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
+    {
+        ICToken poolToken = ICToken(_poolTokenAddress);
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(
+            _poolTokenAddress,
+            _computeUpdatedIndexes
+        );
+
+        p2pBorrowAmount =
+            delta.p2pBorrowAmount.mul(p2pBorrowIndex) -
+            delta.p2pBorrowDelta.mul(poolBorrowIndex);
+        poolBorrowAmount = poolToken
+        .borrowBalanceStored(address(morpho))
+        .div(poolToken.borrowIndex())
+        .mul(poolBorrowIndex);
+    }
 
     /// @dev Returns the supply rate per block experienced on a market based on a given position distribution.
     /// @param _poolTokenAddress The address of the market.
