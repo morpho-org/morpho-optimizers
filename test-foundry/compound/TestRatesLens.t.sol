@@ -928,7 +928,7 @@ contract TestRatesLens is TestSetup {
         .getAverageBorrowRatePerBlock(cDai);
 
         assertApproxEqAbs(borrowRatePerBlock, ICToken(cDai).borrowRatePerBlock(), 1);
-        assertEq(poolBorrowAmount, amount);
+        assertApproxEqAbs(poolBorrowAmount, amount, 1);
         assertEq(p2pBorrowAmount, 0);
     }
 

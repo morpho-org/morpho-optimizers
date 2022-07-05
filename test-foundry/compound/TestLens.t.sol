@@ -1271,6 +1271,16 @@ contract TestLens is TestSetup {
         uint256 ethPoolBorrow;
     }
 
+    struct SupplyBorrowIndexes {
+        uint256 ethPoolSupplyIndexBefore;
+        uint256 daiP2PSupplyIndexBefore;
+        uint256 daiP2PBorrowIndexBefore;
+        uint256 ethPoolSupplyIndexAfter;
+        uint256 daiPoolSupplyIndexAfter;
+        uint256 daiP2PSupplyIndexAfter;
+        uint256 daiP2PBorrowIndexAfter;
+    }
+
     function testTotalSupplyBorrowWithHalfSupplyDelta() public {
         uint256 amount = 10_000 ether;
 
@@ -1283,6 +1293,10 @@ contract TestLens is TestSetup {
 
         _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
+        SupplyBorrowIndexes memory indexes;
+        indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();
+        indexes.daiP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cDai);
+
         hevm.roll(block.number + 1);
 
         borrower1.approve(dai, amount / 2);
@@ -1293,10 +1307,6 @@ contract TestLens is TestSetup {
             oracle.setUnderlyingPrice(cEth, 2 ether);
             oracle.setUnderlyingPrice(cDai, 1 ether);
         }
-
-        uint256 expectedDaiUSDInP2P = amount / 2;
-        uint256 expectedDaiUSDOnPool = amount / 2;
-        uint256 expectedEthUSDOnPool = 2 * amount;
 
         Amounts memory amounts;
 
@@ -1310,62 +1320,53 @@ contract TestLens is TestSetup {
         (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth, true);
         (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth, true);
 
-        assertApproxEqAbs(
+        indexes.ethPoolSupplyIndexAfter = ICToken(cEth).exchangeRateCurrent();
+        indexes.daiPoolSupplyIndexAfter = ICToken(cDai).exchangeRateCurrent();
+        indexes.daiP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cDai);
+
+        uint256 expectedDaiUSDOnPool = (amount / 2).div(indexes.daiPoolSupplyIndexAfter).mul(
+            indexes.daiPoolSupplyIndexAfter
+        ); // which is also the supply delta
+        uint256 expectedDaiUSDInP2P = amount.div(indexes.daiP2PBorrowIndexBefore).mul(
+            indexes.daiP2PBorrowIndexAfter
+        ) - expectedDaiUSDOnPool;
+        uint256 expectedEthUSDOnPool = 2 *
+            amount.div(indexes.ethPoolSupplyIndexBefore).mul(indexes.ethPoolSupplyIndexAfter);
+
+        assertEq(
             amounts.totalSupply,
             expectedEthUSDOnPool + expectedDaiUSDInP2P + expectedDaiUSDOnPool,
-            1e15,
             "unexpected total supply"
         );
-        assertApproxEqAbs(
-            amounts.totalBorrow,
-            expectedDaiUSDInP2P,
-            1e15,
-            "unexpected total borrow"
-        );
+        assertApproxEqAbs(amounts.totalBorrow, expectedDaiUSDInP2P, 1e8, "unexpected total borrow");
 
-        assertApproxEqAbs(
-            amounts.totalP2PSupply,
-            expectedDaiUSDInP2P,
-            1e15,
-            "unexpected total p2p supply"
-        );
-        assertApproxEqAbs(
+        assertEq(amounts.totalP2PSupply, expectedDaiUSDInP2P, "unexpected total p2p supply");
+        assertEq(
             amounts.totalPoolSupply,
-            expectedDaiUSDInP2P + expectedEthUSDOnPool,
-            1e14,
+            expectedDaiUSDOnPool + expectedEthUSDOnPool,
             "unexpected total pool supply"
         );
         assertApproxEqAbs(
             amounts.totalP2PBorrow,
             expectedDaiUSDInP2P,
-            1e15,
+            1e8,
             "unexpected total p2p borrow"
         );
-        assertApproxEqAbs(amounts.totalPoolBorrow, 0, 1, "unexpected total pool borrow");
+        assertEq(amounts.totalPoolBorrow, 0, "unexpected total pool borrow");
 
-        assertApproxEqAbs(
-            amounts.daiP2PSupply,
-            expectedDaiUSDInP2P,
-            1e15,
-            "unexpected dai p2p supply"
-        );
+        assertEq(amounts.daiP2PSupply, expectedDaiUSDInP2P, "unexpected dai p2p supply");
         assertApproxEqAbs(
             amounts.daiP2PBorrow,
             expectedDaiUSDInP2P,
-            1e15,
+            1e8,
             "unexpected dai p2p borrow"
         );
-        assertApproxEqAbs(
-            amounts.daiPoolSupply,
-            expectedDaiUSDOnPool,
-            1e9,
-            "unexpected dai pool supply"
-        );
-        assertApproxEqAbs(amounts.daiPoolBorrow, 0, 1, "unexpected dai pool borrow");
+        assertEq(amounts.daiPoolSupply, expectedDaiUSDOnPool, "unexpected dai pool supply");
+        assertEq(amounts.daiPoolBorrow, 0, "unexpected dai pool borrow");
 
         assertEq(amounts.ethP2PSupply, 0, "unexpected eth p2p supply");
         assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
-        assertApproxEqAbs(amounts.ethPoolSupply, amount, 1e13, "unexpected eth pool supply");
+        assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
         assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
     }
 
@@ -1381,6 +1382,10 @@ contract TestLens is TestSetup {
 
         _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
+        SupplyBorrowIndexes memory indexes;
+        indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();
+        indexes.daiP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cDai);
+
         hevm.roll(block.number + 1);
 
         supplier1.withdraw(cDai, amount / 2);
@@ -1390,10 +1395,6 @@ contract TestLens is TestSetup {
             oracle.setUnderlyingPrice(cEth, 2 ether);
             oracle.setUnderlyingPrice(cDai, 1 ether);
         }
-
-        uint256 expectedDaiUSDInP2P = amount / 2;
-        uint256 expectedDaiUSDOnPool = amount / 2;
-        uint256 expectedEthUSDOnPool = 2 * amount;
 
         Amounts memory amounts;
 
@@ -1407,67 +1408,68 @@ contract TestLens is TestSetup {
         (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth, true);
         (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth, true);
 
+        indexes.ethPoolSupplyIndexAfter = ICToken(cEth).exchangeRateCurrent();
+        indexes.daiPoolSupplyIndexAfter = ICToken(cDai).exchangeRateCurrent();
+        indexes.daiP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cDai);
+
+        uint256 expectedDaiUSDOnPool = amount / 2; // which is also the borrow delta
+        uint256 expectedDaiUSDInP2P = amount.div(indexes.daiP2PSupplyIndexBefore).mul(
+            indexes.daiP2PSupplyIndexAfter
+        ) - expectedDaiUSDOnPool;
+        uint256 expectedEthUSDOnPool = 2 *
+            amount.div(indexes.ethPoolSupplyIndexBefore).mul(indexes.ethPoolSupplyIndexAfter);
+
         assertApproxEqAbs(
             amounts.totalSupply,
             expectedEthUSDOnPool + expectedDaiUSDInP2P,
-            1e15,
+            1e9,
             "unexpected total supply"
         );
         assertApproxEqAbs(
             amounts.totalBorrow,
             expectedDaiUSDInP2P + expectedDaiUSDOnPool,
-            1e15,
+            1,
             "unexpected total borrow"
         );
 
         assertApproxEqAbs(
             amounts.totalP2PSupply,
             expectedDaiUSDInP2P,
-            1e15,
+            1e9,
             "unexpected total p2p supply"
         );
         assertApproxEqAbs(
             amounts.totalPoolSupply,
             expectedEthUSDOnPool,
-            1e14,
+            1,
             "unexpected total pool supply"
         );
         assertApproxEqAbs(
             amounts.totalP2PBorrow,
             expectedDaiUSDInP2P,
-            1e15,
+            1,
             "unexpected total p2p borrow"
         );
-        assertApproxEqAbs(
-            amounts.totalPoolBorrow,
-            expectedDaiUSDOnPool,
-            1,
-            "unexpected total pool borrow"
-        );
+        assertEq(amounts.totalPoolBorrow, expectedDaiUSDOnPool, "unexpected total pool borrow");
 
         assertApproxEqAbs(
             amounts.daiP2PSupply,
             expectedDaiUSDInP2P,
-            1e15,
+            1e9,
             "unexpected dai p2p supply"
         );
         assertApproxEqAbs(
             amounts.daiP2PBorrow,
             expectedDaiUSDInP2P,
-            1e15,
+            1,
             "unexpected dai p2p borrow"
         );
-        assertApproxEqAbs(amounts.daiPoolSupply, 0, 1, "unexpected dai pool supply");
-        assertApproxEqAbs(
-            amounts.daiPoolBorrow,
-            expectedDaiUSDOnPool,
-            1e9,
-            "unexpected dai pool borrow"
-        );
+        assertEq(amounts.daiPoolSupply, 0, "unexpected dai pool supply");
+        assertEq(amounts.daiPoolBorrow, expectedDaiUSDOnPool, "unexpected dai pool borrow");
 
         assertEq(amounts.ethP2PSupply, 0, "unexpected eth p2p supply");
         assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
-        assertApproxEqAbs(amounts.ethPoolSupply, amount, 1e13, "unexpected eth pool supply");
+        assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
         assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
     }
 }
