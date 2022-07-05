@@ -237,15 +237,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setPauseStatusForAllMarkets(bool _newStatus) external onlyOwner {
         uint256 numberOfMarketsCreated = marketsCreated.length;
 
-        for (uint256 i; i < numberOfMarketsCreated; ) {
+        for (uint256 i; i < numberOfMarketsCreated; ++i) {
             address poolTokenAddress = marketsCreated[i];
 
             marketStatus[poolTokenAddress].isPaused = _newStatus;
             emit PauseStatusSet(poolTokenAddress, _newStatus);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
