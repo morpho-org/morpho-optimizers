@@ -15,7 +15,6 @@ certoraRun \
     --link PositionsManager:interestRatesManager=InterestRatesManager \
     --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
     --method 'liquidateLogic(address,address,address,uint256)' \
-    --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
     --cache morpho \
