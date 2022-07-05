@@ -289,14 +289,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarkets; ++i) {
             address poolTokenAddress = _poolTokenAddresses[i];
 
-            ERC20 underlyingToken = _getUnderlying(poolTokenAddress);
-
-            // If underlying token is COMP, continue, as it might steal users' COMP rewards.
-            if (address(underlyingToken) == comptroller.getCompAddress()) continue;
-
             Types.MarketStatus memory status = marketStatus[poolTokenAddress];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
+            ERC20 underlyingToken = _getUnderlying(poolTokenAddress);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
             if (underlyingBalance == 0) continue;
