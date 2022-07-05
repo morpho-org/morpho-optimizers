@@ -18,7 +18,7 @@ abstract contract IndexesLens is LensStorage {
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolTokenAddress The address of the market.
     /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getCurrentP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
         if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
@@ -58,7 +58,7 @@ abstract contract IndexesLens is LensStorage {
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolTokenAddress The address of the market.
     /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getCurrentP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
         if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {

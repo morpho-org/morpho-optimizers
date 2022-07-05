@@ -64,7 +64,7 @@ abstract contract RewardsLens is MarketsLens {
         address _poolTokenAddress,
         uint256 _balance
     ) public view returns (uint256) {
-        uint256 supplyIndex = getUpdatedCompSupplyIndex(_poolTokenAddress);
+        uint256 supplyIndex = getCurrentCompSupplyIndex(_poolTokenAddress);
         uint256 supplierIndex = rewardsManager.compSupplierIndex(_poolTokenAddress, _supplier);
 
         if (supplierIndex == 0) return 0;
@@ -81,7 +81,7 @@ abstract contract RewardsLens is MarketsLens {
         address _poolTokenAddress,
         uint256 _balance
     ) public view returns (uint256) {
-        uint256 borrowIndex = getUpdatedCompBorrowIndex(_poolTokenAddress);
+        uint256 borrowIndex = getCurrentCompBorrowIndex(_poolTokenAddress);
         uint256 borrowerIndex = rewardsManager.compBorrowerIndex(_poolTokenAddress, _borrower);
 
         if (borrowerIndex == 0) return 0;
@@ -91,7 +91,7 @@ abstract contract RewardsLens is MarketsLens {
     /// @notice Returns the updated COMP supply index.
     /// @param _poolTokenAddress The cToken address.
     /// @return The updated COMP supply index.
-    function getUpdatedCompSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getCurrentCompSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
         IComptroller.CompMarketState memory localSupplyState = rewardsManager
         .getLocalCompSupplyState(_poolTokenAddress);
 
@@ -119,7 +119,7 @@ abstract contract RewardsLens is MarketsLens {
     /// @notice Returns the updated COMP borrow index.
     /// @param _poolTokenAddress The cToken address.
     /// @return The updated COMP borrow index.
-    function getUpdatedCompBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getCurrentCompBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
         IComptroller.CompMarketState memory localBorrowState = rewardsManager
         .getLocalCompBorrowState(_poolTokenAddress);
 
