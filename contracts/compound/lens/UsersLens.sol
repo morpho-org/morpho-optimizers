@@ -54,7 +54,7 @@ abstract contract UsersLens is IndexesLens {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolTokenAddress != poolTokenEntered) {
-                assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, true, oracle);
+                assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, false, oracle);
 
                 data.maxDebtValue += assetData.maxDebtValue;
                 data.debtValue += assetData.debtValue;
