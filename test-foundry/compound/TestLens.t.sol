@@ -975,6 +975,27 @@ contract TestLens is TestSetup {
         assertEq(borrower2HealthFactor, 1e18);
     }
 
+    function testHealthFactorEqual1WhenBorrowingMaxCapacity() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            cDai
+        );
+
+        borrower1.borrow(cDai, borrowable);
+
+        uint256 healthFactor = lens.getUserHealthFactor(address(borrower1), new address[](0));
+
+        assertEq(healthFactor, 1e18);
+    }
+
     function testComputeLiquidation() public {
         uint256 amount = 10_000 ether;
 
