@@ -83,7 +83,7 @@ interface ILens {
             uint256 collateralFactor
         );
 
-    function getTotalMarketSupply(address _poolTokenAddress, bool _computeUpdatedIndexes)
+    function getTotalMarketSupply(address _poolTokenAddress)
         external
         view
         returns (
@@ -92,7 +92,7 @@ interface ILens {
             uint256 supplyDeltaAmount
         );
 
-    function getTotalMarketBorrow(address _poolTokenAddress, bool _computeUpdatedIndexes)
+    function getTotalMarketBorrow(address _poolTokenAddress)
         external
         view
         returns (
@@ -103,9 +103,23 @@ interface ILens {
 
     /// INDEXES ///
 
-    function getCurrentP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256);
+    function getCurrentP2PSupplyIndex(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 currentP2PSupplyIndex,
+            uint256 currentPoolSupplyIndex,
+            uint256 currentPoolBorrowIndex
+        );
 
-    function getCurrentP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256);
+    function getCurrentP2PBorrowIndex(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 currentP2PBorrowIndex,
+            uint256 currentPoolSupplyIndex,
+            uint256 currentPoolBorrowIndex
+        );
 
     function getIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
         external

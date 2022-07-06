@@ -153,33 +153,41 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
     /// @param _poolTokenAddress The address of the market to check.
-    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool & peer-to-peer supply indexes
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
-    function getTotalMarketSupply(address _poolTokenAddress, bool _computeUpdatedIndexes)
+    function getTotalMarketSupply(address _poolTokenAddress)
         public
         view
         returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
     {
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = getCurrentP2PSupplyIndex(
+            _poolTokenAddress
+        );
+
         (p2pSupplyAmount, poolSupplyAmount) = _computeMarketSupply(
             _poolTokenAddress,
-            _computeUpdatedIndexes
+            p2pSupplyIndex,
+            poolSupplyIndex
         );
     }
 
     /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
     /// @param _poolTokenAddress The address of the market to check.
-    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool & peer-to-peer borrow indexes
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
-    function getTotalMarketBorrow(address _poolTokenAddress, bool _computeUpdatedIndexes)
+    function getTotalMarketBorrow(address _poolTokenAddress)
         public
         view
         returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
     {
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getCurrentP2PBorrowIndex(
+            _poolTokenAddress
+        );
+
         (p2pBorrowAmount, poolBorrowAmount) = _computeMarketBorrow(
             _poolTokenAddress,
-            _computeUpdatedIndexes
+            p2pBorrowIndex,
+            poolBorrowIndex
         );
     }
 }
