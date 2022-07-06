@@ -17,8 +17,8 @@ contract Lens is RewardsLens {
     }
 
     /// @notice Computes and returns the total distribution of supply through Morpho, using virtually updated indexes.
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in USD, 18 decimals).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in USD, 18 decimals).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in USD, 18 decimals).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in USD, 18 decimals).
     /// @return totalSupplyAmount The total amount supplied through Morpho (in USD, 18 decimals).
     function getTotalSupply()
         external
@@ -55,8 +55,8 @@ contract Lens is RewardsLens {
     }
 
     /// @notice Computes and returns the total distribution of borrows through Morpho, using virtually updated indexes.
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in USD, 18 decimals).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in USD, 18 decimals).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in USD, 18 decimals).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in USD, 18 decimals).
     /// @return totalBorrowAmount The total amount borrowed through Morpho (in USD, 18 decimals).
     function getTotalBorrow()
         external
