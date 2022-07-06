@@ -60,7 +60,7 @@ abstract contract RatesLens is UsersLens {
             indexes.p2pSupplyIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
-        ) = _computeCurrentP2PSupplyIndex(_poolTokenAddress);
+        ) = _getCurrentP2PSupplyIndex(_poolTokenAddress);
 
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
@@ -97,7 +97,7 @@ abstract contract RatesLens is UsersLens {
         balanceInP2P = supplyBalance.inP2P.mul(indexes.p2pSupplyIndex);
         totalBalance = balanceOnPool + balanceInP2P;
 
-        nextSupplyRatePerBlock = _computeUserSupplyRatePerBlock(
+        nextSupplyRatePerBlock = _getUserSupplyRatePerBlock(
             _poolTokenAddress,
             balanceOnPool,
             balanceInP2P,
@@ -139,7 +139,7 @@ abstract contract RatesLens is UsersLens {
             indexes.p2pBorrowIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
-        ) = _computeCurrentP2PBorrowIndex(_poolTokenAddress);
+        ) = _getCurrentP2PBorrowIndex(_poolTokenAddress);
 
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
@@ -176,7 +176,7 @@ abstract contract RatesLens is UsersLens {
         balanceInP2P = borrowBalance.inP2P.mul(indexes.p2pBorrowIndex);
         totalBalance = balanceOnPool + balanceInP2P;
 
-        nextBorrowRatePerBlock = _computeUserBorrowRatePerBlock(
+        nextBorrowRatePerBlock = _getUserBorrowRatePerBlock(
             _poolTokenAddress,
             balanceOnPool,
             balanceInP2P,
@@ -189,8 +189,8 @@ abstract contract RatesLens is UsersLens {
     /// @notice Computes and returns the current supply rate per block experienced on average on a given market.
     /// @param _poolTokenAddress The market address.
     /// @return avgSupplyRatePerBlock The market's average supply rate per block (in wad).
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     function getAverageSupplyRatePerBlock(address _poolTokenAddress)
         public
         view
@@ -205,7 +205,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = cToken.supplyRatePerBlock();
         uint256 poolBorrowRate = cToken.borrowRatePerBlock();
 
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _computeCurrentP2PSupplyIndex(
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
             _poolTokenAddress
         );
 
@@ -227,7 +227,7 @@ abstract contract RatesLens is UsersLens {
             })
         );
 
-        (p2pSupplyAmount, poolSupplyAmount) = _computeMarketSupply(
+        (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
             _poolTokenAddress,
             p2pSupplyIndex,
             poolSupplyIndex
@@ -243,8 +243,8 @@ abstract contract RatesLens is UsersLens {
     /// @notice Computes and returns the current average borrow rate per block experienced on a given market.
     /// @param _poolTokenAddress The market address.
     /// @return avgBorrowRatePerBlock The market's average borrow rate per block (in wad).
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function getAverageBorrowRatePerBlock(address _poolTokenAddress)
         public
         view
@@ -259,7 +259,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = cToken.supplyRatePerBlock();
         uint256 poolBorrowRate = cToken.borrowRatePerBlock();
 
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _computeCurrentP2PBorrowIndex(
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
             _poolTokenAddress
         );
 
@@ -281,7 +281,7 @@ abstract contract RatesLens is UsersLens {
             })
         );
 
-        (p2pBorrowAmount, poolBorrowAmount) = _computeMarketBorrow(
+        (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
             _poolTokenAddress,
             p2pBorrowIndex,
             poolBorrowIndex
@@ -371,7 +371,7 @@ abstract contract RatesLens is UsersLens {
         ) = getCurrentSupplyBalanceInOf(_poolTokenAddress, _user);
 
         return
-            _computeUserSupplyRatePerBlock(
+            _getUserSupplyRatePerBlock(
                 _poolTokenAddress,
                 balanceOnPool,
                 balanceInP2P,
@@ -395,7 +395,7 @@ abstract contract RatesLens is UsersLens {
         ) = getCurrentBorrowBalanceInOf(_poolTokenAddress, _user);
 
         return
-            _computeUserBorrowRatePerBlock(
+            _getUserBorrowRatePerBlock(
                 _poolTokenAddress,
                 balanceOnPool,
                 balanceInP2P,
@@ -409,9 +409,9 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @param _p2pSupplyIndex The given market's peer-to-peer supply index.
     /// @param _poolSupplyIndex The underlying pool's supply index.
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
-    function _computeMarketSupply(
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
+    function _getMarketSupply(
         address _poolTokenAddress,
         uint256 _p2pSupplyIndex,
         uint256 _poolSupplyIndex
@@ -429,9 +429,9 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @param _p2pBorrowIndex The given market's peer-to-peer borrow index.
     /// @param _poolBorrowIndex The underlying pool's borrow index.
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
-    function _computeMarketBorrow(
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
+    function _getMarketBorrow(
         address _poolTokenAddress,
         uint256 _p2pBorrowIndex,
         uint256 _poolBorrowIndex
@@ -454,7 +454,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
     /// @param _totalBalance The total amount of balance (should equal `_balanceOnPool + _balanceInP2P` but is used for saving gas).
     /// @return supplyRatePerBlock_ The supply rate per block experienced by the given position (in wad).
-    function _computeUserSupplyRatePerBlock(
+    function _getUserSupplyRatePerBlock(
         address _poolTokenAddress,
         uint256 _balanceOnPool,
         uint256 _balanceInP2P,
@@ -476,7 +476,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
     /// @param _totalBalance The total amount of balance (should equal `_balanceOnPool + _balanceInP2P` but is used for saving gas).
     /// @return borrowRatePerBlock_ The borrow rate per block experienced by the given position (in wad).
-    function _computeUserBorrowRatePerBlock(
+    function _getUserBorrowRatePerBlock(
         address _poolTokenAddress,
         uint256 _balanceOnPool,
         uint256 _balanceInP2P,

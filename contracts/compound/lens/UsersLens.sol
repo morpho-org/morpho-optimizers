@@ -222,7 +222,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _computeCurrentP2PSupplyIndex(
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
             _poolTokenAddress
         );
 
@@ -249,7 +249,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _computeCurrentP2PBorrowIndex(
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
             _poolTokenAddress
         );
 
@@ -309,13 +309,13 @@ abstract contract UsersLens is IndexesLens {
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
+    /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
     function getUserLiquidityDataForAsset(
         address _user,
         address _poolTokenAddress,
-        bool _computeUpdatedIndexes,
+        bool _getUpdatedIndexes,
         ICompoundOracle _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
@@ -328,16 +328,16 @@ abstract contract UsersLens is IndexesLens {
             uint256 p2pBorrowIndex,
             uint256 poolSupplyIndex,
             uint256 poolBorrowIndex
-        ) = getIndexes(_poolTokenAddress, _computeUpdatedIndexes);
+        ) = getIndexes(_poolTokenAddress, _getUpdatedIndexes);
 
-        assetData.collateralValue = _computeUserSupplyBalanceInOf(
+        assetData.collateralValue = _getUserSupplyBalanceInOf(
             _poolTokenAddress,
             _user,
             p2pSupplyIndex,
             poolSupplyIndex
         ).mul(assetData.underlyingPrice);
 
-        assetData.debtValue = _computeUserBorrowBalanceInOf(
+        assetData.debtValue = _getUserBorrowBalanceInOf(
             _poolTokenAddress,
             _user,
             p2pBorrowIndex,
@@ -404,7 +404,7 @@ abstract contract UsersLens is IndexesLens {
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _computeUserSupplyBalanceInOf(
+    function _getUserSupplyBalanceInOf(
         address _poolTokenAddress,
         address _user,
         uint256 _p2pSupplyIndex,
@@ -423,7 +423,7 @@ abstract contract UsersLens is IndexesLens {
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _computeUserBorrowBalanceInOf(
+    function _getUserBorrowBalanceInOf(
         address _poolTokenAddress,
         address _user,
         uint256 _p2pBorrowIndex,
