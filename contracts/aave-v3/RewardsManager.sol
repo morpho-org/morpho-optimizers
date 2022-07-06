@@ -240,6 +240,9 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// INTERNAL ///
 
     /// @dev Updates the state of the distribution for the specified reward.
+    /// @param _localRewardData The local reward's data.
+    /// @param _asset The asset being rewarded.
+    /// @param _reward The address of the reward token.
     /// @param _totalSupply The current total supply of underlying assets for this distribution.
     /// @param _assetUnit The asset's unit (10**decimals).
     /// @return newIndex The new distribution index.
@@ -452,7 +455,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 _reserveIndex,
         uint256 _userIndex,
         uint256 _assetUnit
-    ) internal view returns (uint256 rewards) {
+    ) internal pure returns (uint256 rewards) {
         rewards = _userBalance * (_reserveIndex - _userIndex);
         assembly {
             rewards := div(rewards, _assetUnit)
@@ -460,7 +463,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Computes the next value of an specific distribution index, with validations.
-    /// @param _totalSupply of the asset being rewarded.
+    /// @param _localRewardData The local reward's data.
+    /// @param _asset The asset being rewarded.
+    /// @param _reward The address of the reward token.
+    /// @param _totalSupply The current total supply of underlying assets for this distribution.
     /// @param _assetUnit The asset's unit (10**decimals).
     /// @return The former index and the new index in this order.
     function _getAssetIndex(
