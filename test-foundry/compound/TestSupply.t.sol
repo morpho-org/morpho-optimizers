@@ -41,8 +41,8 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        (uint256 p2pSupplyIndex, , ) = lens.getCurrentP2PSupplyIndex(cDai);
-        (uint256 p2pBorrowIndex, , ) = lens.getCurrentP2PBorrowIndex(cDai);
+        uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
+        uint256 p2pBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
         uint256 expectedBorrowBalanceInP2P = amount.div(p2pBorrowIndex);
 

@@ -60,7 +60,7 @@ abstract contract RatesLens is UsersLens {
             indexes.p2pSupplyIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
-        ) = getCurrentP2PSupplyIndex(_poolTokenAddress);
+        ) = _computeCurrentP2PSupplyIndex(_poolTokenAddress);
 
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
@@ -139,7 +139,7 @@ abstract contract RatesLens is UsersLens {
             indexes.p2pBorrowIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
-        ) = getCurrentP2PBorrowIndex(_poolTokenAddress);
+        ) = _computeCurrentP2PBorrowIndex(_poolTokenAddress);
 
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
@@ -205,7 +205,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = cToken.supplyRatePerBlock();
         uint256 poolBorrowRate = cToken.borrowRatePerBlock();
 
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = getCurrentP2PSupplyIndex(
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _computeCurrentP2PSupplyIndex(
             _poolTokenAddress
         );
 
@@ -258,7 +258,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = cToken.supplyRatePerBlock();
         uint256 poolBorrowRate = cToken.borrowRatePerBlock();
 
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getCurrentP2PBorrowIndex(
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _computeCurrentP2PBorrowIndex(
             _poolTokenAddress
         );
 

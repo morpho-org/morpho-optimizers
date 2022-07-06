@@ -103,23 +103,14 @@ interface ILens {
 
     /// INDEXES ///
 
-    function getCurrentP2PSupplyIndex(address _poolTokenAddress)
-        external
-        view
-        returns (
-            uint256 currentP2PSupplyIndex,
-            uint256 currentPoolSupplyIndex,
-            uint256 currentPoolBorrowIndex
-        );
+    function getCurrentP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
-    function getCurrentP2PBorrowIndex(address _poolTokenAddress)
+    function getCurrentP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256);
+
+    function getCurrentPoolIndexes(address _poolTokenAddress)
         external
         view
-        returns (
-            uint256 currentP2PBorrowIndex,
-            uint256 currentPoolSupplyIndex,
-            uint256 currentPoolBorrowIndex
-        );
+        returns (uint256 currentPoolSupplyIndex, uint256 currentPoolBorrowIndex);
 
     function getIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
         external

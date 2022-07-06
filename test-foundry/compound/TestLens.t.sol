@@ -751,7 +751,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PSupplyIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        (uint256 newP2PSupplyIndex, , ) = lens.getCurrentP2PSupplyIndex(cDai);
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
@@ -759,7 +759,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PBorrowIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        (uint256 newP2PBorrowIndex, , ) = lens.getCurrentP2PBorrowIndex(cDai);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
