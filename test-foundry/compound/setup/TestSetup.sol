@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@contracts/compound/interfaces/compound/ICompound.sol";
 import "@contracts/compound/interfaces/IRewardsManager.sol";
-import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
