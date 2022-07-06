@@ -37,8 +37,7 @@ contract Lens is RewardsLens {
             address _poolTokenAddress = markets[i];
 
             (uint256 marketP2PSupplyAmount, uint256 marketPoolSupplyAmount) = getTotalMarketSupply(
-                _poolTokenAddress,
-                true
+                _poolTokenAddress
             );
 
             uint256 underlyingPrice = oracle.getUnderlyingPrice(_poolTokenAddress);
@@ -76,8 +75,7 @@ contract Lens is RewardsLens {
             address _poolTokenAddress = markets[i];
 
             (uint256 marketP2PBorrowAmount, uint256 marketPoolBorrowAmount) = getTotalMarketBorrow(
-                _poolTokenAddress,
-                true
+                _poolTokenAddress
             );
 
             uint256 underlyingPrice = oracle.getUnderlyingPrice(_poolTokenAddress);
