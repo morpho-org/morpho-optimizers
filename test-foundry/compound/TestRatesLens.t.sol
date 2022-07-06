@@ -978,12 +978,12 @@ contract TestRatesLens is TestSetup {
     function testAverageBorrowRateShouldEqualMidrateWhenHalfMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(dai, amount / 2);
-        supplier1.supply(cDai, amount / 2);
-
         borrower1.approve(wEth, amount);
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
+
+        supplier1.approve(dai, amount / 2);
+        supplier1.supply(cDai, amount / 2);
 
         (uint256 borrowRatePerBlock, , ) = lens.getAverageBorrowRatePerBlock(cDai);
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerBlock(cDai);

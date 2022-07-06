@@ -751,7 +751,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PSupplyIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
+        (uint256 newP2PSupplyIndex, , ) = lens.getCurrentP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
@@ -759,7 +759,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PBorrowIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
+        (uint256 newP2PBorrowIndex, , ) = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
@@ -1315,10 +1315,10 @@ contract TestLens is TestSetup {
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
         .getTotalBorrow();
 
-        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai, true);
-        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai, true);
-        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth, true);
-        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth, true);
+        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai);
+        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth);
 
         indexes.ethPoolSupplyIndexAfter = ICToken(cEth).exchangeRateCurrent();
         indexes.daiPoolSupplyIndexAfter = ICToken(cDai).exchangeRateCurrent();
@@ -1403,10 +1403,10 @@ contract TestLens is TestSetup {
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
         .getTotalBorrow();
 
-        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai, true);
-        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai, true);
-        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth, true);
-        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth, true);
+        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai);
+        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(cEth);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(cEth);
 
         indexes.ethPoolSupplyIndexAfter = ICToken(cEth).exchangeRateCurrent();
         indexes.daiPoolSupplyIndexAfter = ICToken(cDai).exchangeRateCurrent();
