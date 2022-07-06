@@ -55,8 +55,8 @@ abstract contract MatchingEngine is MorphoUtils {
 
     /// INTERNAL ///
 
-    /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
-    /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
+    /// @notice Matches suppliers' liquidity waiting on Aave up to the given `_amount` and moves it to peer-to-peer.
+    /// @dev Note: This function expects Aave's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
@@ -121,8 +121,8 @@ abstract contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Compound.
-    /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
+    /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Aave.
+    /// @dev Note: This function expects Aave's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
@@ -184,7 +184,7 @@ abstract contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
+    /// @notice Matches borrowers' liquidity waiting on Aave up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects peer-to-peer indexes to have been updated..
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
@@ -249,7 +249,7 @@ abstract contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Compound.
+    /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Aave.
     /// @dev Note: This function expects and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
