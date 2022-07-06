@@ -23,7 +23,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 currentP2PSupplyIndex)
     {
-        (currentP2PSupplyIndex, , ) = _computeCurrentP2PSupplyIndex(_poolTokenAddress);
+        (currentP2PSupplyIndex, , ) = _getCurrentP2PSupplyIndex(_poolTokenAddress);
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
@@ -34,17 +34,17 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 currentP2PBorrowIndex)
     {
-        (currentP2PBorrowIndex, , ) = _computeCurrentP2PBorrowIndex(_poolTokenAddress);
+        (currentP2PBorrowIndex, , ) = _getCurrentP2PBorrowIndex(_poolTokenAddress);
     }
 
     /// @notice Returns the updated peer-to-peer and pool indexes.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
+    /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
     /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
     /// @return newPoolSupplyIndex The updated pool supply index.
     /// @return newPoolBorrowIndex The updated pool borrow index.
-    function getIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
+    function getIndexes(address _poolTokenAddress, bool _getUpdatedIndexes)
         public
         view
         returns (
@@ -54,7 +54,7 @@ abstract contract IndexesLens is LensStorage {
             uint256 newPoolBorrowIndex
         )
     {
-        if (!_computeUpdatedIndexes) {
+        if (!_getUpdatedIndexes) {
             ICToken cToken = ICToken(_poolTokenAddress);
 
             newPoolSupplyIndex = cToken.exchangeRateStored();
@@ -64,7 +64,7 @@ abstract contract IndexesLens is LensStorage {
         }
 
         Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
-        if (!_computeUpdatedIndexes || block.number == lastPoolIndexes.lastUpdateBlockNumber) {
+        if (!_getUpdatedIndexes || block.number == lastPoolIndexes.lastUpdateBlockNumber) {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
@@ -152,7 +152,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return currentP2PSupplyIndex The updated peer-to-peer supply index.
     /// @return currentPoolSupplyIndex The updated pool supply index.
     /// @return currentPoolBorrowIndex The updated pool borrow index.
-    function _computeCurrentP2PSupplyIndex(address _poolTokenAddress)
+    function _getCurrentP2PSupplyIndex(address _poolTokenAddress)
         internal
         view
         returns (
@@ -197,7 +197,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return currentP2PBorrowIndex The updated peer-to-peer supply index.
     /// @return currentPoolSupplyIndex The updated pool supply index.
     /// @return currentPoolBorrowIndex The updated pool borrow index.
-    function _computeCurrentP2PBorrowIndex(address _poolTokenAddress)
+    function _getCurrentP2PBorrowIndex(address _poolTokenAddress)
         internal
         view
         returns (

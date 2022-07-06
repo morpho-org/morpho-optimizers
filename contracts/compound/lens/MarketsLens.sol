@@ -50,10 +50,10 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolTokenAddress The address of the market of which to get main data.
     /// @return avgSupplyRatePerBlock The average supply rate experienced on the given market.
     /// @return avgBorrowRatePerBlock The average borrow rate experienced on the given market.
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function getMainMarketData(address _poolTokenAddress)
         external
         view
@@ -153,8 +153,8 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
     /// @param _poolTokenAddress The address of the market to check.
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, without the supply delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, including the supply delta (in underlying).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     function getTotalMarketSupply(address _poolTokenAddress)
         public
         view
@@ -164,9 +164,9 @@ abstract contract MarketsLens is RatesLens {
             uint256 p2pSupplyIndex,
             uint256 poolSupplyIndex,
             uint256 poolBorrowIndex
-        ) = _computeCurrentP2PSupplyIndex(_poolTokenAddress);
+        ) = _getCurrentP2PSupplyIndex(_poolTokenAddress);
 
-        (p2pSupplyAmount, poolSupplyAmount) = _computeMarketSupply(
+        (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
             _poolTokenAddress,
             p2pSupplyIndex,
             poolSupplyIndex
@@ -175,8 +175,8 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
     /// @param _poolTokenAddress The address of the market to check.
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, without the borrow delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, including the borrow delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function getTotalMarketBorrow(address _poolTokenAddress)
         public
         view
@@ -186,9 +186,9 @@ abstract contract MarketsLens is RatesLens {
             uint256 p2pBorrowIndex,
             uint256 poolSupplyIndex,
             uint256 poolBorrowIndex
-        ) = _computeCurrentP2PBorrowIndex(_poolTokenAddress);
+        ) = _getCurrentP2PBorrowIndex(_poolTokenAddress);
 
-        (p2pBorrowAmount, poolBorrowAmount) = _computeMarketBorrow(
+        (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
             _poolTokenAddress,
             p2pBorrowIndex,
             poolBorrowIndex
