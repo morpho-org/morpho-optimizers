@@ -5,6 +5,7 @@ import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./IEntryPositionsManager.sol";
 import "./IExitPositionsManager.sol";
 import "./IInterestRatesManager.sol";
+import "./IIncentivesVault.sol";
 import "./IRewardsManager.sol";
 
 import "../libraries/Types.sol";
@@ -33,6 +34,7 @@ interface IMorpho {
     function exitPositionsManager() external view returns (IExitPositionsManager);
     function rewardsController() external view returns (IRewardsController);
     function addressesProvider() external view returns (IPoolAddressesProvider);
+    function incentivesVault() external view returns (IIncentivesVault);
     function pool() external view returns (IPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (uint256);
@@ -64,6 +66,7 @@ interface IMorpho {
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager)
         external;
+    function setInterestRates(IInterestRatesManager _interestRatesManager) external;
     function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts) external;
     function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams) external;
 

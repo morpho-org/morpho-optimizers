@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./IInterestRatesManager.sol";
-import "./IRewardsManager.sol";
 import "./IPositionsManager.sol";
+import "./IRewardsManager.sol";
 import "./IIncentivesVault.sol";
 
 import "../libraries/Types.sol";
@@ -49,9 +49,10 @@ interface IMorpho {
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external;
     function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
-    function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
+    function setInterestRates(IInterestRatesManager _interestRatesManager) external;
+    function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
     function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
