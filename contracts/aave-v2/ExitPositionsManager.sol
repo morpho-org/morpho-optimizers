@@ -129,13 +129,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
-        if (!_isSupplying(_supplier, _poolTokenAddress)) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(_poolTokenAddress, _supplier),
             _amount
         );
+        if (toWithdraw == 0) revert UserNotMemberOfMarket();
 
         if (!_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw))
             revert UnauthorisedWithdraw();
