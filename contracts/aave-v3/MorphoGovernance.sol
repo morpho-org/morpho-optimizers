@@ -200,7 +200,10 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets the `interestRatesManager`.
     /// @param _interestRatesManager The new `interestRatesManager` contract.
-    function setInterestRates(IInterestRatesManager _interestRatesManager) external onlyOwner {
+    function setInterestRatesManager(IInterestRatesManager _interestRatesManager)
+        external
+        onlyOwner
+    {
         interestRatesManager = _interestRatesManager;
         emit InterestRatesSet(address(_interestRatesManager));
     }
