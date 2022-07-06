@@ -160,9 +160,11 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = getCurrentP2PSupplyIndex(
-            _poolTokenAddress
-        );
+        (
+            uint256 p2pSupplyIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = _computeCurrentP2PSupplyIndex(_poolTokenAddress);
 
         (p2pSupplyAmount, poolSupplyAmount) = _computeMarketSupply(
             _poolTokenAddress,
@@ -180,9 +182,11 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getCurrentP2PBorrowIndex(
-            _poolTokenAddress
-        );
+        (
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = _computeCurrentP2PBorrowIndex(_poolTokenAddress);
 
         (p2pBorrowAmount, poolBorrowAmount) = _computeMarketBorrow(
             _poolTokenAddress,
