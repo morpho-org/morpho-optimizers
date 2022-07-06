@@ -53,8 +53,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
     function updateIndexes(address _poolTokenAddress) external {
-        if (block.timestamp > poolIndexes[_poolTokenAddress].lastUpdateTimestamp) {
-            Types.PoolIndexes storage poolIndexes = poolIndexes[_poolTokenAddress];
+        Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolTokenAddress];
+
+        if (block.timestamp > marketPoolIndexes.lastUpdateTimestamp) {
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
@@ -66,8 +67,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pBorrowIndex[_poolTokenAddress],
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
-                poolIndexes.poolSupplyIndex,
-                poolIndexes.poolBorrowIndex,
+                marketPoolIndexes.poolSupplyIndex,
+                marketPoolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 deltas[_poolTokenAddress]
@@ -78,9 +79,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
-            poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            poolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
-            poolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
+            marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
+            marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
+            marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,
