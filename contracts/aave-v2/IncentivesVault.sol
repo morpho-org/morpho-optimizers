@@ -32,29 +32,31 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// EVENTS ///
 
     /// @notice Emitted when the oracle is set.
-    event OracleSet(address _newOracle);
+    /// @param newOracle The new oracle set.
+    event OracleSet(address newOracle);
 
     /// @notice Emitted when the Morpho DAO is set.
-    event MorphoDaoSet(address _newMorphoDao);
+    /// @param newMorphoDao The address of the Morpho DAO.
+    event MorphoDaoSet(address newMorphoDao);
 
     /// @notice Emitted when the reward bonus is set.
-    event BonusSet(uint256 _newBonus);
+    /// @param newBonus The new bonus set.
+    event BonusSet(uint256 newBonus);
 
     /// @notice Emitted when the pause status is changed.
-    event PauseStatusSet(bool _newStatus);
+    /// @param newStatus The new newStatus set.
+    event PauseStatusSet(bool newStatus);
 
-    /// @notice Emitted when tokens are transfered to the DAO.
-    event TokensTransfered(uint256 _amount);
+    /// @notice Emitted when tokens are transferred to the DAO.
+    /// @param token The address of the token transferred.
+    /// @param amount The amount of token transferred to the DAO.
+    event TokensTransferred(address indexed token, uint256 amount);
 
     /// @notice Emitted when reward tokens are traded for MORPHO tokens.
-    /// @param _receiver The address of the receiver.
-    /// @param _rewardAmount The amount of reward token traded.
-    /// @param _morphoAmount The amount of MORPHO sent.
-    event RewardTokensTraded(
-        address indexed _receiver,
-        uint256 _rewardAmount,
-        uint256 _morphoAmount
-    );
+    /// @param receiver The address of the receiver.
+    /// @param rewardAmount The amount of reward token traded.
+    /// @param morphoAmount The amount of MORPHO sent.
+    event RewardTokensTraded(address indexed receiver, uint256 rewardAmount, uint256 morphoAmount);
 
     /// ERRORS ///
 
@@ -121,7 +123,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _amount The amount of token to transfer to the DAO.
     function transferTokensToDao(address _token, uint256 _amount) external onlyOwner {
         ERC20(_token).safeTransfer(morphoDao, _amount);
-        emit TokensTransfered(_amount);
+        emit TokensTransferred(_token, _amount);
     }
 
     /// @notice Trades COMP tokens for MORPHO tokens and sends them to the receiver.
@@ -135,7 +137,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         // Add a bonus on MORPHO rewards.
         uint256 amountOut = (oracle.consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
             MAX_BASIS_POINTS;
-        morphoToken.transfer(_receiver, amountOut);
+        morphoToken.safeTransfer(_receiver, amountOut);
 
         emit RewardTokensTraded(_receiver, _amount, amountOut);
     }
