@@ -50,9 +50,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @notice Updates the peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) external {
-        if (block.number > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
+        Types.LastPoolIndexes storage marketPoolIndexes = lastPoolIndexes[_poolTokenAddress];
+
+        if (block.number > marketPoolIndexes.lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
@@ -63,8 +64,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pBorrowIndex[_poolTokenAddress],
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
+                marketPoolIndexes.lastSupplyPoolIndex,
+                marketPoolIndexes.lastBorrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 deltas[_poolTokenAddress]
@@ -75,9 +76,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
-            poolIndexes.lastUpdateBlockNumber = uint32(block.number);
-            poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
-            poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
+            marketPoolIndexes.lastUpdateBlockNumber = uint32(block.number);
+            marketPoolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
+            marketPoolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,
