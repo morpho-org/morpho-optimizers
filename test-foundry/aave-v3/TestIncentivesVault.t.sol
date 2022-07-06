@@ -90,12 +90,12 @@ contract TestIncentivesVault is Test, Config {
         assertFalse(incentivesVault.isPaused());
     }
 
-    function testOnlyOwnerShouldTransferMorphoTokensToDao() public {
+    function testOnlyOwnerShouldTransferTokensToDao() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        incentivesVault.transferMorphoTokensToDao(1);
+        incentivesVault.transferTokensToDao(address(morphoToken), 1);
 
-        incentivesVault.transferMorphoTokensToDao(1);
+        incentivesVault.transferTokensToDao(address(morphoToken), 1);
         assertEq(ERC20(morphoToken).balanceOf(morphoDao), 1);
     }
 

@@ -12,7 +12,7 @@ interface IIncentivesVault {
 
     function setPauseStatus(bool _newStatus) external;
 
-    function transferMorphoTokensToDao(uint256 _amount) external;
+    function transferTokensToDao(address _token, uint256 _amount) external;
 
     function tradeCompForMorphoTokens(address _to, uint256 _amount) external;
 }

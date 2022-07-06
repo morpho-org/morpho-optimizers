@@ -42,8 +42,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Emitted when the pause status is changed.
     event PauseStatusSet(bool _newStatus);
 
-    /// @notice Emitted when MORPHO tokens are transferred to the DAO.
-    event MorphoTokensTransferred(uint256 _amount);
+    /// @notice Emitted when tokens are transfered to the DAO.
+    event TokensTransfered(uint256 _amount);
 
     /// @notice Emitted when reward tokens are traded for MORPHO tokens.
     /// @param _receiver The address of the receiver.
@@ -107,11 +107,12 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         emit PauseStatusSet(_newStatus);
     }
 
-    /// @notice Transfers the MORPHO tokens to the DAO.
-    /// @param _amount The amount of MORPHO tokens to transfer to the DAO.
-    function transferMorphoTokensToDao(uint256 _amount) external onlyOwner {
-        morphoToken.safeTransfer(morphoDao, _amount);
-        emit MorphoTokensTransferred(_amount);
+    /// @notice Transfers the specified token to the DAO.
+    /// @param _token The address of the token to transfer.
+    /// @param _amount The amount of token to transfer to the DAO.
+    function transferTokensToDao(address _token, uint256 _amount) external onlyOwner {
+        ERC20(_token).safeTransfer(morphoDao, _amount);
+        emit TokensTransfered(_amount);
     }
 
     /// @notice Trades reward tokens for MORPHO tokens and sends them to the receiver.
