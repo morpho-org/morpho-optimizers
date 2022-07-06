@@ -51,7 +51,7 @@ interface IMorpho {
     function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
-    function setInterestRates(IInterestRatesManager _interestRatesManager) external;
+    function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
     function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
