@@ -151,7 +151,7 @@ abstract contract MarketsLens is RatesLens {
 
     /// PUBLIC ///
 
-    /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
+    /// @notice Computes and returns the total distribution of supply for a given market.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
@@ -160,11 +160,9 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
     {
-        (
-            uint256 p2pSupplyIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = _getCurrentP2PSupplyIndex(_poolTokenAddress);
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
+            _poolTokenAddress
+        );
 
         (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
             _poolTokenAddress,
@@ -173,7 +171,7 @@ abstract contract MarketsLens is RatesLens {
         );
     }
 
-    /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
+    /// @notice Computes and returns the total distribution of borrows for a given market.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
@@ -182,11 +180,9 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
     {
-        (
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = _getCurrentP2PBorrowIndex(_poolTokenAddress);
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
+            _poolTokenAddress
+        );
 
         (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
             _poolTokenAddress,

@@ -104,7 +104,7 @@ abstract contract IndexesLens is LensStorage {
         }
     }
 
-    /// @dev Returns Compound's indexes, optionally computing their virtually updated values.
+    /// @dev Returns Compound's updated indexes of a given market.
     /// @param _poolTokenAddress The address of the market.
     /// @return currentPoolSupplyIndex The supply index.
     /// @return currentPoolBorrowIndex The borrow index.
