@@ -122,15 +122,32 @@ library InterestRatesModel {
         }
     }
 
+    /// @notice Computes and returns the raw peer-to-peer rate per block of a market given the pool rates.
+    /// @param _poolSupplyRate The pool's supply rate per block.
+    /// @param _poolBorrowRate The pool's borrow rate per block.
+    /// @param _p2pIndexCursor The market's p2p index cursor.
+    /// @return The raw peer-to-peer rate per block, without reserve factor, without delta.
+    function computeRawP2PRatePerBlock(
+        uint256 _poolSupplyRate,
+        uint256 _poolBorrowRate,
+        uint256 _p2pIndexCursor
+    ) internal pure returns (uint256) {
+        return
+            ((MAX_BASIS_POINTS - _p2pIndexCursor) *
+                _poolSupplyRate +
+                _p2pIndexCursor *
+                _poolBorrowRate) / MAX_BASIS_POINTS;
+    }
+
     /// @notice Computes and returns the peer-to-peer supply rate per block of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pSupplyRate_ The peer-to-peer supply rate per block.
+    /// @return p2pSupplyRate The peer-to-peer supply rate per block.
     function computeP2PSupplyRatePerBlock(P2PRateComputeParams memory _params)
         internal
         pure
-        returns (uint256 p2pSupplyRate_)
+        returns (uint256 p2pSupplyRate)
     {
-        p2pSupplyRate_ =
+        p2pSupplyRate =
             _params.p2pRate -
             ((_params.p2pRate - _params.poolRate) * _params.reserveFactor) /
             MAX_BASIS_POINTS;
@@ -143,21 +160,21 @@ library InterestRatesModel {
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            p2pSupplyRate_ =
-                p2pSupplyRate_.mul(WAD - shareOfTheDelta) +
+            p2pSupplyRate =
+                p2pSupplyRate.mul(WAD - shareOfTheDelta) +
                 _params.poolRate.mul(shareOfTheDelta);
         }
     }
 
     /// @notice Computes and returns the peer-to-peer borrow rate per block of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pBorrowRate_ The peer-to-peer borrow rate per block.
+    /// @return p2pBorrowRate The peer-to-peer borrow rate per block.
     function computeP2PBorrowRatePerBlock(P2PRateComputeParams memory _params)
         internal
         pure
-        returns (uint256 p2pBorrowRate_)
+        returns (uint256 p2pBorrowRate)
     {
-        p2pBorrowRate_ =
+        p2pBorrowRate =
             _params.p2pRate +
             ((_params.poolRate - _params.p2pRate) * _params.reserveFactor) /
             MAX_BASIS_POINTS;
@@ -170,8 +187,8 @@ library InterestRatesModel {
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            p2pBorrowRate_ =
-                p2pBorrowRate_.mul(WAD - shareOfTheDelta) +
+            p2pBorrowRate =
+                p2pBorrowRate.mul(WAD - shareOfTheDelta) +
                 _params.poolRate.mul(shareOfTheDelta);
         }
     }
