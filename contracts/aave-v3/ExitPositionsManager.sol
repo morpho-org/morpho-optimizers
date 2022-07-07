@@ -216,14 +216,24 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         }
 
-        uint256 amountToSeize = Math.min(
-            ((amountToLiquidate *
-                oracle.getAssetPrice(tokenBorrowedAddress) *
-                vars.collateralTokenUnit) /
-                (vars.borrowedTokenUnit * oracle.getAssetPrice(tokenCollateralAddress)))
-            .percentMul(vars.liquidationBonus), // Same mechanism as Aave.
-            _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower)
+        uint256 borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowedAddress);
+        uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
+        uint256 amountToSeize = ((amountToLiquidate *
+            borrowedTokenPrice *
+            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice))
+        .percentMul(vars.liquidationBonus);
+
+        uint256 collateralBalance = _getUserSupplyBalanceInOf(
+            _poolTokenCollateralAddress,
+            _borrower
         );
+
+        if (amountToSeize > collateralBalance) {
+            amountToSeize = collateralBalance;
+            amountToLiquidate = ((collateralPrice * collateralBalance * vars.borrowedTokenUnit) /
+                (borrowedTokenPrice * vars.collateralTokenUnit))
+            .percentDiv(vars.liquidationBonus);
+        }
 
         _safeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, amountToLiquidate, 0);
         _safeWithdrawLogic(_poolTokenCollateralAddress, amountToSeize, _borrower, msg.sender, 0);
