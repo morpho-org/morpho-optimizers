@@ -745,8 +745,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ); // In peer-to-peer unit.
         _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
-        /// Transfer repay ///
-
         // Reduce peer-to-peer borrow delta first if any.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
@@ -769,9 +767,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
+            // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = CompoundMath.safeSub(
-                (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
-                    delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
+                delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
                 (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
                     delta.p2pSupplyDelta.mul(ICToken(_poolTokenAddress).exchangeRateStored()))
             );
@@ -787,6 +785,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 );
             }
         }
+
+        /// Transfer repay ///
 
         // Match pool borrowers if any.
         if (
