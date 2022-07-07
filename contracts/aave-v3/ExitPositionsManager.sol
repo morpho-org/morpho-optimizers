@@ -464,8 +464,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ); // In peer-to-peer borrow unit.
         _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
-        /// Transfer repay ///
-
         // Reduce peer-to-peer borrow delta first if any.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
@@ -486,9 +484,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
+            // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = Math.zeroFloorSub(
-                (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
-                    delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)),
+                delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex),
                 (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
                     delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex))
             );
@@ -504,6 +502,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 );
             }
         }
+
+        /// Transfer repay ///
 
         // Match pool borrowers if any.
         if (
