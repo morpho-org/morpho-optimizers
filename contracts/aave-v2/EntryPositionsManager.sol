@@ -234,7 +234,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-            if (toWithdraw > 0) _withdrawFromPool(underlyingToken, _poolTokenAddress, toWithdraw); // Reverts on error.
+            _withdrawFromPool(underlyingToken, _poolTokenAddress, toWithdraw); // Reverts on error.
         }
 
         /// Borrow on pool ///
@@ -303,7 +303,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                     );
                 }
 
-                if (_poolTokenAddress == poolToken && _borrowedAmount > 0)
+                if (_poolTokenAddress == poolToken)
                     liquidityData.debtValue +=
                         (_borrowedAmount * assetData.underlyingPrice) /
                         assetData.tokenUnit;
