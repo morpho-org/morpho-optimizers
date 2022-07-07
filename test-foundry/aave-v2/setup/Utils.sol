@@ -11,7 +11,7 @@ contract Utils is Test {
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
     uint256 internal constant SECONDS_PER_YEAR = 365 days;
-    uint256 internal constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000;
+    uint256 internal constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000;
 
     uint256 internal constant PERCENT_BASE = 10_000;
     uint256 internal constant AVERAGE_BLOCK_TIME = 2;

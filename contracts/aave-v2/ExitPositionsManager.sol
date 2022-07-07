@@ -196,7 +196,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower).percentMul(
-                LIQUIDATION_CLOSE_FACTOR_PERCENT
+                DEFAULT_LIQUIDATION_CLOSE_FACTOR
             ) // Max liquidatable debt.
         );
 
