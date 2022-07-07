@@ -82,8 +82,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     // Struct to avoid stack too deep.
     struct WithdrawVars {
+        uint256 remainingGasForMatching;
         uint256 remainingToWithdraw;
-        uint256 maxGasForMatching;
         uint256 poolSupplyIndex;
         uint256 p2pSupplyIndex;
         uint256 onPoolSupply;
@@ -92,7 +92,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     // Struct to avoid stack too deep.
     struct RepayVars {
-        uint256 maxGasForMatching;
+        uint256 remainingGasForMatching;
         uint256 remainingToRepay;
         uint256 poolSupplyIndex;
         uint256 poolBorrowIndex;
@@ -257,7 +257,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
-        vars.maxGasForMatching = _maxGasForMatching;
+        vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
 
         /// Soft withdraw ///
@@ -336,10 +336,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
-            if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-            else vars.maxGasForMatching -= gasConsumedInMatching;
+            if (vars.remainingGasForMatching <= gasConsumedInMatching)
+                vars.remainingGasForMatching = 0;
+            else vars.remainingGasForMatching -= gasConsumedInMatching;
 
             if (matched > 0) {
                 vars.remainingToWithdraw -= matched;
@@ -357,7 +358,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
@@ -414,7 +415,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
-        vars.maxGasForMatching = _maxGasForMatching;
+        vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
 
         /// Soft repay ///
@@ -514,10 +515,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
-            if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-            else vars.maxGasForMatching -= gasConsumedInMatching;
+            if (vars.remainingGasForMatching <= gasConsumedInMatching)
+                vars.remainingGasForMatching = 0;
+            else vars.remainingGasForMatching -= gasConsumedInMatching;
 
             if (matched > 0) {
                 vars.remainingToRepay -= matched;
@@ -534,7 +536,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
