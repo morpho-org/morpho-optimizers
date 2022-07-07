@@ -82,6 +82,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         __Ownable_init();
 
         morpho = IMorpho(_morpho);
+        aaveIncentivesController = IMorpho(_morpho).aaveIncentivesController();
         pool = ILendingPool(morpho.pool());
     }
 
