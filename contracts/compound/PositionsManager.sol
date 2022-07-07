@@ -167,8 +167,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     // Struct to avoid stack too deep.
     struct WithdrawVars {
+        uint256 remainingGasForMatching;
         uint256 remainingToWithdraw;
-        uint256 maxGasForMatching;
         uint256 poolSupplyIndex;
         uint256 p2pSupplyIndex;
         uint256 withdrawable;
@@ -179,7 +179,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     // Struct to avoid stack too deep.
     struct RepayVars {
-        uint256 maxGasForMatching;
+        uint256 remainingGasForMatching;
         uint256 remainingToRepay;
         uint256 maxToRepayOnPool;
         uint256 poolBorrowIndex;
@@ -524,7 +524,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.poolToken = ICToken(_poolTokenAddress);
         vars.underlyingToken = _getUnderlying(_poolTokenAddress);
         vars.remainingToWithdraw = _amount;
-        vars.maxGasForMatching = _maxGasForMatching;
+        vars.remainingGasForMatching = _maxGasForMatching;
         vars.withdrawable = vars.poolToken.balanceOfUnderlying(address(this));
         vars.poolSupplyIndex = vars.poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
@@ -622,10 +622,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                 _poolTokenAddress,
                 CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
-            if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-            else vars.maxGasForMatching -= gasConsumedInMatching;
+            if (vars.remainingGasForMatching <= gasConsumedInMatching)
+                vars.remainingGasForMatching = 0;
+            else vars.remainingGasForMatching -= gasConsumedInMatching;
 
             if (matched > 0) {
                 vars.remainingToWithdraw -= matched;
@@ -644,7 +645,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
@@ -695,7 +696,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
-        vars.maxGasForMatching = _maxGasForMatching;
+        vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
 
         /// Soft repay ///
@@ -796,10 +797,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
-            if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-            else vars.maxGasForMatching -= gasConsumedInMatching;
+            if (vars.remainingGasForMatching <= gasConsumedInMatching)
+                vars.remainingGasForMatching = 0;
+            else vars.remainingGasForMatching -= gasConsumedInMatching;
 
             if (matched > 0) {
                 vars.remainingToRepay -= matched;
@@ -816,7 +818,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                vars.maxGasForMatching
+                vars.remainingGasForMatching
             );
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
