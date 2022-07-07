@@ -653,7 +653,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
                     vars.poolToken.borrowIndex()
                 );
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
+                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
             delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
