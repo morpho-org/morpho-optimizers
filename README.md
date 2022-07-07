@@ -117,7 +117,7 @@ By default, PR are rebased with `dev` before merging to keep a clean historic of
 You can run the following command to deploy Morpho's contracts for Aave on Mumbai by using foundry:
 
 ```bash
-forge script script/DeployMorphoAaveV2.s.sol:DeployMorphoAaveV2 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY -vvvv
+PRIVATE_KEY=abcabcabc make run-script-DeployMorphoAaveV2
 ```
 
 Make sure to have the correct environement variables setted before running the deployment script. You can add them to a .env.local environement file, and run this before executing the previous deployment command:

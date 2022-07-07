@@ -104,6 +104,11 @@ ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv --match-test $* > trace.ansi
 
+run-script-%:
+	@echo Running single script $* of ${PROTOCOL} on ${NETWORK}
+	@forge script scripts/$*.s.sol:$* --private-key $PRIVATE_KEY --broadcast -vvvv
+
+
 config:
 	@forge config
 
