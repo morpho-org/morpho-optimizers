@@ -77,6 +77,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         __Ownable_init();
 
         morpho = IMorpho(_morpho);
+        rewardsController = IMorpho(_morpho).rewardsController();
         pool = IPool(morpho.pool());
     }
 

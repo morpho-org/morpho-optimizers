@@ -163,7 +163,6 @@ contract TestSetup is Config, Utils {
         );
         rewardsManager = RewardsManager(address(rewardsManagerProxy));
         rewardsManager.initialize(address(morpho));
-        rewardsManager.setRewardsController(rewardsControllerAddress);
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);

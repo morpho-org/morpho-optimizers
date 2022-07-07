@@ -130,6 +130,7 @@ contract TestSetup is Config, Utils {
         lens = new Lens(address(morpho), poolAddressesProvider);
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
+        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
 
         if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
             rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
@@ -144,8 +145,6 @@ contract TestSetup is Config, Utils {
         );
         rewardsManager = IRewardsManager(address(rewardsManagerProxy));
         rewardsManager.initialize(address(morpho));
-        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
-        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
 
         /// Create markets ///
 
@@ -171,7 +170,6 @@ contract TestSetup is Config, Utils {
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
-
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);
     }
