@@ -366,7 +366,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
                     poolIndexes[_poolTokenAddress].poolBorrowIndex
                 );
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
+                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
             delta.p2pSupplyAmount -= Math.min(
@@ -544,7 +544,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
                     vars.poolSupplyIndex
                 );
-                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             }
 
             // Math.min as the last decimal might flip.
