@@ -435,7 +435,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             if (vars.remainingToRepay == 0) {
                 _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
-                _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
+                _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
                 if (
                     borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P == 0 &&
@@ -527,7 +527,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
         }
 
-        _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
+        _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
         /// Hard repay ///
 
