@@ -296,6 +296,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             if (_userBalance != 0) {
                 rewardsAccrued = _getRewards(_userBalance, _newAssetIndex, userIndex, _assetUnit);
 
+                // Not safe casting because 2^128 is large enough.
                 _localRewardData.usersData[_user].accrued += uint128(rewardsAccrued);
             }
         }
