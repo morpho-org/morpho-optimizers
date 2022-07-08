@@ -15,6 +15,7 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
+    using PercentageMath for uint256;
 
     /// COMMON EVENTS ///
 
@@ -95,5 +96,106 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         ) return;
 
         pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this)); // Reverts if debt is 0.
+    }
+
+    function _userMarkets(address _user) internal view returns (address[] memory markets) {
+        markets = new address[](marketsCreated.length);
+        uint256 marketLength;
+        for (uint256 i; i < markets.length; i++) {
+            if (_isSupplyingOrBorrowing(_user, marketsCreated[i])) {
+                markets[marketLength] = marketsCreated[i];
+                ++marketLength;
+            }
+        }
+
+        assembly {
+            mstore(markets, marketLength)
+        }
+    }
+
+    function _collateralAndDebtValues(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _amount,
+        Types.LoanCalculationType _calculationType
+    )
+        internal
+        returns (
+            uint256 collateralValue,
+            uint256 debtValue,
+            uint256 calculatedMax
+        )
+    {
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        address[] memory poolTokens = _userMarkets(_user);
+        address[] memory underlyings = new address[](poolTokens.length);
+
+        for (uint256 i; i < poolTokens.length; i++) {
+            underlyings[i] = IAToken(poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
+        }
+
+        uint256[] memory underlyingPrices = oracle.getAssetPrices(underlyings); // in ETH
+
+        Types.AssetLiquidityData memory assetData;
+
+        for (uint256 i; i < poolTokens.length; i++) {
+            if (poolTokens[i] != _poolTokenAddress) _updateIndexes(poolTokens[i]);
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
+            .getConfiguration(underlyings[i])
+            .getParamsMemory();
+
+            assetData.tokenUnit = 10**assetData.reserveDecimals;
+
+            debtValue += _debtValue(poolTokens[i], _user, underlyingPrices[i], assetData.tokenUnit);
+
+            // Cache current asset collateral value
+            uint256 assetCollateralValue = _collateralValue(
+                poolTokens[i],
+                _user,
+                underlyingPrices[i],
+                assetData.tokenUnit
+            );
+            collateralValue += assetCollateralValue;
+
+            // Calculate LTV for borrow
+            if (_calculationType == Types.LoanCalculationType.LOAN_TO_VALUE) {
+                calculatedMax += assetCollateralValue.percentMul(assetData.ltv);
+                // Add debt value for borrowed token
+                if (_poolTokenAddress == poolTokens[i])
+                    debtValue += (_amount * underlyingPrices[i]) / assetData.tokenUnit;
+            }
+            // Calculate LT for withdraw
+            else if (_calculationType == Types.LoanCalculationType.LIQUIDATION_THRESHOLD) {
+                calculatedMax += assetCollateralValue.percentMul(assetData.liquidationThreshold);
+                // Subtract from liquidation threshold value for withdrawn token
+                if (_poolTokenAddress == poolTokens[i])
+                    calculatedMax -= ((_amount * underlyingPrices[i]) / assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
+            }
+        }
+    }
+
+    function _collateralValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 collateralValue) {
+        if (_isSupplying(_user, _poolToken))
+            collateralValue =
+                (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
+                _tokenUnit;
+    }
+
+    function _debtValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 debtValue) {
+        if (_isBorrowing(_user, _poolToken))
+            debtValue =
+                (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice) /
+                _tokenUnit;
     }
 }
