@@ -85,7 +85,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         _updateIndexes(_poolTokenAddress);
 
-        if (!_isSupplying(_onBehalf, _poolTokenAddress))
+        if (!_isSupplying(userMarkets[_onBehalf], _poolTokenAddress))
             _setSupplying(_onBehalf, _poolTokenAddress, true);
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -179,7 +179,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
-        if (!_isBorrowing(msg.sender, _poolTokenAddress))
+        if (!_isBorrowing(userMarkets[msg.sender], _poolTokenAddress))
             _setBorrowing(msg.sender, _poolTokenAddress, true);
 
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
@@ -268,6 +268,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
+        uint256 userMarkets = userMarkets[_user];
+
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfMarketsCreated = marketsCreated.length;
 
@@ -277,7 +279,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            if (_isSupplyingOrBorrowing(_user, poolToken)) {
+            if (_isSupplyingOrBorrowing(userMarkets, poolToken)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -288,12 +290,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (_isBorrowing(_user, poolToken))
+                if (_isBorrowing(userMarkets, poolToken))
                     liquidityData.debtValue +=
                         (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
 
-                if (_isSupplying(_user, poolToken)) {
+                if (_isSupplying(userMarkets, poolToken)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
