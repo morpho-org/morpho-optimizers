@@ -98,6 +98,9 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this)); // Reverts if debt is 0.
     }
 
+    /// @dev Gets all markets of the user.
+    /// @param _user The user address.
+    /// @return markets The markets the user is participating in.
     function _userMarkets(address _user) internal view returns (address[] memory markets) {
         markets = new address[](marketsCreated.length);
         uint256 marketLength;
@@ -113,6 +116,15 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         }
     }
 
+    /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
+    /// @param _user The user address.
+    /// @param _poolTokens The pool tokens to calculate the values for.
+    /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn
+    /// @param _amount The amount that is being borrowed or withdrawn
+    /// @param _calculationType The calculation type to use
+    /// @return collateralValue The total value of the collateral
+    /// @return debtValue The total value of the debt
+    /// @return calculatedMax The max value of the LTV/LT or none depending on the calculation type
     function _collateralAndDebtValues(
         address _user,
         address[] memory _poolTokens,
@@ -180,6 +192,11 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         }
     }
 
+    /// @dev Calculates the value of the collateral.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
     function _collateralValue(
         address _poolToken,
         address _user,
@@ -192,6 +209,11 @@ abstract contract PositionsManagerUtils is MatchingEngine {
                 _tokenUnit;
     }
 
+    /// @dev Calculates the value of the debt.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
     function _debtValue(
         address _poolToken,
         address _user,
