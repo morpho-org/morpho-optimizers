@@ -52,7 +52,6 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
     function _supplyToPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        _underlyingToken.safeApprove(address(pool), _amount);
         pool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
     }
 
@@ -86,23 +85,15 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     /// @dev Repays underlying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to repay to.
     /// @param _amount The amount of token (in underlying).
-    function _repayToPool(
-        ERC20 _underlyingToken,
-        uint256 _amount,
-        uint256 _poolBorrowIndex
-    ) internal {
-        // Repay only what is necessary. The remaining tokens stays on the contract and are claimable by the DAO.
-        _amount = Math.min(
-            _amount,
+    function _repayToPool(ERC20 _underlyingToken, uint256 _amount) internal {
+        if (
+            _amount == 0 ||
             IVariableDebtToken(
                 pool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
-            ).scaledBalanceOf(address(this))
-            .rayMul(_poolBorrowIndex) // The debt of the contract.
-        );
+            ).scaledBalanceOf(address(this)) ==
+            0
+        ) return;
 
-        if (_amount > 0) {
-            _underlyingToken.safeApprove(address(pool), _amount);
-            pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this));
-        }
+        pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this)); // Reverts if debt is 0.
     }
 }

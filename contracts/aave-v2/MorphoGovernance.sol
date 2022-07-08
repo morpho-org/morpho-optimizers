@@ -363,6 +363,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         address _underlyingTokenAddress,
         Types.MarketParameters calldata _marketParams
     ) external onlyOwner {
+        if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
+
         if (
             _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
             _marketParams.reserveFactor > MAX_BASIS_POINTS
@@ -379,20 +381,21 @@ abstract contract MorphoGovernance is MorphoUtils {
         p2pSupplyIndex[poolTokenAddress] = WadRayMath.RAY;
         p2pBorrowIndex[poolTokenAddress] = WadRayMath.RAY;
 
-        Types.PoolIndexes storage poolIndexes = poolIndexes[poolTokenAddress];
+        Types.PoolIndexes storage marketPoolIndexes = poolIndexes[poolTokenAddress];
 
-        poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-        poolIndexes.poolSupplyIndex = uint112(
+        marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
+        marketPoolIndexes.poolSupplyIndex = uint112(
             pool.getReserveNormalizedIncome(_underlyingTokenAddress)
         );
-        poolIndexes.poolBorrowIndex = uint112(
+        marketPoolIndexes.poolBorrowIndex = uint112(
             pool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
         );
         marketParameters[poolTokenAddress] = _marketParams;
 
-        if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
         borrowMask[poolTokenAddress] = 1 << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);
+
+        ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
 
         emit MarketCreated(
             poolTokenAddress,
