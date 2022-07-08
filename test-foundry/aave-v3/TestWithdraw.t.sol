@@ -628,7 +628,7 @@ contract TestWithdraw is TestSetup {
 
         // attacker sends aToken to Morpho contract
         attacker.approve(dai, address(pool), toSupply);
-        attacker.deposit(dai, toSupply, address(attacker), 0);
+        attacker.supply(dai, toSupply, address(attacker), 0);
         attacker.transfer(dai, address(morpho), toSupply);
 
         // supplier1 deposits collateral

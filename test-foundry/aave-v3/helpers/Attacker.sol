@@ -32,12 +32,12 @@ contract Attacker {
         ERC20(_token).safeTransfer(_recipient, _amount);
     }
 
-    function deposit(
+    function supply(
         address _asset,
         uint256 _amount,
         address _onBehalfOf,
         uint16 _referralCode
     ) external {
-        pool.deposit(_asset, _amount, _onBehalfOf, _referralCode);
+        pool.supply(_asset, _amount, _onBehalfOf, _referralCode);
     }
 }

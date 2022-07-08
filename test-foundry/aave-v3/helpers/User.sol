@@ -92,7 +92,7 @@ contract User is Test {
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
         ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
-        pool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
+        pool.supply(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
     }
 
     function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
