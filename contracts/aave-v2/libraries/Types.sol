@@ -15,6 +15,12 @@ library Types {
         BORROWERS_ON_POOL
     }
 
+    enum LoanCalculationType {
+        LOAN_TO_VALUE,
+        LIQUIDATION_THRESHOLD,
+        NONE
+    }
+
     /// STRUCTS ///
 
     struct SupplyBalance {
