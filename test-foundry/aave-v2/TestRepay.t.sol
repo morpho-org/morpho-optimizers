@@ -596,7 +596,6 @@ contract TestRepay is TestSetup {
         supplier1.approve(dai, address(pool), amount);
         hevm.prank(address(supplier1));
         pool.repay(dai, amount, 2, address(morpho));
-        hevm.stopPrank();
 
         // Repay max. Not supposed to revert !
         borrower1.approve(dai, type(uint256).max);
