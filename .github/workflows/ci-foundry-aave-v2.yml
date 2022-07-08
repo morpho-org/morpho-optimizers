@@ -20,7 +20,6 @@ on:
 
 jobs:
   morpho-aave-v2-eth-mainnet:
-    if: "! github.event.pull_request.draft"
     name: Morpho-Aave V2 [eth-mainnet]
     runs-on: ubuntu-latest
     steps:
@@ -65,7 +64,6 @@ jobs:
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
   morpho-aave-v2-polygon-mainnet:
-    if: "! github.event.pull_request.draft"
     name: Morpho-Aave V2 [polygon-mainnet]
     runs-on: ubuntu-latest
     steps:
@@ -110,7 +108,6 @@ jobs:
           NETWORK: polygon-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
   morpho-aave-v2-avalanche-mainnet:
-    if: "! github.event.pull_request.draft"
     name: Morpho-Aave V2 [avalanche-mainnet]
     runs-on: ubuntu-latest
     steps:

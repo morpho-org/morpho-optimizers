@@ -20,7 +20,6 @@ on:
 
 jobs:
   morpho-compound-eth-mainnet:
-    if: "! github.event.pull_request.draft"
     name: Morpho-Compound [eth-mainnet]
     runs-on: ubuntu-latest
     steps:
