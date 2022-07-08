@@ -115,11 +115,13 @@ abstract contract PositionsManagerUtils is MatchingEngine {
 
     function _collateralAndDebtValues(
         address _user,
+        address[] memory _poolTokens,
         address _poolTokenAddress,
         uint256 _amount,
         Types.LoanCalculationType _calculationType
     )
         internal
+        view
         returns (
             uint256 collateralValue,
             uint256 debtValue,
@@ -127,30 +129,33 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         )
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory poolTokens = _userMarkets(_user);
-        address[] memory underlyings = new address[](poolTokens.length);
+        address[] memory underlyings = new address[](_poolTokens.length);
+        uint256[] memory underlyingPrices = new uint256[](_poolTokens.length);
 
-        for (uint256 i; i < poolTokens.length; i++) {
-            underlyings[i] = IAToken(poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
+        for (uint256 i; i < _poolTokens.length; i++) {
+            underlyings[i] = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
+            underlyingPrices[i] = oracle.getAssetPrice(underlyings[i]);
         }
-
-        uint256[] memory underlyingPrices = oracle.getAssetPrices(underlyings); // in ETH
 
         Types.AssetLiquidityData memory assetData;
 
-        for (uint256 i; i < poolTokens.length; i++) {
-            if (poolTokens[i] != _poolTokenAddress) _updateIndexes(poolTokens[i]);
+        for (uint256 i; i < _poolTokens.length; i++) {
             (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
             .getConfiguration(underlyings[i])
             .getParamsMemory();
 
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            debtValue += _debtValue(poolTokens[i], _user, underlyingPrices[i], assetData.tokenUnit);
+            debtValue += _debtValue(
+                _poolTokens[i],
+                _user,
+                underlyingPrices[i],
+                assetData.tokenUnit
+            );
 
             // Cache current asset collateral value
             uint256 assetCollateralValue = _collateralValue(
-                poolTokens[i],
+                _poolTokens[i],
                 _user,
                 underlyingPrices[i],
                 assetData.tokenUnit
@@ -161,14 +166,14 @@ abstract contract PositionsManagerUtils is MatchingEngine {
             if (_calculationType == Types.LoanCalculationType.LOAN_TO_VALUE) {
                 calculatedMax += assetCollateralValue.percentMul(assetData.ltv);
                 // Add debt value for borrowed token
-                if (_poolTokenAddress == poolTokens[i])
+                if (_poolTokenAddress == _poolTokens[i])
                     debtValue += (_amount * underlyingPrices[i]) / assetData.tokenUnit;
             }
             // Calculate LT for withdraw
             else if (_calculationType == Types.LoanCalculationType.LIQUIDATION_THRESHOLD) {
                 calculatedMax += assetCollateralValue.percentMul(assetData.liquidationThreshold);
                 // Subtract from liquidation threshold value for withdrawn token
-                if (_poolTokenAddress == poolTokens[i])
+                if (_poolTokenAddress == _poolTokens[i])
                     calculatedMax -= ((_amount * underlyingPrices[i]) / assetData.tokenUnit)
                     .percentMul(assetData.liquidationThreshold);
             }
