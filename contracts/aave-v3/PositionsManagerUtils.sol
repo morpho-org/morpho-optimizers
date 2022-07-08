@@ -54,7 +54,7 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     /// @param _amount The amount of token (in underlying).
     function _supplyToPool(ERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeApprove(address(pool), _amount);
-        pool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        pool.supply(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
     }
 
     /// @dev Withdraws underlying tokens from Aave.
