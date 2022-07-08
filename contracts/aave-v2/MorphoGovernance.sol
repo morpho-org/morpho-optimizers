@@ -174,6 +174,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
+        if (address(_entryPositionsManager) == address(0)) revert ZeroAddress();
         entryPositionsManager = _entryPositionsManager;
         emit EntryPositionsManagerSet(address(_entryPositionsManager));
     }
@@ -184,15 +185,9 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
+        if (address(_exitPositionsManager) == address(0)) revert ZeroAddress();
         exitPositionsManager = _exitPositionsManager;
         emit ExitPositionsManagerSet(address(_exitPositionsManager));
-    }
-
-    /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManager The new `rewardsManager`.
-    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
-        rewardsManager = _rewardsManager;
-        emit RewardsManagerSet(address(_rewardsManager));
     }
 
     /// @notice Sets the `interestRatesManager`.
@@ -201,8 +196,16 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
+        if (address(_interestRatesManager) == address(0)) revert ZeroAddress();
         interestRatesManager = _interestRatesManager;
         emit InterestRatesSet(address(_interestRatesManager));
+    }
+
+    /// @notice Sets the `rewardsManager`.
+    /// @param _rewardsManager The new `rewardsManager`.
+    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
+        rewardsManager = _rewardsManager;
+        emit RewardsManagerSet(address(_rewardsManager));
     }
 
     /// @notice Sets the `treasuryVault`.
@@ -364,7 +367,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MarketParameters calldata _marketParams
     ) external onlyOwner {
         if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
-
+        if (_underlyingTokenAddress == address(0)) revert ZeroAddress();
         if (
             _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
             _marketParams.reserveFactor > MAX_BASIS_POINTS
