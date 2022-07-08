@@ -105,6 +105,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
+        uint256 userMarkets;
         uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
@@ -179,9 +180,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
+        LiquidateVars memory vars;
+        vars.userMarkets = userMarkets[_borrower];
         if (
-            !_isBorrowing(_borrower, _poolTokenBorrowedAddress) ||
-            !_isSupplying(_borrower, _poolTokenCollateralAddress)
+            !_isBorrowing(vars.userMarkets, _poolTokenBorrowedAddress) ||
+            !_isSupplying(vars.userMarkets, _poolTokenCollateralAddress)
         ) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenBorrowedAddress);
@@ -190,7 +193,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        LiquidateVars memory vars;
         address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
         .UNDERLYING_ASSET_ADDRESS();
 
@@ -595,8 +597,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
+        uint256 userMarkets = userMarkets[_user];
+
         // If the user is not borrowing any asset, return an infinite health factor.
-        if (!_isBorrowingAny(_user)) return type(uint256).max;
+        if (!_isBorrowingAny(userMarkets)) return type(uint256).max;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfMarketsCreated = marketsCreated.length;
@@ -606,7 +610,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            if (_isSupplyingOrBorrowing(_user, poolToken)) {
+            if (_isSupplyingOrBorrowing(userMarkets, poolToken)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -621,12 +625,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 ) = pool.getConfiguration(underlyingAddress).getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (_isBorrowing(_user, poolToken))
+                if (_isBorrowing(userMarkets, poolToken))
                     liquidityData.debtValue +=
                         (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
 
-                if (_isSupplying(_user, poolToken)) {
+                if (_isSupplying(userMarkets, poolToken)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;

@@ -113,35 +113,39 @@ abstract contract MorphoUtils is MorphoStorage {
     /// INTERNAL ///
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
-    /// @param _user The user to check for.
+    /// @param _userMarkets The markets entered by the user.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
-    function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
+    function _isSupplyingOrBorrowing(uint256 _userMarkets, address _market)
+        internal
+        view
+        returns (bool)
+    {
         uint256 bmask = borrowMask[_market];
-        return userMarkets[_user] & (bmask | (bmask << 1)) != 0;
+        return _userMarkets & (bmask | (bmask << 1)) != 0;
     }
 
     /// @dev Returns if a user is borrowing on a given market.
-    /// @param _user The user to check for.
+    /// @param _userMarkets The markets entered by the user.
     /// @param _market The address of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
-    function _isBorrowing(address _user, address _market) internal view returns (bool) {
-        return userMarkets[_user] & borrowMask[_market] != 0;
+    function _isBorrowing(uint256 _userMarkets, address _market) internal view returns (bool) {
+        return _userMarkets & borrowMask[_market] != 0;
     }
 
     /// @dev Returns if a user is supplying on a given market.
-    /// @param _user The user to check for.
+    /// @param _userMarkets The markets entered by the user.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
-    function _isSupplying(address _user, address _market) internal view returns (bool) {
-        return userMarkets[_user] & (borrowMask[_market] << 1) != 0;
+    function _isSupplying(uint256 _userMarkets, address _market) internal view returns (bool) {
+        return _userMarkets & (borrowMask[_market] << 1) != 0;
     }
 
     /// @dev Returns if a user has been borrowing from any market.
-    /// @param _user The user to check for.
+    /// @param _userMarkets The markets entered by the user.
     /// @return True if the user has been borrowing on any market, false otherwise.
-    function _isBorrowingAny(address _user) internal view returns (bool) {
-        return userMarkets[_user] & BORROWING_MASK != 0;
+    function _isBorrowingAny(uint256 _userMarkets) internal pure returns (bool) {
+        return _userMarkets & BORROWING_MASK != 0;
     }
 
     /// @notice Sets if the user is borrowing on a market.
