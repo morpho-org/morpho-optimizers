@@ -137,7 +137,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
             delta.p2pSupplyAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P += toAddInP2P;
-            _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
+            _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
