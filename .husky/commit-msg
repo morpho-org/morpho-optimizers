@@ -2,11 +2,12 @@
 
 . "$(dirname "$0")/_/husky.sh"
 
-COMMIT_MSG=$(head -n 1 "$1")
+COMMIT_MSG=$(cat "$1")
 
 BRANCH_NAME=$(git branch --show-current)
-APPEND_COMMIT_MSG=" (${BRANCH_NAME##*/})"
+PREPEND_COMMIT_MSG="[${BRANCH_NAME##*/}] "
 
-if test "$COMMIT_MSG" = "${COMMIT_MSG%"$APPEND_COMMIT_MSG"}"; then
-    echo -e "$COMMIT_MSG$APPEND_COMMIT_MSG\n$(tail -n +2 "$1")" > "$1"
-fi
+case $COMMIT_MSG in
+    "$PREPEND_COMMIT_MSG"*) ;;
+    *)                      echo "$PREPEND_COMMIT_MSG$COMMIT_MSG" > "$1"
+esac
