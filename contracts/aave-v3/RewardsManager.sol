@@ -8,8 +8,6 @@ import "./interfaces/IGetterUnderlyingAsset.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
-import "@aave/periphery-v3/contracts/rewards/libraries/RewardsDataTypes.sol";
-
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title RewardsManager.
@@ -17,9 +15,26 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Contract managing Aave's protocol rewards.
 contract RewardsManager is IRewardsManager, OwnableUpgradeable {
+    struct UserAssetBalance {
+        address asset;
+        uint256 userBalance;
+        uint256 totalSupply;
+    }
+
+    struct UserData {
+        uint128 index;
+        uint128 accrued;
+    }
+
+    struct RewardData {
+        uint128 index;
+        uint128 lastUpdateTimestamp;
+        mapping(address => UserData) usersData;
+    }
+
     /// STORAGE ///
 
-    mapping(address => RewardsDataTypes.AssetData) internal localAssetData; // The local data related to a given market.
+    mapping(address => mapping(address => RewardData)) internal localAssetData; // The local data related to a given asset. asset -> reward -> RewardData
 
     IRewardsController public rewardsController;
     IMorpho public morpho;
@@ -111,14 +126,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             address asset = _assets[i];
 
             for (uint256 j; j < rewardsListLength; ) {
-                uint256 rewardAmount = localAssetData[asset]
-                .rewards[rewardsList[j]]
+                uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
 
                 if (rewardAmount != 0) {
                     claimedAmounts[j] += rewardAmount;
-                    localAssetData[asset].rewards[rewardsList[j]].usersData[_user].accrued = 0;
+                    localAssetData[asset][rewardsList[j]].usersData[_user].accrued = 0;
                 }
 
                 unchecked {
@@ -159,7 +173,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 assetsLength = _assets.length;
 
         for (uint256 i; i < assetsLength; ) {
-            totalAccrued += localAssetData[_assets[i]].rewards[_reward].usersData[_user].accrued;
+            totalAccrued += localAssetData[_assets[i]][_reward].usersData[_user].accrued;
 
             unchecked {
                 ++i;
@@ -177,10 +191,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         view
         returns (address[] memory rewardsList, uint256[] memory unclaimedAmounts)
     {
-        RewardsDataTypes.UserAssetBalance[] memory userAssetBalances = _getUserAssetBalances(
-            _assets,
-            _user
-        );
+        UserAssetBalance[] memory userAssetBalances = _getUserAssetBalances(_assets, _user);
         rewardsList = rewardsController.getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         unclaimedAmounts = new uint256[](rewardsListLength);
@@ -188,8 +199,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         // Add unrealized rewards from user to unclaimed rewards.
         for (uint256 i; i < userAssetBalances.length; ) {
             for (uint256 j; j < rewardsListLength; ) {
-                unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset]
-                .rewards[rewardsList[j]]
+                unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
 
@@ -235,7 +245,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _asset,
         address _reward
     ) external view override returns (uint256) {
-        return localAssetData[_asset].rewards[_reward].usersData[_user].index;
+        return localAssetData[_asset][_reward].usersData[_user].index;
     }
 
     /// INTERNAL ///
@@ -249,7 +259,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @return newIndex The new distribution index.
     /// @return indexUpdated True if the index was updated, false otherwise.
     function _updateRewardData(
-        RewardsDataTypes.RewardData storage _localRewardData,
+        RewardData storage _localRewardData,
         address _asset,
         address _reward,
         uint256 _totalSupply,
@@ -265,19 +275,20 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         );
 
         if (newIndex != oldIndex) {
-            require(newIndex <= type(uint104).max, "INDEX_OVERFLOW");
+            require(newIndex <= type(uint128).max, "INDEX_OVERFLOW");
 
             indexUpdated = true;
 
             // Optimization: storing one after another saves one SSTORE.
-            _localRewardData.index = uint104(newIndex);
-            _localRewardData.lastUpdateTimestamp = uint32(block.timestamp);
-        } else _localRewardData.lastUpdateTimestamp = uint32(block.timestamp);
+            _localRewardData.index = uint128(newIndex);
+            _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
+        } else _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
 
         return (newIndex, indexUpdated);
     }
 
     /// @dev Updates the state of the distribution for the specific user.
+    /// @param _localRewardData The local reward's data
     /// @param _user The address of the user.
     /// @param _userBalance The current user asset balance.
     /// @param _newAssetIndex The new index of the asset distribution.
@@ -285,7 +296,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @return rewardsAccrued The rewards accrued since the last update.
     /// @return dataUpdated True if the data was updated, false otherwise.
     function _updateUserData(
-        RewardsDataTypes.RewardData storage _localRewardData,
+        RewardData storage _localRewardData,
         address _user,
         uint256 _userBalance,
         uint256 _newAssetIndex,
@@ -295,7 +306,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         if ((dataUpdated = userIndex != _newAssetIndex)) {
             // Already checked for overflow in _updateRewardData.
-            _localRewardData.usersData[_user].index = uint104(_newAssetIndex);
+            _localRewardData.usersData[_user].index = uint128(_newAssetIndex);
 
             if (_userBalance != 0) {
                 rewardsAccrued = _getRewards(_userBalance, _newAssetIndex, userIndex, _assetUnit);
@@ -326,8 +337,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             for (uint128 i; i < numAvailableRewards; ++i) {
                 address reward = availableRewards[i];
-                RewardsDataTypes.RewardData storage localRewardData = localAssetData[_asset]
-                .rewards[reward];
+                RewardData storage localRewardData = localAssetData[_asset][reward];
 
                 (uint256 newAssetIndex, bool rewardDataUpdated) = _updateRewardData(
                     localRewardData,
@@ -361,10 +371,9 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @dev Accrues all the rewards of the assets specified in the userAssetBalances list.
     /// @param _user The address of the user.
     /// @param _userAssetBalances The list of structs with the user balance and total supply of a set of assets.
-    function _updateDataMultiple(
-        address _user,
-        RewardsDataTypes.UserAssetBalance[] memory _userAssetBalances
-    ) internal {
+    function _updateDataMultiple(address _user, UserAssetBalance[] memory _userAssetBalances)
+        internal
+    {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
         for (uint256 i; i < userAssetBalancesLength; ) {
             _updateData(
@@ -388,7 +397,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     function _getUserReward(
         address _user,
         address _reward,
-        RewardsDataTypes.UserAssetBalance[] memory _userAssetBalances
+        UserAssetBalance[] memory _userAssetBalances
     ) internal view returns (uint256 unclaimedRewards) {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
 
@@ -398,10 +407,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             unclaimedRewards +=
                 _getPendingRewards(_user, _reward, _userAssetBalances[i]) +
-                localAssetData[_userAssetBalances[i].asset]
-                .rewards[_reward]
-                .usersData[_user]
-                .accrued;
+                localAssetData[_userAssetBalances[i].asset][_reward].usersData[_user].accrued;
 
             unchecked {
                 ++i;
@@ -417,12 +423,9 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     function _getPendingRewards(
         address _user,
         address _reward,
-        RewardsDataTypes.UserAssetBalance memory _userAssetBalance
+        UserAssetBalance memory _userAssetBalance
     ) internal view returns (uint256) {
-        RewardsDataTypes.RewardData storage localRewardData = localAssetData[
-            _userAssetBalance.asset
-        ]
-        .rewards[_reward];
+        RewardData storage localRewardData = localAssetData[_userAssetBalance.asset][_reward];
 
         uint256 assetUnit;
         unchecked {
@@ -472,7 +475,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _assetUnit The asset's unit (10**decimals).
     /// @return The former index and the new index in this order.
     function _getAssetIndex(
-        RewardsDataTypes.RewardData storage _localRewardData,
+        RewardData storage _localRewardData,
         address _asset,
         address _reward,
         uint256 _totalSupply,
@@ -517,10 +520,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     function _getUserAssetBalances(address[] calldata _assets, address _user)
         internal
         view
-        returns (RewardsDataTypes.UserAssetBalance[] memory userAssetBalances)
+        returns (UserAssetBalance[] memory userAssetBalances)
     {
         uint256 assetsLength = _assets.length;
-        userAssetBalances = new RewardsDataTypes.UserAssetBalance[](assetsLength);
+        userAssetBalances = new UserAssetBalance[](assetsLength);
 
         for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
