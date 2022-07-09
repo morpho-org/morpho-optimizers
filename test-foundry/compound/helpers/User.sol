@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
