@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
