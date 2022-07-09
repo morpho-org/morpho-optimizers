@@ -98,7 +98,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
             _setSupplying(_onBehalf, vars.borrowMask, true);
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(underlyingToken[_poolTokenAddress]);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
@@ -183,7 +183,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_amount == 0) revert AmountIsZero();
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(underlyingToken[_poolTokenAddress]);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
             revert BorrowingNotEnabled();
 
@@ -304,7 +304,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
+                address underlyingAddress = underlyingToken[poolToken];
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
                 (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
                 .getConfiguration(underlyingAddress)

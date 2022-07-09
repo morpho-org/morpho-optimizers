@@ -327,10 +327,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        pool.setUserUseReserveAsCollateral(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS(),
-            _newStatus
-        );
+        pool.setUserUseReserveAsCollateral(underlyingToken[_poolTokenAddress], _newStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
@@ -346,7 +343,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             Types.MarketStatus memory status = marketStatus[poolToken];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
-            ERC20 underlyingToken = ERC20(IAToken(poolToken).UNDERLYING_ASSET_ADDRESS());
+            ERC20 underlyingToken = ERC20(underlyingToken[poolToken]);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
             if (underlyingBalance == 0) continue;
@@ -394,6 +391,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             pool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
         );
         marketParameters[poolTokenAddress] = _marketParams;
+        underlyingToken[poolTokenAddress] = _underlyingTokenAddress;
 
         borrowMask[poolTokenAddress] = ONE << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);

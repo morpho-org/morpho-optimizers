@@ -272,7 +272,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(underlyingToken[_poolTokenAddress]);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
@@ -429,7 +429,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(underlyingToken[_poolTokenAddress]);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
@@ -623,8 +623,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
+                address underlyingToken = underlyingToken[poolToken];
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In base currency.
                 (
                     assetData.ltv,
                     assetData.liquidationThreshold,
@@ -632,7 +632,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     assetData.reserveDecimals,
                     ,
 
-                ) = pool.getConfiguration(underlyingAddress).getParams();
+                ) = pool.getConfiguration(underlyingToken).getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(vars.userMarkets, borrowMask))
