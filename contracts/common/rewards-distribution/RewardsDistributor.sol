@@ -15,6 +15,8 @@ contract RewardsDistributor is Ownable {
 
     /// STORAGE ///
 
+    ERC20 public constant MORPHO = ERC20(0x9994E35Db50125E0DF82e4c2dde62496CE330999);
+
     bytes32 public currRoot; // The merkle tree's root of the current rewards distribution.
     bytes32 public prevRoot; // The merkle tree's root of the previous rewards distribution.
     mapping(address => mapping(address => uint256)) public claimed; // The rewards already claimed. account -> token -> amount.
@@ -46,6 +48,13 @@ contract RewardsDistributor is Ownable {
         prevRoot = currRoot;
         currRoot = _newRoot;
         emit RootUpdated(_newRoot);
+    }
+
+    /// @notice Transfers MORPHO tokens to a recipient.
+    /// @param _to The address of the recipient.
+    /// @param _amount The amount of MORPHO tokens to transfer.
+    function withdrawMorphoTokens(address _to, uint256 _amount) external onlyOwner {
+        MORPHO.safeTransfer(_to, _amount);
     }
 
     /// @notice Claims rewards.
