@@ -10,23 +10,7 @@ import 'hardhat-deploy';
 module.exports = {
   defaultNetwork: 'hardhat',
   networks: {
-    hardhat: {
-      accounts: [
-        {
-          privateKey: process.env.DEPLOYER_PRIVATE_KEY,
-          balance: '10000000000000000000000',
-        },
-      ],
-      forking: {
-        url: `https://${process.env.NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-      },
-      mining: {
-        mempool: {
-          order: 'fifo',
-        },
-      },
-      gas: 1e7,
-    },
+    hardhat: {},
     mainnet: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
@@ -60,6 +44,9 @@ module.exports = {
       gas: 2100000,
       gasPrice: 8000000000,
     },
+  },
+  paths: {
+    sources: './contracts/common/',
   },
   namedAccounts: {
     deployer: {
