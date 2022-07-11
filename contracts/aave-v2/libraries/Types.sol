@@ -75,11 +75,4 @@ library Types {
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
     }
-
-    struct CollateralAndDebtValues {
-        uint256 collateralValue; // The collateral value (in ETH).
-        uint256 debtValue; // The debt value (in ETH).
-        uint256 loanToValue; // The loan to value (in ETH).
-        uint256 liquidationThresholdValue; // The liquidation threshold value (in ETH).
-    }
 }
