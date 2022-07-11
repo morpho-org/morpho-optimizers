@@ -3,10 +3,6 @@ auto_detect_solc = true
 optimizer = true
 optimizer_runs = 200
 via_ir = false
-# If enabled, the Solidity compiler is instructed to generate bytecode
-# only for the required contracts. This can reduce compile time
-# for `forge test`, but is experimental.
-sparse_mode = true
 # debug revert strings looks experimental and fails the CI because of an unexpected error.
 revert_strings = "default"
 names = true
