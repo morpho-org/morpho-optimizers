@@ -126,9 +126,14 @@ abstract contract PositionsManagerUtils is MatchingEngine {
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-                (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-                .getConfiguration(underlyingAddress)
-                .getParams();
+                (
+                    assetData.ltv,
+                    assetData.liquidationThreshold,
+                    ,
+                    assetData.reserveDecimals,
+                    ,
+
+                ) = pool.getConfiguration(underlyingAddress).getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(_user, poolToken))
