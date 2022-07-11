@@ -272,7 +272,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(underlyingToken[_poolTokenAddress]);
+        ERC20 underlyingToken = ERC20(marketInfos[_poolTokenAddress].underlyingToken);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
@@ -429,7 +429,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(underlyingToken[_poolTokenAddress]);
+        ERC20 underlyingToken = ERC20(marketInfos[_poolTokenAddress].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
@@ -623,7 +623,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingToken = underlyingToken[poolToken];
+                address underlyingToken = marketInfos[poolToken].underlyingToken;
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In ETH.
                 (
                     assetData.ltv,
