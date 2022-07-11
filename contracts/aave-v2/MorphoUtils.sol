@@ -114,31 +114,30 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
     /// @param _userMarkets The markets entered by the user.
-    /// @param _market The address of the market to check.
+    /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
-    function _isSupplyingOrBorrowing(uint256 _userMarkets, address _market)
+    function _isSupplyingOrBorrowing(uint256 _userMarkets, uint256 _borrowMask)
         internal
-        view
+        pure
         returns (bool)
     {
-        uint256 bmask = borrowMask[_market];
-        return _userMarkets & (bmask | (bmask << 1)) != 0;
+        return _userMarkets & (_borrowMask | (_borrowMask << 1)) != 0;
     }
 
     /// @dev Returns if a user is borrowing on a given market.
     /// @param _userMarkets The markets entered by the user.
-    /// @param _market The address of the market to check.
+    /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
-    function _isBorrowing(uint256 _userMarkets, address _market) internal view returns (bool) {
-        return _userMarkets & borrowMask[_market] != 0;
+    function _isBorrowing(uint256 _userMarkets, uint256 _borrowMask) internal pure returns (bool) {
+        return _userMarkets & _borrowMask != 0;
     }
 
     /// @dev Returns if a user is supplying on a given market.
     /// @param _userMarkets The markets entered by the user.
-    /// @param _market The address of the market to check.
+    /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
-    function _isSupplying(uint256 _userMarkets, address _market) internal view returns (bool) {
-        return _userMarkets & (borrowMask[_market] << 1) != 0;
+    function _isSupplying(uint256 _userMarkets, uint256 _borrowMask) internal pure returns (bool) {
+        return _userMarkets & (_borrowMask << 1) != 0;
     }
 
     /// @dev Returns if a user has been borrowing from any market.
@@ -150,28 +149,28 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Sets if the user is borrowing on a market.
     /// @param _user The user to set for.
-    /// @param _market The address of the market to mark as borrowed.
+    /// @param _borrowMask The borrow mask of the market to mark as borrowed.
     /// @param _borrowing True if the user is borrowing, false otherwise.
     function _setBorrowing(
         address _user,
-        address _market,
+        uint256 _borrowMask,
         bool _borrowing
     ) internal {
-        if (_borrowing) userMarkets[_user] |= borrowMask[_market];
-        else userMarkets[_user] &= ~borrowMask[_market];
+        if (_borrowing) userMarkets[_user] |= _borrowMask;
+        else userMarkets[_user] &= ~_borrowMask;
     }
 
     /// @notice Sets if the user is supplying on a market.
     /// @param _user The user to set for.
-    /// @param _market The address of the market to mark as supplied.
+    /// @param _borrowMask The borrow mask of the market to mark as supplied.
     /// @param _supplying True if the user is supplying, false otherwise.
     function _setSupplying(
         address _user,
-        address _market,
+        uint256 _borrowMask,
         bool _supplying
     ) internal {
-        if (_supplying) userMarkets[_user] |= borrowMask[_market] << 1;
-        else userMarkets[_user] &= ~(borrowMask[_market] << 1);
+        if (_supplying) userMarkets[_user] |= _borrowMask << 1;
+        else userMarkets[_user] &= ~(_borrowMask << 1);
     }
 
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).
