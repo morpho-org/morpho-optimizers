@@ -606,7 +606,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
         }
         return
-            _liquidityData(_user, poolTokens, _poolTokenAddress, 0, _withdrawnAmount).healthFactor;
+            _liquidityData(_user, poolTokens, _poolTokenAddress, _withdrawnAmount, 0).healthFactor;
     }
 
     /// @dev Checks whether the user can withdraw or not.

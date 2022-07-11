@@ -206,55 +206,7 @@ contract Lens {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory marketsCreated = morpho.getMarketsCreated();
-        uint256 numberOfMarketsCreated = marketsCreated.length;
-
-        for (uint256 i; i < numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[i];
-
-            if (_isSupplyingOrBorrowing(_user, poolToken)) {
-                Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                    _user,
-                    poolToken,
-                    oracle
-                );
-
-                liquidityData.collateralValue += assetData.collateralValue;
-                liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
-                liquidityData.debtValue += assetData.debtValue;
-
-                if (_poolTokenAddress == poolToken) {
-                    if (_borrowedAmount > 0)
-                        liquidityData.debtValue +=
-                            (_borrowedAmount * assetData.underlyingPrice) /
-                            assetData.tokenUnit;
-
-                    if (_withdrawnAmount > 0) {
-                        liquidityData.collateralValue -=
-                            (_withdrawnAmount * assetData.underlyingPrice) /
-                            assetData.tokenUnit;
-                        liquidityData.maxLoanToValue -= ((_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit)
-                        .percentMul(assetData.ltv);
-                        liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit)
-                        .percentMul(assetData.liquidationThreshold);
-                    }
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        liquidityData.healthFactor = liquidityData.debtValue == 0
-            ? type(uint256).max
-            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+        return morpho.liquidityData(_user, _poolTokenAddress, _withdrawnAmount, _borrowedAmount);
     }
 
     /// @notice Returns the updated peer-to-peer indexes.
