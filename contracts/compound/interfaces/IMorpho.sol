@@ -53,7 +53,7 @@ interface IMorpho {
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
+    function setP2PDisabled(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function setPauseStatusForAllMarkets(bool _newStatus) external;

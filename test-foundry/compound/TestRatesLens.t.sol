@@ -482,7 +482,7 @@ contract TestRatesLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        morpho.setP2PDisable(cDai, true);
+        morpho.setP2PDisabled(cDai, true);
 
         (
             uint256 supplyRatePerBlock,
@@ -521,7 +521,7 @@ contract TestRatesLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        morpho.setP2PDisable(cDai, true);
+        morpho.setP2PDisabled(cDai, true);
 
         (
             uint256 borrowRatePerBlock,
