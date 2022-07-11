@@ -27,6 +27,11 @@ contract RewardsDistributor is Ownable {
     /// @param _newRoot The new merkle's tree root.
     event RootUpdated(bytes32 _newRoot);
 
+    /// @notice Emitted when MORPHO tokens are withdrawn.
+    /// @param _to The address of the recipient.
+    /// @param _amount The amount of MORPHO tokens withdrawn.
+    event MorphoWithdrawn(address _to, uint256 _amount);
+
     /// @notice Emitted when an account claims rewards.
     /// @param _account The address of the claimer.
     /// @param _amountClaimed The amount of rewards claimed.
@@ -50,11 +55,14 @@ contract RewardsDistributor is Ownable {
         emit RootUpdated(_newRoot);
     }
 
-    /// @notice Transfers MORPHO tokens to a recipient.
+    /// @notice Withdraws MORPHO tokens to a recipient.
     /// @param _to The address of the recipient.
     /// @param _amount The amount of MORPHO tokens to transfer.
     function withdrawMorphoTokens(address _to, uint256 _amount) external onlyOwner {
-        MORPHO.safeTransfer(_to, _amount);
+        uint256 morphoBalance = MORPHO.balanceOf(address(this));
+        uint256 toWithdraw = morphoBalance < _amount ? morphoBalance : _amount;
+        MORPHO.safeTransfer(_to, toWithdraw);
+        emit MorphoWithdrawn(_to, toWithdraw);
     }
 
     /// @notice Claims rewards.
