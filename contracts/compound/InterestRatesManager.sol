@@ -50,9 +50,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @notice Updates the peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) external {
-        Types.LastPoolIndexes storage marketPoolIndexes = lastPoolIndexes[_poolTokenAddress];
+        Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
-        if (block.number > marketPoolIndexes.lastUpdateBlockNumber) {
+        if (block.number > poolIndexes.lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
@@ -64,8 +64,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pBorrowIndex[_poolTokenAddress],
                 poolSupplyIndex,
                 poolBorrowIndex,
-                marketPoolIndexes.lastSupplyPoolIndex,
-                marketPoolIndexes.lastBorrowPoolIndex,
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 deltas[_poolTokenAddress]
@@ -76,9 +76,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
-            marketPoolIndexes.lastUpdateBlockNumber = uint32(block.number);
-            marketPoolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
-            marketPoolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
+            poolIndexes.lastUpdateBlockNumber = uint32(block.number);
+            poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
+            poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,
