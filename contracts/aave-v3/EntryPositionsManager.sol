@@ -61,6 +61,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct SupplyVars {
+        uint256 borrowMask;
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
@@ -68,6 +69,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     struct BorrowAllowedVars {
         uint256 userMarkets;
+        uint256 i;
         uint256 numberOfMarketsCreated;
     }
 
@@ -90,14 +92,16 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         _updateIndexes(_poolTokenAddress);
 
-        if (!_isSupplying(userMarkets[_onBehalf], _poolTokenAddress))
-            _setSupplying(_onBehalf, _poolTokenAddress, true);
+        SupplyVars memory vars;
+        vars.borrowMask = borrowMask[_poolTokenAddress];
+
+        if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
+            _setSupplying(_onBehalf, vars.borrowMask, true);
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        SupplyVars memory vars;
         vars.poolBorrowIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
         vars.remainingToSupply = _amount;
 
@@ -184,8 +188,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
-        if (!_isBorrowing(userMarkets[msg.sender], _poolTokenAddress))
-            _setBorrowing(msg.sender, _poolTokenAddress, true);
+        uint256 borrowMask = borrowMask[_poolTokenAddress];
+
+        if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
+            _setBorrowing(msg.sender, borrowMask, true);
 
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
 
@@ -281,20 +287,19 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
         ) return false;
 
-        BorrowAllowedVars memory vars;
-
-        vars.userMarkets = userMarkets[_user];
-
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        vars.numberOfMarketsCreated = marketsCreated.length;
 
+        BorrowAllowedVars memory vars;
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
+        vars.numberOfMarketsCreated = marketsCreated.length;
+        vars.userMarkets = userMarkets[_user];
 
-        for (uint256 i; i < vars.numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[i];
+        for (; vars.i < vars.numberOfMarketsCreated; ) {
+            address poolToken = marketsCreated[vars.i];
+            uint256 borrowMask = borrowMask[poolToken];
 
-            if (_isSupplyingOrBorrowing(vars.userMarkets, poolToken)) {
+            if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -304,12 +309,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 .getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (_isBorrowing(vars.userMarkets, poolToken))
+                if (_isBorrowing(vars.userMarkets, borrowMask))
                     liquidityData.debtValue +=
                         (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
 
-                if (_isSupplying(vars.userMarkets, poolToken)) {
+                if (_isSupplying(vars.userMarkets, borrowMask)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
@@ -326,7 +331,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             }
 
             unchecked {
-                ++i;
+                ++vars.i;
             }
         }
 

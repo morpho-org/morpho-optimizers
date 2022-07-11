@@ -112,6 +112,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
     }
 
+    // Struct to avoid stack too deep.
     struct HealthFactorVars {
         uint256 i;
         uint256 numberOfMarketsCreated;
