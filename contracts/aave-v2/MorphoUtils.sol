@@ -112,9 +112,24 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Returns collateral, debt, loan to value, and liquidation thresholds for a user.
     /// @param _user The address of the user.
+    /// @param _poolTokenAddress The address of the market to borrow or withdraw from (can be zero).
+    /// @param _withdrawnAmount The amount hypothetically withdrawn from the market.
+    /// @param _borrowedAmount The amount hypothetically borrowed from the market.
     /// @return The collateral, debt, loan to value, and liquidation thresholds for a user.
-    function liquidityData(address _user) external view returns (Types.LiquidityData memory) {
-        return _liquidityData(_user, _userMarkets(_user), address(0), 0, 0);
+    function liquidityData(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) external view returns (Types.LiquidityData memory) {
+        return
+            _liquidityData(
+                _user,
+                _userMarkets(_user),
+                _poolTokenAddress,
+                _withdrawnAmount,
+                _borrowedAmount
+            );
     }
 
     /// INTERNAL ///
@@ -243,15 +258,15 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _user The user address.
     /// @param _poolTokens The pool tokens to calculate the values for.
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
-    /// @param _amountBorrowed The amount that is being borrowed.
     /// @param _amountWithdrawn The amount that is being withdrawn.
+    /// @param _amountBorrowed The amount that is being borrowed.
     /// @return values The struct containing health factor, collateral, debt, ltv, liquidation threshold values.
     function _liquidityData(
         address _user,
         address[] memory _poolTokens,
         address _poolTokenAddress,
-        uint256 _amountBorrowed,
-        uint256 _amountWithdrawn
+        uint256 _amountWithdrawn,
+        uint256 _amountBorrowed
     ) internal view returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory underlyings = new address[](_poolTokens.length);
@@ -313,7 +328,9 @@ abstract contract MorphoUtils is MorphoStorage {
                 .percentMul(assetData.liquidationThreshold);
             }
         }
-        values.healthFactor = values.liquidationThresholdValue.wadDiv(values.debtValue);
+        if (values.debtValue > 0)
+            values.healthFactor = values.liquidationThresholdValue.wadDiv(values.debtValue);
+        else values.healthFactor = type(uint256).max;
     }
 
     /// @dev Calculates the value of the collateral.

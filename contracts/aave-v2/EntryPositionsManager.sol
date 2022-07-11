@@ -288,8 +288,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             _user,
             poolTokens,
             _poolTokenAddress,
-            _borrowedAmount,
-            0
+            0,
+            _borrowedAmount
         );
         return values.debtValue <= values.maxLoanToValue;
     }
