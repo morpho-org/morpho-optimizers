@@ -84,7 +84,7 @@ fuzz:
 
 gas-report:
 	@echo Creating gas consumption report for ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv --gas-report --match-contract GasConsumption > gas_report.ansi
+	@forge test -vvv --gas-report --no-match-contract GasConsumption > gas_report.ansi
 
 test-common:
 	@echo Running all common tests on ${NETWORK}
