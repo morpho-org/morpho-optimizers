@@ -157,13 +157,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!_isBorrowing(_onBehalf, _poolTokenAddress)) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenAddress);
         uint256 toRepay = Math.min(
             _getUserBorrowBalanceInOf(_poolTokenAddress, _onBehalf),
             _amount
         );
+        if (toRepay == 0) revert UserNotMemberOfMarket();
 
         _safeRepayLogic(_poolTokenAddress, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
