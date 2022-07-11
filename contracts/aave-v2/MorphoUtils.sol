@@ -394,14 +394,14 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
     /// @param _amountBorrowed The amount that is being borrowed.
     /// @param _amountWithdrawn The amount that is being withdrawn.
-    /// @return values The struct containing collateral, debt, ltv, and liquidation threshold values.
-    function _collateralAndDebtValues(
+    /// @return values The struct containing health factor, collateral, debt, ltv, liquidation threshold values.
+    function _liquidityData(
         address _user,
         address[] memory _poolTokens,
         address _poolTokenAddress,
         uint256 _amountBorrowed,
         uint256 _amountWithdrawn
-    ) internal view returns (Types.CollateralAndDebtValues memory values) {
+    ) internal view returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory underlyings = new address[](_poolTokens.length);
         uint256[] memory underlyingPrices = new uint256[](_poolTokens.length);
@@ -442,7 +442,7 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             // Calculate LTV for borrow
-            values.loanToValue += assetCollateralValue.percentMul(assetData.ltv);
+            values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
             // Add debt value for borrowed token
             if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
                 values.debtValue += (_amountBorrowed * underlyingPrices[i]) / assetData.tokenUnit;
@@ -452,12 +452,17 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.liquidationThresholdValue += assetCollateralValue.percentMul(
                     assetData.liquidationThreshold
                 );
-            // Subtract from liquidation threshold value for withdrawn token
-            if (_poolTokenAddress == _poolTokens[i] && _amountWithdrawn > 0)
+            // Subtract from liquidation threshold value and collateral value for withdrawn token
+            if (_poolTokenAddress == _poolTokens[i] && _amountWithdrawn > 0) {
+                values.collateralValue -=
+                    (_amountWithdrawn * underlyingPrices[i]) /
+                    assetData.tokenUnit;
                 values.liquidationThresholdValue -= ((_amountWithdrawn * underlyingPrices[i]) /
                     assetData.tokenUnit)
                 .percentMul(assetData.liquidationThreshold);
+            }
         }
+        values.healthFactor = values.liquidationThresholdValue.wadDiv(values.debtValue);
     }
 
     /// @dev Calculates the value of the collateral.
