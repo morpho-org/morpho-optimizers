@@ -15,7 +15,6 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
-    using PercentageMath for uint256;
 
     /// COMMON EVENTS ///
 
