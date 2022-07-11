@@ -111,43 +111,14 @@ contract Lens {
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
-        Types.LiquidityData memory data;
-        Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 numberOfCreatedMarkets = createdMarkets.length;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
-
-            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(_user, poolToken)) {
-                assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
-
-                data.collateralValue += assetData.collateralValue;
-                data.debtValue += assetData.debtValue;
-                data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
-
-        data.collateralValue += assetData.collateralValue;
-        data.debtValue += assetData.debtValue;
-        data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-        data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-            assetData.liquidationThreshold
+        Types.LiquidityData memory data = morpho.liquidityData(_user, address(0), 0, 0);
+        Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            _user,
+            _poolTokenAddress,
+            oracle
         );
-
-        data.healthFactor = data.debtValue == 0
-            ? type(uint256).max
-            : data.liquidationThresholdValue.wadDiv(data.debtValue);
 
         // Not possible to withdraw nor borrow.
         if (data.healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
