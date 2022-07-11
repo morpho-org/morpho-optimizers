@@ -111,6 +111,7 @@ abstract contract PositionsManagerUtils is MatchingEngine {
             }
         }
 
+        // Resize the array for return
         assembly {
             mstore(markets, marketLength)
         }
