@@ -61,7 +61,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct SupplyVars {
-        uint256 borrowMask;
+        bytes32 borrowMask;
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
@@ -188,7 +188,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         _updateIndexes(_poolTokenAddress);
 
-        uint256 borrowMask = borrowMask[_poolTokenAddress];
+        bytes32 borrowMask = borrowMask[_poolTokenAddress];
         if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
             _setBorrowing(msg.sender, borrowMask, true);
 
@@ -283,12 +283,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         BorrowAllowedVars memory vars;
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
-        uint256 userMarkets = userMarkets[_user];
+        bytes32 userMarkets = userMarkets[_user];
         vars.numberOfMarketsCreated = marketsCreated.length;
 
         for (; vars.i < vars.numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[vars.i];
-            uint256 borrowMask = borrowMask[poolToken];
+            bytes32 borrowMask = borrowMask[poolToken];
 
             if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);

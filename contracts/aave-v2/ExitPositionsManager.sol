@@ -185,7 +185,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
-        uint256 userMarkets = userMarkets[_borrower];
+        bytes32 userMarkets = userMarkets[_borrower];
         if (
             !_isBorrowing(userMarkets, borrowMask[_poolTokenBorrowedAddress]) ||
             !_isSupplying(userMarkets, borrowMask[_poolTokenCollateralAddress])
@@ -603,7 +603,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        uint256 userMarkets = userMarkets[_user];
+        bytes32 userMarkets = userMarkets[_user];
 
         // If the user is not borrowing any asset, return an infinite health factor.
         if (!_isBorrowingAny(userMarkets)) return type(uint256).max;
@@ -617,7 +617,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         for (; vars.i < vars.numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[vars.i];
-            uint256 borrowMask = borrowMask[poolToken];
+            bytes32 borrowMask = borrowMask[poolToken];
 
             if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);

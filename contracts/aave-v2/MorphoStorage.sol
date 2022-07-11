@@ -29,7 +29,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max proportion of reserve fee claimable by the DAO at once (90% in basis points).
     uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
-    uint256 public constant BORROWING_MASK =
+    bytes32 public constant BORROWING_MASK =
         0x5555555555555555555555555555555555555555555555555555555555555555;
     uint256 public constant MAX_NB_OF_MARKETS = 128;
 
@@ -45,7 +45,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => HeapOrdering.HeapArray) internal borrowersOnPool; // For a given market, the borrowers on Aave.
     mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user. aToken -> user -> balances.
     mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. aToken -> user -> balances.
-    mapping(address => uint256) public userMarkets; // The markets entered by a user as a bitmask.
+    mapping(address => bytes32) public userMarkets; // The markets entered by a user as a bitmask.
 
     /// MARKETS STORAGE ///
 
@@ -57,7 +57,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
     mapping(address => Types.MarketStatus) public marketStatus; // Market status.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
-    mapping(address => uint256) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
+    mapping(address => bytes32) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
 
     /// CONTRACTS AND ADDRESSES ///
 
