@@ -26,40 +26,35 @@ contract TestGovernance is TestSetup {
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
-        Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
+        Types.MarketInfos memory marketInfos = Types.MarketInfos(3_333, 0, address(supplier1));
 
         hevm.expectRevert(abi.encodeWithSignature("MarketIsNotListedOnAave()"));
-        morpho.createMarket(address(supplier1), marketParams);
+        morpho.createMarket(marketInfos);
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
-        Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier1.createMarket(Types.MarketInfos(3_333, 0, wEth));
 
-        for (uint256 i = 0; i < pools.length; i++) {
-            hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(pools[i], marketParams);
-
-            hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(pools[i], marketParams);
-        }
-
-        morpho.createMarket(wEth, marketParams);
+        morpho.createMarket(Types.MarketInfos(3_333, 0, wEth));
     }
 
     function testShouldCreateMarketWithRightParams() public {
-        Types.MarketParameters memory rightParams = Types.MarketParameters(1_000, 3_333);
-        Types.MarketParameters memory wrongParams1 = Types.MarketParameters(10_001, 0);
-        Types.MarketParameters memory wrongParams2 = Types.MarketParameters(0, 10_001);
+        Types.MarketInfos memory rightParams = Types.MarketInfos(1_000, 3_333, wEth);
+        Types.MarketInfos memory wrongParams1 = Types.MarketInfos(10_001, 0, wEth);
+        Types.MarketInfos memory wrongParams2 = Types.MarketInfos(0, 10_001, wEth);
 
         hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
-        morpho.createMarket(wEth, wrongParams1);
+        morpho.createMarket(wrongParams1);
         hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
-        morpho.createMarket(wEth, wrongParams2);
+        morpho.createMarket(wrongParams2);
 
-        morpho.createMarket(wEth, rightParams);
-        (uint16 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(aWeth);
+        morpho.createMarket(rightParams);
+        (uint16 reserveFactor, uint256 p2pIndexCursor, address underlyingToken) = morpho
+        .marketInfos(aWeth);
         assertEq(reserveFactor, 1_000);
         assertEq(p2pIndexCursor, 3_333);
+        assertTrue(underlyingToken == wEth);
     }
 
     function testOnlyOwnerCanSetReserveFactor() public {
@@ -76,13 +71,13 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (uint16 reserveFactor, ) = morpho.marketParameters(aDai);
+        (uint16 reserveFactor, , ) = morpho.marketInfos(aDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
-        Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
-        morpho.createMarket(wEth, marketParams);
+        Types.MarketInfos memory marketInfos = Types.MarketInfos(3_333, 0, wEth);
+        morpho.createMarket(marketInfos);
 
         (bool isCreated, , ) = morpho.marketStatus(aAave);
 
