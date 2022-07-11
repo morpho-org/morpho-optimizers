@@ -113,6 +113,7 @@ contract Lens {
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
+<<<<<<< HEAD
         Types.LiquidityData memory data = morpho.getUserHypotheticalBalanceStates(
             _user,
             address(0),
@@ -127,6 +128,14 @@ contract Lens {
         uint256 healthFactor = data.debtValue > 0
             ? data.liquidationThresholdValue.wadDiv(data.debtValue)
             : type(uint256).max;
+=======
+        Types.LiquidityData memory data = morpho.liquidityData(_user, address(0), 0, 0);
+        Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            _user,
+            _poolTokenAddress,
+            oracle
+        );
+>>>>>>> rework max capacity for lens
 
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
