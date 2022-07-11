@@ -121,26 +121,16 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     /// @param _user The user address.
     /// @param _poolTokens The pool tokens to calculate the values for.
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
-    /// @param _amount The amount that is being borrowed or withdrawn.
-    /// @param _calculationType The calculation type to use.
-    /// @return collateralValue The total value of the collateral.
-    /// @return debtValue The total value of the debt.
-    /// @return calculatedMax The max value of the LTV/LT or none depending on the calculation type.
+    /// @param _amountBorrowed The amount that is being borrowed.
+    /// @param _amountWithdrawn The amount that is being withdrawn.
+    /// @return values The struct containing collateral, debt, ltv, and liquidation threshold values.
     function _collateralAndDebtValues(
         address _user,
         address[] memory _poolTokens,
         address _poolTokenAddress,
-        uint256 _amount,
-        Types.LoanCalculationType _calculationType
-    )
-        internal
-        view
-        returns (
-            uint256 collateralValue,
-            uint256 debtValue,
-            uint256 calculatedMax
-        )
-    {
+        uint256 _amountBorrowed,
+        uint256 _amountWithdrawn
+    ) internal view returns (Types.CollateralAndDebtValues memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory underlyings = new address[](_poolTokens.length);
         uint256[] memory underlyingPrices = new uint256[](_poolTokens.length);
@@ -160,7 +150,7 @@ abstract contract PositionsManagerUtils is MatchingEngine {
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
             if (_isBorrowing(_user, _poolTokens[i])) {
-                debtValue += _debtValue(
+                values.debtValue += _debtValue(
                     _poolTokens[i],
                     _user,
                     underlyingPrices[i],
@@ -177,24 +167,25 @@ abstract contract PositionsManagerUtils is MatchingEngine {
                     underlyingPrices[i],
                     assetData.tokenUnit
                 );
-                collateralValue += assetCollateralValue;
+                values.collateralValue += assetCollateralValue;
             }
 
             // Calculate LTV for borrow
-            if (_calculationType == Types.LoanCalculationType.LOAN_TO_VALUE) {
-                calculatedMax += assetCollateralValue.percentMul(assetData.ltv);
-                // Add debt value for borrowed token
-                if (_poolTokenAddress == _poolTokens[i])
-                    debtValue += (_amount * underlyingPrices[i]) / assetData.tokenUnit;
-            }
+            values.loanToValue += assetCollateralValue.percentMul(assetData.ltv);
+            // Add debt value for borrowed token
+            if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
+                values.debtValue += (_amountBorrowed * underlyingPrices[i]) / assetData.tokenUnit;
+
             // Calculate LT for withdraw
-            else if (_calculationType == Types.LoanCalculationType.LIQUIDATION_THRESHOLD) {
-                calculatedMax += assetCollateralValue.percentMul(assetData.liquidationThreshold);
-                // Subtract from liquidation threshold value for withdrawn token
-                if (_poolTokenAddress == _poolTokens[i])
-                    calculatedMax -= ((_amount * underlyingPrices[i]) / assetData.tokenUnit)
-                    .percentMul(assetData.liquidationThreshold);
-            }
+            if (assetCollateralValue > 0)
+                values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                    assetData.liquidationThreshold
+                );
+            // Subtract from liquidation threshold value for withdrawn token
+            if (_poolTokenAddress == _poolTokens[i] && _amountWithdrawn > 0)
+                values.liquidationThresholdValue -= ((_amountWithdrawn * underlyingPrices[i]) /
+                    assetData.tokenUnit)
+                .percentMul(assetData.liquidationThreshold);
         }
     }
 

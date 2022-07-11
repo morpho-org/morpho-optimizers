@@ -15,12 +15,6 @@ library Types {
         BORROWERS_ON_POOL
     }
 
-    enum LoanCalculationType {
-        LOAN_TO_VALUE,
-        LIQUIDATION_THRESHOLD,
-        NONE
-    }
-
     /// STRUCTS ///
 
     struct SupplyBalance {
@@ -81,5 +75,12 @@ library Types {
         bool isCreated; // Whether or not this market is created.
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+    }
+
+    struct CollateralAndDebtValues {
+        uint256 collateralValue; // The collateral value (in ETH).
+        uint256 debtValue; // The debt value (in ETH).
+        uint256 loanToValue; // The loan to value (in ETH).
+        uint256 liquidationThresholdValue; // The liquidation threshold value (in ETH).
     }
 }
