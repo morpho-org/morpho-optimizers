@@ -284,13 +284,13 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _updateIndexes(poolTokens[i]);
             }
         }
-        (, uint256 debtValue, uint256 maxLoanToValue) = _collateralAndDebtValues(
+        Types.CollateralAndDebtValues memory values = _collateralAndDebtValues(
             _user,
             poolTokens,
             _poolTokenAddress,
             _borrowedAmount,
-            Types.LoanCalculationType.LOAN_TO_VALUE
+            0
         );
-        return debtValue <= maxLoanToValue;
+        return values.debtValue <= values.loanToValue;
     }
 }
