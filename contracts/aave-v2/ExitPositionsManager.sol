@@ -605,15 +605,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 _updateIndexes(poolTokens[i]);
             }
         }
-        Types.LiquidityData memory values = _liquidityData(
-            _user,
-            poolTokens,
-            _poolTokenAddress,
-            0,
-            _withdrawnAmount
-        );
-
-        return values.healthFactor;
+        return
+            _liquidityData(_user, poolTokens, _poolTokenAddress, 0, _withdrawnAmount).healthFactor;
     }
 
     /// @dev Checks whether the user can withdraw or not.
