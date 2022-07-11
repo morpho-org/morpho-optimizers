@@ -113,7 +113,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// INTERNAL ///
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
-    /// @param _userMarkets The markets entered by the user.
+    /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(uint256 _userMarkets, uint256 _borrowMask)
@@ -125,7 +125,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns if a user is borrowing on a given market.
-    /// @param _userMarkets The markets entered by the user.
+    /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
     function _isBorrowing(uint256 _userMarkets, uint256 _borrowMask) internal pure returns (bool) {
@@ -133,7 +133,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns if a user is supplying on a given market.
-    /// @param _userMarkets The markets entered by the user.
+    /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
     function _isSupplying(uint256 _userMarkets, uint256 _borrowMask) internal pure returns (bool) {
@@ -141,7 +141,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns if a user has been borrowing from any market.
-    /// @param _userMarkets The markets entered by the user.
+    /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @return True if the user has been borrowing on any market, false otherwise.
     function _isBorrowingAny(uint256 _userMarkets) internal pure returns (bool) {
         return _userMarkets & BORROWING_MASK != 0;
