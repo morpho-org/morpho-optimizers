@@ -112,6 +112,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
     }
 
+    struct HealthFactorVars {
+        uint256 i;
+        uint256 numberOfMarketsCreated;
+    }
+
     /// LOGIC ///
 
     /// @dev Implements withdraw logic with security checks.
@@ -181,8 +186,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         uint256 userMarkets = userMarkets[_borrower];
         if (
-            !_isBorrowing(userMarkets, _poolTokenBorrowedAddress) ||
-            !_isSupplying(userMarkets, _poolTokenCollateralAddress)
+            !_isBorrowing(userMarkets, borrowMask[_poolTokenBorrowedAddress]) ||
+            !_isSupplying(userMarkets, borrowMask[_poolTokenCollateralAddress])
         ) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenBorrowedAddress);
@@ -292,7 +297,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 if (
                     supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P == 0 &&
                     supplyBalanceInOf[_poolTokenAddress][_supplier].onPool == 0
-                ) _setSupplying(_supplier, _poolTokenAddress, false);
+                ) _setSupplying(_supplier, borrowMask[_poolTokenAddress], false);
 
                 _withdrawFromPool(underlyingToken, _poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
@@ -396,7 +401,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P == 0 &&
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool == 0
-        ) _setSupplying(_supplier, _poolTokenAddress, false);
+        ) _setSupplying(_supplier, borrowMask[_poolTokenAddress], false);
         underlyingToken.safeTransfer(_receiver, _amount);
 
         emit Withdrawn(
@@ -451,7 +456,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 if (
                     borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P == 0 &&
                     borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool == 0
-                ) _setBorrowing(_onBehalf, _poolTokenAddress, false);
+                ) _setBorrowing(_onBehalf, borrowMask[_poolTokenAddress], false);
 
                 emit Repaid(
                     _repayer,
@@ -575,7 +580,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P == 0 &&
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool == 0
-        ) _setBorrowing(_onBehalf, _poolTokenAddress, false);
+        ) _setBorrowing(_onBehalf, borrowMask[_poolTokenAddress], false);
 
         emit Repaid(
             _repayer,
@@ -603,14 +608,17 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (!_isBorrowingAny(userMarkets)) return type(uint256).max;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfMarketsCreated = marketsCreated.length;
+
+        HealthFactorVars memory vars;
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
+        vars.numberOfMarketsCreated = marketsCreated.length;
 
-        for (uint256 i; i < numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[i];
+        for (; vars.i < vars.numberOfMarketsCreated; ) {
+            address poolToken = marketsCreated[vars.i];
+            uint256 borrowMask = borrowMask[poolToken];
 
-            if (_isSupplyingOrBorrowing(userMarkets, poolToken)) {
+            if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -624,12 +632,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 ) = pool.getConfiguration(underlyingAddress).getParamsMemory();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (_isBorrowing(userMarkets, poolToken))
+                if (_isBorrowing(userMarkets, borrowMask))
                     liquidityData.debtValue +=
                         (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
 
-                if (_isSupplying(userMarkets, poolToken)) {
+                if (_isSupplying(userMarkets, borrowMask)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
@@ -645,7 +653,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
 
             unchecked {
-                ++i;
+                ++vars.i;
             }
         }
 
