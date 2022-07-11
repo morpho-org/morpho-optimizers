@@ -8,17 +8,12 @@ import { expect } from 'chai';
 describe('RewardsDistributor Contract', () => {
   let snapshotId: number;
   let rewardsDistributor: Contract;
+  let morphoToken: Contract;
   let governance: Signer;
   let account0: Signer;
   let account1: Signer;
   let account2: Signer;
-  const tokens: Contract[] = [];
   let distribution: any[];
-  const tokensSetup = [
-    { name: 'token0', symbol: 'TOKEN0' },
-    { name: 'token1', symbol: 'TOKEN1' },
-    { name: 'token2', symbol: 'TOKEN2' },
-  ];
   let proofs: any[];
   let leaves: any[];
   let root: string;
@@ -26,38 +21,35 @@ describe('RewardsDistributor Contract', () => {
   const amount0 = ethers.utils.parseUnits('1');
   const amount1 = ethers.utils.parseUnits('1');
   const amount2 = ethers.utils.parseUnits('2');
+  const amountMinted = ethers.utils.parseUnits('100000');
 
   const initialize = async () => {
     const signers = await ethers.getSigners();
     [governance, account0, account1, account2] = signers;
 
+    const MorphoToken = await ethers.getContractFactory('FakeToken');
+    morphoToken = await MorphoToken.deploy('Morpho Token', 'MORPHO');
+
     // Deploy RewardsDistributor
     const RewardsDistributor = await ethers.getContractFactory('RewardsDistributor');
-    rewardsDistributor = await RewardsDistributor.deploy();
+    rewardsDistributor = await RewardsDistributor.deploy(morphoToken.address);
     await rewardsDistributor.deployed();
 
-    const FakeToken = await ethers.getContractFactory('FakeToken');
-    for (const i in tokensSetup) {
-      const fakeToken = await FakeToken.deploy(tokensSetup[i].name, tokensSetup[i].symbol, rewardsDistributor.address);
-      tokens.push(fakeToken);
-    }
+    // Mint tokens to RewardsDistributor
+    await morphoToken.mint(rewardsDistributor.address, amountMinted);
 
     distribution = [
-      { account: await account0.getAddress(), token: tokens[0].address, claimable: amount0 },
-      { account: await account0.getAddress(), token: tokens[1].address, claimable: amount0 },
-      { account: await account1.getAddress(), token: tokens[1].address, claimable: amount1 },
-      { account: await account2.getAddress(), token: tokens[2].address, claimable: amount2 },
+      { account: await account0.getAddress(), claimable: amount0 },
+      { account: await account0.getAddress(), claimable: amount0 },
+      { account: await account1.getAddress(), claimable: amount1 },
+      { account: await account2.getAddress(), claimable: amount2 },
     ];
 
-    leaves = distribution.map((receiver) =>
-      ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
-    );
+    leaves = distribution.map((receiver) => ethers.utils.solidityKeccak256(['address', 'uint256'], [receiver.account, receiver.claimable]));
     merkleTree = new MerkleTree(leaves, ethers.utils.keccak256, { sortPairs: true });
     proofs = distribution.map((receiver) => ({
       address: receiver.account,
-      proof: merkleTree.getHexProof(
-        ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
-      ),
+      proof: merkleTree.getHexProof(ethers.utils.solidityKeccak256(['address', 'uint256'], [receiver.account, receiver.claimable])),
     }));
     root = merkleTree.getHexRoot();
   };
@@ -73,6 +65,21 @@ describe('RewardsDistributor Contract', () => {
   });
 
   describe('Test RewardsDistributor', () => {
+    it('Should withdraw Morpho tokens', async () => {
+      const toWithdraw = ethers.utils.parseUnits('4');
+      await rewardsDistributor.connect(governance).withdrawMorphoTokens(account0.getAddress(), toWithdraw);
+
+      expect(await morphoToken.balanceOf(rewardsDistributor.address)).equal(amountMinted.sub(toWithdraw));
+      expect(await morphoToken.balanceOf(account0.getAddress())).equal(toWithdraw);
+    });
+
+    it('Should withdraw Morpho tokens', async () => {
+      await rewardsDistributor.connect(governance).withdrawMorphoTokens(account0.getAddress(), ethers.constants.MaxUint256);
+
+      expect(await morphoToken.balanceOf(rewardsDistributor.address)).equal(0);
+      expect(await morphoToken.balanceOf(account0.getAddress())).equal(amountMinted);
+    });
+
     it('Only governance should be able to update root', async () => {
       const newRoot = ethers.utils.formatBytes32String('root');
       expect(rewardsDistributor.connect(account0).updateRoot(newRoot)).to.be.reverted;
@@ -82,98 +89,48 @@ describe('RewardsDistributor Contract', () => {
     });
 
     it('Should claim nothing when no root', async () => {
-      expect(
-        rewardsDistributor
-          .connect(account0)
-          .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, proofs[0].proof)
-      ).to.be.reverted;
-    });
-
-    it('Should distribute various tokens on current distribution', async () => {
-      await rewardsDistributor.connect(governance).updateRoot(root);
-
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, proofs[0].proof);
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[1].account, distribution[1].token, distribution[1].claimable, proofs[1].proof);
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[2].account, distribution[2].token, distribution[2].claimable, proofs[2].proof);
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[3].account, distribution[3].token, distribution[3].claimable, proofs[3].proof);
-
-      expect(await tokens[0].balanceOf(distribution[0].account)).to.equal(distribution[0].claimable);
-      expect(await tokens[1].balanceOf(distribution[1].account)).to.equal(distribution[1].claimable);
-      expect(await tokens[1].balanceOf(distribution[2].account)).to.equal(distribution[2].claimable);
-      expect(await tokens[2].balanceOf(distribution[3].account)).to.equal(distribution[3].claimable);
-    });
-
-    it('Should not distribute for invalid tokens', async () => {
-      await rewardsDistributor.connect(governance).updateRoot(root);
-
-      expect(
-        rewardsDistributor
-          .connect(account0)
-          .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, [
-            ethers.utils.formatBytes32String('wrong root'),
-          ])
-      ).to.be.reverted;
+      expect(rewardsDistributor.connect(account0).claim(distribution[0].account, distribution[0].claimable, proofs[0].proof)).to.be
+        .reverted;
     });
 
     it('Should not be possible to replay proof', async () => {
       await rewardsDistributor.connect(governance).updateRoot(root);
 
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, proofs[0].proof);
+      await rewardsDistributor.connect(account0).claim(distribution[0].account, distribution[0].claimable, proofs[0].proof);
 
-      expect(
-        rewardsDistributor
-          .connect(account0)
-          .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, proofs[0].proof)
-      ).to.be.reverted;
+      expect(rewardsDistributor.connect(account0).claim(distribution[0].account, distribution[0].claimable, proofs[0].proof)).to.be
+        .reverted;
     });
 
     it('Should be possible to claim for previous distribution', async () => {
       await rewardsDistributor.connect(governance).updateRoot(root);
       await rewardsDistributor.connect(governance).updateRoot(ethers.utils.formatBytes32String('new root'));
 
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, proofs[0].proof);
-      expect(await tokens[0].balanceOf(distribution[0].account)).to.equal(distribution[0].claimable);
+      await rewardsDistributor.connect(account0).claim(distribution[0].account, distribution[0].claimable, proofs[0].proof);
+      expect(await morphoToken.balanceOf(distribution[0].account)).to.equal(distribution[0].claimable);
     });
 
     it('Should be possible to claim for previous and current distribution', async () => {
       await rewardsDistributor.connect(governance).updateRoot(root);
 
-      const newDistribution = [{ account: await account0.getAddress(), token: tokens[0].address, claimable: amount0.add(amount1) }];
+      const newDistribution = [{ account: await account0.getAddress(), claimable: amount0.add(amount1) }];
       const newLeaves = newDistribution.map((receiver) =>
-        ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
+        ethers.utils.solidityKeccak256(['address', 'uint256'], [receiver.account, receiver.claimable])
       );
       const newMerkleTree = new MerkleTree(newLeaves, ethers.utils.keccak256, { sortPairs: true });
       const newProofs = newDistribution.map((receiver) => {
         return {
           address: receiver.account,
-          proof: newMerkleTree.getHexProof(
-            ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
-          ),
+          proof: newMerkleTree.getHexProof(ethers.utils.solidityKeccak256(['address', 'uint256'], [receiver.account, receiver.claimable])),
         };
       });
       const newRoot = newMerkleTree.getHexRoot();
 
       await rewardsDistributor.connect(governance).updateRoot(newRoot);
 
-      await rewardsDistributor
-        .connect(account0)
-        .claim(distribution[0].account, distribution[0].token, distribution[0].claimable, proofs[0].proof);
-      await rewardsDistributor
-        .connect(account0)
-        .claim(newDistribution[0].account, newDistribution[0].token, newDistribution[0].claimable, newProofs[0].proof);
-      expect(await tokens[0].balanceOf(distribution[0].account)).to.equal(newDistribution[0].claimable);
+      await rewardsDistributor.connect(account0).claim(distribution[0].account, distribution[0].claimable, proofs[0].proof);
+      await rewardsDistributor.connect(account0).claim(newDistribution[0].account, newDistribution[0].claimable, newProofs[0].proof);
+      expect(await morphoToken.balanceOf(distribution[0].account)).to.equal(newDistribution[0].claimable);
     });
   });
 });
