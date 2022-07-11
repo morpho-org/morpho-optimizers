@@ -120,12 +120,12 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
     /// @param _poolTokens The pool tokens to calculate the values for.
-    /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn
-    /// @param _amount The amount that is being borrowed or withdrawn
-    /// @param _calculationType The calculation type to use
-    /// @return collateralValue The total value of the collateral
-    /// @return debtValue The total value of the debt
-    /// @return calculatedMax The max value of the LTV/LT or none depending on the calculation type
+    /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
+    /// @param _amount The amount that is being borrowed or withdrawn.
+    /// @param _calculationType The calculation type to use.
+    /// @return collateralValue The total value of the collateral.
+    /// @return debtValue The total value of the debt.
+    /// @return calculatedMax The max value of the LTV/LT or none depending on the calculation type.
     function _collateralAndDebtValues(
         address _user,
         address[] memory _poolTokens,
