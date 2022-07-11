@@ -1,3 +1,4 @@
+#!/bin/sh
 # runs all of the PositionsManagerCompound.spec file
 
 make -C certora munged
@@ -18,9 +19,9 @@ certoraRun \
     --loop_iter 2 \
     --optimistic_loop \
     --cache morpho \
-    --msg "PMFC $1" \
     --staging \
-
+    --send_only \
+    --msg "PMFC $1"
 
     # notes:
     # keep the cache name common among run scripts, will save a bunch on the setup time 
