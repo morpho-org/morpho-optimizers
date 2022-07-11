@@ -12,7 +12,6 @@ import "./PositionsManagerUtils.sol";
 contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
-    using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
     using Math for uint256;
@@ -276,50 +275,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
         ) return false;
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfMarketsCreated = marketsCreated.length;
-
-        Types.AssetLiquidityData memory assetData;
-        Types.LiquidityData memory liquidityData;
-
-        for (uint256 i; i < numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[i];
-
-            if (_isSupplyingOrBorrowing(_user, poolToken)) {
-                if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
-
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-                (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-                .getConfiguration(underlyingAddress)
-                .getParams();
-                assetData.tokenUnit = 10**assetData.reserveDecimals;
-
-                if (_isBorrowing(_user, poolToken))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-
-                if (_isSupplying(_user, poolToken)) {
-                    assetData.collateralValue =
-                        (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-
-                    liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(
-                        assetData.ltv
-                    );
-                }
-
-                if (_poolTokenAddress == poolToken)
-                    liquidityData.debtValue +=
-                        (_borrowedAmount * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
+        Types.LiquidityData memory liquidityData = _getUserLiquidityData(
+            _user,
+            _poolTokenAddress,
+            _borrowedAmount,
+            0
+        );
 
         return liquidityData.debtValue <= liquidityData.maxLoanToValue;
     }
