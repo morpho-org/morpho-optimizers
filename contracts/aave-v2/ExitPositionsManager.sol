@@ -605,15 +605,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 _updateIndexes(poolTokens[i]);
             }
         }
-        (, uint256 debtValue, uint256 liquidationThresholdValue) = _collateralAndDebtValues(
+        Types.CollateralAndDebtValues memory values = _collateralAndDebtValues(
             _user,
             poolTokens,
             _poolTokenAddress,
-            _withdrawnAmount,
-            Types.LoanCalculationType.LIQUIDATION_THRESHOLD
+            0,
+            _withdrawnAmount
         );
 
-        return liquidationThresholdValue.wadDiv(debtValue);
+        return values.liquidationThresholdValue.wadDiv(values.debtValue);
     }
 
     /// @dev Checks whether the user can withdraw or not.
