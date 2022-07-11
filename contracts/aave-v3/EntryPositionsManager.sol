@@ -304,10 +304,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingAddress = underlyingToken[poolToken];
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
+                address underlyingToken = underlyingToken[poolToken];
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In base currency.
                 (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-                .getConfiguration(underlyingAddress)
+                .getConfiguration(underlyingToken)
                 .getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
