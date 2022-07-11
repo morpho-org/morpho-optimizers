@@ -159,21 +159,26 @@ abstract contract PositionsManagerUtils is MatchingEngine {
 
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            debtValue += _debtValue(
-                _poolTokens[i],
-                _user,
-                underlyingPrices[i],
-                assetData.tokenUnit
-            );
+            if (_isBorrowing(_user, _poolTokens[i])) {
+                debtValue += _debtValue(
+                    _poolTokens[i],
+                    _user,
+                    underlyingPrices[i],
+                    assetData.tokenUnit
+                );
+            }
 
             // Cache current asset collateral value
-            uint256 assetCollateralValue = _collateralValue(
-                _poolTokens[i],
-                _user,
-                underlyingPrices[i],
-                assetData.tokenUnit
-            );
-            collateralValue += assetCollateralValue;
+            uint256 assetCollateralValue;
+            if (_isSupplying(_user, _poolTokens[i])) {
+                assetCollateralValue = _collateralValue(
+                    _poolTokens[i],
+                    _user,
+                    underlyingPrices[i],
+                    assetData.tokenUnit
+                );
+                collateralValue += assetCollateralValue;
+            }
 
             // Calculate LTV for borrow
             if (_calculationType == Types.LoanCalculationType.LOAN_TO_VALUE) {
@@ -204,10 +209,9 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         uint256 _underlyingPrice,
         uint256 _tokenUnit
     ) internal view returns (uint256 collateralValue) {
-        if (_isSupplying(_user, _poolToken))
-            collateralValue =
-                (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
-                _tokenUnit;
+        collateralValue =
+            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
+            _tokenUnit;
     }
 
     /// @dev Calculates the value of the debt.
@@ -221,9 +225,6 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         uint256 _underlyingPrice,
         uint256 _tokenUnit
     ) internal view returns (uint256 debtValue) {
-        if (_isBorrowing(_user, _poolToken))
-            debtValue =
-                (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice) /
-                _tokenUnit;
+        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
     }
 }
