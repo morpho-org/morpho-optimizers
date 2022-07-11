@@ -605,7 +605,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 _updateIndexes(poolTokens[i]);
             }
         }
-        Types.CollateralAndDebtValues memory values = _collateralAndDebtValues(
+        Types.LiquidityData memory values = _liquidityData(
             _user,
             poolTokens,
             _poolTokenAddress,
@@ -613,7 +613,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _withdrawnAmount
         );
 
-        return values.liquidationThresholdValue.wadDiv(values.debtValue);
+        return values.healthFactor;
     }
 
     /// @dev Checks whether the user can withdraw or not.
