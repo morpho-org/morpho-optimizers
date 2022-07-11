@@ -15,11 +15,10 @@ contract RewardsDistributor is Ownable {
 
     /// STORAGE ///
 
-    ERC20 public constant MORPHO = ERC20(0x9994E35Db50125E0DF82e4c2dde62496CE330999);
-
+    ERC20 public immutable MORPHO;
     bytes32 public currRoot; // The merkle tree's root of the current rewards distribution.
     bytes32 public prevRoot; // The merkle tree's root of the previous rewards distribution.
-    mapping(address => mapping(address => uint256)) public claimed; // The rewards already claimed. account -> token -> amount.
+    mapping(address => uint256) public claimed; // The rewards already claimed. account -> amount.
 
     /// EVENTS ///
 
@@ -45,6 +44,14 @@ contract RewardsDistributor is Ownable {
     /// @notice Thrown when the claimer has already claimed the rewards.
     error AlreadyClaimed();
 
+    /// CONSTRUCTOR ///
+
+    /// @notice Constructs Morpho's RewardsDistributor contract.
+    /// @param _morpho The address of the MORPHO token to distribute.
+    constructor(address _morpho) {
+        MORPHO = ERC20(_morpho);
+    }
+
     /// EXTERNAL ///
 
     /// @notice Updates the current merkle tree's root.
@@ -67,22 +74,20 @@ contract RewardsDistributor is Ownable {
 
     /// @notice Claims rewards.
     /// @param _account The address of the claimer.
-    /// @param _token The address of token being claimed (ie MORPHO).
     /// @param _claimable The overall claimable amount of token rewards.
     /// @param _proof The merkle proof that validates this claim.
     function claim(
         address _account,
-        address _token,
         uint256 _claimable,
         bytes32[] calldata _proof
     ) external {
         bytes32 candidateRoot = MerkleProof.processProof(
             _proof,
-            keccak256(abi.encodePacked(_account, _token, _claimable))
+            keccak256(abi.encodePacked(_account, _claimable))
         );
         if (candidateRoot != currRoot && candidateRoot != prevRoot) revert ProofInvalidOrExpired();
 
-        uint256 alreadyClaimed = claimed[_account][_token];
+        uint256 alreadyClaimed = claimed[_account];
         if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
 
         uint256 amount;
@@ -90,9 +95,9 @@ contract RewardsDistributor is Ownable {
             amount = _claimable - alreadyClaimed;
         }
 
-        claimed[_account][_token] = _claimable;
+        claimed[_account] = _claimable;
 
-        ERC20(_token).safeTransfer(_account, amount);
+        MORPHO.safeTransfer(_account, amount);
         emit RewardsClaimed(_account, amount);
     }
 }
