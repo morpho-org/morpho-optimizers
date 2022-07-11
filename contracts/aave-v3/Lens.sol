@@ -179,11 +179,11 @@ contract Lens {
         address _poolTokenAddress,
         IPriceOracleGetter _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
-        address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
-        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In base currency in wad.
+        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In base currency in wad.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
-        .getConfiguration(underlyingAddress)
+        .getConfiguration(underlyingToken)
         .getParams();
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
@@ -599,10 +599,10 @@ contract Lens {
         view
         returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
-        address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
         return (
-            pool.getReserveNormalizedIncome(underlyingAddress),
-            pool.getReserveNormalizedVariableDebt(underlyingAddress)
+            pool.getReserveNormalizedIncome(underlyingToken),
+            pool.getReserveNormalizedVariableDebt(underlyingToken)
         );
     }
 

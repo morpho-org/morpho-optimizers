@@ -623,15 +623,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingAddress = underlyingToken[poolToken];
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+                address underlyingToken = underlyingToken[poolToken];
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In ETH.
                 (
                     assetData.ltv,
                     assetData.liquidationThreshold,
                     ,
                     assetData.reserveDecimals,
 
-                ) = pool.getConfiguration(underlyingAddress).getParamsMemory();
+                ) = pool.getConfiguration(underlyingToken).getParamsMemory();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(vars.userMarkets, borrowMask))
