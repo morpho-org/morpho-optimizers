@@ -24,18 +24,18 @@ contract RewardsDistributor is Ownable {
     /// EVENTS ///
 
     /// @notice Emitted when the root is updated.
-    /// @param _newRoot The new merkle's tree root.
-    event RootUpdated(bytes32 _newRoot);
+    /// @param newRoot The new merkle's tree root.
+    event RootUpdated(bytes32 newRoot);
 
     /// @notice Emitted when MORPHO tokens are withdrawn.
-    /// @param _to The address of the recipient.
-    /// @param _amount The amount of MORPHO tokens withdrawn.
-    event MorphoWithdrawn(address _to, uint256 _amount);
+    /// @param to The address of the recipient.
+    /// @param amount The amount of MORPHO tokens withdrawn.
+    event MorphoWithdrawn(address to, uint256 amount);
 
     /// @notice Emitted when an account claims rewards.
-    /// @param _account The address of the claimer.
-    /// @param _amountClaimed The amount of rewards claimed.
-    event RewardsClaimed(address _account, uint256 _amountClaimed);
+    /// @param account The address of the claimer.
+    /// @param amount The amount of rewards claimed.
+    event RewardsClaimed(address account, uint256 amount);
 
     /// ERRORS ///
 
