@@ -215,13 +215,10 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
+        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolTokenAddress][_user];
         return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                p2pSupplyIndex[_poolTokenAddress]
-            ) +
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
-                ICToken(_poolTokenAddress).exchangeRateStored()
-            );
+            userSupplyBalance.inP2P.mul(p2pSupplyIndex[_poolTokenAddress]) +
+            userSupplyBalance.onPool.mul(ICToken(_poolTokenAddress).exchangeRateStored());
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
@@ -233,13 +230,10 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
+        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolTokenAddress][_user];
         return
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                p2pBorrowIndex[_poolTokenAddress]
-            ) +
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
-                ICToken(_poolTokenAddress).borrowIndex()
-            );
+            userBorrowBalance.inP2P.mul(p2pBorrowIndex[_poolTokenAddress]) +
+            userBorrowBalance.onPool.mul(ICToken(_poolTokenAddress).borrowIndex());
     }
 
     /// @dev Returns the underlying ERC20 token related to the pool token.
