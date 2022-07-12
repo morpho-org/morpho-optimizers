@@ -40,7 +40,6 @@ describe('RewardsDistributor Contract', () => {
 
     distribution = [
       { account: await account0.getAddress(), claimable: amount0 },
-      { account: await account0.getAddress(), claimable: amount0 },
       { account: await account1.getAddress(), claimable: amount1 },
       { account: await account2.getAddress(), claimable: amount2 },
     ];
