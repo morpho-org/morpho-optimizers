@@ -279,15 +279,13 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        {
-            // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
-            // In response, Morpho mirrors this behavior.
-            address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-            if (
-                priceOracleSentinel != address(0) &&
-                !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
-            ) return false;
-        }
+        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+        // In response, Morpho mirrors this behavior.
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (
+            priceOracleSentinel != address(0) &&
+            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+        ) return false;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 

@@ -17,6 +17,7 @@ library Math {
         }
     }
 
+    /// @dev Returns a/b rounded up.
     function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
         return (a + b - 1) / b;
     }
