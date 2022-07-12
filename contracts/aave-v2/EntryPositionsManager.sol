@@ -302,9 +302,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(userMarkets, borrowMask))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
+                    liquidityData.debtValue += (_getUserBorrowBalanceInOf(poolToken, _user) *
+                        assetData.underlyingPrice)
+                    .divUp(assetData.tokenUnit);
 
                 if (_isSupplying(userMarkets, borrowMask)) {
                     assetData.collateralValue =
@@ -317,9 +317,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 }
 
                 if (_poolTokenAddress == poolToken)
-                    liquidityData.debtValue +=
-                        (_borrowedAmount * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
+                    liquidityData.debtValue += (_borrowedAmount * assetData.underlyingPrice).divUp(
+                        assetData.tokenUnit
+                    );
             }
 
             unchecked {

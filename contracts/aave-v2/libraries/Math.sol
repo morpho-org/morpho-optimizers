@@ -16,4 +16,8 @@ library Math {
             return a > b ? a - b : 0;
         }
     }
+
+    function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
+        return (a + b - 1) / b;
+    }
 }

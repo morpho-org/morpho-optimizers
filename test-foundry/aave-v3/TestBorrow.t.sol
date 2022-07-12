@@ -4,6 +4,8 @@ pragma solidity 0.8.10;
 import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+
     // The borrower tries to borrow more than his collateral allows, the transaction reverts.
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
@@ -203,5 +205,18 @@ contract TestBorrow is TestSetup {
 
     function testFailBorrowZero() public {
         morpho.borrow(aDai, 0, type(uint256).max);
+    }
+
+    function testShouldNotAllowSmallBorrow() public {
+        (uint256 ltv, , , , , ) = pool.getConfiguration(dai).getParams();
+
+        createAndSetCustomPriceOracle().setDirectPrice(dai, 1e8);
+
+        uint256 amount = 1 ether;
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, amount);
+
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
     }
 }

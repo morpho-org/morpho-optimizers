@@ -198,7 +198,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         LiquidateVars memory vars;
         address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
-            .UNDERLYING_ASSET_ADDRESS();
+        .UNDERLYING_ASSET_ADDRESS();
 
         uint256 amountToLiquidate = Math.min(
             _amount,
@@ -208,16 +208,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         );
 
         address tokenCollateralAddress = IAToken(_poolTokenCollateralAddress)
-            .UNDERLYING_ASSET_ADDRESS();
+        .UNDERLYING_ASSET_ADDRESS();
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = pool
-            .getConfiguration(tokenCollateralAddress)
-            .getParamsMemory();
+        .getConfiguration(tokenCollateralAddress)
+        .getParamsMemory();
         (, , , vars.borrowedReserveDecimals, ) = pool
-            .getConfiguration(tokenBorrowedAddress)
-            .getParamsMemory();
+        .getConfiguration(tokenBorrowedAddress)
+        .getParamsMemory();
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
@@ -228,9 +228,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
         uint256 amountToSeize = ((amountToLiquidate *
             borrowedTokenPrice *
-            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice)).percentMul(
-                vars.liquidationBonus
-            );
+            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice))
+        .percentMul(vars.liquidationBonus);
 
         uint256 collateralBalance = _getUserSupplyBalanceInOf(
             _poolTokenCollateralAddress,
@@ -240,7 +239,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (amountToSeize > collateralBalance) {
             amountToSeize = collateralBalance;
             amountToLiquidate = ((collateralBalance * collateralPrice * vars.borrowedTokenUnit) /
-                (borrowedTokenPrice * vars.collateralTokenUnit)).percentDiv(vars.liquidationBonus);
+                (borrowedTokenPrice * vars.collateralTokenUnit))
+            .percentDiv(vars.liquidationBonus);
         }
 
         _safeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, amountToLiquidate, 0);
@@ -634,9 +634,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(userMarkets, borrowMask))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
+                    liquidityData.debtValue += (_getUserBorrowBalanceInOf(poolToken, _user) *
+                        assetData.underlyingPrice)
+                    .divUp(assetData.tokenUnit);
 
                 if (_isSupplying(userMarkets, borrowMask)) {
                     assetData.collateralValue =
@@ -648,10 +648,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 }
 
                 if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
-                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                        assetData.underlyingPrice) / assetData.tokenUnit).percentMul(
-                            assetData.liquidationThreshold
-                        );
+                    liquidityData.liquidationThresholdValue -= (_withdrawnAmount *
+                        assetData.underlyingPrice)
+                    .divUp(assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
             }
 
             unchecked {
