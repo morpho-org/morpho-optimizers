@@ -53,11 +53,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
         if (block.number > poolIndexes.lastUpdateBlockNumber) {
-            ICToken poolToken = ICToken(_poolTokenAddress);
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
-            uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
-            uint256 poolBorrowIndex = poolToken.borrowIndex();
+            uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+            uint256 poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],

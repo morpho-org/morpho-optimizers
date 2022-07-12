@@ -174,7 +174,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 withdrawable;
         uint256 toWithdraw;
         ERC20 underlyingToken;
-        ICToken poolToken;
     }
 
     // Struct to avoid stack too deep.
@@ -521,12 +520,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount == 0) revert AmountIsZero();
 
         WithdrawVars memory vars;
-        vars.poolToken = ICToken(_poolTokenAddress);
         vars.underlyingToken = _getUnderlying(_poolTokenAddress);
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.withdrawable = vars.poolToken.balanceOfUnderlying(address(this));
-        vars.poolSupplyIndex = vars.poolToken.exchangeRateStored(); // Exchange rate has already been updated.
+        vars.withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this));
+        vars.poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
@@ -651,7 +649,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
-                    vars.poolToken.borrowIndex()
+                    ICToken(_poolTokenAddress).borrowIndex()
                 );
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
