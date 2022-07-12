@@ -67,6 +67,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toRepay;
     }
 
+    // Struct to avoid stack too deep.
     struct BorrowAllowedVars {
         uint256 userMarkets;
         uint256 i;
@@ -94,7 +95,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         SupplyVars memory vars;
         vars.borrowMask = borrowMask[_poolTokenAddress];
-
         if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
             _setSupplying(_onBehalf, vars.borrowMask, true);
 
@@ -188,8 +188,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
-        uint256 borrowMask = borrowMask[_poolTokenAddress];
 
+        uint256 borrowMask = borrowMask[_poolTokenAddress];
         if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
             _setBorrowing(msg.sender, borrowMask, true);
 
