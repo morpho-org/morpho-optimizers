@@ -328,9 +328,6 @@ abstract contract MorphoUtils is MorphoStorage {
                 .percentMul(assetData.liquidationThreshold);
             }
         }
-        if (values.debtValue > 0)
-            values.healthFactor = values.liquidationThresholdValue.wadDiv(values.debtValue);
-        else values.healthFactor = type(uint256).max;
     }
 
     /// @dev Calculates the value of the collateral.
