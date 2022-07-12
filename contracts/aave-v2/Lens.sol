@@ -191,11 +191,7 @@ contract Lens {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
-<<<<<<< HEAD
         liquidityData = morpho.getUserHypotheticalBalanceStates(
-=======
-        liquidityData = morpho.liquidityData(
->>>>>>> separate health factor
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
