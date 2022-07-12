@@ -418,7 +418,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 0.95e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
