@@ -8,7 +8,6 @@ FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
 FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-FOUNDRY_CONTRACT_PATTERN_INVERSE=GasConsumption
 
 ifeq (${NETWORK}, eth-mainnet)
   FOUNDRY_CHAIN_ID=1
@@ -21,7 +20,7 @@ ifeq (${NETWORK}, polygon-mainnet)
 
   ifeq (${PROTOCOL}, aave-v3)
     FOUNDRY_FORK_BLOCK_NUMBER=29116728
-    FOUNDRY_CONTRACT_PATTERN_INVERSE=(GasConsumption|Fees|IncentivesVault|Rewards)
+    FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
   endif
 endif
 
@@ -84,7 +83,7 @@ fuzz:
 
 gas-report:
 	@echo Creating gas consumption report for ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv --gas-report --no-match-contract GasConsumption > gas_report.ansi
+	@forge test -vvv --gas-report > gas_report.ansi
 
 test-common:
 	@echo Running all common tests on ${NETWORK}
