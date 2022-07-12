@@ -20,20 +20,6 @@ Alternatively, if you only want to set up
 
 Refer to the `env.example` for the required environment variable.
 
-In order to have the traces of the run exported as an HTML page, install the aha module.
-
-For OSX users:
-
-```bash
-brew install aha
-```
-
-For debian users:
-
-```bash
-apt install aha
-```
-
 To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
 To run every test of a specific protocol (e.g. for Morpho-Compound):
@@ -46,16 +32,12 @@ or to run only a specific set of tests of a specific protocol (e.g. for Morpho-A
 
 ```bash
 make c-TestBorrow PROTOCOL=aave-v2
-make c-TestGovernance PROTOCOL=aave-v2
-...
 ```
 
-or to run individual tests of a specific protocol (e.g. for Morpho-Aave V3):
+or to run an individual test of a specific protocol (e.g. for Morpho-Aave V3):
 
 ```bash
 make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
-make s-testShouldReduceTheFeeToRepay PROTOCOL=aave-v3
-...
 ```
 
 For the other commands, check the [Makefile](./Makefile).
