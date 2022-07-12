@@ -64,10 +64,6 @@ test-ansi:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv --no-match-test testFuzz > trace.ansi
 
-test-html:
-	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv --no-match-test testFuzz | aha --black > trace.html
-
 coverage:
 	@echo Create coverage report for ${PROTOCOL} tests on ${NETWORK}
 	@forge coverage --no-match-test testFuzz
@@ -97,10 +93,6 @@ ansi-c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv/$*.t.sol --match-contract $* > trace.ansi
 
-html-c-%:
-	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv/$*.t.sol --match-contract $* | aha --black > trace.html
-
 single-% s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv --match-test $*
@@ -108,10 +100,6 @@ single-% s-%:
 ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv --match-test $* > trace.ansi
-
-html-s-%:
-	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
-	@forge test -vvvvv --match-test $* | aha --black > trace.html
 
 config:
 	@forge config
