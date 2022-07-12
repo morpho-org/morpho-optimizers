@@ -116,7 +116,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _withdrawnAmount The amount hypothetically withdrawn from the market.
     /// @param _borrowedAmount The amount hypothetically borrowed from the market.
     /// @return The collateral, debt, loan to value, and liquidation thresholds for a user.
-    function liquidityData(
+    function getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,

@@ -113,7 +113,12 @@ contract Lens {
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        Types.LiquidityData memory data = morpho.liquidityData(_user, address(0), 0, 0);
+        Types.LiquidityData memory data = morpho.getUserHypotheticalBalanceStates(
+            _user,
+            address(0),
+            0,
+            0
+        );
         Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
             _user,
             _poolTokenAddress,
@@ -180,7 +185,7 @@ contract Lens {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
-        liquidityData = morpho.liquidityData(
+        liquidityData = morpho.getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
