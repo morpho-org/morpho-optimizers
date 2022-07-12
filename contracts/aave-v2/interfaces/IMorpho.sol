@@ -56,7 +56,7 @@ interface IMorpho {
     /// GETTERS ///
 
     function getMarketsCreated() external view returns (address[] memory marketsCreated_);
-    function liquidityData(
+    function getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
