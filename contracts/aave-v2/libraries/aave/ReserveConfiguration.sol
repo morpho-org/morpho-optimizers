@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
-import {Errors} from "./Errors.sol";
+import {Errors} from "../../../common/libraries/aave-v2/Errors.sol";
 import {DataTypes} from "./DataTypes.sol";
 
 /**
