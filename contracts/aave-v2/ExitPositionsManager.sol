@@ -611,11 +611,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (!_isBorrowingAny(vars.userMarkets)) return type(uint256).max;
 
         address[] memory poolTokens = _getUserMarkets(_user);
-        for (uint256 i; i < poolTokens.length; i++) {
-            if (poolTokens[i] != _poolTokenAddress) {
-                _updateIndexes(poolTokens[i]);
+        unchecked {
+            for (uint256 i; i < poolTokens.length; ++i) {
+                if (poolTokens[i] != _poolTokenAddress) {
+                    _updateIndexes(poolTokens[i]);
+                }
             }
         }
+
         Types.LiquidityData memory values = _liquidityData(
             _user,
             poolTokens,
