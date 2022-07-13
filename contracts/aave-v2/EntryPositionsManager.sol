@@ -279,15 +279,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        address[] memory poolTokens = _getUserMarkets(_user);
-        for (uint256 i; i < poolTokens.length; i++) {
-            if (poolTokens[i] != _poolTokenAddress) {
-                _updateIndexes(poolTokens[i]);
-            }
-        }
         Types.LiquidityData memory values = _liquidityData(
             _user,
-            poolTokens,
             _poolTokenAddress,
             0,
             _borrowedAmount
