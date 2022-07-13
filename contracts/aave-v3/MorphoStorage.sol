@@ -33,6 +33,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     bytes32 public constant BORROWING_MASK =
         0x5555555555555555555555555555555555555555555555555555555555555555;
     uint256 public constant MAX_NB_OF_MARKETS = 128;
+    bytes32 public constant ONE =
+        0x0000000000000000000000000000000000000000000000000000000000000001;
 
     bool public isClaimRewardsPaused; // Whether claiming rewards is paused or not.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
