@@ -276,10 +276,9 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _amountBorrowed
     ) internal view returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-
         Types.AssetLiquidityData memory assetData;
 
-        for (uint256 i; i < _poolTokens.length; ++i) {
+        for (uint256 i; i < _poolTokens.length; ) {
             address underlyingAddress = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
 
@@ -287,7 +286,9 @@ abstract contract MorphoUtils is MorphoStorage {
             .getConfiguration(underlyingAddress)
             .getParamsMemory();
 
-            assetData.tokenUnit = 10**assetData.reserveDecimals;
+            unchecked {
+                assetData.tokenUnit = 10**assetData.reserveDecimals; // Cannot overflow.
+            }
 
             if (_isBorrowing(_user, _poolTokens[i])) {
                 values.debtValue += _debtValue(
@@ -310,18 +311,19 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.collateralValue += assetCollateralValue;
             }
 
-            // Calculate LTV for borrow
+            // Calculate LTV for borrow.
             values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
-            // Add debt value for borrowed token
+            // Add debt value for borrowed token.
             if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
                 values.debtValue += (_amountBorrowed * underlyingPrice) / assetData.tokenUnit;
 
-            // Calculate LT for withdraw
+            // Calculate LT for withdraw.
             if (assetCollateralValue > 0)
                 values.liquidationThresholdValue += assetCollateralValue.percentMul(
                     assetData.liquidationThreshold
                 );
-            // Subtract from liquidation threshold value and collateral value for withdrawn token
+
+            // Subtract from liquidation threshold value and collateral value for withdrawn token.
             if (_poolTokenAddress == _poolTokens[i] && _amountWithdrawn > 0) {
                 values.collateralValue -=
                     (_amountWithdrawn * underlyingPrice) /
@@ -329,6 +331,10 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.liquidationThresholdValue -= ((_amountWithdrawn * underlyingPrice) /
                     assetData.tokenUnit)
                 .percentMul(assetData.liquidationThreshold);
+            }
+
+            unchecked {
+                ++i;
             }
         }
     }
