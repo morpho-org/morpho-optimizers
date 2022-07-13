@@ -244,10 +244,12 @@ abstract contract MorphoUtils is MorphoStorage {
         markets = new address[](marketsCreated.length);
         uint256 marketLength;
         bytes32 userMarketsCached = userMarkets[_user];
-        for (uint256 i; i < markets.length; i++) {
-            if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
-                markets[marketLength] = marketsCreated[i];
-                ++marketLength;
+        unchecked {
+            for (uint256 i; i < markets.length; ++i) {
+                if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
+                    markets[marketLength] = marketsCreated[i];
+                    ++marketLength;
+                }
             }
         }
 
