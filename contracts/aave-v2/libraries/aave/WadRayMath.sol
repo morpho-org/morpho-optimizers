@@ -1,126 +1,135 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
+
+import {Errors} from "./Errors.sol";
 
 /**
  * @title WadRayMath library
  * @author Aave
- * @notice Provides functions to perform calculations with Wad and Ray units
- * @dev Provides mul and div function for wads (decimal numbers with 18 digits of precision) and rays (decimal numbers
- * with 27 digits of precision)
- * @dev Operations are rounded. If a value is >=.5, will be rounded up, otherwise rounded down.
+ * @dev Provides mul and div function for wads (decimal numbers with 18 digits precision) and rays (decimals with 27 digits)
  **/
+
 library WadRayMath {
-    // HALF_WAD and HALF_RAY expressed with extended notation as constant with operations are not supported in Yul assembly
     uint256 internal constant WAD = 1e18;
-    uint256 internal constant HALF_WAD = 0.5e18;
+    uint256 internal constant halfWAD = WAD / 2;
 
     uint256 internal constant RAY = 1e27;
-    uint256 internal constant HALF_RAY = 0.5e27;
+    uint256 internal constant halfRAY = RAY / 2;
 
     uint256 internal constant WAD_RAY_RATIO = 1e9;
 
     /**
+     * @return One ray, 1e27
+     **/
+    function ray() internal pure returns (uint256) {
+        return RAY;
+    }
+
+    /**
+     * @return One wad, 1e18
+     **/
+
+    function wad() internal pure returns (uint256) {
+        return WAD;
+    }
+
+    /**
+     * @return Half ray, 1e27/2
+     **/
+    function halfRay() internal pure returns (uint256) {
+        return halfRAY;
+    }
+
+    /**
+     * @return Half ray, 1e18/2
+     **/
+    function halfWad() internal pure returns (uint256) {
+        return halfWAD;
+    }
+
+    /**
      * @dev Multiplies two wad, rounding half up to the nearest wad
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param a Wad
      * @param b Wad
-     * @return c = a*b, in wad
+     * @return The result of a*b, in wad
      **/
-    function wadMul(uint256 a, uint256 b) internal pure returns (uint256 c) {
-        // to avoid overflow, a <= (type(uint256).max - HALF_WAD) / b
-        assembly {
-            if iszero(or(iszero(b), iszero(gt(a, div(sub(not(0), HALF_WAD), b))))) {
-                revert(0, 0)
-            }
-
-            c := div(add(mul(a, b), HALF_WAD), WAD)
+    function wadMul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0 || b == 0) {
+            return 0;
         }
+
+        require(a <= (type(uint256).max - halfWAD) / b, Errors.MATH_MULTIPLICATION_OVERFLOW);
+
+        return (a * b + halfWAD) / WAD;
     }
 
     /**
      * @dev Divides two wad, rounding half up to the nearest wad
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param a Wad
      * @param b Wad
-     * @return c = a/b, in wad
+     * @return The result of a/b, in wad
      **/
-    function wadDiv(uint256 a, uint256 b) internal pure returns (uint256 c) {
-        // to avoid overflow, a <= (type(uint256).max - halfB) / WAD
-        assembly {
-            if or(iszero(b), iszero(iszero(gt(a, div(sub(not(0), div(b, 2)), WAD))))) {
-                revert(0, 0)
-            }
+    function wadDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
+        uint256 halfB = b / 2;
 
-            c := div(add(mul(a, WAD), div(b, 2)), b)
-        }
+        require(a <= (type(uint256).max - halfB) / WAD, Errors.MATH_MULTIPLICATION_OVERFLOW);
+
+        return (a * WAD + halfB) / b;
     }
 
     /**
-     * @notice Multiplies two ray, rounding half up to the nearest ray
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
+     * @dev Multiplies two ray, rounding half up to the nearest ray
      * @param a Ray
      * @param b Ray
-     * @return c = a raymul b
+     * @return The result of a*b, in ray
      **/
-    function rayMul(uint256 a, uint256 b) internal pure returns (uint256 c) {
-        // to avoid overflow, a <= (type(uint256).max - HALF_RAY) / b
-        assembly {
-            if iszero(or(iszero(b), iszero(gt(a, div(sub(not(0), HALF_RAY), b))))) {
-                revert(0, 0)
-            }
-
-            c := div(add(mul(a, b), HALF_RAY), RAY)
+    function rayMul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0 || b == 0) {
+            return 0;
         }
+
+        require(a <= (type(uint256).max - halfRAY) / b, Errors.MATH_MULTIPLICATION_OVERFLOW);
+
+        return (a * b + halfRAY) / RAY;
     }
 
     /**
-     * @notice Divides two ray, rounding half up to the nearest ray
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
+     * @dev Divides two ray, rounding half up to the nearest ray
      * @param a Ray
      * @param b Ray
-     * @return c = a raydiv b
+     * @return The result of a/b, in ray
      **/
-    function rayDiv(uint256 a, uint256 b) internal pure returns (uint256 c) {
-        // to avoid overflow, a <= (type(uint256).max - halfB) / RAY
-        assembly {
-            if or(iszero(b), iszero(iszero(gt(a, div(sub(not(0), div(b, 2)), RAY))))) {
-                revert(0, 0)
-            }
+    function rayDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
+        uint256 halfB = b / 2;
 
-            c := div(add(mul(a, RAY), div(b, 2)), b)
-        }
+        require(a <= (type(uint256).max - halfB) / RAY, Errors.MATH_MULTIPLICATION_OVERFLOW);
+
+        return (a * RAY + halfB) / b;
     }
 
     /**
      * @dev Casts ray down to wad
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param a Ray
-     * @return b = a converted to wad, rounded half up to the nearest wad
+     * @return a casted to wad, rounded half up to the nearest wad
      **/
-    function rayToWad(uint256 a) internal pure returns (uint256 b) {
-        assembly {
-            b := div(a, WAD_RAY_RATIO)
-            let remainder := mod(a, WAD_RAY_RATIO)
-            if iszero(lt(remainder, div(WAD_RAY_RATIO, 2))) {
-                b := add(b, 1)
-            }
-        }
+    function rayToWad(uint256 a) internal pure returns (uint256) {
+        uint256 halfRatio = WAD_RAY_RATIO / 2;
+        uint256 result = halfRatio + a;
+        require(result >= halfRatio, Errors.MATH_ADDITION_OVERFLOW);
+
+        return result / WAD_RAY_RATIO;
     }
 
     /**
      * @dev Converts wad up to ray
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param a Wad
-     * @return b = a converted in ray
+     * @return a converted in ray
      **/
-    function wadToRay(uint256 a) internal pure returns (uint256 b) {
-        // to avoid overflow, b/WAD_RAY_RATIO == a
-        assembly {
-            b := mul(a, WAD_RAY_RATIO)
-
-            if iszero(eq(div(b, WAD_RAY_RATIO), a)) {
-                revert(0, 0)
-            }
-        }
+    function wadToRay(uint256 a) internal pure returns (uint256) {
+        uint256 result = a * WAD_RAY_RATIO;
+        require(result / WAD_RAY_RATIO == a, Errors.MATH_MULTIPLICATION_OVERFLOW);
+        return result;
     }
 }
