@@ -243,21 +243,21 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @return markets The markets the user is participating in.
     function _userMarkets(address _user) internal view returns (address[] memory markets) {
         uint256 marketsCreatedLength = marketsCreated.length;
-        uint256 marketLength;
+        uint256 marketsLength;
         markets = new address[](marketsCreatedLength);
 
         unchecked {
             for (uint256 i; i < marketsCreatedLength; ++i) {
                 if (_isSupplyingOrBorrowing(_user, marketsCreated[i])) {
-                    markets[marketLength] = marketsCreated[i];
-                    ++marketLength;
+                    markets[marketsLength] = marketsCreated[i];
+                    ++marketsLength;
                 }
             }
         }
 
         // Resize the array for return.
         assembly {
-            mstore(markets, marketLength)
+            mstore(markets, marketsLength)
         }
     }
 
