@@ -601,9 +601,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         address[] memory poolTokens = _userMarkets(_user);
         unchecked {
-            for (uint256 i; i < poolTokens.length; ++i) {
-                if (poolTokens[i] != _poolTokenAddress) {
-                    _updateIndexes(poolTokens[i]);
+            uint256 poolTokensLength = poolTokens.length;
+
+            for (uint256 i; i < poolTokensLength; ++i) {
+                address userPoolTokenAddress = poolTokens[i];
+                if (userPoolTokenAddress != _poolTokenAddress) {
+                    _updateIndexes(userPoolTokenAddress);
                 }
             }
         }

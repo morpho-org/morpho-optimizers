@@ -315,6 +315,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
             // Calculate LTV for borrow.
             values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
+
             // Add debt value for borrowed token.
             if (_poolTokenAddress == poolTokenAdress && _amountBorrowed > 0)
                 values.debtValue += (_amountBorrowed * underlyingPrice) / assetData.tokenUnit;
