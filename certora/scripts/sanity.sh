@@ -1,3 +1,4 @@
+#!/bin/sh
 
 make -C certora munged
 
@@ -13,10 +14,10 @@ certoraRun \
     --link PositionsManager:comptroller=SymbolicComptroller \
     --link PositionsManager:interestRatesManager=InterestRatesManager \
     --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
-    --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
     --cache morpho \
     --rule "sanity" \
-    --msg "PMFC Sanity" \
     --staging \
+    --send_only \
+    --msg "PMFC Sanity" \
