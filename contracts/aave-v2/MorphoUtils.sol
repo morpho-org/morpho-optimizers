@@ -289,28 +289,6 @@ abstract contract MorphoUtils is MorphoStorage {
         );
     }
 
-    /// @dev Gets all markets of the user.
-    /// @param _user The user address.
-    /// @return markets The markets the user is participating in.
-    function _userMarkets(address _user) internal view returns (address[] memory markets) {
-        uint256 marketsCreatedLength = marketsCreated.length;
-        uint256 marketLength;
-        bytes32 userMarketsCached = userMarkets[_user];
-        unchecked {
-            for (uint256 i; i < markets.length; i++) {
-                if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
-                    markets[marketLength] = marketsCreated[i];
-                    ++marketLength;
-                }
-            }
-        }
-
-        // Resize the array for return.
-        assembly {
-            mstore(markets, marketLength)
-        }
-    }
-
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
     /// @param _poolTokens The pool tokens to calculate the values for.
@@ -326,34 +304,16 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _amountBorrowed
     ) internal view returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-<<<<<<< HEAD
-<<<<<<< HEAD
-        address[] memory underlyings = new address[](_poolTokens.length);
-        uint256[] memory underlyingPrices = new uint256[](_poolTokens.length);
         bytes32 userMarketsCached = userMarkets[_user];
 
-        unchecked {
-            for (uint256 i; i < _poolTokens.length; ++i) {
-                underlyings[i] = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
-                underlyingPrices[i] = oracle.getAssetPrice(underlyings[i]);
-            }
-        }
-
-        Types.AssetLiquidityData memory assetData;
-
-        for (uint256 i; i < _poolTokens.length; i++) {
-            bytes32 borrowMaskCached = borrowMask[_poolTokens[i]];
-=======
-
-=======
->>>>>>> ⚡️ (#1072) Add unchecked within loop
         Types.AssetLiquidityData memory assetData;
 
         for (uint256 i; i < _poolTokens.length; ) {
+            bytes32 borrowMaskCached = borrowMask[_poolTokens[i]];
+
             address underlyingAddress = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
 
->>>>>>> 🔥 (#1072) Remove useless loop
             (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
             .getConfiguration(underlyingAddress)
             .getParamsMemory();
@@ -381,15 +341,13 @@ abstract contract MorphoUtils is MorphoStorage {
                     assetData.tokenUnit
                 );
                 values.collateralValue += assetCollateralValue;
+                // Calculate LTV for borrow.
+                values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
             }
 
-            // Calculate LTV for borrow.
-            values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
             // Add debt value for borrowed token.
             if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
-                values.debtValue += (_amountBorrowed * underlyingPrices[i]).divUp(
-                    assetData.tokenUnit
-                );
+                values.debtValue += (_amountBorrowed * underlyingPrice).divUp(assetData.tokenUnit);
 
             // Calculate LT for withdraw.
             if (assetCollateralValue > 0)

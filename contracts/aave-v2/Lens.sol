@@ -127,12 +127,6 @@ contract Lens {
         uint256 healthFactor = data.debtValue > 0
             ? data.liquidationThresholdValue.wadDiv(data.debtValue)
             : type(uint256).max;
-        Types.LiquidityData memory data = morpho.liquidityData(_user, address(0), 0, 0);
-        Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-            _user,
-            _poolTokenAddress,
-            oracle
-        );
 
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
