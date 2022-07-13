@@ -63,7 +63,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// APPENDIX STORAGE ///
 
-    mapping(address => uint256) public lastBorrowBlock; // Block number of the last borrow of the user.
+    bytes32 public lastBorrow; // Last borrow hash.
     bool public isClaimRewardsPaused; // Whether it's possible to claim rewards or not.
 
     /// CONSTRUCTOR ///
