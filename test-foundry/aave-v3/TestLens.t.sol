@@ -566,7 +566,7 @@ contract TestLens is TestSetup {
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
-        (uint16 expectedReserveFactor, ) = morpho.marketParameters(aDai);
+        (uint16 expectedReserveFactor, , ) = morpho.marketInfos(aDai);
         assertTrue(reserveFactor == expectedReserveFactor);
     }
 
