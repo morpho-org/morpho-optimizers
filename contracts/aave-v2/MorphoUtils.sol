@@ -276,13 +276,16 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _amountBorrowed
     ) internal view returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 poolTokensLength = _poolTokens.length;
         Types.AssetLiquidityData memory assetData;
+        uint256 poolTokensLength = _poolTokens.length;
+        address poolTokenAdress;
+        address underlyingAddress;
+        uint256 underlyingPrice;
 
         for (uint256 i; i < poolTokensLength; ) {
-            address poolTokenAdress = _poolTokens[i];
-            address underlyingAddress = IAToken(poolTokenAdress).UNDERLYING_ASSET_ADDRESS();
-            uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
+            poolTokenAdress = _poolTokens[i];
+            underlyingAddress = IAToken(poolTokenAdress).UNDERLYING_ASSET_ADDRESS();
+            underlyingPrice = oracle.getAssetPrice(underlyingAddress);
 
             (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
             .getConfiguration(underlyingAddress)
