@@ -123,15 +123,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) external view returns (Types.LiquidityData memory) {
-        return
-            _liquidityData(
-                _user,
-                _getUserMarkets(_user),
-                _poolTokenAddress,
-                _withdrawnAmount,
-                _borrowedAmount
-            );
+    ) external returns (Types.LiquidityData memory) {
+        return _liquidityData(_user, _poolTokenAddress, _withdrawnAmount, _borrowedAmount);
     }
 
     /// INTERNAL ///
@@ -293,83 +286,89 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
-    /// @param _poolTokens The pool tokens to calculate the values for.
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
     /// @param _amountWithdrawn The amount that is being withdrawn.
     /// @param _amountBorrowed The amount that is being borrowed.
     /// @return values The struct containing health factor, collateral, debt, ltv, liquidation threshold values.
     function _liquidityData(
         address _user,
-        address[] memory _poolTokens,
         address _poolTokenAddress,
         uint256 _amountWithdrawn,
         uint256 _amountBorrowed
-    ) internal view returns (Types.LiquidityData memory values) {
+    ) internal returns (Types.LiquidityData memory values) {
         Types.LiquidityStackVars memory vars;
+        Types.AssetLiquidityData memory assetData;
+
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         vars.userMarkets = userMarkets[_user];
+        vars.poolTokensLength = marketsCreated.length;
 
-        Types.AssetLiquidityData memory assetData;
-        vars.poolTokensLength = _poolTokens.length;
-
-        for (uint256 i; i < _poolTokens.length; ) {
-            vars.poolTokenAddress = _poolTokens[i];
+        for (uint256 i; i < vars.poolTokensLength; ) {
+            vars.poolTokenAddress = marketsCreated[i];
             vars.borrowMask = borrowMask[vars.poolTokenAddress];
+            if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
+                vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
 
-            vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-            vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
+                if (vars.poolTokenAddress != _poolTokenAddress)
+                    _updateIndexes(vars.poolTokenAddress);
 
-            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
-            .getConfiguration(vars.underlyingAddress)
-            .getParamsMemory();
+                (
+                    assetData.ltv,
+                    assetData.liquidationThreshold,
+                    ,
+                    assetData.reserveDecimals,
 
-            unchecked {
-                assetData.tokenUnit = 10**assetData.reserveDecimals; // Cannot overflow.
-            }
+                ) = pool.getConfiguration(vars.underlyingAddress).getParamsMemory();
 
-            if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                values.debtValue += _debtValue(
-                    vars.poolTokenAddress,
-                    _user,
-                    vars.underlyingPrice,
-                    assetData.tokenUnit
-                );
-            }
+                unchecked {
+                    assetData.tokenUnit = 10**assetData.reserveDecimals;
+                }
 
-            // Cache current asset collateral value
-            uint256 assetCollateralValue;
-            if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
-                assetCollateralValue = _collateralValue(
-                    vars.poolTokenAddress,
-                    _user,
-                    vars.underlyingPrice,
-                    assetData.tokenUnit
-                );
-                values.collateralValue += assetCollateralValue;
-                // Calculate LTV for borrow.
-                values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
-            }
+                if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
+                    values.debtValue += _debtValue(
+                        vars.poolTokenAddress,
+                        _user,
+                        vars.underlyingPrice,
+                        assetData.tokenUnit
+                    );
+                }
 
-            // Add debt value for borrowed token.
-            if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
-                values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
-                    assetData.tokenUnit
-                );
+                // Cache current asset collateral value
+                uint256 assetCollateralValue;
+                if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
+                    assetCollateralValue = _collateralValue(
+                        vars.poolTokenAddress,
+                        _user,
+                        vars.underlyingPrice,
+                        assetData.tokenUnit
+                    );
+                    values.collateralValue += assetCollateralValue;
+                    // Calculate LTV for borrow.
+                    values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
+                }
 
-            // Calculate LT for withdraw.
-            if (assetCollateralValue > 0)
-                values.liquidationThresholdValue += assetCollateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
+                // Add debt value for borrowed token.
+                if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
+                    values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                        assetData.tokenUnit
+                    );
 
-            // Subtract from liquidation threshold value and collateral value for withdrawn token.
-            if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
-                values.collateralValue -=
-                    (_amountWithdrawn * vars.underlyingPrice) /
-                    assetData.tokenUnit;
-                values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
-                    assetData.tokenUnit)
-                .percentMul(assetData.liquidationThreshold);
+                // Calculate LT for withdraw.
+                if (assetCollateralValue > 0)
+                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                        assetData.liquidationThreshold
+                    );
+
+                // Subtract from liquidation threshold value and collateral value for withdrawn token.
+                if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
+                    values.collateralValue -=
+                        (_amountWithdrawn * vars.underlyingPrice) /
+                        assetData.tokenUnit;
+                    values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
+                        assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
+                }
             }
 
             unchecked {
