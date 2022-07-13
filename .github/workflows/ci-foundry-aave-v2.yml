@@ -1,9 +1,10 @@
-name: Foundry tests
+name: Foundry tests (Morpho-Aave V2)
 
 on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     paths:
       - "lib/**"
@@ -20,7 +21,7 @@ on:
 
 jobs:
   morpho-aave-v2-eth-mainnet:
-    name: Morpho-Aave V2 [eth-mainnet]
+    name: eth-mainnet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -58,13 +59,29 @@ jobs:
           key: foundry-out-aave-v2 # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test
+        run: make ci > aave-v2.eth.gasreport.ansi
         env:
           PROTOCOL: aave-v2
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-report@v3.3
+        with:
+          workflowId: ci-foundry-aave-v2.yml
+          report: aave-v2.eth.gasreport.ansi
+          ignore: test-foundry/**/*
+          title: Morpho-Aave V2 gas impacts (Mainnet)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Aave V2 (Mainnet)
+          message: ${{ steps.gas_diff.outputs.markdown }}
+
   morpho-aave-v2-polygon-mainnet:
-    name: Morpho-Aave V2 [polygon-mainnet]
+    name: polygon-mainnet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -102,13 +119,29 @@ jobs:
           key: foundry-out-aave-v2 # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test
+        run: make ci > aave-v2.polygon.gasreport.ansi
         env:
           PROTOCOL: aave-v2
           NETWORK: polygon-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-report@v3.3
+        with:
+          workflowId: ci-foundry-aave-v2.yml
+          report: aave-v2.polygon.gasreport.ansi
+          ignore: test-foundry/**/*
+          title: Morpho-Aave V2 gas impacts (Polygon)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Aave V2 (Polygon)
+          message: ${{ steps.gas_diff.outputs.markdown }}
+
   morpho-aave-v2-avalanche-mainnet:
-    name: Morpho-Aave V2 [avalanche-mainnet]
+    name: avalanche-mainnet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -146,8 +179,23 @@ jobs:
           key: foundry-out-aave-v2 # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test
+        run: make ci > aave-v2.avalanche.gasreport.ansi
         env:
           PROTOCOL: aave-v2
           NETWORK: avalanche-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-report@v3.3
+        with:
+          workflowId: ci-foundry-aave-v2.yml
+          report: aave-v2.avalanche.gasreport.ansi
+          ignore: test-foundry/**/*
+          title: Morpho-Aave V2 gas impacts (Avalanche)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Aave V2 (Avalanche)
+          message: ${{ steps.gas_diff.outputs.markdown }}

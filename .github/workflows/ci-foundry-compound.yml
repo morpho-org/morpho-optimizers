@@ -1,9 +1,10 @@
-name: Foundry tests
+name: Foundry tests (Morpho-Compound)
 
 on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     paths:
       - "lib/**"
@@ -20,7 +21,7 @@ on:
 
 jobs:
   morpho-compound-eth-mainnet:
-    name: Morpho-Compound [eth-mainnet]
+    name: eth-mainnet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -58,8 +59,23 @@ jobs:
           key: foundry-out-compound # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test
+        run: make ci > compound.gasreport.ansi
         env:
           PROTOCOL: compound
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-report@v3.3
+        with:
+          workflowId: ci-foundry-compound.yml
+          report: compound.gasreport.ansi
+          ignore: test-foundry/**/*
+          title: Morpho-Compound gas impacts (Mainnet)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Compound (Mainnet)
+          message: ${{ steps.gas_diff.outputs.markdown }}
