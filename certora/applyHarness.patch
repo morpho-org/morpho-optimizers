@@ -1,12 +1,12 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-06-28 11:29:30.000000000 -0700
++++ .gitignore	2022-07-07 11:21:08.000000000 -0700
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
 --- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/MorphoGovernance.sol	2022-06-28 11:29:30.000000000 -0700
++++ compound/MorphoGovernance.sol	2022-07-07 11:21:08.000000000 -0700
 @@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -18,7 +18,7 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
  
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 --- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/PositionsManager.sol	2022-06-28 11:29:30.000000000 -0700
++++ compound/PositionsManager.sol	2022-07-08 16:18:03.000000000 -0700
 @@ -213,7 +213,7 @@
          address _onBehalf,
          uint256 _amount,
@@ -60,7 +60,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          address _borrower,
          uint256 _amount
 -    ) external {
-+    ) external override { // Harness
++    ) external override {
          if (
              !userMembership[_poolTokenBorrowedAddress][_borrower] ||
              !userMembership[_poolTokenCollateralAddress][_borrower]
