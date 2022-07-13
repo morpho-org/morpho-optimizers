@@ -303,41 +303,44 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _amountWithdrawn,
         uint256 _amountBorrowed
     ) internal view returns (Types.LiquidityData memory values) {
+        Types.LiquidityStackVars memory vars;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        bytes32 userMarketsCached = userMarkets[_user];
+        vars.userMarkets = userMarkets[_user];
 
         Types.AssetLiquidityData memory assetData;
+        vars.poolTokensLength = _poolTokens.length;
 
         for (uint256 i; i < _poolTokens.length; ) {
-            bytes32 borrowMaskCached = borrowMask[_poolTokens[i]];
+            vars.poolTokenAddress = _poolTokens[i];
+            vars.borrowMask = borrowMask[vars.poolTokenAddress];
 
-            address underlyingAddress = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
-            uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
+            vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+            vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
 
             (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
-            .getConfiguration(underlyingAddress)
+            .getConfiguration(vars.underlyingAddress)
             .getParamsMemory();
 
             unchecked {
                 assetData.tokenUnit = 10**assetData.reserveDecimals; // Cannot overflow.
             }
 
-            if (_isBorrowing(userMarketsCached, borrowMaskCached)) {
+            if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
                 values.debtValue += _debtValue(
-                    _poolTokens[i],
+                    vars.poolTokenAddress,
                     _user,
-                    underlyingPrice,
+                    vars.underlyingPrice,
                     assetData.tokenUnit
                 );
             }
 
             // Cache current asset collateral value
             uint256 assetCollateralValue;
-            if (_isSupplying(userMarketsCached, borrowMaskCached)) {
+            if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
                 assetCollateralValue = _collateralValue(
-                    _poolTokens[i],
+                    vars.poolTokenAddress,
                     _user,
-                    underlyingPrice,
+                    vars.underlyingPrice,
                     assetData.tokenUnit
                 );
                 values.collateralValue += assetCollateralValue;
@@ -346,8 +349,10 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             // Add debt value for borrowed token.
-            if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
-                values.debtValue += (_amountBorrowed * underlyingPrice).divUp(assetData.tokenUnit);
+            if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
+                values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    assetData.tokenUnit
+                );
 
             // Calculate LT for withdraw.
             if (assetCollateralValue > 0)
@@ -356,11 +361,11 @@ abstract contract MorphoUtils is MorphoStorage {
                 );
 
             // Subtract from liquidation threshold value and collateral value for withdrawn token.
-            if (_poolTokenAddress == _poolTokens[i] && _amountWithdrawn > 0) {
+            if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
                 values.collateralValue -=
-                    (_amountWithdrawn * underlyingPrice) /
+                    (_amountWithdrawn * vars.underlyingPrice) /
                     assetData.tokenUnit;
-                values.liquidationThresholdValue -= ((_amountWithdrawn * underlyingPrice) /
+                values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
                     assetData.tokenUnit)
                 .percentMul(assetData.liquidationThreshold);
             }

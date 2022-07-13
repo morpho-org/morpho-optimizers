@@ -76,4 +76,13 @@ library Types {
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
     }
+
+    struct LiquidityStackVars {
+        address poolTokenAddress;
+        uint256 poolTokensLength;
+        bytes32 userMarkets;
+        bytes32 borrowMask;
+        address underlyingAddress;
+        uint256 underlyingPrice;
+    }
 }
