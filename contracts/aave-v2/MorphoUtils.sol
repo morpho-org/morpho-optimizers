@@ -276,10 +276,12 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _amountBorrowed
     ) internal view returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 poolTokensLength = _poolTokens.length;
         Types.AssetLiquidityData memory assetData;
 
-        for (uint256 i; i < _poolTokens.length; ) {
-            address underlyingAddress = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
+        for (uint256 i; i < poolTokensLength; ) {
+            address poolTokenAdress = _poolTokens[i];
+            address underlyingAddress = IAToken(poolTokenAdress).UNDERLYING_ASSET_ADDRESS();
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
 
             (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
@@ -290,9 +292,9 @@ abstract contract MorphoUtils is MorphoStorage {
                 assetData.tokenUnit = 10**assetData.reserveDecimals; // Cannot overflow.
             }
 
-            if (_isBorrowing(_user, _poolTokens[i])) {
+            if (_isBorrowing(_user, poolTokenAdress)) {
                 values.debtValue += _debtValue(
-                    _poolTokens[i],
+                    poolTokenAdress,
                     _user,
                     underlyingPrice,
                     assetData.tokenUnit
@@ -301,9 +303,9 @@ abstract contract MorphoUtils is MorphoStorage {
 
             // Cache current asset collateral value
             uint256 assetCollateralValue;
-            if (_isSupplying(_user, _poolTokens[i])) {
+            if (_isSupplying(_user, poolTokenAdress)) {
                 assetCollateralValue = _collateralValue(
-                    _poolTokens[i],
+                    poolTokenAdress,
                     _user,
                     underlyingPrice,
                     assetData.tokenUnit
@@ -314,7 +316,7 @@ abstract contract MorphoUtils is MorphoStorage {
             // Calculate LTV for borrow.
             values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
             // Add debt value for borrowed token.
-            if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
+            if (_poolTokenAddress == poolTokenAdress && _amountBorrowed > 0)
                 values.debtValue += (_amountBorrowed * underlyingPrice) / assetData.tokenUnit;
 
             // Calculate LT for withdraw.
@@ -324,7 +326,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 );
 
             // Subtract from liquidation threshold value and collateral value for withdrawn token.
-            if (_poolTokenAddress == _poolTokens[i] && _amountWithdrawn > 0) {
+            if (_poolTokenAddress == poolTokenAdress && _amountWithdrawn > 0) {
                 values.collateralValue -=
                     (_amountWithdrawn * underlyingPrice) /
                     assetData.tokenUnit;
