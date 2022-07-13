@@ -1,9 +1,10 @@
-name: Foundry tests
+name: Foundry tests (Morpho-Aave V3)
 
 on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     paths:
       - "lib/**"
@@ -20,7 +21,7 @@ on:
 
 jobs:
   # morpho-aave-v3-polygon-mainnet:
-  #   name: Morpho-Aave V3 [polygon-mainnet]
+  #   name: polygon-mainnet
   #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v3
@@ -58,13 +59,17 @@ jobs:
   #         key: foundry-out-aave-v3 # always keep compiled contracts from base branch
 
   #     - name: Run tests
-  #       run: make test
+  #       run: make ci > gasreport.ansi
   #       env:
   #         PROTOCOL: aave-v3
   #         NETWORK: polygon-mainnet
   #         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+  #     - uses: Rubilmax/foundry-gas-report@v0.5
+  #       with:
+  #        token: "${{ secrets.GITHUB_TOKEN }}"
   morpho-aave-v3-avalanche-mainnet:
-    name: Morpho-Aave V3 [avalanche-mainnet]
+    name: avalanche-mainnet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -102,8 +107,12 @@ jobs:
           key: foundry-out-aave-v3 # always keep compiled contracts from base branch
 
       - name: Run tests
-        run: make test
+        run: make ci > gasreport.ansi
         env:
           PROTOCOL: aave-v3
           NETWORK: avalanche-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+      - uses: Rubilmax/foundry-gas-report@v0.5
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
