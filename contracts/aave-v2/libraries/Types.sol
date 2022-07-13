@@ -75,4 +75,13 @@ library Types {
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
     }
+
+    struct LiquidityStackVars {
+        address poolTokenAddress;
+        uint256 poolTokensLength;
+        bytes32 userMarkets;
+        bytes32 borrowMask;
+        address underlyingAddress;
+        uint256 underlyingPrice;
+    }
 }
