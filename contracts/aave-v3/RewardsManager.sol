@@ -29,12 +29,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     struct RewardData {
         uint128 index;
         uint128 lastUpdateTimestamp;
-        mapping(address => UserData) usersData;
     }
 
     /// STORAGE ///
 
-    mapping(address => mapping(address => RewardData)) internal localAssetData; // The local data related to a given asset. asset -> reward -> RewardData
+    mapping(address => mapping(address => RewardData)) internal rewardsData; // The local data related to a given asset. asset -> reward -> RewardData
+    mapping(address => mapping(address => mapping(address => UserData))) public usersData; // asset -> reward -> user -> UserData
 
     IRewardsController public rewardsController;
     IMorpho public morpho;
@@ -126,13 +126,11 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             address asset = _assets[i];
 
             for (uint256 j; j < rewardsListLength; ) {
-                uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
-                .usersData[_user]
-                .accrued;
+                uint256 rewardAmount = usersData[asset][rewardsList[j]][_user].accrued;
 
                 if (rewardAmount != 0) {
                     claimedAmounts[j] += rewardAmount;
-                    localAssetData[asset][rewardsList[j]].usersData[_user].accrued = 0;
+                    usersData[asset][rewardsList[j]][_user].accrued = 0;
                 }
 
                 unchecked {
@@ -173,7 +171,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 assetsLength = _assets.length;
 
         for (uint256 i; i < assetsLength; ) {
-            totalAccrued += localAssetData[_assets[i]][_reward].usersData[_user].accrued;
+            totalAccrued += usersData[_assets[i]][_reward][_user].accrued;
 
             unchecked {
                 ++i;
@@ -199,8 +197,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         // Add unrealized rewards from user to unclaimed rewards.
         for (uint256 i; i < userAssetBalances.length; ) {
             for (uint256 j; j < rewardsListLength; ) {
-                unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset][rewardsList[j]]
-                .usersData[_user]
+                unclaimedAmounts[j] += usersData[userAssetBalances[i].asset][rewardsList[j]][_user]
                 .accrued;
 
                 if (userAssetBalances[i].userBalance == 0) continue;
@@ -245,13 +242,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _asset,
         address _reward
     ) external view override returns (uint256) {
-        return localAssetData[_asset][_reward].usersData[_user].index;
+        return usersData[_asset][_reward][_user].index;
     }
 
     /// INTERNAL ///
 
     /// @dev Updates the state of the distribution for the specified reward.
-    /// @param _localRewardData The local reward's data.
     /// @param _asset The asset being rewarded.
     /// @param _reward The address of the reward token.
     /// @param _totalSupply The current total supply of underlying assets for this distribution.
@@ -259,20 +255,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @return newIndex The new distribution index.
     /// @return indexUpdated True if the index was updated, false otherwise.
     function _updateRewardData(
-        RewardData storage _localRewardData,
         address _asset,
         address _reward,
         uint256 _totalSupply,
         uint256 _assetUnit
     ) internal returns (uint256 newIndex, bool indexUpdated) {
         uint256 oldIndex;
-        (oldIndex, newIndex) = _getAssetIndex(
-            _localRewardData,
-            _asset,
-            _reward,
-            _totalSupply,
-            _assetUnit
-        );
+        (oldIndex, newIndex) = _getAssetIndex(_asset, _reward, _totalSupply, _assetUnit);
 
         if (newIndex != oldIndex) {
             require(newIndex <= type(uint128).max, "INDEX_OVERFLOW");
@@ -280,15 +269,14 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             indexUpdated = true;
 
             // Optimization: storing one after another saves one SSTORE.
-            _localRewardData.index = uint128(newIndex);
-            _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
-        } else _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
+            rewardsData[_asset][_reward].index = uint128(newIndex);
+            rewardsData[_asset][_reward].lastUpdateTimestamp = uint128(block.timestamp);
+        } else rewardsData[_asset][_reward].lastUpdateTimestamp = uint128(block.timestamp);
 
         return (newIndex, indexUpdated);
     }
 
     /// @dev Updates the state of the distribution for the specific user.
-    /// @param _localRewardData The local reward's data
     /// @param _user The address of the user.
     /// @param _userBalance The current user asset balance.
     /// @param _newAssetIndex The new index of the asset distribution.
@@ -296,23 +284,23 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @return rewardsAccrued The rewards accrued since the last update.
     /// @return dataUpdated True if the data was updated, false otherwise.
     function _updateUserData(
-        RewardData storage _localRewardData,
+        UserData storage _userData,
         address _user,
         uint256 _userBalance,
         uint256 _newAssetIndex,
         uint256 _assetUnit
     ) internal returns (uint256 rewardsAccrued, bool dataUpdated) {
-        uint256 userIndex = _localRewardData.usersData[_user].index;
+        uint256 userIndex = _userData.index;
 
         if ((dataUpdated = userIndex != _newAssetIndex)) {
             // Already checked for overflow in _updateRewardData.
-            _localRewardData.usersData[_user].index = uint128(_newAssetIndex);
+            _userData.index = uint128(_newAssetIndex);
 
             if (_userBalance != 0) {
                 rewardsAccrued = _getRewards(_userBalance, _newAssetIndex, userIndex, _assetUnit);
 
                 // Not safe casting because 2^128 is large enough.
-                _localRewardData.usersData[_user].accrued += uint128(rewardsAccrued);
+                _userData.accrued += uint128(rewardsAccrued);
             }
         }
     }
@@ -337,18 +325,17 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             for (uint128 i; i < numAvailableRewards; ++i) {
                 address reward = availableRewards[i];
-                RewardData storage localRewardData = localAssetData[_asset][reward];
 
                 (uint256 newAssetIndex, bool rewardDataUpdated) = _updateRewardData(
-                    localRewardData,
                     _asset,
                     reward,
                     _totalSupply,
                     assetUnit
                 );
 
+                UserData storage userData = usersData[_asset][reward][_user];
                 (uint256 rewardsAccrued, bool userDataUpdated) = _updateUserData(
-                    localRewardData,
+                    userData,
                     _user,
                     _userBalance,
                     newAssetIndex,
@@ -407,7 +394,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             unclaimedRewards +=
                 _getPendingRewards(_user, _reward, _userAssetBalances[i]) +
-                localAssetData[_userAssetBalances[i].asset][_reward].usersData[_user].accrued;
+                usersData[_userAssetBalances[i].asset][_reward][_user].accrued;
 
             unchecked {
                 ++i;
@@ -425,15 +412,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _reward,
         UserAssetBalance memory _userAssetBalance
     ) internal view returns (uint256) {
-        RewardData storage localRewardData = localAssetData[_userAssetBalance.asset][_reward];
-
         uint256 assetUnit;
         unchecked {
             assetUnit = 10**rewardsController.getAssetDecimals(_userAssetBalance.asset);
         }
 
         (, uint256 nextIndex) = _getAssetIndex(
-            localRewardData,
             _userAssetBalance.asset,
             _reward,
             _userAssetBalance.totalSupply,
@@ -444,7 +428,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             _getRewards(
                 _userAssetBalance.userBalance,
                 nextIndex,
-                localRewardData.usersData[_user].index,
+                usersData[_userAssetBalance.asset][_reward][_user].index,
                 assetUnit
             );
     }
@@ -468,23 +452,22 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Computes the next value of an specific distribution index, with validations.
-    /// @param _localRewardData The local reward's data.
     /// @param _asset The asset being rewarded.
     /// @param _reward The address of the reward token.
     /// @param _totalSupply The current total supply of underlying assets for this distribution.
     /// @param _assetUnit The asset's unit (10**decimals).
     /// @return The former index and the new index in this order.
     function _getAssetIndex(
-        RewardData storage _localRewardData,
         address _asset,
         address _reward,
         uint256 _totalSupply,
         uint256 _assetUnit
     ) internal view returns (uint256, uint256) {
         uint256 currentTimestamp = block.timestamp;
+        RewardData storage rewardData = rewardsData[_asset][_reward];
 
-        if (currentTimestamp == _localRewardData.lastUpdateTimestamp)
-            return (_localRewardData.index, _localRewardData.index);
+        if (currentTimestamp == rewardData.lastUpdateTimestamp)
+            return (rewardData.index, rewardData.index);
         else {
             (
                 uint256 rewardIndex,
@@ -498,7 +481,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 _totalSupply == 0 ||
                 lastUpdateTimestamp == currentTimestamp ||
                 lastUpdateTimestamp >= distributionEnd
-            ) return (_localRewardData.index, rewardIndex);
+            ) return (rewardData.index, rewardIndex);
 
             currentTimestamp = currentTimestamp > distributionEnd
                 ? distributionEnd
@@ -509,7 +492,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             assembly {
                 firstTerm := div(firstTerm, _totalSupply)
             }
-            return (_localRewardData.index, (firstTerm + rewardIndex));
+            return (rewardData.index, (firstTerm + rewardIndex));
         }
     }
 
