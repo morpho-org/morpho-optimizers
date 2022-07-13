@@ -293,17 +293,19 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _user The user address.
     /// @return markets The markets the user is participating in.
     function _userMarkets(address _user) internal view returns (address[] memory markets) {
-        markets = new address[](marketsCreated.length);
+        uint256 marketsCreatedLength = marketsCreated.length;
         uint256 marketLength;
         bytes32 userMarketsCached = userMarkets[_user];
-        for (uint256 i; i < markets.length; i++) {
-            if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
-                markets[marketLength] = marketsCreated[i];
-                ++marketLength;
+        unchecked {
+            for (uint256 i; i < markets.length; i++) {
+                if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
+                    markets[marketLength] = marketsCreated[i];
+                    ++marketLength;
+                }
             }
         }
 
-        // Resize the array for return
+        // Resize the array for return.
         assembly {
             mstore(markets, marketLength)
         }
@@ -328,9 +330,11 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256[] memory underlyingPrices = new uint256[](_poolTokens.length);
         bytes32 userMarketsCached = userMarkets[_user];
 
-        for (uint256 i; i < _poolTokens.length; i++) {
-            underlyings[i] = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
-            underlyingPrices[i] = oracle.getAssetPrice(underlyings[i]);
+        unchecked {
+            for (uint256 i; i < _poolTokens.length; ++i) {
+                underlyings[i] = IAToken(_poolTokens[i]).UNDERLYING_ASSET_ADDRESS();
+                underlyingPrices[i] = oracle.getAssetPrice(underlyings[i]);
+            }
         }
 
         Types.AssetLiquidityData memory assetData;
