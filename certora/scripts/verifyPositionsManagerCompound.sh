@@ -7,21 +7,23 @@ certoraRun \
     certora/munged/compound/PositionsManager.sol \
     certora/munged/compound/RewardsManager.sol \
     certora/munged/compound/InterestRatesManager.sol \
-    certora/helpers/compound/DummyPoolTokenImpl.sol \
-    certora/helpers/compound/DummyPoolTokenA.sol \
-    certora/helpers/compound/DummyPoolTokenB.sol \
-    certora/helpers/compound/SymbolicOracle.sol \
-    certora/helpers/compound/SymbolicComptroller.sol \
+    certora/helpers/compound/contracts/DummyPoolTokenImpl.sol \
+    certora/helpers/compound/contracts/DummyPoolTokenA.sol \
+    certora/helpers/compound/contracts/DummyPoolTokenB.sol \
+    certora/helpers/compound/contracts/SymbolicOracle.sol \
+    certora/helpers/compound/contracts/SymbolicComptroller.sol \
     --link PositionsManager:comptroller=SymbolicComptroller \
     --link PositionsManager:interestRatesManager=InterestRatesManager \
     --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
-    --method 'liquidateLogic(address,address,address,uint256)' \
+    --solc solc \
     --loop_iter 2 \
     --optimistic_loop \
     --cache morpho \
     --staging \
     --send_only \
-    --msg "PMFC $1"
+
+    # --method 'liquidateLogic(address, address, address, uint256)' \
+    # --method 'repayLogic(address, address, address, uint256, uint256)' \
 
     # notes:
     # keep the cache name common among run scripts, will save a bunch on the setup time 

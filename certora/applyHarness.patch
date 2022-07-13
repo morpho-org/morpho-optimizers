@@ -1,6 +1,30 @@
+<<<<<<< HEAD
+||||||| parent of 45448eed (cleaned up helpers and scripts)
+diff -ruN .gitignore .gitignore
+--- .gitignore	1969-12-31 16:00:00.000000000 -0800
++++ .gitignore	2022-06-28 11:29:30.000000000 -0700
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+=======
+diff -ruN .gitignore .gitignore
+--- .gitignore	1969-12-31 16:00:00.000000000 -0800
++++ .gitignore	2022-07-07 11:21:08.000000000 -0700
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+>>>>>>> 45448eed (cleaned up helpers and scripts)
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
+<<<<<<< HEAD
 --- compound/MorphoGovernance.sol	2022-08-02 16:17:08.052222958 +0200
 +++ compound/MorphoGovernance.sol	2022-08-02 16:19:47.119707031 +0200
+||||||| parent of 45448eed (cleaned up helpers and scripts)
+--- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
++++ compound/MorphoGovernance.sol	2022-06-28 11:29:30.000000000 -0700
+=======
+--- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
++++ compound/MorphoGovernance.sol	2022-07-07 11:21:08.000000000 -0700
+>>>>>>> 45448eed (cleaned up helpers and scripts)
 @@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -11,9 +35,19 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
          __Ownable_init();
  
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
+<<<<<<< HEAD
 --- compound/PositionsManager.sol	2022-08-02 16:17:08.052222958 +0200
 +++ compound/PositionsManager.sol	2022-08-02 16:19:47.119707031 +0200
 @@ -212,7 +212,7 @@
+||||||| parent of 45448eed (cleaned up helpers and scripts)
+--- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
++++ compound/PositionsManager.sol	2022-06-28 11:29:30.000000000 -0700
+@@ -213,7 +213,7 @@
+=======
+--- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
++++ compound/PositionsManager.sol	2022-07-08 16:18:03.000000000 -0700
+@@ -213,7 +213,7 @@
+>>>>>>> 45448eed (cleaned up helpers and scripts)
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -54,7 +88,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          address _borrower,
          uint256 _amount
 -    ) external {
-+    ) external override { // Harness
++    ) external override {
          if (
              !userMembership[_poolTokenBorrowed][_borrower] ||
              !userMembership[_poolTokenCollateral][_borrower]
