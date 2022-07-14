@@ -105,7 +105,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
-        uint256 userMarkets;
+        bytes32 userMarkets;
         uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
@@ -603,7 +603,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        uint256 userMarkets = userMarkets[_user];
+        bytes32 userMarkets = userMarkets[_user];
 
         // If the user is not borrowing any asset, return an infinite health factor.
         if (!_isBorrowingAny(userMarkets)) return type(uint256).max;
@@ -617,7 +617,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         for (; vars.i < vars.numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[vars.i];
-            uint256 borrowMask = borrowMask[poolToken];
+            bytes32 borrowMask = borrowMask[poolToken];
 
             if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);

@@ -400,7 +400,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         );
         marketParameters[poolTokenAddress] = _marketParams;
 
-        borrowMask[poolTokenAddress] = 1 << (marketsCreated.length << 1);
+        borrowMask[poolTokenAddress] = ONE << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);
 
         ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
