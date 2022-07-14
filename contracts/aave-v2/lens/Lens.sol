@@ -15,5 +15,6 @@ contract Lens is RewardsLens {
         morpho = IMorpho(_morphoAddress);
         addressesProvider = ILendingPoolAddressesProvider(_addressesProviderAddress);
         pool = ILendingPool(addressesProvider.getLendingPool());
+        rewardsManager = IRewardsManager(morpho.rewardsManager());
     }
 }

@@ -119,10 +119,10 @@ library InterestRatesModel {
         }
     }
 
-    /// @notice Computes and returns the peer-to-peer supply rate per block of a market given its parameters.
+    /// @notice Computes and returns the peer-to-peer supply rate per year of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pSupplyRate_ The peer-to-peer supply rate per block.
-    function computeP2PSupplyRatePerBlock(P2PRateComputeParams memory _params)
+    /// @return p2pSupplyRate_ The peer-to-peer supply rate per year.
+    function computeP2PSupplyRatePerYear(P2PRateComputeParams memory _params)
         internal
         pure
         returns (uint256 p2pSupplyRate_)
@@ -146,10 +146,10 @@ library InterestRatesModel {
         }
     }
 
-    /// @notice Computes and returns the peer-to-peer borrow rate per block of a market given its parameters.
+    /// @notice Computes and returns the peer-to-peer borrow rate per year of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pBorrowRate_ The peer-to-peer borrow rate per block.
-    function computeP2PBorrowRatePerBlock(P2PRateComputeParams memory _params)
+    /// @return p2pBorrowRate_ The peer-to-peer borrow rate per year.
+    function computeP2PBorrowRatePerYear(P2PRateComputeParams memory _params)
         internal
         pure
         returns (uint256 p2pBorrowRate_)
