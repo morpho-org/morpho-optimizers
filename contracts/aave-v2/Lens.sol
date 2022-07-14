@@ -67,15 +67,15 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolTokenAddress) external view returns (bool) {
-        return morpho.marketInfos(_poolTokenAddress).isCreated;
+        return morpho.market(_poolTokenAddress).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
-        return marketInfos.isCreated && !marketInfos.isPaused;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        return market.isCreated && !market.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
@@ -86,8 +86,8 @@ contract Lens {
         view
         returns (bool)
     {
-        Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
-        return marketInfos.isCreated && !marketInfos.isPaused && !marketInfos.isPartiallyPaused;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
     }
 
     /// @notice Returns the current balance state of the user.
@@ -271,7 +271,7 @@ contract Lens {
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
+            Types.Market memory market = morpho.market(_poolTokenAddress);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
@@ -284,8 +284,8 @@ contract Lens {
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
-                marketInfos.reserveFactor,
-                marketInfos.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
             );
 
@@ -301,7 +301,7 @@ contract Lens {
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
+            Types.Market memory market = morpho.market(_poolTokenAddress);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
@@ -314,8 +314,8 @@ contract Lens {
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
-                marketInfos.reserveFactor,
-                marketInfos.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
             );
 
@@ -331,7 +331,7 @@ contract Lens {
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
+            Types.Market memory market = morpho.market(_poolTokenAddress);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
@@ -344,8 +344,8 @@ contract Lens {
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
-                marketInfos.reserveFactor,
-                marketInfos.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
             );
 
@@ -403,12 +403,12 @@ contract Lens {
             uint256 reserveFactor_
         )
     {
-        Types.MarketInfos memory marketInfos_ = morpho.marketInfos(_poolTokenAddress);
-        isCreated_ = marketInfos_.isCreated;
+        Types.Market memory market_ = morpho.market(_poolTokenAddress);
+        isCreated_ = market_.isCreated;
         p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
-        isPaused_ = marketInfos_.isPaused;
-        isPartiallyPaused_ = marketInfos_.isPartiallyPaused;
-        reserveFactor_ = morpho.marketInfos(_poolTokenAddress).reserveFactor;
+        isPaused_ = market_.isPaused;
+        isPartiallyPaused_ = market_.isPartiallyPaused;
+        reserveFactor_ = morpho.market(_poolTokenAddress).reserveFactor;
     }
 
     /// INTERNAL ///

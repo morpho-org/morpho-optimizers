@@ -45,7 +45,7 @@ contract TestGovernance is TestSetup {
 
         morpho.createMarket(wEth, 1_000, 3_333);
         (address underlyingToken, uint16 reserveFactor, uint256 p2pIndexCursor, , , ) = morpho
-        .marketInfos(aWeth);
+        .market(aWeth);
         assertEq(reserveFactor, 1_000);
         assertEq(p2pIndexCursor, 3_333);
         assertTrue(underlyingToken == wEth);
@@ -65,14 +65,14 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (, uint16 reserveFactor, , , , ) = morpho.marketInfos(aDai);
+        (, uint16 reserveFactor, , , , ) = morpho.market(aDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
         morpho.createMarket(wEth, 3_333, 0);
 
-        (, , , bool isCreated, , ) = morpho.marketInfos(aWeth);
+        (, , , bool isCreated, , ) = morpho.market(aWeth);
 
         assertTrue(isCreated);
         assertEq(morpho.p2pSupplyIndex(aWeth), WadRayMath.RAY);

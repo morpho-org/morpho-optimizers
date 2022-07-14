@@ -240,7 +240,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
         _updateIndexes(_poolTokenAddress);
 
-        marketInfos[_poolTokenAddress].reserveFactor = _newReserveFactor;
+        market[_poolTokenAddress].reserveFactor = _newReserveFactor;
         emit ReserveFactorSet(_poolTokenAddress, _newReserveFactor);
     }
 
@@ -255,7 +255,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
         _updateIndexes(_poolTokenAddress);
 
-        marketInfos[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
+        market[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
@@ -267,7 +267,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            marketInfos[poolToken].isPaused = _newStatus;
+            market[poolToken].isPaused = _newStatus;
             emit PauseStatusSet(poolToken, _newStatus);
 
             unchecked {
@@ -284,7 +284,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        marketInfos[_poolTokenAddress].isPaused = _newStatus;
+        market[_poolTokenAddress].isPaused = _newStatus;
         emit PauseStatusSet(_poolTokenAddress, _newStatus);
     }
 
@@ -296,7 +296,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        marketInfos[_poolTokenAddress].isPartiallyPaused = _newStatus;
+        market[_poolTokenAddress].isPartiallyPaused = _newStatus;
         emit PartialPauseStatusSet(_poolTokenAddress, _newStatus);
     }
 
@@ -327,10 +327,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        pool.setUserUseReserveAsCollateral(
-            marketInfos[_poolTokenAddress].underlyingToken,
-            _newStatus
-        );
+        pool.setUserUseReserveAsCollateral(market[_poolTokenAddress].underlyingToken, _newStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
@@ -343,10 +340,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokenAddresses[i];
 
-            Types.MarketInfos memory status = marketInfos[poolToken];
+            Types.Market memory status = market[poolToken];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
-            ERC20 underlyingToken = ERC20(marketInfos[poolToken].underlyingToken);
+            ERC20 underlyingToken = ERC20(market[poolToken].underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
             if (underlyingBalance == 0) continue;
@@ -377,7 +374,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         address poolTokenAddress = pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (marketInfos[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        if (market[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
 
         p2pSupplyIndex[poolTokenAddress] = WadRayMath.RAY;
         p2pBorrowIndex[poolTokenAddress] = WadRayMath.RAY;
@@ -390,7 +387,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             pool.getReserveNormalizedVariableDebt(_underlyingToken)
         );
 
-        marketInfos[poolTokenAddress] = Types.MarketInfos({
+        market[poolTokenAddress] = Types.Market({
             underlyingToken: _underlyingToken,
             reserveFactor: _reserveFactor,
             p2pIndexCursor: _p2pIndexCursor,
