@@ -125,7 +125,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Match pool borrowers if any.
         if (
             vars.remainingToSupply > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchBorrowers(
@@ -220,7 +220,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Match pool suppliers if any.
         if (
             remainingToBorrow > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchSuppliers(

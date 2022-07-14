@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestP2PDisable is TestSetup {
-    function testShouldMatchSupplyDeltaWithP2PDisabled() public {
+    function testShouldMatchSupplyDeltaWithisP2PDisabled() public {
         uint256 nSuppliers = 3;
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = nSuppliers * suppliedAmount;
@@ -29,7 +29,7 @@ contract TestP2PDisable is TestSetup {
         assertGt(p2pSupplyDelta, 0);
 
         // Disable peer-to-peer.
-        morpho.setP2PDisabled(aDai, true);
+        morpho.setP2PDisabledStatus(aDai, true);
 
         // Delta must be reduce to 0.
         borrower1.borrow(aDai, borrowedAmount);
@@ -37,7 +37,7 @@ contract TestP2PDisable is TestSetup {
         testEquality(p2pSupplyDelta, 0);
     }
 
-    function testShouldMatchBorrowDeltaWithP2PDisabled() public {
+    function testShouldMatchBorrowDeltaWithisP2PDisabled() public {
         uint256 nBorrowers = 3;
         uint256 borrowAmount = 1 ether;
         uint256 collateralAmount = 2 * borrowAmount;
@@ -62,7 +62,7 @@ contract TestP2PDisable is TestSetup {
         assertGt(p2pBorrowDelta, 0);
 
         // Disable peer-to-peer.
-        morpho.setP2PDisabled(aUsdc, true);
+        morpho.setP2PDisabledStatus(aUsdc, true);
 
         // Delta must be reduce to 0.
         supplier1.supply(aUsdc, to6Decimals(supplyAmount * 2));

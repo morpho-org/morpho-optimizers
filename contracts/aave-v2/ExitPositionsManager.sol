@@ -348,7 +348,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Match pool suppliers if any.
         if (
             vars.remainingToWithdraw > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
@@ -527,7 +527,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Match pool borrowers if any.
         if (
             vars.remainingToRepay > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(

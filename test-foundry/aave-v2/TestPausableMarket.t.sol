@@ -12,7 +12,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.setPauseStatus(aDai, true);
 
         morpho.setPauseStatus(aDai, true);
-        (, , , , bool isPaused, ) = morpho.market(aDai);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
         assertTrue(isPaused, "paused is false");
     }
 
@@ -21,7 +21,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.setPartialPauseStatus(aDai, true);
 
         morpho.setPartialPauseStatus(aDai, true);
-        (, , , , , bool isPartiallyPaused) = morpho.market(aDai);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
@@ -29,35 +29,35 @@ contract TestPausableMarket is TestSetup {
         morpho.setPauseStatusForAllMarkets(true);
 
         for (uint256 i; i < pools.length; ++i) {
-            (, , , , bool isPaused, ) = morpho.market(pools[i]);
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
             assertTrue(isPaused, "paused is false");
         }
 
         morpho.setPauseStatusForAllMarkets(false);
 
         for (uint256 i; i < pools.length; ++i) {
-            (, , , , bool isPaused, ) = morpho.market(pools[i]);
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
             assertFalse(isPaused, "paused is true");
         }
     }
 
     function testPauseUnpause() public {
         morpho.setPauseStatus(aDai, true);
-        (, , , , bool isPaused, ) = morpho.market(aDai);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
         assertTrue(isPaused, "paused is false");
 
         morpho.setPauseStatus(aDai, false);
-        (, , , , isPaused, ) = morpho.market(aDai);
+        (, , , , isPaused, , ) = morpho.market(aDai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
         morpho.setPartialPauseStatus(aDai, true);
-        (, , , , , bool isPartiallyPaused) = morpho.market(aDai);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
         morpho.setPartialPauseStatus(aDai, false);
-        (, , , , , isPartiallyPaused) = morpho.market(aDai);
+        (, , , , , isPartiallyPaused, ) = morpho.market(aDai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
