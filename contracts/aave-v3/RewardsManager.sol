@@ -15,26 +15,28 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Contract managing Aave's protocol rewards.
 contract RewardsManager is IRewardsManager, OwnableUpgradeable {
+    /// STRUCTS ///
+
     struct UserAssetBalance {
-        address asset;
-        uint256 userBalance;
-        uint256 totalSupply;
+        address asset; // The rewarded asset (either aToken or debt token).
+        uint256 balance; // The user balance of this asset (in asset decimals).
+        uint256 totalSupply; // The total supply of this asset.
     }
 
     struct UserData {
-        uint128 index;
-        uint128 accrued;
+        uint128 index; // The user's index for a specific (asset, reward) couple.
+        uint128 accrued; // The user's accrued rewards for a specific (asset, reward) couple in (in reward token decimals).
     }
 
     struct RewardData {
-        uint128 index;
-        uint128 lastUpdateTimestamp;
-        mapping(address => UserData) usersData;
+        uint128 index; // The current index for a specific reward token.
+        uint128 lastUpdateTimestamp; // The last timestamp the index was updated.
+        mapping(address => UserData) usersData; // Users data. user -> UserData
     }
 
     /// STORAGE ///
 
-    mapping(address => mapping(address => RewardData)) internal localAssetData; // The local data related to a given asset. asset -> reward -> RewardData
+    mapping(address => mapping(address => RewardData)) internal localAssetData; // The local data related to a given asset (either aToken or debt token). asset -> reward -> RewardData
 
     IRewardsController public rewardsController;
     IMorpho public morpho;
@@ -203,7 +205,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 .usersData[_user]
                 .accrued;
 
-                if (userAssetBalances[i].userBalance == 0) continue;
+                if (userAssetBalances[i].balance == 0) continue;
 
                 unclaimedAmounts[j] += _getPendingRewards(
                     _user,
@@ -379,7 +381,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             _updateData(
                 _user,
                 _userAssetBalances[i].asset,
-                _userAssetBalances[i].userBalance,
+                _userAssetBalances[i].balance,
                 _userAssetBalances[i].totalSupply
             );
 
@@ -403,7 +405,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         // Add unrealized rewards.
         for (uint256 i; i < userAssetBalancesLength; ) {
-            if (_userAssetBalances[i].userBalance == 0) continue;
+            if (_userAssetBalances[i].balance == 0) continue;
 
             unclaimedRewards +=
                 _getPendingRewards(_user, _reward, _userAssetBalances[i]) +
@@ -442,7 +444,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         return
             _getRewards(
-                _userAssetBalance.userBalance,
+                _userAssetBalance.balance,
                 nextIndex,
                 localRewardData.usersData[_user].index,
                 assetUnit
@@ -534,11 +536,11 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             );
 
             if (asset == reserve.aTokenAddress)
-                userAssetBalances[i].userBalance = morpho
+                userAssetBalances[i].balance = morpho
                 .supplyBalanceInOf(reserve.aTokenAddress, _user)
                 .onPool;
             else if (asset == reserve.variableDebtTokenAddress)
-                userAssetBalances[i].userBalance = morpho
+                userAssetBalances[i].balance = morpho
                 .borrowBalanceInOf(reserve.aTokenAddress, _user)
                 .onPool;
             else revert InvalidAsset();
