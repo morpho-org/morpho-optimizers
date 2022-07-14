@@ -221,10 +221,13 @@ abstract contract UsersLens is IndexesLens {
             _poolTokenAddress
         );
 
-        balanceOnPool = morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-            poolSupplyIndex
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+            _poolTokenAddress,
+            _user
         );
-        balanceInP2P = morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(p2pSupplyIndex);
+
+        balanceOnPool = supplyBalance.onPool.mul(poolSupplyIndex);
+        balanceInP2P = supplyBalance.inP2P.mul(p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -248,10 +251,13 @@ abstract contract UsersLens is IndexesLens {
             _poolTokenAddress
         );
 
-        balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-            poolBorrowIndex
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
+            _poolTokenAddress,
+            _user
         );
-        balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(p2pBorrowIndex);
+
+        balanceOnPool = borrowBalance.onPool.mul(poolBorrowIndex);
+        balanceInP2P = borrowBalance.inP2P.mul(p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }

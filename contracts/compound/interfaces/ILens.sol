@@ -49,11 +49,6 @@ interface ILens {
         view
         returns (bool);
 
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets_);
-
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
 
     function getMarketData(address _poolTokenAddress)
@@ -123,6 +118,11 @@ interface ILens {
         );
 
     /// USERS ///
+
+    function getEnteredMarkets(address _user)
+        external
+        view
+        returns (address[] memory enteredMarkets_);
 
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         external

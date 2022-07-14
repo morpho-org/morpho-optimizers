@@ -46,13 +46,14 @@ contract TestSetup is Config, Utils {
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
+    TransparentUpgradeableProxy internal lensProxy;
     TransparentUpgradeableProxy public morphoProxy;
     TransparentUpgradeableProxy internal rewardsManagerProxy;
 
+    Lens internal lensImplV1;
     Morpho public morphoImplV1;
     IRewardsManager internal rewardsManagerImplV1;
 
-    Lens public lens;
     Morpho public morpho;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
@@ -82,6 +83,8 @@ contract TestSetup is Config, Utils {
     User[] public borrowers;
 
     address[] public pools;
+    address public REWARD_TOKEN =
+        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
     function setUp() public {
         initContracts();
@@ -94,22 +97,15 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
-
         poolAddressesProvider = ILendingPoolAddressesProvider(poolAddressesProviderAddress);
         pool = ILendingPool(poolAddressesProvider.getLendingPool());
+        interestRatesManager = new InterestRatesManager();
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
         morphoProxy = new TransparentUpgradeableProxy(
@@ -123,11 +119,10 @@ contract TestSetup is Config, Utils {
             exitPositionsManager,
             interestRatesManager,
             ILendingPoolAddressesProvider(poolAddressesProviderAddress),
-            defaultMaxGasForMatching,
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6}),
             20
         );
 
-        lens = new Lens(address(morpho), poolAddressesProvider);
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
         morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
@@ -150,6 +145,7 @@ contract TestSetup is Config, Utils {
 
         createMarket(aDai);
         createMarket(aUsdc);
+        createMarket(aWeth);
         createMarket(aWbtc);
         createMarket(aUsdt);
         createMarket(aAave);
@@ -168,10 +164,15 @@ contract TestSetup is Config, Utils {
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
+        morpho.setIncentivesVault(incentivesVault);
 
         oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
         morpho.setRewardsManager(rewardsManager);
-        morpho.setIncentivesVault(incentivesVault);
+
+        lensImplV1 = new Lens();
+        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
+        lens = Lens(address(lensProxy));
+        lens.initialize(address(morpho), poolAddressesProviderAddress);
     }
 
     function createMarket(address _aToken) internal {

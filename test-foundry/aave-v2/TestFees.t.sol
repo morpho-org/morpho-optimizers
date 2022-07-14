@@ -57,7 +57,7 @@ contract TestFees is TestSetup {
         uint256 oldBorrowIndex = morpho.p2pBorrowIndex(aDai);
 
         hevm.warp(block.timestamp + 365 days);
-        (uint256 newSupplyIndex, uint256 newBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
+        (uint256 newSupplyIndex, uint256 newBorrowIndex, , ) = lens.getIndexes(aDai);
 
         uint256 expectedFees = toBorrow
         .rayMul(newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex))
