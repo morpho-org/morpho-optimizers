@@ -26,35 +26,29 @@ contract TestGovernance is TestSetup {
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
-        Types.MarketInfos memory marketInfos = Types.MarketInfos(3_333, 0, address(supplier1));
-
         hevm.expectRevert(abi.encodeWithSignature("MarketIsNotListedOnAave()"));
-        morpho.createMarket(marketInfos);
+        morpho.createMarket(address(supplier1), 3_333, 0);
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
-        Types.MarketInfos memory marketInfos = Types.MarketInfos(3_333, 0, wEth);
-
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.createMarket(marketInfos);
+        supplier1.createMarket(wEth, 3_333, 0);
 
-        morpho.createMarket(marketInfos);
+        morpho.createMarket(wEth, 3_333, 0);
     }
 
     function testShouldCreateMarketWithRightParams() public {
-        Types.MarketInfos memory rightParams = Types.MarketInfos(1_000, 3_333, wEth);
-        Types.MarketInfos memory wrongParams1 = Types.MarketInfos(10_001, 0, wEth);
-        Types.MarketInfos memory wrongParams2 = Types.MarketInfos(0, 10_001, wEth);
-
         hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
-        morpho.createMarket(wrongParams1);
+        morpho.createMarket(wEth, 10_001, 0);
         hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
-        morpho.createMarket(wrongParams2);
+        morpho.createMarket(wEth, 0, 10_001);
 
-        morpho.createMarket(rightParams);
-        (uint16 reserveFactor, uint256 p2pIndexCursor, ) = morpho.marketInfos(aWeth);
+        morpho.createMarket(wEth, 1_000, 3_333);
+        (address underlyingToken, uint16 reserveFactor, uint256 p2pIndexCursor, , , ) = morpho
+        .market(aWeth);
         assertEq(reserveFactor, 1_000);
         assertEq(p2pIndexCursor, 3_333);
+        assertTrue(underlyingToken == wEth);
     }
 
     function testOnlyOwnerCanSetReserveFactor() public {
@@ -71,19 +65,18 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (uint16 reserveFactor, , ) = morpho.marketInfos(aDai);
+        (, uint16 reserveFactor, , , , ) = morpho.market(aDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
-        Types.MarketInfos memory marketInfos = Types.MarketInfos(3_333, 0, wEth);
-        morpho.createMarket(marketInfos);
+        morpho.createMarket(wEth, 3_333, 0);
 
-        (bool isCreated, , ) = morpho.marketStatus(aAave);
+        (, , , bool isCreated, , ) = morpho.market(aWeth);
 
         assertTrue(isCreated);
-        assertEq(morpho.p2pSupplyIndex(aAave), WadRayMath.RAY);
-        assertEq(morpho.p2pBorrowIndex(aAave), WadRayMath.RAY);
+        assertEq(morpho.p2pSupplyIndex(aWeth), WadRayMath.RAY);
+        assertEq(morpho.p2pBorrowIndex(aWeth), WadRayMath.RAY);
     }
 
     function testShouldSetMaxGasWithRightValues() public {
@@ -199,14 +192,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
-    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusForAllMarkets(true);
-
-        morpho.setPauseStatusForAllMarkets(true);
-    }
-
     function testOnlyOwnerCanSetClaimRewardsStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -214,5 +199,13 @@ contract TestGovernance is TestSetup {
 
         morpho.setClaimRewardsPauseStatus(true);
         assertTrue(morpho.isClaimRewardsPaused());
+    }
+
+    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setPauseStatusForAllMarkets(true);
+
+        morpho.setPauseStatusForAllMarkets(true);
     }
 }

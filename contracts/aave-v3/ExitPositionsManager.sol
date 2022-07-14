@@ -200,14 +200,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        address tokenBorrowedAddress = marketInfos[_poolTokenBorrowedAddress].underlyingToken;
+        address tokenBorrowedAddress = market[_poolTokenBorrowedAddress].underlyingToken;
 
         uint256 amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower).percentMul(closeFactor) // Max liquidatable debt.
         );
 
-        address tokenCollateralAddress = marketInfos[_poolTokenCollateralAddress].underlyingToken;
+        address tokenCollateralAddress = market[_poolTokenCollateralAddress].underlyingToken;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
@@ -270,7 +270,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(marketInfos[_poolTokenAddress].underlyingToken);
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
@@ -427,7 +427,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(marketInfos[_poolTokenAddress].underlyingToken);
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
@@ -621,7 +621,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingToken = marketInfos[poolToken].underlyingToken;
+                address underlyingToken = market[poolToken].underlyingToken;
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In base currency.
                 (
                     assetData.ltv,
