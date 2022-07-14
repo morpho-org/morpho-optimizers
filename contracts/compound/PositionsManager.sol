@@ -221,7 +221,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
 
-        Types.Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta memory delta = deltas[_poolTokenAddress];
         SupplyVars memory vars;
         vars.poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.remainingToSupply = _amount;
@@ -282,6 +282,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         _updateSupplierInDS(_poolTokenAddress, _onBehalf);
+
+        deltas[_poolTokenAddress] = delta;
 
         emit Supplied(
             _supplier,
