@@ -22,12 +22,11 @@ interface IMorpho {
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
     function deltas(address) external view returns (Types.Delta memory);
     function marketsCreated() external view returns (address[] memory);
-    function marketInfos(address) external view returns (Types.MarketInfos memory);
+    function market(address) external view returns (Types.Market memory);
     function p2pDisabled(address) external view returns (bool);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
     function poolIndexes(address) external view returns (Types.PoolIndexes memory);
-    function marketStatus(address) external view returns (Types.MarketStatus memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
@@ -68,7 +67,7 @@ interface IMorpho {
         external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts) external;
-    function createMarket(address _poolTokenAddress, Types.MarketInfos calldata _marketInfos) external;
+    function createMarket(address _underlyingToken, uint16 _reserveFactor, uint16 _p2pIndexCursor) external;
 
     /// USERS ///
 
