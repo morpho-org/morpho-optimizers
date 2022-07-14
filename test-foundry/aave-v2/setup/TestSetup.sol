@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@contracts/common/libraries/aave-v2/WadRayMath.sol";
+import "@contracts/common/libraries/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 

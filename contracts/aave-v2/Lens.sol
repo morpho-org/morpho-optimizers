@@ -9,8 +9,8 @@ import "./interfaces/IMorpho.sol";
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho/data-structures/contracts/HeapOrdering.sol";
-import "../common/libraries/aave-v2/PercentageMath.sol";
-import "../common/libraries/aave-v2/WadRayMath.sol";
+import "../common/libraries/PercentageMath.sol";
+import "../common/libraries/WadRayMath.sol";
 import "./libraries/Math.sol";
 
 /// @title Lens.

@@ -6,8 +6,8 @@ import "./interfaces/aave/IAToken.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "../common/libraries/DelegateCall.sol";
-import "../common/libraries/aave-v2/PercentageMath.sol";
-import "../common/libraries/aave-v2/WadRayMath.sol";
+import "../common/libraries/PercentageMath.sol";
+import "../common/libraries/WadRayMath.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
