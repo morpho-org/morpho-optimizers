@@ -599,21 +599,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // If the user is not borrowing any asset, return an infinite health factor.
         if (!_isBorrowingAny(_user)) return type(uint256).max;
 
-        address[] memory poolTokens = _userMarkets(_user);
-        unchecked {
-            uint256 poolTokensLength = poolTokens.length;
-
-            for (uint256 i; i < poolTokensLength; ++i) {
-                address userPoolTokenAddress = poolTokens[i];
-                if (userPoolTokenAddress != _poolTokenAddress) {
-                    _updateIndexes(userPoolTokenAddress);
-                }
-            }
-        }
-
         Types.LiquidityData memory values = _liquidityData(
             _user,
-            poolTokens,
             _poolTokenAddress,
             _withdrawnAmount,
             0
