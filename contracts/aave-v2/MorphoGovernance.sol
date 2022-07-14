@@ -69,10 +69,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
-    /// @notice Emitted when the value of `p2pDisabled` is set.
+    /// @notice Emitted when the value of `isP2PDisabled` is set.
     /// @param _poolTokenAddress The address of the concerned market.
-    /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
-    event P2PStatusSet(address indexed _poolTokenAddress, bool _p2pDisabled);
+    /// @param _isP2PDisabled The new value of `_isP2PDisabled` adopted.
+    event P2PStatusSet(address indexed _poolTokenAddress, bool _isP2PDisabled);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
@@ -303,12 +303,12 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the peer-to-peer disable status.
     /// @param _poolTokenAddress The address of the market of which to enable/disable peer-to-peer matching.
     /// @param _newStatus The new status to set.
-    function setP2PDisabled(address _poolTokenAddress, bool _newStatus)
+    function setP2PDisabledStatus(address _poolTokenAddress, bool _newStatus)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        p2pDisabled[_poolTokenAddress] = _newStatus;
+        market[_poolTokenAddress].isP2PDisabled = _newStatus;
         emit P2PStatusSet(_poolTokenAddress, _newStatus);
     }
 
@@ -393,7 +393,8 @@ abstract contract MorphoGovernance is MorphoUtils {
             p2pIndexCursor: _p2pIndexCursor,
             isCreated: true,
             isPaused: false,
-            isPartiallyPaused: false
+            isPartiallyPaused: false,
+            isP2PDisabled: false
         });
 
         borrowMask[poolTokenAddress] = ONE << (marketsCreated.length << 1);

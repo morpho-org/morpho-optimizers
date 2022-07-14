@@ -2,6 +2,7 @@
 pragma solidity 0.8.10;
 
 import "./setup/TestSetup.sol";
+import "@contracts/aave-v3/libraries/Types.sol";
 
 contract TestGovernance is TestSetup {
     using WadRayMath for uint256;
@@ -44,7 +45,7 @@ contract TestGovernance is TestSetup {
         morpho.createMarket(wEth, 0, 10_001);
 
         morpho.createMarket(wEth, 1_000, 3_333);
-        (address underlyingToken, uint16 reserveFactor, uint256 p2pIndexCursor, , , ) = morpho
+        (address underlyingToken, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho
         .market(aWeth);
         assertEq(reserveFactor, 1_000);
         assertEq(p2pIndexCursor, 3_333);
@@ -65,14 +66,14 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (, uint16 reserveFactor, , , , ) = morpho.market(aDai);
+        (, uint16 reserveFactor, , , , , ) = morpho.market(aDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
         morpho.createMarket(wEth, 3_333, 0);
 
-        (, , , bool isCreated, , ) = morpho.market(aWeth);
+        (, , , bool isCreated, , , ) = morpho.market(aWeth);
 
         assertTrue(isCreated);
         assertEq(morpho.p2pSupplyIndex(aWeth), WadRayMath.RAY);
@@ -118,14 +119,15 @@ contract TestGovernance is TestSetup {
     function testOnlyOwnerShouldFlipMarketStrategy() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier1));
-        morpho.setP2PDisabled(aDai, true);
+        morpho.setP2PDisabledStatus(aDai, true);
 
         hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier2));
-        morpho.setP2PDisabled(aDai, true);
+        morpho.setP2PDisabledStatus(aDai, true);
 
-        morpho.setP2PDisabled(aDai, true);
-        assertTrue(morpho.p2pDisabled(aDai));
+        morpho.setP2PDisabledStatus(aDai, true);
+        (, , , , , , bool isP2PDisabled) = morpho.market(aDai);
+        assertTrue(isP2PDisabled);
     }
 
     function testOnlyOwnerShouldSetEntryManager() public {
