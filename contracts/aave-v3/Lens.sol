@@ -95,7 +95,7 @@ contract Lens {
     /// @param _user The user to determine liquidity for.
     /// @return liquidityData The liquidity data of the user.
     function getUserBalanceStates(address _user)
-        external
+        public
         view
         returns (Types.LiquidityData memory liquidityData)
     {
@@ -112,46 +112,20 @@ contract Lens {
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
-        Types.LiquidityData memory data;
-        Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 numberOfCreatedMarkets = createdMarkets.length;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
-
-            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(_user, poolToken)) {
-                assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
-
-                data.collateralValue += assetData.collateralValue;
-                data.debtValue += assetData.debtValue;
-                data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
-
-        data.collateralValue += assetData.collateralValue;
-        data.debtValue += assetData.debtValue;
-        data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-        data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-            assetData.liquidationThreshold
+        Types.LiquidityData memory data = getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
+        Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            _user,
+            _poolTokenAddress,
+            oracle
         );
-
-        data.healthFactor = data.debtValue == 0
-            ? type(uint256).max
-            : data.liquidationThresholdValue.wadDiv(data.debtValue);
+        uint256 healthFactor = data.debtValue > 0
+            ? data.liquidationThresholdValue.wadDiv(data.debtValue)
+            : type(uint256).max;
 
         // Not possible to withdraw nor borrow.
-        if (data.healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
+        if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
         if (data.debtValue == 0)
             withdrawable =
@@ -252,10 +226,39 @@ contract Lens {
                 ++i;
             }
         }
+    }
 
-        liquidityData.healthFactor = liquidityData.debtValue == 0
-            ? type(uint256).max
-            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+    /// @dev Returns the hypothetical health factor of a user
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return healthFactor The health factor of the user.
+    function getUserHypotheticalHealthFactor(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) public view returns (uint256 healthFactor) {
+        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        healthFactor = liquidityData.debtValue > 0
+            ? liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue)
+            : type(uint256).max;
+    }
+
+    /// @dev Returns the current health factor of a user
+    /// @param _user The user to determine liquidity for.
+    /// @return healthFactor The health factor of the user.
+    function getUserHealthFactor(address _user) public view returns (uint256 healthFactor) {
+        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
+        healthFactor = liquidityData.debtValue > 0
+            ? liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue)
+            : type(uint256).max;
     }
 
     /// @notice Returns the updated peer-to-peer indexes.

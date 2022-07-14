@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-
 import "./setup/TestSetup.sol";
 
 contract TestLens is TestSetup {
@@ -22,29 +20,20 @@ contract TestLens is TestSetup {
         supplier1.supply(aDai, amount);
 
         (, , , , , uint256 healthFactor) = pool.getUserAccountData(address(morpho));
-        Types.LiquidityData memory liquidityData = lens.getUserHypotheticalBalanceStates(
-            address(supplier1),
-            address(0),
-            0,
-            0
-        );
-        assertEq(liquidityData.healthFactor, healthFactor, "after supply");
+        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after supply");
 
         supplier1.borrow(aUsdc, toBorrow);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        liquidityData = lens.getUserHypotheticalBalanceStates(address(supplier1), address(0), 0, 0);
-        assertEq(liquidityData.healthFactor, healthFactor, "after borrow");
+        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after borrow");
 
         supplier1.withdraw(aDai, 2 ether);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        liquidityData = lens.getUserHypotheticalBalanceStates(address(supplier1), address(0), 0, 0);
-        assertEq(liquidityData.healthFactor, healthFactor, "after withdraw");
+        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after withdraw");
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.repay(aUsdc, 2 ether);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        liquidityData = lens.getUserHypotheticalBalanceStates(address(supplier1), address(0), 0, 0);
-        assertEq(liquidityData.healthFactor, healthFactor, "after repay");
+        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after repay");
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
@@ -340,7 +329,9 @@ contract TestLens is TestSetup {
             liquidationThresholdDai
         );
         expectedStates.maxLoanToValue = expectedStates.collateralValue.percentMul(ltvDai);
-        expectedStates.healthFactor = expectedStates.liquidationThresholdValue.wadDiv(
+
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debtValue);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debtValue
         );
 
@@ -352,7 +343,7 @@ contract TestLens is TestSetup {
             "liquidationThresholdValue"
         );
         assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        assertEq(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrowWithMultipleAssets() public {
@@ -404,7 +395,8 @@ contract TestLens is TestSetup {
             (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
             10**reserveDecimals;
 
-        expectedStates.healthFactor = expectedStates.liquidationThresholdValue.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debtValue);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debtValue
         );
 
@@ -427,7 +419,7 @@ contract TestLens is TestSetup {
             1000,
             "maxLoanToValue"
         );
-        testEqualityLarge(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        testEqualityLarge(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
     function testLiquidityDataWithMultipleAssets() public {
@@ -482,7 +474,8 @@ contract TestLens is TestSetup {
         (, , , reserveDecimals, , ) = pool.getConfiguration(usdt).getParams();
         expectedStates.debtValue += (toBorrow * oracle.getAssetPrice(usdt)) / 10**reserveDecimals;
 
-        expectedStates.healthFactor = expectedStates.liquidationThresholdValue.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debtValue);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debtValue
         );
 
@@ -498,7 +491,7 @@ contract TestLens is TestSetup {
             "liquidationThresholdValue"
         );
         testEqualityLarge(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        testEqualityLarge(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        testEqualityLarge(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
     function testEnteredMarkets() public {
