@@ -14,8 +14,7 @@ import "@contracts/aave-v3/interfaces/IMorpho.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
+import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v3/libraries/Types.sol";

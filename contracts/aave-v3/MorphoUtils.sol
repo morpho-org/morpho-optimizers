@@ -4,12 +4,11 @@ pragma solidity 0.8.10;
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-
-import "./libraries/Math.sol";
+import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import "../common/libraries/aave-v2/PercentageMath.sol";
+import "../common/libraries/aave-v2/WadRayMath.sol";
 import "../common/libraries/DelegateCall.sol";
+import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
 

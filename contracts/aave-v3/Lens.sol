@@ -7,9 +7,8 @@ import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IMorpho.sol";
 
 import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
+import "../common/libraries/aave-v2/PercentageMath.sol";
+import "../common/libraries/aave-v2/WadRayMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho/data-structures/contracts/HeapOrdering.sol";
 import "./libraries/Math.sol";
@@ -658,28 +657,5 @@ contract Lens {
             morpho.userMarkets(_user) &
                 (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
             0;
-    }
-
-    function calculateLinearInterest(uint256 rate, uint256 lastUpdateTimestamp)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 timeDifference = block.timestamp - lastUpdateTimestamp;
-
-        return ((rate * timeDifference) / SECONDS_PER_YEAR) + WadRayMath.RAY;
-    }
-
-    function calculateCompoundedInterest(uint256 rate, uint256 lastUpdateTimestamp)
-        public
-        view
-        returns (uint256)
-    {
-        return
-            MathUtils.calculateCompoundedInterest(
-                rate,
-                uint40(lastUpdateTimestamp),
-                block.timestamp
-            );
     }
 }
