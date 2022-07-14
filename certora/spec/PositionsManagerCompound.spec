@@ -34,6 +34,14 @@ methods {
     // within the corresponding ghost
     mul(uint256 x, uint256 y) => _mul(x, y)
     div(uint256 x, uint256 y) => _div(x, y)
+
+    // matching engine functions
+    // currently these are summarized to NONDET, so any possible values will be returned
+    // it may be better to summarize these with a ghost function or to override the behavior in the harness
+    _matchSuppliers(address, uint256, uint256)   returns (uint256, uint256) => NONDET
+    _matchBorrowers(address, uint256, uint256)   returns (uint256, uint256) => NONDET 
+    _unmatchBorrowers(address, uint256, uint256) returns (uint256)          => NONDET
+    _unmatchSuppliers(address, uint256, uint256) returns (uint256)          => NONDET
 }
 
 // multiplication and division are very tough for the solver. Since you use the mul and div function, we can try to summarize it
