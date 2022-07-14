@@ -170,8 +170,8 @@ library InterestRatesModel {
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = CompoundMath.min(
-                (_params.p2pDelta.mul(_params.poolIndex)).div(
-                    (_params.p2pAmount).mul(_params.p2pIndex)
+                _params.p2pDelta.mul(_params.poolIndex).div(
+                    _params.p2pAmount.mul(_params.p2pIndex)
                 ),
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
@@ -197,8 +197,8 @@ library InterestRatesModel {
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = CompoundMath.min(
-                (_params.p2pDelta.mul(_params.poolIndex)).div(
-                    (_params.p2pAmount).mul(_params.p2pIndex)
+                _params.p2pDelta.mul(_params.poolIndex).div(
+                    _params.p2pAmount.mul(_params.p2pIndex)
                 ),
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
