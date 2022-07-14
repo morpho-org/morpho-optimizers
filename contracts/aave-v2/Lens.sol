@@ -67,15 +67,15 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolTokenAddress) external view returns (bool) {
-        return morpho.marketStatus(_poolTokenAddress).isCreated;
+        return morpho.marketInfos(_poolTokenAddress).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        return marketStatus.isCreated && !marketStatus.isPaused;
+        Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
+        return marketInfos.isCreated && !marketInfos.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
@@ -86,8 +86,8 @@ contract Lens {
         view
         returns (bool)
     {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        return marketStatus.isCreated && !marketStatus.isPaused && !marketStatus.isPartiallyPaused;
+        Types.MarketInfos memory marketInfos = morpho.marketInfos(_poolTokenAddress);
+        return marketInfos.isCreated && !marketInfos.isPaused && !marketInfos.isPartiallyPaused;
     }
 
     /// @notice Returns the current balance state of the user.
@@ -403,11 +403,11 @@ contract Lens {
             uint256 reserveFactor_
         )
     {
-        Types.MarketStatus memory marketStatus_ = morpho.marketStatus(_poolTokenAddress);
-        isCreated_ = marketStatus_.isCreated;
+        Types.MarketInfos memory marketInfos_ = morpho.marketInfos(_poolTokenAddress);
+        isCreated_ = marketInfos_.isCreated;
         p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
-        isPaused_ = marketStatus_.isPaused;
-        isPartiallyPaused_ = marketStatus_.isPartiallyPaused;
+        isPaused_ = marketInfos_.isPaused;
+        isPartiallyPaused_ = marketInfos_.isPartiallyPaused;
         reserveFactor_ = morpho.marketInfos(_poolTokenAddress).reserveFactor;
     }
 

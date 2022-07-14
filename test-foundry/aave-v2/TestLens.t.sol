@@ -578,14 +578,14 @@ contract TestLens is TestSetup {
             uint256 reserveFactor
         ) = lens.getMarketConfiguration(aDai);
 
-        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(aDai);
+        (, , , bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketInfos(aDai);
 
         assertTrue(isCreated == isCreated_);
         assertTrue(p2pDisabled == morpho.p2pDisabled(aDai));
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
-        (uint16 expectedReserveFactor, , ) = morpho.marketInfos(aDai);
+        (, uint16 expectedReserveFactor, , , , ) = morpho.marketInfos(aDai);
         assertTrue(reserveFactor == expectedReserveFactor);
     }
 

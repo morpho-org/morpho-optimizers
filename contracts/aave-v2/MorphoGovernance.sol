@@ -267,7 +267,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            marketStatus[poolToken].isPaused = _newStatus;
+            marketInfos[poolToken].isPaused = _newStatus;
             emit PauseStatusSet(poolToken, _newStatus);
 
             unchecked {
@@ -284,7 +284,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        marketStatus[_poolTokenAddress].isPaused = _newStatus;
+        marketInfos[_poolTokenAddress].isPaused = _newStatus;
         emit PauseStatusSet(_poolTokenAddress, _newStatus);
     }
 
@@ -296,7 +296,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        marketStatus[_poolTokenAddress].isPartiallyPaused = _newStatus;
+        marketInfos[_poolTokenAddress].isPartiallyPaused = _newStatus;
         emit PartialPauseStatusSet(_poolTokenAddress, _newStatus);
     }
 
@@ -343,7 +343,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokenAddresses[i];
 
-            Types.MarketStatus memory status = marketStatus[poolToken];
+            Types.MarketInfos memory status = marketInfos[poolToken];
             if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
 
             ERC20 underlyingToken = ERC20(marketInfos[poolToken].underlyingToken);
@@ -360,22 +360,24 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Creates a new market to borrow/supply in.
-    /// @param _marketInfos The market's parameters to set.
-    function createMarket(Types.MarketInfos calldata _marketInfos) external onlyOwner {
+    /// @param _underlyingToken The underlying token address.
+    /// @param _reserveFactor The reserve factor to set on this market.
+    /// @param _p2pIndexCursor The peer-to-peer index cursor to set on this market.
+    function createMarket(
+        address _underlyingToken,
+        uint16 _reserveFactor,
+        uint16 _p2pIndexCursor
+    ) external onlyOwner {
         if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
-        if (_marketInfos.underlyingToken == address(0)) revert ZeroAddress();
-        if (
-            _marketInfos.p2pIndexCursor > MAX_BASIS_POINTS ||
-            _marketInfos.reserveFactor > MAX_BASIS_POINTS
-        ) revert ExceedsMaxBasisPoints();
+        if (_underlyingToken == address(0)) revert ZeroAddress();
+        if (_p2pIndexCursor > MAX_BASIS_POINTS || _reserveFactor > MAX_BASIS_POINTS)
+            revert ExceedsMaxBasisPoints();
 
-        if (!pool.getConfiguration(_marketInfos.underlyingToken).getActive())
-            revert MarketIsNotListedOnAave();
+        if (!pool.getConfiguration(_underlyingToken).getActive()) revert MarketIsNotListedOnAave();
 
-        address poolTokenAddress = pool.getReserveData(_marketInfos.underlyingToken).aTokenAddress;
+        address poolTokenAddress = pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (marketStatus[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
-        marketStatus[poolTokenAddress].isCreated = true;
+        if (marketInfos[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
 
         p2pSupplyIndex[poolTokenAddress] = WadRayMath.RAY;
         p2pBorrowIndex[poolTokenAddress] = WadRayMath.RAY;
@@ -383,23 +385,25 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.PoolIndexes storage poolIndexes = poolIndexes[poolTokenAddress];
 
         poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-        poolIndexes.poolSupplyIndex = uint112(
-            pool.getReserveNormalizedIncome(_marketInfos.underlyingToken)
-        );
+        poolIndexes.poolSupplyIndex = uint112(pool.getReserveNormalizedIncome(_underlyingToken));
         poolIndexes.poolBorrowIndex = uint112(
-            pool.getReserveNormalizedVariableDebt(_marketInfos.underlyingToken)
+            pool.getReserveNormalizedVariableDebt(_underlyingToken)
         );
-        marketInfos[poolTokenAddress] = _marketInfos;
+
+        marketInfos[poolTokenAddress] = Types.MarketInfos({
+            underlyingToken: _underlyingToken,
+            reserveFactor: _reserveFactor,
+            p2pIndexCursor: _p2pIndexCursor,
+            isCreated: true,
+            isPaused: false,
+            isPartiallyPaused: false
+        });
 
         borrowMask[poolTokenAddress] = ONE << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);
 
-        ERC20(_marketInfos.underlyingToken).safeApprove(address(pool), type(uint256).max);
+        ERC20(_underlyingToken).safeApprove(address(pool), type(uint256).max);
 
-        emit MarketCreated(
-            poolTokenAddress,
-            _marketInfos.reserveFactor,
-            _marketInfos.p2pIndexCursor
-        );
+        emit MarketCreated(poolTokenAddress, _reserveFactor, _p2pIndexCursor);
     }
 }
