@@ -2,7 +2,7 @@
 make -C certora munged
 
 certoraRun \
-    certora/munged/compound/PositionsManager.sol \
+    certora/harness/compound/PositionsManagerHarness.sol \
     certora/munged/compound/RewardsManager.sol \
     certora/munged/compound/InterestRatesManager.sol \
     certora/helpers/compound/contracts/DummyPoolTokenImpl.sol \
@@ -10,9 +10,9 @@ certoraRun \
     certora/helpers/compound/contracts/DummyPoolTokenB.sol \
     certora/helpers/compound/contracts/SymbolicOracle.sol \
     certora/helpers/compound/contracts/SymbolicComptroller.sol \
-    --link PositionsManager:comptroller=SymbolicComptroller \
-    --link PositionsManager:interestRatesManager=InterestRatesManager \
-    --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
+    --link PositionsManagerHarness:comptroller=SymbolicComptroller \
+    --link PositionsManagerHarness:interestRatesManager=InterestRatesManager \
+    --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
     --loop_iter 2 \
     --solc solc8.13 \
     --optimistic_loop \
