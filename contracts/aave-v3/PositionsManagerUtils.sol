@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import "@aave/core-v3/contracts/interfaces/IPriceOracleSentinel.sol";
-import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
+import {IPriceOracleSentinel} from "@aave/core-v3/contracts/interfaces/IPriceOracleSentinel.sol";
+import {IVariableDebtToken} from "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
