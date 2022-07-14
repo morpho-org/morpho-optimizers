@@ -275,7 +275,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 ) = pool.getConfiguration(underlyingAddress).getParamsMemory();
 
                 unchecked {
-                    assetData.tokenUnit = 10**assetData.reserveDecimals; // Cannot overflow.
+                    assetData.tokenUnit = 10**assetData.reserveDecimals;
                 }
 
                 if (_isBorrowing(_user, poolTokenAddress)) {
@@ -287,7 +287,7 @@ abstract contract MorphoUtils is MorphoStorage {
                     );
                 }
 
-                // Cache current asset collateral value
+                // Cache current asset collateral value.
                 uint256 assetCollateralValue;
                 if (_isSupplying(_user, poolTokenAddress)) {
                     assetCollateralValue = _collateralValue(
@@ -299,20 +299,20 @@ abstract contract MorphoUtils is MorphoStorage {
                     values.collateralValue += assetCollateralValue;
                 }
 
-                // Calculate LTV for borrow.
+                // Update LTV variable for borrow.
                 values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
 
-                // Add debt value for borrowed token.
+                // Update debt variable for borrowed token.
                 if (_poolTokenAddress == poolTokenAddress && _amountBorrowed > 0)
                     values.debtValue += (_amountBorrowed * underlyingPrice) / assetData.tokenUnit;
 
-                // Calculate LT for withdraw.
+                // Update LT variable for withdraw.
                 if (assetCollateralValue > 0)
                     values.liquidationThresholdValue += assetCollateralValue.percentMul(
                         assetData.liquidationThreshold
                     );
 
-                // Subtract from liquidation threshold value and collateral value for withdrawn token.
+                // Subtract from LT variable and collateral variable for withdrawn token.
                 if (_poolTokenAddress == poolTokenAddress && _amountWithdrawn > 0) {
                     values.collateralValue -=
                         (_amountWithdrawn * underlyingPrice) /
