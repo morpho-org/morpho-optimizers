@@ -110,21 +110,6 @@ abstract contract MorphoUtils is MorphoStorage {
         _updateIndexes(_poolTokenAddress);
     }
 
-    /// @notice Returns collateral, debt, loan to value, and liquidation thresholds for a user.
-    /// @param _user The address of the user.
-    /// @param _poolTokenAddress The address of the market to borrow or withdraw from (can be zero).
-    /// @param _withdrawnAmount The amount hypothetically withdrawn from the market.
-    /// @param _borrowedAmount The amount hypothetically borrowed from the market.
-    /// @return The collateral, debt, loan to value, and liquidation thresholds for a user.
-    function getUserHypotheticalBalanceStates(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) external returns (Types.LiquidityData memory) {
-        return _liquidityData(_user, _poolTokenAddress, _withdrawnAmount, _borrowedAmount);
-    }
-
     /// INTERNAL ///
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
