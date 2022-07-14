@@ -215,4 +215,125 @@ abstract contract MorphoUtils is MorphoStorage {
                 poolIndexes[_poolTokenAddress].poolBorrowIndex
             );
     }
+
+    /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
+    /// @param _user The user address.
+    /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
+    /// @param _amountWithdrawn The amount that is being withdrawn.
+    /// @param _amountBorrowed The amount that is being borrowed.
+    /// @return values The struct containing health factor, collateral, debt, ltv, liquidation threshold values.
+    function _liquidityData(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _amountWithdrawn,
+        uint256 _amountBorrowed
+    ) internal returns (Types.LiquidityData memory values) {
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        Types.AssetLiquidityData memory assetData;
+        uint256 poolTokensLength = marketsCreated.length;
+        address poolTokenAddress;
+        address underlyingAddress;
+        uint256 underlyingPrice;
+
+        for (uint256 i; i < poolTokensLength; ) {
+            poolTokenAddress = marketsCreated[i];
+
+            if (_isSupplyingOrBorrowing(_user, poolTokenAddress)) {
+                underlyingAddress = IAToken(poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                underlyingPrice = oracle.getAssetPrice(underlyingAddress);
+                if (poolTokenAddress != _poolTokenAddress) _updateIndexes(poolTokenAddress);
+
+                (
+                    assetData.ltv,
+                    assetData.liquidationThreshold,
+                    ,
+                    assetData.reserveDecimals,
+                    ,
+
+                ) = pool.getConfiguration(underlyingAddress).getParams();
+
+                unchecked {
+                    assetData.tokenUnit = 10**assetData.reserveDecimals;
+                }
+
+                if (_isBorrowing(_user, poolTokenAddress)) {
+                    values.debtValue += _debtValue(
+                        poolTokenAddress,
+                        _user,
+                        underlyingPrice,
+                        assetData.tokenUnit
+                    );
+                }
+
+                // Cache current asset collateral value.
+                uint256 assetCollateralValue;
+                if (_isSupplying(_user, poolTokenAddress)) {
+                    assetCollateralValue = _collateralValue(
+                        poolTokenAddress,
+                        _user,
+                        underlyingPrice,
+                        assetData.tokenUnit
+                    );
+                    values.collateralValue += assetCollateralValue;
+                }
+
+                // Update LTV variable for borrow.
+                values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
+
+                // Update debt variable for borrowed token.
+                if (_poolTokenAddress == poolTokenAddress && _amountBorrowed > 0)
+                    values.debtValue += (_amountBorrowed * underlyingPrice) / assetData.tokenUnit;
+
+                // Update LT variable for withdraw.
+                if (assetCollateralValue > 0)
+                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                        assetData.liquidationThreshold
+                    );
+
+                // Subtract from LT variable and collateral variable for withdrawn token.
+                if (_poolTokenAddress == poolTokenAddress && _amountWithdrawn > 0) {
+                    values.collateralValue -=
+                        (_amountWithdrawn * underlyingPrice) /
+                        assetData.tokenUnit;
+                    values.liquidationThresholdValue -= ((_amountWithdrawn * underlyingPrice) /
+                        assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @dev Calculates the value of the collateral.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _collateralValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 collateralValue) {
+        collateralValue =
+            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
+            _tokenUnit;
+    }
+
+    /// @dev Calculates the value of the debt.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _debtValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 debtValue) {
+        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
+    }
 }

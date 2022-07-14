@@ -53,7 +53,6 @@ library Types {
     }
 
     struct LiquidityData {
-        uint256 healthFactor; // The health factor of the user (in basis points).
         uint256 collateralValue; // The collateral value (In base currency in wad).
         uint256 maxLoanToValue; // The max loan to value (In base currency in wad).
         uint256 liquidationThresholdValue; // The liquidation threshold value (In base currency in wad).

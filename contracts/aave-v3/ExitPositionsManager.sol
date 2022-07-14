@@ -598,55 +598,17 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // If the user is not borrowing any asset, return an infinite health factor.
         if (!_isBorrowingAny(_user)) return type(uint256).max;
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfMarketsCreated = marketsCreated.length;
-        Types.AssetLiquidityData memory assetData;
-        Types.LiquidityData memory liquidityData;
+        Types.LiquidityData memory values = _liquidityData(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            0
+        );
 
-        for (uint256 i; i < numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[i];
-
-            if (_isSupplyingOrBorrowing(_user, poolToken)) {
-                if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
-
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-                (
-                    assetData.ltv,
-                    assetData.liquidationThreshold,
-                    ,
-                    assetData.reserveDecimals,
-                    ,
-
-                ) = pool.getConfiguration(underlyingAddress).getParams();
-                assetData.tokenUnit = 10**assetData.reserveDecimals;
-
-                if (_isBorrowing(_user, poolToken))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-
-                if (_isSupplying(_user, poolToken)) {
-                    assetData.collateralValue =
-                        (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-                    liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                        assetData.liquidationThreshold
-                    );
-                }
-
-                if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
-                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                        assetData.underlyingPrice) / assetData.tokenUnit)
-                    .percentMul(assetData.liquidationThreshold);
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+        return
+            values.debtValue > 0
+                ? values.liquidationThresholdValue.wadDiv(values.debtValue)
+                : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.
