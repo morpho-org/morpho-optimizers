@@ -42,11 +42,12 @@ contract PositionsManagerHarness is PositionsManager {
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        if (isTransfer) {
-            _transferSafeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, _amount, 0);
-        } else {
-            _hardSafeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, _amount, 0);
-        }
+        _softSafeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, _amount, 0);
+        // if (isTransfer) {
+        //     _transferSafeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, _amount, 0);
+        // } else {
+        //     _hardSafeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, _amount, 0);
+        // }
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
@@ -60,23 +61,19 @@ contract PositionsManagerHarness is PositionsManager {
             ),
             _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower)
         );
-        if (isTransfer) {
-            _transferSafeWithdrawLogic(
-                _poolTokenCollateralAddress,
-                vars.amountToSeize,
-                _borrower,
-                msg.sender,
-                0
-            );
-        } else {
-            _hardSafeWithdrawLogic(
-                _poolTokenCollateralAddress,
-                vars.amountToSeize,
-                _borrower,
-                msg.sender,
-                0
-            );
-        }
+
+        _softSafeWithdrawLogic(
+            _poolTokenCollateralAddress,
+            vars.amountToSeize,
+            _borrower,
+            msg.sender,
+            0
+        );
+        // if (isTransfer) {
+        //     _transferSafeWithdrawLogic(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+        // } else {
+        //     _hardSafeWithdrawLogic(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+        // }
 
         emit Liquidated(
             msg.sender,
@@ -85,6 +82,215 @@ contract PositionsManagerHarness is PositionsManager {
             _amount,
             _poolTokenCollateralAddress,
             vars.amountToSeize
+        );
+    }
+
+    function _softSafeRepayLogic(
+        address _poolTokenAddress,
+        address _repayer,
+        address _onBehalf,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) internal {
+        if (lastBorrowBlock[_onBehalf] == block.number) revert SameBlockBorrowRepay();
+
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
+
+        RepayVars memory vars;
+        vars.remainingToRepay = _amount;
+        vars.maxGasForMatching = _maxGasForMatching;
+        vars.poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
+
+        /// Soft repay ///
+
+        vars.borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool;
+        if (vars.borrowedOnPool > 0) {
+            vars.maxToRepayOnPool = vars.borrowedOnPool.mul(vars.poolBorrowIndex);
+
+            if (vars.maxToRepayOnPool > vars.remainingToRepay) {
+                vars.toRepay = vars.remainingToRepay;
+
+                borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool -= CompoundMath.min(
+                    vars.borrowedOnPool,
+                    vars.toRepay.div(vars.poolBorrowIndex)
+                ); // In cdUnit.
+                _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
+
+                _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+                _leaveMarketIfNeeded(_poolTokenAddress, _onBehalf);
+
+                emit Repaid(
+                    _repayer,
+                    _onBehalf,
+                    _poolTokenAddress,
+                    _amount,
+                    borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
+                    borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
+                );
+
+                return;
+            } else {
+                vars.toRepay = vars.maxToRepayOnPool;
+                vars.remainingToRepay -= vars.toRepay;
+
+                borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool = 0;
+                _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
+            }
+        }
+
+        // deltas
+
+        Types.Delta storage delta = deltas[_poolTokenAddress];
+        vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
+        vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
+
+        borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P -= CompoundMath.min(
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P,
+            vars.remainingToRepay.div(vars.p2pBorrowIndex)
+        ); // In peer-to-peer unit.
+        _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
+
+        // Repay the fee.
+        if (vars.remainingToRepay > 0) {
+            // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
+            vars.feeToRepay = CompoundMath.safeSub(
+                (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
+                    delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
+                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
+                    delta.p2pSupplyDelta.mul(ICToken(_poolTokenAddress).exchangeRateStored()))
+            );
+
+            if (vars.feeToRepay > 0) {
+                uint256 feeRepaid = CompoundMath.min(vars.feeToRepay, vars.remainingToRepay);
+                vars.remainingToRepay -= feeRepaid;
+                delta.p2pBorrowAmount -= feeRepaid.div(vars.p2pBorrowIndex);
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.p2pSupplyAmount,
+                    delta.p2pBorrowAmount
+                );
+            }
+        }
+
+        emit Repaid(
+            _repayer,
+            _onBehalf,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
+        );
+    }
+
+    function _softSafeWithdrawLogic(
+        address _poolTokenAddress,
+        uint256 _amount,
+        address _supplier,
+        address _receiver,
+        uint256 _maxGasForMatching
+    ) internal {
+        if (_amount == 0) revert AmountIsZero();
+
+        WithdrawVars memory vars;
+        vars.poolToken = ICToken(_poolTokenAddress);
+        vars.underlyingToken = _getUnderlying(_poolTokenAddress);
+        vars.remainingToWithdraw = _amount;
+        vars.maxGasForMatching = _maxGasForMatching;
+        vars.withdrawable = vars.poolToken.balanceOfUnderlying(address(this));
+        vars.poolSupplyIndex = vars.poolToken.exchangeRateStored(); // Exchange rate has already been updated.
+
+        if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
+
+        /// Soft withdraw ///
+
+        uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
+        if (onPoolSupply > 0) {
+            uint256 maxToWithdrawOnPool = onPoolSupply.mul(vars.poolSupplyIndex);
+
+            if (
+                maxToWithdrawOnPool > vars.remainingToWithdraw ||
+                maxToWithdrawOnPool > vars.withdrawable
+            ) {
+                vars.toWithdraw = CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable);
+
+                vars.remainingToWithdraw -= vars.toWithdraw;
+                supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= vars.toWithdraw.div(
+                    vars.poolSupplyIndex
+                );
+            } else {
+                vars.toWithdraw = maxToWithdrawOnPool;
+                vars.remainingToWithdraw -= maxToWithdrawOnPool;
+                supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = 0;
+            }
+
+            _updateSupplierInDS(_poolTokenAddress, _supplier);
+
+            if (vars.remainingToWithdraw == 0) {
+                _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
+
+                // If this value is equal to 0 the withdraw will revert on Compound.
+                if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
+                    _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
+                vars.underlyingToken.safeTransfer(_receiver, _amount);
+
+                emit Withdrawn(
+                    _supplier,
+                    _receiver,
+                    _poolTokenAddress,
+                    _amount,
+                    supplyBalanceInOf[_poolTokenAddress][_supplier].onPool,
+                    supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P
+                );
+
+                return;
+            }
+        }
+
+        Types.Delta storage delta = deltas[_poolTokenAddress];
+        vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
+
+        supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
+            vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
+        ); // In peer-to-peer unit
+        _updateSupplierInDS(_poolTokenAddress, _supplier);
+
+        // Reduce peer-to-peer supply delta first if any.
+        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
+            uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
+
+            if (
+                deltaInUnderlying > vars.remainingToWithdraw ||
+                deltaInUnderlying > vars.withdrawable - vars.toWithdraw
+            ) {
+                uint256 matchedDelta = CompoundMath.min(
+                    vars.remainingToWithdraw,
+                    vars.withdrawable - vars.toWithdraw
+                );
+
+                delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
+                delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
+                vars.toWithdraw += matchedDelta;
+                vars.remainingToWithdraw -= matchedDelta;
+            } else {
+                vars.toWithdraw += deltaInUnderlying;
+                vars.remainingToWithdraw -= deltaInUnderlying;
+                delta.p2pSupplyDelta = 0;
+                delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
+            }
+
+            emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+        }
+
+        emit Withdrawn(
+            _supplier,
+            _receiver,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P
         );
     }
 
