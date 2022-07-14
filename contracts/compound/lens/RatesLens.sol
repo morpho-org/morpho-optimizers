@@ -70,11 +70,10 @@ abstract contract RatesLens is UsersLens {
 
         if (_amount > 0 && !morpho.p2pDisabled(_poolTokenAddress)) {
             uint256 firstPoolBorrowerBalance = morpho
-                .borrowBalanceInOf(
-                    _poolTokenAddress,
-                    morpho.getHead(_poolTokenAddress, Types.PositionType.BORROWERS_ON_POOL)
-                )
-                .onPool;
+            .borrowBalanceInOf(
+                _poolTokenAddress,
+                morpho.getHead(_poolTokenAddress, Types.PositionType.BORROWERS_ON_POOL)
+            ).onPool;
 
             if (firstPoolBorrowerBalance > 0) {
                 uint256 borrowerBalanceInUnderlying = firstPoolBorrowerBalance.mul(
@@ -150,11 +149,10 @@ abstract contract RatesLens is UsersLens {
 
         if (_amount > 0 && !morpho.p2pDisabled(_poolTokenAddress)) {
             uint256 firstPoolSupplierBalance = morpho
-                .supplyBalanceInOf(
-                    _poolTokenAddress,
-                    morpho.getHead(_poolTokenAddress, Types.PositionType.SUPPLIERS_ON_POOL)
-                )
-                .onPool;
+            .supplyBalanceInOf(
+                _poolTokenAddress,
+                morpho.getHead(_poolTokenAddress, Types.PositionType.SUPPLIERS_ON_POOL)
+            ).onPool;
 
             if (firstPoolSupplierBalance > 0) {
                 uint256 supplierBalanceInUnderlying = firstPoolSupplierBalance.mul(

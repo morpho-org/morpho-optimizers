@@ -91,7 +91,7 @@ abstract contract RewardsLens is MarketsLens {
     /// @return The updated COMP supply index.
     function getCurrentCompSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
         IComptroller.CompMarketState memory localSupplyState = rewardsManager
-            .getLocalCompSupplyState(_poolTokenAddress);
+        .getLocalCompSupplyState(_poolTokenAddress);
 
         if (localSupplyState.block == block.number) return localSupplyState.index;
         else {
@@ -119,7 +119,7 @@ abstract contract RewardsLens is MarketsLens {
     /// @return The updated COMP borrow index.
     function getCurrentCompBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
         IComptroller.CompMarketState memory localBorrowState = rewardsManager
-            .getLocalCompBorrowState(_poolTokenAddress);
+        .getLocalCompBorrowState(_poolTokenAddress);
 
         if (localBorrowState.block == block.number) return localBorrowState.index;
         else {
