@@ -176,8 +176,7 @@ contract TestSetup is Config, Utils {
 
     function createMarket(address _aToken) internal {
         address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
-        Types.MarketInfos memory marketInfos = Types.MarketInfos(0, 3_333, underlying);
-        morpho.createMarket(marketInfos);
+        morpho.createMarket(underlying, 0, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_aToken);
@@ -298,7 +297,9 @@ contract TestSetup is Config, Utils {
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (uint16 reserveFactor, uint256 p2pIndexCursor, ) = morpho.marketInfos(_poolTokenAddress);
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , ) = morpho.marketInfos(
+            _poolTokenAddress
+        );
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

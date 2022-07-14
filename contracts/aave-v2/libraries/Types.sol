@@ -68,12 +68,9 @@ library Types {
     }
 
     struct MarketInfos {
+        address underlyingToken; // The underlying address of the market.
         uint16 reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10 000). The default value is 0.
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
-        address underlyingToken; // The underlying address of the market.
-    }
-
-    struct MarketStatus {
         bool isCreated; // Whether or not this market is created.
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).

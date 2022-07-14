@@ -39,8 +39,12 @@ contract User {
         ERC20(_token).safeApprove(_spender, _amount);
     }
 
-    function createMarket(Types.MarketInfos calldata _marketInfos) external {
-        morpho.createMarket(_marketInfos);
+    function createMarket(
+        address _underlyingToken,
+        uint16 _reserveFactor,
+        uint16 _p2pIndexCursor
+    ) external {
+        morpho.createMarket(_underlyingToken, _reserveFactor, _p2pIndexCursor);
     }
 
     function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
