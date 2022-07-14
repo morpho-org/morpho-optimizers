@@ -216,29 +216,6 @@ abstract contract MorphoUtils is MorphoStorage {
             );
     }
 
-    /// @dev Gets all markets of the user.
-    /// @param _user The user address.
-    /// @return markets The markets the user is participating in.
-    function _userMarkets(address _user) internal view returns (address[] memory markets) {
-        uint256 marketsCreatedLength = marketsCreated.length;
-        uint256 marketsLength;
-        markets = new address[](marketsCreatedLength);
-
-        unchecked {
-            for (uint256 i; i < marketsCreatedLength; ++i) {
-                if (_isSupplyingOrBorrowing(_user, marketsCreated[i])) {
-                    markets[marketsLength] = marketsCreated[i];
-                    ++marketsLength;
-                }
-            }
-        }
-
-        // Resize the array for return.
-        assembly {
-            mstore(markets, marketsLength)
-        }
-    }
-
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
