@@ -3,14 +3,6 @@ pragma solidity ^0.8.0;
 
 import {Errors} from "./Errors.sol";
 
-/**
- * @title PercentageMath library
- * @author Aave
- * @notice Provides functions to perform percentage calculations
- * @dev Percentages are defined by default with 2 decimals of precision (100.00). The precision is indicated by PERCENTAGE_FACTOR
- * @dev Operations are rounded half up
- **/
-
 library PercentageMath {
     uint256 constant PERCENTAGE_FACTOR = 1e4; //percentage plus two decimals
     uint256 constant HALF_PERCENT = PERCENTAGE_FACTOR / 2;
@@ -22,16 +14,18 @@ library PercentageMath {
      * @return The percentage of value
      **/
     function percentMul(uint256 value, uint256 percentage) internal pure returns (uint256) {
-        if (value == 0 || percentage == 0) {
-            return 0;
+        unchecked {
+            if (value == 0 || percentage == 0) {
+                return 0;
+            }
+
+            require(
+                value <= (type(uint256).max - HALF_PERCENT) / percentage,
+                Errors.MATH_MULTIPLICATION_OVERFLOW
+            );
+
+            return (value * percentage + HALF_PERCENT) / PERCENTAGE_FACTOR;
         }
-
-        require(
-            value <= (type(uint256).max - HALF_PERCENT) / percentage,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
-
-        return (value * percentage + HALF_PERCENT) / PERCENTAGE_FACTOR;
     }
 
     /**
@@ -41,14 +35,16 @@ library PercentageMath {
      * @return The value divided the percentage
      **/
     function percentDiv(uint256 value, uint256 percentage) internal pure returns (uint256) {
-        require(percentage != 0, Errors.MATH_DIVISION_BY_ZERO);
-        uint256 halfPercentage = percentage / 2;
+        unchecked {
+            require(percentage != 0, Errors.MATH_DIVISION_BY_ZERO);
+            uint256 halfPercentage = percentage / 2;
 
-        require(
-            value <= (type(uint256).max - halfPercentage) / PERCENTAGE_FACTOR,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
+            require(
+                value <= (type(uint256).max - halfPercentage) / PERCENTAGE_FACTOR,
+                Errors.MATH_MULTIPLICATION_OVERFLOW
+            );
 
-        return (value * PERCENTAGE_FACTOR + halfPercentage) / percentage;
+            return (value * PERCENTAGE_FACTOR + halfPercentage) / percentage;
+        }
     }
 }
