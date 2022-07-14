@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import {Errors} from "./Errors.sol";
-
 /// @title WadRayMath.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Library to conduct percentage multiplication inspired by https://github.com/aave/protocol-v2/blob/master/contracts/protocol/libraries/math/WadRayMath.sol.
 library WadRayMath {
+    /// CONSTANTS ///
+
     uint256 internal constant WAD = 1e18;
     uint256 internal constant HALF_WAD = WAD / 2;
 
@@ -15,6 +15,8 @@ library WadRayMath {
     uint256 internal constant HALF_RAY = RAY / 2;
 
     uint256 internal constant WAD_RAY_RATIO = 1e9;
+
+    /// INTERNAL ///
 
     /// @dev Multiplies two wad, rounding half up to the nearest wad.
     /// @param a Wad.
@@ -24,7 +26,7 @@ library WadRayMath {
         unchecked {
             if (a == 0 || b == 0) return 0;
 
-            require(a <= (type(uint256).max - HALF_WAD) / b, Errors.MATH_MULTIPLICATION_OVERFLOW);
+            require(a <= (type(uint256).max - HALF_WAD) / b, "math-mul-overflow");
 
             return (a * b + HALF_WAD) / WAD;
         }
@@ -36,10 +38,10 @@ library WadRayMath {
     /// @return The result of a/b, in wad.
     function wadDiv(uint256 a, uint256 b) internal pure returns (uint256) {
         unchecked {
-            require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
+            require(b != 0, "math-div-by-0");
             uint256 halfB = b / 2;
 
-            require(a <= (type(uint256).max - halfB) / WAD, Errors.MATH_MULTIPLICATION_OVERFLOW);
+            require(a <= (type(uint256).max - halfB) / WAD, "math-mul-overflow");
 
             return (a * WAD + halfB) / b;
         }
@@ -53,7 +55,7 @@ library WadRayMath {
         unchecked {
             if (a == 0 || b == 0) return 0;
 
-            require(a <= (type(uint256).max - HALF_RAY) / b, Errors.MATH_MULTIPLICATION_OVERFLOW);
+            require(a <= (type(uint256).max - HALF_RAY) / b, "math-mul-overflow");
 
             return (a * b + HALF_RAY) / RAY;
         }
@@ -65,10 +67,10 @@ library WadRayMath {
     /// @return The result of a/b, in ray.
     function rayDiv(uint256 a, uint256 b) internal pure returns (uint256) {
         unchecked {
-            require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
+            require(b != 0, "math-div-by-0");
             uint256 halfB = b / 2;
 
-            require(a <= (type(uint256).max - halfB) / RAY, Errors.MATH_MULTIPLICATION_OVERFLOW);
+            require(a <= (type(uint256).max - halfB) / RAY, "math-mul-overflow");
 
             return (a * RAY + halfB) / b;
         }
@@ -81,7 +83,7 @@ library WadRayMath {
         unchecked {
             uint256 halfRatio = WAD_RAY_RATIO / 2;
             uint256 result = halfRatio + a;
-            require(result >= halfRatio, Errors.MATH_ADDITION_OVERFLOW);
+            require(result >= halfRatio, "math-add-overflow");
 
             return result / WAD_RAY_RATIO;
         }
@@ -93,7 +95,7 @@ library WadRayMath {
     function wadToRay(uint256 a) internal pure returns (uint256) {
         unchecked {
             uint256 result = a * WAD_RAY_RATIO;
-            require(result / WAD_RAY_RATIO == a, Errors.MATH_MULTIPLICATION_OVERFLOW);
+            require(result / WAD_RAY_RATIO == a, "math-mul-overflow");
             return result;
         }
     }
