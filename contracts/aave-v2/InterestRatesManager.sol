@@ -56,9 +56,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolTokenAddress];
 
         if (block.timestamp > marketPoolIndexes.lastUpdateTimestamp) {
-            Types.MarketInfos storage marketInfos = marketInfos[_poolTokenAddress];
+            Types.Market storage market = market[_poolTokenAddress];
 
-            address underlyingToken = marketInfos.underlyingToken;
+            address underlyingToken = market.underlyingToken;
             uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
             uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
@@ -69,8 +69,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 newPoolBorrowIndex,
                 marketPoolIndexes.poolSupplyIndex,
                 marketPoolIndexes.poolBorrowIndex,
-                marketInfos.reserveFactor,
-                marketInfos.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 deltas[_poolTokenAddress]
             );
 
