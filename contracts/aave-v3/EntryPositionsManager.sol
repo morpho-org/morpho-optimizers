@@ -69,8 +69,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct BorrowAllowedVars {
-        bytes32 userMarkets;
         uint256 i;
+        bytes32 userMarkets;
         uint256 numberOfMarketsCreated;
     }
 
@@ -279,13 +279,15 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
-        // In response, Morpho mirrors this behavior.
-        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-        if (
-            priceOracleSentinel != address(0) &&
-            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
-        ) return false;
+        {
+            // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+            // In response, Morpho mirrors this behavior.
+            address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+            if (
+                priceOracleSentinel != address(0) &&
+                !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+            ) return false;
+        }
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
@@ -310,9 +312,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(vars.userMarkets, borrowMask))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
+                    liquidityData.debtValue += (_getUserBorrowBalanceInOf(poolToken, _user) *
+                        assetData.underlyingPrice)
+                    .divUp(assetData.tokenUnit);
 
                 if (_isSupplying(vars.userMarkets, borrowMask)) {
                     assetData.collateralValue =
@@ -325,9 +327,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 }
 
                 if (_poolTokenAddress == poolToken)
-                    liquidityData.debtValue +=
-                        (_borrowedAmount * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
+                    liquidityData.debtValue += (_borrowedAmount * assetData.underlyingPrice).divUp(
+                        assetData.tokenUnit
+                    );
             }
 
             unchecked {
