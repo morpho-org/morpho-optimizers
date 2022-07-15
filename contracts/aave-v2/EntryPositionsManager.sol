@@ -70,6 +70,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     // Struct to avoid stack too deep.
     struct BorrowAllowedVars {
         uint256 i;
+        bytes32 userMarkets;
         uint256 numberOfMarketsCreated;
     }
 
@@ -283,14 +284,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         BorrowAllowedVars memory vars;
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
-        bytes32 userMarkets = userMarkets[_user];
+        vars.userMarkets = userMarkets[_user];
         vars.numberOfMarketsCreated = marketsCreated.length;
 
         for (; vars.i < vars.numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[vars.i];
             bytes32 borrowMask = borrowMask[poolToken];
 
-            if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
+            if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -301,12 +302,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (_isBorrowing(userMarkets, borrowMask))
+                if (_isBorrowing(vars.userMarkets, borrowMask))
                     liquidityData.debtValue += (_getUserBorrowBalanceInOf(poolToken, _user) *
                         assetData.underlyingPrice)
                     .divUp(assetData.tokenUnit);
 
-                if (_isSupplying(userMarkets, borrowMask)) {
+                if (_isSupplying(vars.userMarkets, borrowMask)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;

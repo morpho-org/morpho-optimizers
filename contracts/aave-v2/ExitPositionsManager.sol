@@ -115,6 +115,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     // Struct to avoid stack too deep.
     struct HealthFactorVars {
         uint256 i;
+        bytes32 userMarkets;
         uint256 numberOfMarketsCreated;
     }
 
@@ -603,14 +604,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        bytes32 userMarkets = userMarkets[_user];
+        HealthFactorVars memory vars;
+        vars.userMarkets = userMarkets[_user];
 
         // If the user is not borrowing any asset, return an infinite health factor.
-        if (!_isBorrowingAny(userMarkets)) return type(uint256).max;
+        if (!_isBorrowingAny(vars.userMarkets)) return type(uint256).max;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        HealthFactorVars memory vars;
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
         vars.numberOfMarketsCreated = marketsCreated.length;
@@ -619,7 +620,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             address poolToken = marketsCreated[vars.i];
             bytes32 borrowMask = borrowMask[poolToken];
 
-            if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
+            if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -633,12 +634,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 ) = pool.getConfiguration(underlyingAddress).getParamsMemory();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (_isBorrowing(userMarkets, borrowMask))
+                if (_isBorrowing(vars.userMarkets, borrowMask))
                     liquidityData.debtValue += (_getUserBorrowBalanceInOf(poolToken, _user) *
                         assetData.underlyingPrice)
                     .divUp(assetData.tokenUnit);
 
-                if (_isSupplying(userMarkets, borrowMask)) {
+                if (_isSupplying(vars.userMarkets, borrowMask)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
