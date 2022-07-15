@@ -2,7 +2,6 @@
 pragma solidity 0.8.10;
 
 import "./setup/TestSetup.sol";
-import "@contracts/aave-v3/libraries/Types.sol";
 
 contract TestGovernance is TestSetup {
     using WadRayMath for uint256;

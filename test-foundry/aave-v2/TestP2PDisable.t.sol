@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestP2PDisable is TestSetup {
-    function testShouldMatchSupplyDeltaWithisP2PDisabled() public {
+    function testShouldMatchSupplyDeltaWithP2PDisabled() public {
         uint256 nSuppliers = 3;
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = nSuppliers * suppliedAmount;
@@ -37,7 +37,7 @@ contract TestP2PDisable is TestSetup {
         testEquality(p2pSupplyDelta, 0);
     }
 
-    function testShouldMatchBorrowDeltaWithisP2PDisabled() public {
+    function testShouldMatchBorrowDeltaWithP2PDisabled() public {
         uint256 nBorrowers = 3;
         uint256 borrowAmount = 1 ether;
         uint256 collateralAmount = 2 * borrowAmount;

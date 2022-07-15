@@ -62,8 +62,7 @@ interface IMorpho {
     function setPauseStatus(address _poolTokenAddress) external;
     function setPartialPauseStatus(address _poolTokenAddress) external;
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
-    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager)
-        external;
+    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts) external;
     function createMarket(address _underlyingToken, uint16 _reserveFactor, uint16 _p2pIndexCursor) external;
