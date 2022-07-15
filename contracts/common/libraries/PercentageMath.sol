@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 /// @title PercentageMath.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice Library to conduct percentage multiplication inspired by https://github.com/aave/protocol-v2/blob/master/contracts/protocol/libraries/math/PercentageMath.sol.
+/// @notice Library to conduct percentage manipulations inspired by https://github.com/aave/protocol-v2/blob/master/contracts/protocol/libraries/math/PercentageMath.sol.
 library PercentageMath {
     /// CONSTANTS ///
 
-    uint256 internal constant PERCENTAGE_FACTOR = 1e4; // Percentage plus two decimals.
+    uint256 internal constant PERCENTAGE_FACTOR = 10_000; // Max basis points.
     uint256 internal constant HALF_PERCENT = PERCENTAGE_FACTOR / 2;
 
     /// INTERNAL ///
@@ -30,7 +30,7 @@ library PercentageMath {
     /// @dev Executes a percentage division.
     /// @param value The value of which the percentage needs to be calculated.
     /// @param percentage The percentage of the value to be calculated.
-    /// @return The value divided the percentage.
+    /// @return The value divided by the percentage.
     function percentDiv(uint256 value, uint256 percentage) internal pure returns (uint256) {
         unchecked {
             require(percentage != 0, "math-div-by-0");

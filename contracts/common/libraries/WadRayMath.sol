@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 /// @title WadRayMath.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice Library to conduct percentage multiplication inspired by https://github.com/aave/protocol-v2/blob/master/contracts/protocol/libraries/math/WadRayMath.sol.
+/// @notice Library to conduct wad and ray manipulations inspired by https://github.com/aave/protocol-v2/blob/master/contracts/protocol/libraries/math/WadRayMath.sol.
 library WadRayMath {
     /// CONSTANTS ///
 
