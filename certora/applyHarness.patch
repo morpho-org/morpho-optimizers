@@ -1,25 +1,19 @@
-diff -ruN .gitignore .gitignore
---- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-06-28 11:29:30.000000000 -0700
-@@ -0,0 +1,2 @@
-+*
-+!.gitignore
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
---- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/MorphoGovernance.sol	2022-06-28 11:29:30.000000000 -0700
-@@ -121,7 +121,7 @@
+--- compound/MorphoGovernance.sol	2022-07-15 19:01:23.039759452 +0200
++++ compound/MorphoGovernance.sol	2022-07-15 19:02:04.509309212 +0200
+@@ -125,7 +125,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
          address _wEth
 -    ) external initializer {
-+    ) public initializer {
++    ) public initializer { // HARNESS
          __ReentrancyGuard_init();
          __Ownable_init();
  
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
---- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/PositionsManager.sol	2022-06-28 11:29:30.000000000 -0700
-@@ -213,7 +213,7 @@
+--- compound/PositionsManager.sol	2022-07-15 19:01:23.039759452 +0200
++++ compound/PositionsManager.sol	2022-07-15 19:02:04.509309212 +0200
+@@ -212,7 +212,7 @@
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -28,7 +22,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (_onBehalf == address(0)) revert AddressIsZero();
          if (_amount == 0) revert AmountIsZero();
          _updateP2PIndexes(_poolTokenAddress);
-@@ -302,7 +302,7 @@
+@@ -301,7 +301,7 @@
          address _poolTokenAddress,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -37,7 +31,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (_amount == 0) revert AmountIsZero();
          _updateP2PIndexes(_poolTokenAddress);
  
-@@ -402,7 +402,7 @@
+@@ -401,7 +401,7 @@
          address _supplier,
          address _receiver,
          uint256 _maxGasForMatching
@@ -46,7 +40,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (_amount == 0) revert AmountIsZero();
          if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
  
-@@ -430,7 +430,7 @@
+@@ -429,7 +429,7 @@
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -55,7 +49,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (_amount == 0) revert AmountIsZero();
          if (!userMembership[_poolTokenAddress][_onBehalf]) revert UserNotMemberOfMarket();
  
-@@ -453,7 +453,7 @@
+@@ -452,7 +452,7 @@
          address _poolTokenCollateralAddress,
          address _borrower,
          uint256 _amount
@@ -64,3 +58,9 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (
              !userMembership[_poolTokenBorrowedAddress][_borrower] ||
              !userMembership[_poolTokenCollateralAddress][_borrower]
+diff -ruN .gitignore .gitignore
+--- .gitignore	1970-01-01 01:00:00.000000000 +0100
++++ .gitignore	2022-07-15 19:02:04.509309212 +0200
+@@ -0,0 +1,2 @@
++*
++!.gitignore
