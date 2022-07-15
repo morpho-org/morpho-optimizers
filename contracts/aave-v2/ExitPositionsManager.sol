@@ -88,6 +88,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 p2pSupplyIndex;
         uint256 onPoolSupply;
         uint256 toWithdraw;
+        uint256 p2pSupplyAmount;
+        uint256 p2pBorrowAmount;
+        uint256 p2pSupplyDelta;
+        uint256 p2pBorrowDelta;
     }
 
     // Struct to avoid stack too deep.
@@ -101,6 +105,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedOnPool;
         uint256 feeToRepay;
         uint256 toRepay;
+        uint256 p2pSupplyAmount;
+        uint256 p2pBorrowAmount;
+        uint256 p2pSupplyDelta;
+        uint256 p2pBorrowDelta;
     }
 
     // Struct to avoid stack too deep.
@@ -317,7 +325,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
         }
 
-        Types.Delta storage delta = deltas[_poolTokenAddress];
+        vars.p2pSupplyAmount = p2pSupplyAmount[_poolTokenAddress];
+        vars.p2pBorrowAmount = p2pBorrowAmount[_poolTokenAddress];
+        vars.p2pSupplyDelta = p2pSupplyDelta[_poolTokenAddress];
+        vars.p2pBorrowDelta = p2pBorrowDelta[_poolTokenAddress];
+
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
 
         supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
@@ -329,20 +341,20 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         /// Transfer withdraw ///
 
         // Reduce peer-to-peer supply delta first if any.
-        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
+        if (vars.remainingToWithdraw > 0 && vars.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
+                vars.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
                 vars.remainingToWithdraw
             ); // In underlying.
 
-            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
+            vars.p2pSupplyDelta = vars.p2pSupplyDelta.zeroFloorSub(
                 vars.remainingToWithdraw.rayDiv(vars.poolSupplyIndex)
             );
-            delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
+            vars.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             vars.toWithdraw += matchedDelta;
             vars.remainingToWithdraw -= matchedDelta;
-            emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            emit P2PSupplyDeltaUpdated(_poolTokenAddress, vars.p2pSupplyDelta);
+            emit P2PAmountsUpdated(_poolTokenAddress, vars.p2pSupplyAmount, vars.p2pBorrowAmount);
         }
 
         // Match pool suppliers if any.
@@ -381,21 +393,21 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
-                delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
+                vars.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
                     poolIndexes[_poolTokenAddress].poolBorrowIndex
                 );
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                emit P2PBorrowDeltaUpdated(_poolTokenAddress, vars.p2pBorrowDelta);
             }
 
-            delta.p2pSupplyAmount -= Math.min(
-                delta.p2pSupplyAmount,
+            vars.p2pSupplyAmount -= Math.min(
+                vars.p2pSupplyAmount,
                 vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
             );
-            delta.p2pBorrowAmount -= Math.min(
-                delta.p2pBorrowAmount,
+            vars.p2pBorrowAmount -= Math.min(
+                vars.p2pBorrowAmount,
                 unmatched.rayDiv(p2pBorrowIndex[_poolTokenAddress])
             );
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            emit P2PAmountsUpdated(_poolTokenAddress, vars.p2pSupplyAmount, vars.p2pBorrowAmount);
 
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
         }
@@ -405,6 +417,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool == 0
         ) _setSupplying(_supplier, borrowMask[_poolTokenAddress], false);
         underlyingToken.safeTransfer(_receiver, _amount);
+
+        p2pSupplyAmount[_poolTokenAddress] = vars.p2pSupplyAmount;
+        p2pBorrowAmount[_poolTokenAddress] = vars.p2pBorrowAmount;
+        p2pSupplyDelta[_poolTokenAddress] = vars.p2pSupplyDelta;
+        p2pBorrowDelta[_poolTokenAddress] = vars.p2pBorrowDelta;
 
         emit Withdrawn(
             _supplier,
@@ -473,7 +490,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
         }
 
-        Types.Delta storage delta = deltas[_poolTokenAddress];
+        vars.p2pSupplyAmount = p2pSupplyAmount[_poolTokenAddress];
+        vars.p2pBorrowAmount = p2pBorrowAmount[_poolTokenAddress];
+        vars.p2pSupplyDelta = p2pSupplyDelta[_poolTokenAddress];
+        vars.p2pBorrowDelta = p2pBorrowDelta[_poolTokenAddress];
+
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
         vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
@@ -484,20 +505,20 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
         // Reduce peer-to-peer borrow delta first if any.
-        if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
+        if (vars.remainingToRepay > 0 && vars.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
+                vars.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
                 vars.remainingToRepay
             ); // In underlying.
 
-            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+            vars.p2pBorrowDelta = vars.p2pBorrowDelta.zeroFloorSub(
                 vars.remainingToRepay.rayDiv(vars.poolBorrowIndex)
             );
-            delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
+            vars.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
             vars.toRepay += matchedDelta;
             vars.remainingToRepay -= matchedDelta;
-            emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            emit P2PBorrowDeltaUpdated(_poolTokenAddress, vars.p2pBorrowDelta);
+            emit P2PAmountsUpdated(_poolTokenAddress, vars.p2pSupplyAmount, vars.p2pBorrowAmount);
         }
 
         // Repay the fee.
@@ -505,19 +526,19 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
             // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = Math.zeroFloorSub(
-                delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex),
-                (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex))
+                vars.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex),
+                (vars.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
+                    vars.p2pSupplyDelta.rayMul(vars.poolSupplyIndex))
             );
 
             if (vars.feeToRepay > 0) {
                 uint256 feeRepaid = Math.min(vars.feeToRepay, vars.remainingToRepay);
                 vars.remainingToRepay -= feeRepaid;
-                delta.p2pBorrowAmount -= feeRepaid.rayDiv(vars.p2pBorrowIndex);
+                vars.p2pBorrowAmount -= feeRepaid.rayDiv(vars.p2pBorrowIndex);
                 emit P2PAmountsUpdated(
                     _poolTokenAddress,
-                    delta.p2pSupplyAmount,
-                    delta.p2pBorrowAmount
+                    vars.p2pSupplyAmount,
+                    vars.p2pBorrowAmount
                 );
             }
         }
@@ -559,22 +580,22 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
             if (unmatched < vars.remainingToRepay) {
-                delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
+                vars.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
                     vars.poolSupplyIndex
                 );
-                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+                emit P2PSupplyDeltaUpdated(_poolTokenAddress, vars.p2pSupplyDelta);
             }
 
             // Math.min as the last decimal might flip.
-            delta.p2pSupplyAmount -= Math.min(
+            vars.p2pSupplyAmount -= Math.min(
                 unmatched.rayDiv(vars.p2pSupplyIndex),
-                delta.p2pSupplyAmount
+                vars.p2pSupplyAmount
             );
-            delta.p2pBorrowAmount -= Math.min(
+            vars.p2pBorrowAmount -= Math.min(
                 vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex),
-                delta.p2pBorrowAmount
+                vars.p2pBorrowAmount
             );
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            emit P2PAmountsUpdated(_poolTokenAddress, vars.p2pSupplyAmount, vars.p2pBorrowAmount);
 
             _supplyToPool(underlyingToken, vars.remainingToRepay); // Reverts on error.
         }
@@ -583,6 +604,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P == 0 &&
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool == 0
         ) _setBorrowing(_onBehalf, borrowMask[_poolTokenAddress], false);
+
+        p2pSupplyAmount[_poolTokenAddress] = vars.p2pSupplyAmount;
+        p2pBorrowAmount[_poolTokenAddress] = vars.p2pBorrowAmount;
+        p2pSupplyDelta[_poolTokenAddress] = vars.p2pSupplyDelta;
+        p2pBorrowDelta[_poolTokenAddress] = vars.p2pBorrowDelta;
 
         emit Repaid(
             _repayer,

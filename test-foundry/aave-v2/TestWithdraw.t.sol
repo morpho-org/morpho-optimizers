@@ -458,8 +458,11 @@ contract TestWithdraw is TestSetup {
                 pool.getReserveNormalizedVariableDebt(dai)
             );
 
-            (, uint256 borrowP2PDelta, , ) = morpho.deltas(aDai);
-            testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
+            testEquality(
+                morpho.p2pBorrowDelta(aDai),
+                expectedBorrowP2PDelta,
+                "borrow Delta not expected 1"
+            );
 
             // Borrow delta matching by new supplier
             supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
@@ -471,8 +474,11 @@ contract TestWithdraw is TestSetup {
                 p2pSupplyIndex
             );
 
-            (, borrowP2PDelta, , ) = morpho.deltas(aDai);
-            testEquality(borrowP2PDelta, expectedBorrowP2PDelta / 2, "borrow Delta not expected 2");
+            testEquality(
+                morpho.p2pBorrowDelta(aDai),
+                expectedBorrowP2PDelta / 2,
+                "borrow Delta not expected 2"
+            );
             testEquality(onPoolSupplier, 0, "on pool supplier not 0");
             testEquality(
                 inP2PSupplier,
@@ -485,14 +491,16 @@ contract TestWithdraw is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            (, oldVars.BP2PD, , oldVars.BP2PA) = morpho.deltas(aDai);
+            oldVars.BP2PD = morpho.p2pBorrowDelta(aDai);
+            oldVars.BP2PA = morpho.p2pBorrowAmount(aDai);
             oldVars.NVD = pool.getReserveNormalizedVariableDebt(dai);
             oldVars.BP2PER = morpho.p2pBorrowIndex(aDai);
             (, oldVars.APR) = getApproxP2PRates(aDai);
 
             move1YearForward(aDai);
 
-            (, newVars.BP2PD, , newVars.BP2PA) = morpho.deltas(aDai);
+            newVars.BP2PD = morpho.p2pBorrowDelta(aDai);
+            newVars.BP2PA = morpho.p2pBorrowAmount(aDai);
             newVars.NVD = pool.getReserveNormalizedVariableDebt(dai);
             newVars.BP2PER = morpho.p2pBorrowIndex(aDai);
             newVars.LR = pool.getReserveData(dai).currentLiquidityRate;
@@ -542,8 +550,7 @@ contract TestWithdraw is TestSetup {
             borrowers[i].repay(aDai, borrowedAmount);
         }
 
-        (, uint256 borrowP2PDeltaAfter, , ) = morpho.deltas(aDai);
-        testEquality(borrowP2PDeltaAfter, 0);
+        testEquality(morpho.p2pBorrowDelta(aDai), 0);
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = morpho.supplyBalanceInOf(
             aDai,

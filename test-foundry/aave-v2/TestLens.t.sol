@@ -556,12 +556,11 @@ contract TestLens is TestSetup {
         assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(aDai));
         (uint32 expectedLastUpdateBlockNumber, , ) = morpho.poolIndexes(aDai);
         assertEq(lastUpdateBlockNumber, expectedLastUpdateBlockNumber);
-        (
-            uint256 p2pSupplyDelta,
-            uint256 p2pBorrowDelta,
-            uint256 p2pSupplyAmount,
-            uint256 p2pBorrowAmount
-        ) = morpho.deltas(aDai);
+
+        uint256 p2pSupplyDelta = morpho.p2pSupplyDelta(aDai);
+        uint256 p2pBorrowDelta = morpho.p2pBorrowDelta(aDai);
+        uint256 p2pSupplyAmount = morpho.p2pSupplyAmount(aDai);
+        uint256 p2pBorrowAmount = morpho.p2pSupplyAmount(aDai);
 
         assertEq(p2pSupplyDelta_, p2pSupplyDelta);
         assertEq(p2pBorrowDelta_, p2pBorrowDelta);

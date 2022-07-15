@@ -28,13 +28,13 @@ contract TestInterestRates is InterestRatesManager, Test {
         uint256 poolSupplyGrowthFactor = ((_params.poolSupplyIndex * RAY) / _params.lastPoolSupplyIndex);
         uint256 poolBorrowGrowthFactor = ((_params.poolBorrowIndex * RAY) / _params.lastPoolBorrowIndex);
         uint256 p2pIncrease = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) * poolSupplyGrowthFactor + _params.p2pIndexCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
-        uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
-            ? (((_params.delta.p2pSupplyDelta * _params.lastPoolSupplyIndex) / RAY) * RAY) /
-                ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / RAY)
+        uint256 shareOfTheSupplyDelta = _params.p2pBorrowAmount > 0
+            ? (((_params.p2pSupplyDelta * _params.lastPoolSupplyIndex) / RAY) * RAY) /
+                ((_params.p2pSupplyAmount * _params.lastP2PSupplyIndex) / RAY)
             : 0;
-        uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (((_params.delta.p2pBorrowDelta * _params.lastPoolBorrowIndex) / RAY) * RAY) /
-                ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / RAY)
+        uint256 shareOfTheBorrowDelta = _params.p2pSupplyAmount > 0
+            ? (((_params.p2pBorrowDelta * _params.lastPoolBorrowIndex) / RAY) * RAY) /
+                ((_params.p2pBorrowAmount * _params.lastP2PBorrowIndex) / RAY)
             : 0;
         p2pSupplyIndex_ =
             _params.lastP2PSupplyIndex *
@@ -58,7 +58,10 @@ contract TestInterestRates is InterestRatesManager, Test {
             lastPoolBorrowIndexTest,
             reserveFactor0PerCentTest,
             p2pIndexCursorTest,
-            Types.Delta(0, 0, 0, 0)
+            0,
+            0,
+            0,
+            0
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
@@ -77,7 +80,10 @@ contract TestInterestRates is InterestRatesManager, Test {
             lastPoolBorrowIndexTest,
             reserveFactor50PerCentTest,
             p2pIndexCursorTest,
-            Types.Delta(0, 0, 0, 0)
+            0,
+            0,
+            0,
+            0
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
@@ -96,7 +102,10 @@ contract TestInterestRates is InterestRatesManager, Test {
             lastPoolBorrowIndexTest,
             reserveFactor0PerCentTest,
             p2pIndexCursorTest,
-            Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
+            4 * RAY,
+            6 * RAY,
+            1 * RAY,
+            1 * RAY
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
@@ -115,7 +124,10 @@ contract TestInterestRates is InterestRatesManager, Test {
             lastPoolBorrowIndexTest,
             reserveFactor50PerCentTest,
             p2pIndexCursorTest,
-            Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
+            4 * RAY,
+            6 * RAY,
+            1 * RAY,
+            1 * RAY
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore

@@ -29,7 +29,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         uint256 p2pIndexCursor; // The peer-to-peer index cursor (10 000 = 100%).
-        Types.Delta delta; // The deltas and peer-to-peer amounts.
+        uint256 p2pSupplyAmount; // Peer-to-peer supply amount (in underlying decimals).
+        uint256 p2pBorrowAmount; // Peer-to-peer borrow amount (in underlying decimals).
+        uint256 p2pSupplyDelta; // Peer-to-peer supply delta (in underlying decimals).
+        uint256 p2pBorrowDelta; // Peer-to-peer borrow delta (in underlying decimals).
     }
 
     /// EVENTS ///
@@ -71,7 +74,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 marketPoolIndexes.poolBorrowIndex,
                 market.reserveFactor,
                 market.p2pIndexCursor,
-                deltas[_poolTokenAddress]
+                p2pSupplyAmount[_poolTokenAddress],
+                p2pBorrowAmount[_poolTokenAddress],
+                p2pSupplyDelta[_poolTokenAddress],
+                p2pBorrowDelta[_poolTokenAddress]
             );
 
             (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
@@ -125,13 +131,12 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         // Compute new peer-to-peer supply index.
 
-        if (_params.delta.p2pSupplyAmount == 0 || _params.delta.p2pSupplyDelta == 0) {
+        if (_params.p2pSupplyAmount == 0 || _params.p2pSupplyDelta == 0) {
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(p2pSupplyGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex))
-                .rayDiv(
-                    _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex)
+                (_params.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex)).rayDiv(
+                    _params.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
@@ -144,13 +149,12 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         // Compute new peer-to-peer borrow index.
 
-        if (_params.delta.p2pBorrowAmount == 0 || _params.delta.p2pBorrowDelta == 0) {
+        if (_params.p2pBorrowAmount == 0 || _params.p2pBorrowDelta == 0) {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex))
-                .rayDiv(
-                    _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex)
+                (_params.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex)).rayDiv(
+                    _params.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.

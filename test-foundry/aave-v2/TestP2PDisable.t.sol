@@ -25,16 +25,14 @@ contract TestP2PDisable is TestSetup {
         borrower1.repay(aDai, type(uint256).max);
 
         // Delta must be greater than 0.
-        (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
-        assertGt(p2pSupplyDelta, 0);
+        assertGt(morpho.p2pSupplyDelta(aDai), 0);
 
         // Disable peer-to-peer.
         morpho.setP2PDisabledStatus(aDai, true);
 
         // Delta must be reduce to 0.
         borrower1.borrow(aDai, borrowedAmount);
-        (p2pSupplyDelta, , , ) = morpho.deltas(aDai);
-        testEquality(p2pSupplyDelta, 0);
+        testEquality(morpho.p2pSupplyDelta(aDai), 0);
     }
 
     function testShouldMatchBorrowDeltaWithP2PDisabled() public {
@@ -58,15 +56,13 @@ contract TestP2PDisable is TestSetup {
         supplier1.withdraw(aUsdc, to6Decimals(supplyAmount));
 
         // Delta must be greater than 0.
-        (, uint256 p2pBorrowDelta, , ) = morpho.deltas(aUsdc);
-        assertGt(p2pBorrowDelta, 0);
+        assertGt(morpho.p2pBorrowDelta(aDai), 0);
 
         // Disable peer-to-peer.
         morpho.setP2PDisabledStatus(aUsdc, true);
 
         // Delta must be reduce to 0.
         supplier1.supply(aUsdc, to6Decimals(supplyAmount * 2));
-        (, p2pBorrowDelta, , ) = morpho.deltas(aUsdc);
-        testEquality(p2pBorrowDelta, 0);
+        testEquality(morpho.p2pBorrowDelta(aDai), 0);
     }
 }

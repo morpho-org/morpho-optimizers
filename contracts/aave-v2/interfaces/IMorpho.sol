@@ -30,8 +30,11 @@ interface IMorpho {
     function maxSortedUsers() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
-    function deltas(address) external view returns (Types.Delta memory);
     function market(address) external view returns (Types.Market memory);
+    function p2pSupplyAmount(address) external view returns (uint256);
+    function p2pBorrowAmount(address) external view returns (uint256);
+    function p2pSupplyDelta(address) external view returns (uint256);
+    function p2pBorrowDelta(address) external view returns (uint256);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
     function poolIndexes(address) external view returns (Types.PoolIndexes memory);

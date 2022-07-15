@@ -449,8 +449,7 @@ contract TestRepay is TestSetup {
                 expectedSupplyP2PDeltaInUnderlying,
                 pool.getReserveNormalizedIncome(dai)
             );
-            (uint256 supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            assertApproxEqAbs(supplyP2PDelta, expectedSupplyP2PDelta, 1e3);
+            assertApproxEqAbs(morpho.p2pSupplyDelta(aDai), expectedSupplyP2PDelta, 1e3);
 
             // Supply delta matching by a new borrower
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -463,9 +462,8 @@ contract TestRepay is TestSetup {
                 p2pBorrowIndex
             );
 
-            (supplyP2PDelta, , , ) = morpho.deltas(aDai);
             assertApproxEqAbs(
-                supplyP2PDelta,
+                morpho.p2pSupplyDelta(aDai),
                 expectedSupplyP2PDelta / 2,
                 1e3,
                 "supply delta unexpected"
@@ -478,14 +476,16 @@ contract TestRepay is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            (oldVars.SP2PD, , oldVars.SP2PA, ) = morpho.deltas(aDai);
+            oldVars.SP2PD = morpho.p2pSupplyDelta(aDai);
+            oldVars.SP2PA = morpho.p2pSupplyAmount(aDai);
             oldVars.NI = pool.getReserveNormalizedIncome(dai);
             oldVars.SP2PER = morpho.p2pSupplyIndex(aDai);
             (oldVars.APR, ) = getApproxP2PRates(aDai);
 
             move1YearForward(aDai);
 
-            (newVars.SP2PD, , newVars.SP2PA, ) = morpho.deltas(aDai);
+            newVars.SP2PD = morpho.p2pSupplyDelta(aDai);
+            newVars.SP2PA = morpho.p2pSupplyAmount(aDai);
             newVars.NI = pool.getReserveNormalizedIncome(dai);
             newVars.SP2PER = morpho.p2pSupplyIndex(aDai);
             newVars.LR = pool.getReserveData(dai).currentLiquidityRate;
@@ -535,8 +535,7 @@ contract TestRepay is TestSetup {
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
 
-        (uint256 supplyP2PDeltaAfter, , , ) = morpho.deltas(aDai);
-        testEquality(supplyP2PDeltaAfter, 0);
+        testEquality(morpho.p2pSupplyDelta(aDai), 0);
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = morpho.borrowBalanceInOf(
             aDai,
