@@ -75,7 +75,7 @@ interface IMorpho {
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function claimToTreasury(address[] calldata _poolTokenAddresses) external;
-    function createMarket(Types.Market calldata _market) external;
+    function createMarket(address _underlyingToken, uint16 _reserveFactor, uint16 _p2pIndexCursor) external;
 
     /// USERS ///
 
