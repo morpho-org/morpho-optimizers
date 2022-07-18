@@ -14,13 +14,12 @@ certoraRun \
     --link PositionsManagerHarness:comptroller=SymbolicComptroller \
     --link PositionsManagerHarness:interestRatesManager=InterestRatesManager \
     --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
+    --solc solc \
     --loop_iter 2 \
-    --solc solc8.13 \
     --optimistic_loop \
     --cache morpho \
     --rule "sanity" \
     --msg "PMFC Sanity $1" \
-    --method 'liquidateLogic(address,address,address,uint256)' \
     --staging \
     --send_only \
     # --debug \
