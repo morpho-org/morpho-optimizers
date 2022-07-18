@@ -8,6 +8,7 @@ import "./libraries/aave/ReserveConfiguration.sol";
 import "../common/libraries/DelegateCall.sol";
 import "./libraries/aave/PercentageMath.sol";
 import "./libraries/aave/WadRayMath.sol";
+import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
 
@@ -21,6 +22,7 @@ abstract contract MorphoUtils is MorphoStorage {
     using PercentageMath for uint256;
     using DelegateCall for address;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// ERRORS ///
 
@@ -314,7 +316,9 @@ abstract contract MorphoUtils is MorphoStorage {
             values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
             // Add debt value for borrowed token
             if (_poolTokenAddress == _poolTokens[i] && _amountBorrowed > 0)
-                values.debtValue += (_amountBorrowed * underlyingPrices[i]) / assetData.tokenUnit;
+                values.debtValue += (_amountBorrowed * underlyingPrices[i]).divUp(
+                    assetData.tokenUnit
+                );
 
             // Calculate LT for withdraw
             if (assetCollateralValue > 0)
@@ -360,6 +364,8 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _underlyingPrice,
         uint256 _tokenUnit
     ) internal view returns (uint256 debtValue) {
-        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
+        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
+            _tokenUnit
+        );
     }
 }
