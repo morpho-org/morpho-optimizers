@@ -415,9 +415,7 @@ abstract contract RatesLens is UsersLens {
         p2pSupplyAmount =
             delta.p2pSupplyAmount.rayMul(_p2pSupplyIndex) -
             delta.p2pSupplyDelta.rayMul(_poolSupplyIndex);
-        poolSupplyAmount = IAToken(_poolTokenAddress).balanceOf(address(morpho)).rayMul(
-            _poolSupplyIndex
-        );
+        poolSupplyAmount = IAToken(_poolTokenAddress).balanceOf(address(morpho));
     }
 
     /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
@@ -436,9 +434,9 @@ abstract contract RatesLens is UsersLens {
         p2pBorrowAmount =
             delta.p2pBorrowAmount.rayMul(_p2pBorrowIndex) -
             delta.p2pBorrowDelta.rayMul(_poolBorrowIndex);
-        poolBorrowAmount = IVariableDebtToken(reserve.variableDebtTokenAddress).scaledBalanceOf(
-            address(morpho)
-        );
+        poolBorrowAmount = IVariableDebtToken(reserve.variableDebtTokenAddress)
+        .scaledBalanceOf(address(morpho))
+        .rayMul(_poolBorrowIndex);
     }
 
     /// @dev Returns the supply rate per year experienced on a market based on a given position distribution.

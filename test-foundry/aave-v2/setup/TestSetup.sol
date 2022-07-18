@@ -218,6 +218,7 @@ contract TestSetup is Config, Utils {
         deal(wEth, address(_user), INITIAL_BALANCE * WAD);
         deal(usdt, address(_user), INITIAL_BALANCE * 1e6);
         deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
+        deal(wbtc, address(_user), INITIAL_BALANCE * 1e8);
     }
 
     function setContractsLabels() internal {
