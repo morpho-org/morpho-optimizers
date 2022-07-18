@@ -20,20 +20,40 @@ contract TestLens is TestSetup {
         supplier1.supply(aDai, amount);
 
         (, , , , , uint256 healthFactor) = pool.getUserAccountData(address(morpho));
-        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after supply");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after supply"
+        );
 
         supplier1.borrow(aUsdc, toBorrow);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after borrow");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after borrow"
+        );
 
         supplier1.withdraw(aDai, 2 ether);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after withdraw");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after withdraw"
+        );
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.repay(aUsdc, 2 ether);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        assertEq(lens.getUserHealthFactor(address(supplier1)), healthFactor, "after repay");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after repay"
+        );
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
