@@ -170,7 +170,7 @@ contract TestSetup is Config, Utils {
         lensImplV1 = new Lens();
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
         lens = Lens(address(lensProxy));
-        lens.initialize(address(morpho), poolAddressesProviderAddress);
+        lens.initialize(address(morpho));
     }
 
     function createMarket(address _aToken) internal {
@@ -260,7 +260,7 @@ contract TestSetup is Config, Utils {
         return customOracle;
     }
 
-    function setDefaultMaxGasForMatchingHelper(
+    function _setDefaultMaxGasForMatching(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,

@@ -58,4 +58,25 @@ library PercentageMath {
             result := div(add(mul(value, PERCENTAGE_FACTOR), div(percentage, 2)), percentage)
         }
     }
+
+    /**
+     * @notice Executes a percent average, given an interval [a, b] and a percent c: a * c + b * (1 - c)
+     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
+     * @param valueA The value representing the start of the interval
+     * @param valueB The value representing the end of the interval
+     * @param percentage The percentage of the interval to be calculated
+     * @return result the average of valueA and valueB, weighted by percentage
+     **/
+    function percentAvg(
+        uint256 valueA,
+        uint256 valueB,
+        uint256 percentage
+    ) internal pure returns (uint256 result) {
+        assembly {
+            result := div(
+                add(mul(valueA, percentage), mul(valueB, sub(PERCENTAGE_FACTOR, percentage))),
+                PERCENTAGE_FACTOR
+            )
+        }
+    }
 }

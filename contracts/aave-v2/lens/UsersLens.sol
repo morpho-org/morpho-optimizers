@@ -11,6 +11,7 @@ abstract contract UsersLens is IndexesLens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// ERRORS ///
 
@@ -29,32 +30,21 @@ abstract contract UsersLens is IndexesLens {
     {
         address[] memory createdMarkets = morpho.getMarketsCreated();
         uint256 nbCreatedMarkets = createdMarkets.length;
-        uint256 userMarketsBitmask = morpho.userMarkets(_user);
 
-        uint256 i;
         uint256 nbEnteredMarkets;
-        for (; i < nbCreatedMarkets; ) {
-            address market = createdMarkets[i];
+        enteredMarkets = new address[](nbCreatedMarkets);
 
-            uint256 marketBitmask = morpho.borrowMask(market);
-            if (userMarketsBitmask & (marketBitmask | (marketBitmask << 1)) != 0)
+        bytes32 userMarkets = morpho.userMarkets(_user);
+        for (uint256 i; i < nbCreatedMarkets; i++) {
+            if (_isSupplyingOrBorrowing(userMarkets, createdMarkets[i])) {
+                enteredMarkets[nbEnteredMarkets] = createdMarkets[i];
                 ++nbEnteredMarkets;
-            else createdMarkets[i] = address(0);
-
-            unchecked {
-                ++i;
             }
         }
 
-        enteredMarkets = new address[](nbEnteredMarkets);
-
-        uint256 j;
-        for (i = 0; i < nbCreatedMarkets; ) {
-            if (createdMarkets[i] != address(0)) enteredMarkets[j++] = createdMarkets[i];
-
-            unchecked {
-                ++i;
-            }
+        // Resize the array for return
+        assembly {
+            mstore(enteredMarkets, nbEnteredMarkets)
         }
     }
 
@@ -72,12 +62,13 @@ abstract contract UsersLens is IndexesLens {
         Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 numberOfMarketsCreated = createdMarkets.length;
+        bytes32 userMarkets = morpho.userMarkets(_user);
 
-        for (uint256 i; i < numberOfMarketsCreated; ) {
+        uint256 nbCreatedMarkets = createdMarkets.length;
+        for (uint256 i; i < nbCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(_user, poolToken)) {
+            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(userMarkets, poolToken)) {
                 assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
 
                 data.collateralValue += assetData.collateralValue;
@@ -173,14 +164,34 @@ abstract contract UsersLens is IndexesLens {
     //     toRepay = maxROIRepay > maxRepayable ? maxRepayable : maxROIRepay;
     // }
 
+    /// @dev Returns the hypothetical health factor of a user
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow from.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return healthFactor The health factor of the user.
+    function getUserHypotheticalHealthFactor(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) public view returns (uint256 healthFactor) {
+        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (liquidityData.debtValue == 0) return type(uint256).max;
+
+        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+    }
+
     /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
     /// @param _user The user of whom to get the health factor.
     /// @return the health factor of the given user (in wad).
     function getUserHealthFactor(address _user) external view returns (uint256) {
-        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
-        if (liquidityData.debtValue == 0) return type(uint256).max;
-
-        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+        return getUserHypotheticalHealthFactor(_user, address(0), 0, 0);
     }
 
     /// PUBLIC ///
@@ -198,7 +209,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUserSupplyBalance(address _poolTokenAddress, address _user)
+    function getCurrentSupplyBalanceInOf(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -207,15 +218,17 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
+            _poolTokenAddress
+        );
+
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
             _poolTokenAddress,
             _user
         );
 
-        balanceOnPool = supplyBalance.onPool.rayMul(
-            pool.getReserveNormalizedIncome(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
-        );
-        balanceInP2P = supplyBalance.inP2P.rayMul(getP2PSupplyIndex(_poolTokenAddress));
+        balanceOnPool = supplyBalance.onPool.rayMul(poolSupplyIndex);
+        balanceInP2P = supplyBalance.inP2P.rayMul(p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -226,7 +239,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUserBorrowBalance(address _poolTokenAddress, address _user)
+    function getCurrentBorrowBalanceInOf(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -235,17 +248,17 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
+            _poolTokenAddress
+        );
+
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
             _poolTokenAddress,
             _user
         );
 
-        balanceOnPool = borrowBalance.onPool.rayMul(
-            pool.getReserveNormalizedVariableDebt(
-                IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-            )
-        );
-        balanceInP2P = borrowBalance.inP2P.rayMul(getP2PBorrowIndex(_poolTokenAddress));
+        balanceOnPool = borrowBalance.onPool.rayMul(poolBorrowIndex);
+        balanceInP2P = borrowBalance.inP2P.rayMul(p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -264,12 +277,13 @@ abstract contract UsersLens is IndexesLens {
     ) public view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 numberOfMarketsCreated = createdMarkets.length;
+        bytes32 userMarkets = morpho.userMarkets(_user);
 
-        for (uint256 i; i < numberOfMarketsCreated; ) {
+        uint256 nbCreatedMarkets = createdMarkets.length;
+        for (uint256 i; i < nbCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (_isSupplyingOrBorrowing(_user, poolToken)) {
+            if (_isSupplyingOrBorrowing(userMarkets, poolToken)) {
                 Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                     _user,
                     poolToken,
@@ -285,9 +299,8 @@ abstract contract UsersLens is IndexesLens {
 
                 if (_poolTokenAddress == poolToken) {
                     if (_borrowedAmount > 0)
-                        liquidityData.debtValue +=
-                            (_borrowedAmount * assetData.underlyingPrice) /
-                            assetData.tokenUnit;
+                        liquidityData.debtValue += (_borrowedAmount * assetData.underlyingPrice)
+                        .divUp(assetData.tokenUnit);
 
                     if (_withdrawnAmount > 0) {
                         liquidityData.collateralValue -=
@@ -337,35 +350,33 @@ abstract contract UsersLens is IndexesLens {
         ) = getIndexes(_poolTokenAddress);
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
-        assetData.debtValue =
-            (_computeUserBorrowBalanceInOf(
-                _poolTokenAddress,
-                _user,
-                p2pBorrowIndex,
-                poolBorrowIndex
-            ) * assetData.underlyingPrice) /
-            assetData.tokenUnit;
+        assetData.debtValue = (_getUserBorrowBalanceInOf(
+            _poolTokenAddress,
+            _user,
+            p2pBorrowIndex,
+            poolBorrowIndex
+        ) * assetData.underlyingPrice)
+        .divUp(assetData.tokenUnit);
         assetData.collateralValue =
-            (_computeUserSupplyBalanceInOf(
-                _poolTokenAddress,
-                _user,
-                p2pSupplyIndex,
-                poolSupplyIndex
-            ) * assetData.underlyingPrice) /
+            (_getUserSupplyBalanceInOf(_poolTokenAddress, _user, p2pSupplyIndex, poolSupplyIndex) *
+                assetData.underlyingPrice) /
             assetData.tokenUnit;
     }
 
     /// INTERNAL ///
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
-    /// @param _user The user to check for.
+    /// @param _userMarkets The user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
-    function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        return
-            morpho.userMarkets(_user) &
-                (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
-            0;
+    function _isSupplyingOrBorrowing(bytes32 _userMarkets, address _market)
+        internal
+        view
+        returns (bool)
+    {
+        bytes32 marketBorrowMask = morpho.borrowMask(_market);
+
+        return _userMarkets & (marketBorrowMask | (marketBorrowMask << 1)) != 0;
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
@@ -373,7 +384,7 @@ abstract contract UsersLens is IndexesLens {
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _computeUserSupplyBalanceInOf(
+    function _getUserSupplyBalanceInOf(
         address _poolTokenAddress,
         address _user,
         uint256 _p2pSupplyIndex,
@@ -393,7 +404,7 @@ abstract contract UsersLens is IndexesLens {
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _computeUserBorrowBalanceInOf(
+    function _getUserBorrowBalanceInOf(
         address _poolTokenAddress,
         address _user,
         uint256 _p2pBorrowIndex,

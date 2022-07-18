@@ -226,11 +226,11 @@ contract TestLens is TestSetup {
         assertEq(borrowable, 0);
     }
 
-    function testMaxCapicitiesWithNothingWithSupply() public {
-        uint256 amount = 10_000 ether;
+    function testMaxCapacitiesWithSupply() public {
+        uint256 amount = to6Decimals(10000 ether);
 
-        borrower1.approve(usdc, to6Decimals(amount));
-        borrower1.supply(aUsdc, to6Decimals(amount));
+        borrower1.approve(usdc, amount);
+        borrower1.supply(aUsdc, amount);
 
         Types.AssetLiquidityData memory assetDataUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
@@ -256,7 +256,7 @@ contract TestLens is TestSetup {
             aUsdc
         );
 
-        assertEq(withdrawable, to6Decimals(amount), "withdrawable USDC");
+        assertEq(withdrawable, amount, "withdrawable USDC");
         assertEq(borrowable, expectedBorrowableUsdc, "borrowable USDC");
 
         (withdrawable, borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
@@ -276,7 +276,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUserSupplyBalance(address(borrower1), aDai);
+        .getCurrentSupplyBalanceInOf(address(borrower1), aDai);
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -301,7 +301,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUserBorrowBalance(address(borrower1), aUsdc);
+        .getCurrentBorrowBalanceInOf(address(borrower1), aUsdc);
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -342,7 +342,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUserSupplyBalance(address(borrower1), aDai);
+        .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -366,7 +366,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUserBorrowBalance(address(borrower1), aUsdc);
+        .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -395,7 +395,7 @@ contract TestLens is TestSetup {
             matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.inP2P,
             matchedSupplierSupplyBalance.totalBalance
-        ) = lens.getUserSupplyBalance(address(supplier1), aUsdc);
+        ) = lens.getCurrentSupplyBalanceInOf(aUsdc, address(supplier1));
 
         (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aUsdc,
@@ -688,27 +688,6 @@ contract TestLens is TestSetup {
         assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
     }
 
-    function testEnteredMarkets() public {
-        borrower1.approve(dai, 10 ether);
-        borrower1.supply(aDai, 10 ether);
-
-        borrower1.approve(usdc, to6Decimals(10 ether));
-        borrower1.supply(aUsdc, to6Decimals(10 ether));
-
-        assertTrue(isSupplying(address(borrower1), aDai));
-        assertTrue(isSupplying(address(borrower1), aUsdc));
-
-        // Borrower1 withdraw, USDC should be the first in enteredMarkets.
-        borrower1.withdraw(aDai, type(uint256).max);
-
-        assertFalse(isSupplying(address(borrower1), aDai));
-        assertTrue(isSupplying(address(borrower1), aUsdc));
-    }
-
-    function isSupplying(address _user, address _market) internal view returns (bool) {
-        return morpho.userMarkets(_user) & (morpho.borrowMask(_market) << 1) != 0;
-    }
-
     function testGetMainMarketData() public {
         uint256 amount = 10_000 ether;
 
@@ -741,7 +720,7 @@ contract TestLens is TestSetup {
             uint16 reserveFactor,
             uint16 p2pIndexCursor
         ) = lens.getMarketConfiguration(aDai);
-        assertTrue(underlying == IAToken(aDai).UNDERLYING_ASSET_ADDRESS());
+        assertTrue(underlying == dai);
 
         (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(aDai);
 
@@ -787,7 +766,7 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testGetIndexes() public {
+    function testGetUpdatedIndexes() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(wbtc, amount);
@@ -840,7 +819,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PSupplyIndex() public {
         hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PSupplyIndex = lens.getP2PSupplyIndex(aDai);
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
 
         morpho.updateIndexes(aDai);
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
@@ -849,7 +828,7 @@ contract TestLens is TestSetup {
     function testGetUpdatedP2PSupplyIndexWithDelta() public {
         _createSupplyDelta();
         hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PSupplyIndex = lens.getP2PSupplyIndex(aDai);
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
 
         morpho.updateIndexes(aDai);
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
@@ -857,7 +836,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PBorrowIndex() public {
         hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PBorrowIndex = lens.getP2PBorrowIndex(aDai);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
 
         morpho.updateIndexes(aDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
@@ -866,7 +845,7 @@ contract TestLens is TestSetup {
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
         _createBorrowDelta();
         hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PBorrowIndex = lens.getP2PBorrowIndex(aDai);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
 
         morpho.updateIndexes(aDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
@@ -879,7 +858,7 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
-        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
         borrower1.repay(aDai, type(uint256).max);
     }
 
@@ -890,8 +869,17 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
-        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
         supplier1.withdraw(aDai, type(uint256).max);
+    }
+
+    function testGetAllMarkets() public {
+        address[] memory lensMarkets = lens.getAllMarkets();
+        address[] memory morphoMarkets = morpho.getMarketsCreated();
+
+        for (uint256 i; i < lensMarkets.length; i++) {
+            assertEq(morphoMarkets[i], lensMarkets[i]);
+        }
     }
 
     function testGetEnteredMarkets() public {
@@ -904,7 +892,7 @@ contract TestLens is TestSetup {
         supplier1.supply(aUsdt, amount);
 
         address[] memory enteredMarkets = lens.getEnteredMarkets(address(supplier1));
-        uint256 userMarketsBitmask = morpho.userMarkets(address(supplier1));
+        bytes32 userMarkets = morpho.userMarkets(address(supplier1));
 
         uint256 j;
         for (uint256 i; i < pools.length; ) {
@@ -918,8 +906,8 @@ contract TestLens is TestSetup {
                 }
             }
 
-            uint256 marketBitmask = morpho.borrowMask(market);
-            if (userMarketsBitmask & (marketBitmask | (marketBitmask << 1)) != 0)
+            bytes32 marketBitmask = morpho.borrowMask(market);
+            if (userMarkets & (marketBitmask | (marketBitmask << 1)) != 0)
                 assertLt(j, enteredMarkets.length, "market entered not in enteredMarkets");
             else assertEq(j, enteredMarkets.length, "market not entered in enteredMarkets");
 
@@ -928,6 +916,28 @@ contract TestLens is TestSetup {
             }
         }
     }
+
+    // function testIsLiquidatableFalse() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     assertFalse(lens.isLiquidatable(address(borrower1)));
+    // }
+
+    // function testIsLiquidatableTrue() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(aUsdc) / 2);
+
+    //     assertTrue(lens.isLiquidatable(address(borrower1)));
+    // }
 
     // function testHealthFactorBelow1() public {
     //     uint256 amount = 10_000 ether;
@@ -940,7 +950,7 @@ contract TestLens is TestSetup {
     //     oracle.setDirectPrice(usdc, 0.6e30);
     //     oracle.setDirectPrice(dai, 1e18);
 
-    //     bool isLiquidatable = lens.isLiquidatable(address(borrower1), new address[](0));
+    //     bool isLiquidatable = lens.isLiquidatable(address(borrower1));
     //     uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
 
     //     assertTrue(isLiquidatable);
@@ -964,6 +974,17 @@ contract TestLens is TestSetup {
         uint256 expectedHealthFactor = (2 * amount).percentMul(usdcLtv).wadDiv(amount);
 
         assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e8);
+    }
+
+    function testHealthFactorShouldBeInfinityForPureSuppliers() public {
+        uint256 amount = to6Decimals(10_000 ether);
+
+        supplier1.approve(usdc, amount);
+        supplier1.supply(aUsdc, amount);
+
+        uint256 healthFactor = lens.getUserHealthFactor(address(supplier1));
+
+        assertEq(healthFactor, type(uint256).max);
     }
 
     function testHealthFactorAbove1WhenHalfMatched() public {
@@ -1010,27 +1031,23 @@ contract TestLens is TestSetup {
         assertEq(borrower2HealthFactor, 1e18);
     }
 
-    // function testIsLiquidatableFalse() public {
-    //     uint256 amount = 10_000 ether;
+    function testHealthFactorEqual1WhenBorrowingMaxCapacity() public {
+        uint256 amount = 10_000 ether;
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(aDai, amount);
 
-    //     assertFalse(lens.isLiquidatable(address(borrower1), new address[](0)));
-    // }
+        hevm.roll(block.number + 1000);
 
-    // function testIsLiquidatableTrue() public {
-    //     uint256 amount = 10_000 ether;
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.borrow(aDai, borrowable);
 
-    //     createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(aUsdc) / 2);
+        uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
 
-    //     assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
-    // }
+        assertEq(healthFactor, 1e18);
+    }
 
     // function testComputeLiquidation() public {
     //     uint256 amount = 10_000 ether;
@@ -1042,7 +1059,7 @@ contract TestLens is TestSetup {
     //     createAndSetCustomPriceOracle().setDirectPrice(usdc, 1);
 
     //     assertEq(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
     //         0
     //     );
     // }
@@ -1055,7 +1072,7 @@ contract TestLens is TestSetup {
     //     borrower1.borrow(aDai, amount);
 
     //     assertEq(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
     //         0
     //     );
     // }
@@ -1077,8 +1094,8 @@ contract TestLens is TestSetup {
     //         ((oracle.getUnderlyingPrice(aDai) * 79) / 100) * 1e12
     //     );
 
-    //     assertApproxEq(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //     assertApproxEqAbs(
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
     //         amount.rayMul(comptroller.closeFactorMantissa()),
     //         1
     //     );
@@ -1096,12 +1113,89 @@ contract TestLens is TestSetup {
     //         (oracle.getUnderlyingPrice(aDai) / 2) * 1e12 // Setting the value of the collateral at the same value as the debt.
     //     );
 
-    //     assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
+    //     assertTrue(lens.isLiquidatable(address(borrower1)));
 
-    //     assertApproxEq(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //     assertApproxEqAbs(
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
     //         amount / 2,
     //         1
+    //     );
+    // }
+
+    // function testLiquidationWithUpdatedPoolIndexes() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     (, uint256 collateralFactor, ) = comptroller.markets(aUsdc);
+
+    //     borrower1.approve(usdc, to6Decimals(amount));
+    //     borrower1.supply(aUsdc, to6Decimals(amount));
+    //     borrower1.borrow(aDai, amount.rayMul(collateralFactor) - 10 ether);
+
+    //     address[] memory updatedMarkets = new address[](2);
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     hevm.roll(block.number + (31 * 24 * 60 * 4));
+
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     updatedMarkets[0] = address(aDai);
+    //     updatedMarkets[1] = address(aUsdc);
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is not liquidatable with virtually updated pool indexes"
+    //     );
+
+    //     IAToken(aUsdc).accrueInterest();
+    //     IAToken(aDai).accrueInterest();
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1)),
+    //         "borrower is not liquidatable with updated pool indexes"
+    //     );
+    // }
+
+    // function testLiquidatableWithUpdatedP2PIndexes() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     supplier2.approve(dai, amount);
+    //     supplier2.supply(aDai, amount);
+
+    //     (, uint256 collateralFactor, ) = comptroller.markets(aUsdc);
+
+    //     borrower1.approve(usdc, to6Decimals(amount));
+    //     borrower1.supply(aUsdc, to6Decimals(amount));
+    //     borrower1.borrow(aDai, amount.rayMul(collateralFactor) - 10 ether);
+
+    //     address[] memory updatedMarkets = new address[](2);
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     hevm.roll(block.number + (31 * 24 * 60 * 4));
+
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     updatedMarkets[0] = address(aDai);
+    //     updatedMarkets[1] = address(aUsdc);
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is not liquidatable with virtually updated p2p indexes"
+    //     );
+
+    //     morpho.updateP2PIndexes(aUsdc);
+    //     morpho.updateP2PIndexes(aDai);
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1)),
+    //         "borrower is not liquidatable with updated p2p indexes"
     //     );
     // }
 
@@ -1123,7 +1217,7 @@ contract TestLens is TestSetup {
     //     createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
 
     //     (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
-    //         .getUserBalanceStates(address(borrower1), new address[](0));
+    //         .getUserBalanceStates(address(borrower1));
 
     //     uint256 borrowedPrice = oracle.getUnderlyingPrice(aUsdc);
     //     uint256 toRepay = lens.computeLiquidationRepayAmount(
@@ -1156,11 +1250,11 @@ contract TestLens is TestSetup {
     //                 aDai,
     //                 new address[](0)
     //             );
-    //         } while (lens.isLiquidatable(address(borrower1), new address[](0)) && toRepay > 0);
+    //         } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
 
-    //         // either the liquidatee's position (borrow value rayDivided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
+    //         // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
     //         if (collateralValue.rayDiv(comptroller.liquidationIncentiveMantissa()) > debtValue) {
-    //             assertFalse(lens.isLiquidatable(address(borrower1), new address[](0)));
+    //             assertFalse(lens.isLiquidatable(address(borrower1)));
     //         } else {
     //             // or the liquidator has drained all the collateral
     //             (collateralValue, , ) = lens.getUserBalanceStates(
@@ -1215,4 +1309,223 @@ contract TestLens is TestSetup {
     // function testNoRepayLiquidation() public {
     //     testLiquidation(0, 0.5 ether);
     // }
+
+    struct Amounts {
+        uint256 totalP2PSupply;
+        uint256 totalPoolSupply;
+        uint256 totalSupply;
+        uint256 totalP2PBorrow;
+        uint256 totalPoolBorrow;
+        uint256 totalBorrow;
+        uint256 daiP2PSupply;
+        uint256 daiPoolSupply;
+        uint256 daiP2PBorrow;
+        uint256 daiPoolBorrow;
+        uint256 ethP2PSupply;
+        uint256 ethPoolSupply;
+        uint256 ethP2PBorrow;
+        uint256 ethPoolBorrow;
+    }
+
+    struct SupplyBorrowIndexes {
+        uint256 ethPoolSupplyIndexBefore;
+        uint256 daiP2PSupplyIndexBefore;
+        uint256 daiP2PBorrowIndexBefore;
+        uint256 ethPoolSupplyIndexAfter;
+        uint256 daiPoolSupplyIndexAfter;
+        uint256 daiP2PSupplyIndexAfter;
+        uint256 daiP2PBorrowIndexAfter;
+    }
+
+    function testTotalSupplyBorrowWithHalfSupplyDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+
+        SupplyBorrowIndexes memory indexes;
+        indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(wEth);
+        indexes.daiP2PBorrowIndexBefore = morpho.p2pBorrowIndex(aDai);
+
+        hevm.roll(block.number + 1);
+
+        borrower1.approve(dai, amount / 2);
+        borrower1.repay(aDai, amount / 2);
+
+        {
+            SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+            oracle.setDirectPrice(wEth, 2 ether);
+            oracle.setDirectPrice(dai, 1 ether);
+        }
+
+        Amounts memory amounts;
+
+        (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
+        .getTotalSupply();
+        (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
+        .getTotalBorrow();
+
+        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
+        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(aWeth);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(aWeth);
+
+        indexes.ethPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(wEth);
+        indexes.daiPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(dai);
+        indexes.daiP2PBorrowIndexAfter = morpho.p2pBorrowIndex(aDai);
+
+        uint256 expectedDaiUSDOnPool = (amount / 2).rayDiv(indexes.daiPoolSupplyIndexAfter).rayMul(
+            indexes.daiPoolSupplyIndexAfter
+        ); // which is also the supply delta
+        uint256 expectedDaiUSDInP2P = amount.rayDiv(indexes.daiP2PBorrowIndexBefore).rayMul(
+            indexes.daiP2PBorrowIndexAfter
+        ) - expectedDaiUSDOnPool;
+        uint256 expectedEthUSDOnPool = 2 *
+            amount.rayDiv(indexes.ethPoolSupplyIndexBefore).rayMul(indexes.ethPoolSupplyIndexAfter);
+
+        assertEq(
+            amounts.totalSupply,
+            expectedEthUSDOnPool + expectedDaiUSDInP2P + expectedDaiUSDOnPool,
+            "unexpected total supply"
+        );
+        assertApproxEqAbs(amounts.totalBorrow, expectedDaiUSDInP2P, 1e8, "unexpected total borrow");
+
+        assertEq(amounts.totalP2PSupply, expectedDaiUSDInP2P, "unexpected total p2p supply");
+        assertEq(
+            amounts.totalPoolSupply,
+            expectedDaiUSDOnPool + expectedEthUSDOnPool,
+            "unexpected total pool supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalP2PBorrow,
+            expectedDaiUSDInP2P,
+            1e8,
+            "unexpected total p2p borrow"
+        );
+        assertEq(amounts.totalPoolBorrow, 0, "unexpected total pool borrow");
+
+        assertEq(amounts.daiP2PSupply, expectedDaiUSDInP2P, "unexpected dai p2p supply");
+        assertApproxEqAbs(
+            amounts.daiP2PBorrow,
+            expectedDaiUSDInP2P,
+            1e8,
+            "unexpected dai p2p borrow"
+        );
+        assertEq(amounts.daiPoolSupply, expectedDaiUSDOnPool, "unexpected dai pool supply");
+        assertEq(amounts.daiPoolBorrow, 0, "unexpected dai pool borrow");
+
+        assertEq(amounts.ethP2PSupply, 0, "unexpected eth p2p supply");
+        assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
+        assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
+        assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
+    }
+
+    function testTotalSupplyBorrowWithHalfBorrowDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+
+        SupplyBorrowIndexes memory indexes;
+        indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(wEth);
+        indexes.daiP2PSupplyIndexBefore = morpho.p2pSupplyIndex(aDai);
+
+        hevm.roll(block.number + 1);
+
+        supplier1.withdraw(aDai, amount / 2);
+
+        {
+            SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+            oracle.setDirectPrice(wEth, 2 ether);
+            oracle.setDirectPrice(dai, 1 ether);
+        }
+
+        Amounts memory amounts;
+
+        (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
+        .getTotalSupply();
+        (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
+        .getTotalBorrow();
+
+        (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
+        (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(aWeth);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(aWeth);
+
+        indexes.ethPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(wEth);
+        indexes.daiPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(dai);
+        indexes.daiP2PSupplyIndexAfter = morpho.p2pSupplyIndex(aDai);
+
+        uint256 expectedDaiUSDOnPool = amount / 2; // which is also the borrow delta
+        uint256 expectedDaiUSDInP2P = amount.rayDiv(indexes.daiP2PSupplyIndexBefore).rayMul(
+            indexes.daiP2PSupplyIndexAfter
+        ) - expectedDaiUSDOnPool;
+        uint256 expectedEthUSDOnPool = 2 *
+            amount.rayDiv(indexes.ethPoolSupplyIndexBefore).rayMul(indexes.ethPoolSupplyIndexAfter);
+
+        assertApproxEqAbs(
+            amounts.totalSupply,
+            expectedEthUSDOnPool + expectedDaiUSDInP2P,
+            1e9,
+            "unexpected total supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalBorrow,
+            expectedDaiUSDInP2P + expectedDaiUSDOnPool,
+            1,
+            "unexpected total borrow"
+        );
+
+        assertApproxEqAbs(
+            amounts.totalP2PSupply,
+            expectedDaiUSDInP2P,
+            1e9,
+            "unexpected total p2p supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalPoolSupply,
+            expectedEthUSDOnPool,
+            1,
+            "unexpected total pool supply"
+        );
+        assertApproxEqAbs(
+            amounts.totalP2PBorrow,
+            expectedDaiUSDInP2P,
+            1,
+            "unexpected total p2p borrow"
+        );
+        assertEq(amounts.totalPoolBorrow, expectedDaiUSDOnPool, "unexpected total pool borrow");
+
+        assertApproxEqAbs(
+            amounts.daiP2PSupply,
+            expectedDaiUSDInP2P,
+            1e9,
+            "unexpected dai p2p supply"
+        );
+        assertApproxEqAbs(
+            amounts.daiP2PBorrow,
+            expectedDaiUSDInP2P,
+            1,
+            "unexpected dai p2p borrow"
+        );
+        assertEq(amounts.daiPoolSupply, 0, "unexpected dai pool supply");
+        assertEq(amounts.daiPoolBorrow, expectedDaiUSDOnPool, "unexpected dai pool borrow");
+
+        assertEq(amounts.ethP2PSupply, 0, "unexpected eth p2p supply");
+        assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
+        assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
+        assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
+    }
 }

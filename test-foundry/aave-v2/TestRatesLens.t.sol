@@ -28,13 +28,13 @@ contract TestRatesLens is TestSetup {
     }
 
     function testSupplyRateShouldEqual0WhenNoSupply() public {
-        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
 
         assertEq(supplyRatePerYear, 0);
     }
 
     function testBorrowRateShouldEqual0WhenNoBorrow() public {
-        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        uint256 borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(aDai, address(borrower1));
 
         assertEq(borrowRatePerYear, 0);
     }
@@ -45,7 +45,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
         assertApproxEqAbs(supplyRatePerYear, reserve.currentLiquidityRate, 1);
@@ -58,7 +58,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
-        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        uint256 borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(aDai, address(borrower1));
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
         assertApproxEqAbs(borrowRatePerYear, reserve.currentVariableBorrowRate, 1);
@@ -77,8 +77,8 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount);
 
-        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
-        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
+        uint256 borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(aDai, address(borrower1));
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
 
         assertApproxEqAbs(supplyRatePerYear, p2pSupplyRate, 1, "unexpected supply rate");
@@ -98,7 +98,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(aWbtc, amount);
         borrower1.borrow(aDai, amount / 2);
 
-        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
         assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1e4);
@@ -116,7 +116,7 @@ contract TestRatesLens is TestSetup {
         supplier1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount);
 
-        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        uint256 borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(aDai, address(borrower1));
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerYear(aDai);
 
         assertApproxEqAbs(borrowRatePerYear, (p2pBorrowRate + poolBorrowRate) / 2, 1e4);
@@ -175,7 +175,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), 0);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), 0);
 
         assertEq(supplyRatePerYear, 0, "non zero supply rate per block");
         assertEq(balanceOnPool, 0, "non zero pool balance");
@@ -189,7 +189,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), 0);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), 0);
 
         assertEq(borrowRatePerYear, 0, "non zero borrow rate per block");
         assertEq(balanceOnPool, 0, "non zero pool balance");
@@ -210,14 +210,17 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), 0);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), 0);
 
-        uint256 expectedSupplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        uint256 expectedSupplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(
+            aDai,
+            address(supplier1)
+        );
         (
             uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
             uint256 expectedTotalBalance
-        ) = lens.getUserSupplyBalance(address(supplier1), aDai);
+        ) = lens.getCurrentSupplyBalanceInOf(address(supplier1), aDai);
 
         assertGt(supplyRatePerYear, 0, "zero supply rate per block");
         assertEq(supplyRatePerYear, expectedSupplyRatePerYear, "unexpected supply rate per block");
@@ -240,14 +243,17 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), 0);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), 0);
 
-        uint256 expectedBorrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        uint256 expectedBorrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(
+            aDai,
+            address(borrower1)
+        );
         (
             uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
             uint256 expectedTotalBalance
-        ) = lens.getUserBorrowBalance(address(borrower1), aDai);
+        ) = lens.getCurrentBorrowBalanceInOf(address(borrower1), aDai);
 
         assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
         assertEq(borrowRatePerYear, expectedBorrowRatePerYear, "unexpected borrow rate per block");
@@ -264,7 +270,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
         uint256 expectedSupplyRatePerYear = reserve.currentLiquidityRate;
@@ -298,7 +304,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(supplier1), amount);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(supplier1), amount);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
         uint256 expectedBorrowRatePerYear = reserve.currentVariableBorrowRate;
@@ -329,7 +335,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerYear, , , ) = lens.getRatesPerYear(aDai);
 
@@ -363,7 +369,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerYear, , ) = lens.getRatesPerYear(aDai);
 
@@ -396,7 +402,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerYear, , uint256 poolSupplyRatePerYear, ) = lens.getRatesPerYear(
             aDai
@@ -437,7 +443,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerYear, , uint256 poolBorrowRatePerYear) = lens.getRatesPerYear(
             aDai
@@ -468,6 +474,78 @@ contract TestRatesLens is TestSetup {
         );
     }
 
+    function testNextSupplyRateShouldEqualPoolRateWhenFullMatchButP2PDisabled() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        morpho.setP2PDisabled(aDai, true);
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+        uint256 expectedPoolSupplyRate = reserve.currentLiquidityRate;
+        uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
+
+        assertApproxEqAbs(
+            supplyRatePerYear,
+            expectedPoolSupplyRate,
+            1,
+            "unexpected supply rate per block"
+        );
+        assertEq(
+            balanceOnPool,
+            amount.rayDiv(poolSupplyIndex).rayMul(poolSupplyIndex),
+            "unexpected pool balance"
+        );
+        assertEq(balanceInP2P, 0, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            amount.rayDiv(poolSupplyIndex).rayMul(poolSupplyIndex),
+            "unexpected total balance"
+        );
+    }
+
+    function testNextBorrowRateShouldEqualPoolRateWhenFullMatchButP2PDisabled() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        morpho.setP2PDisabled(aDai, true);
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+        uint256 expectedBorrowRatePerYear = reserve.currentVariableBorrowRate;
+
+        assertApproxEqAbs(
+            borrowRatePerYear,
+            expectedBorrowRatePerYear,
+            1,
+            "unexpected borrow rate per block"
+        );
+        assertApproxEqAbs(balanceOnPool, amount, 1, "unexpected pool balance");
+        assertEq(balanceInP2P, 0, "unexpected p2p balance");
+        assertApproxEqAbs(totalBalance, amount, 1, "unexpected total balance");
+    }
+
     function testNextSupplyRateShouldEqualP2PRateWhenDoubleSupply() public {
         uint256 amount = 10_000 ether;
 
@@ -483,7 +561,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount / 2);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount / 2);
 
         (uint256 p2pSupplyRatePerYear, , , ) = lens.getRatesPerYear(aDai);
 
@@ -517,7 +595,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount / 2);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount / 2);
 
         (, uint256 p2pBorrowRatePerYear, , ) = lens.getRatesPerYear(aDai);
 
@@ -559,7 +637,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerYear, , , ) = lens.getRatesPerYear(aDai);
 
@@ -602,7 +680,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerYear, , ) = lens.getRatesPerYear(aDai);
 
@@ -650,7 +728,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+        ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
         (uint256 p2pSupplyRatePerYear, , uint256 poolSupplyRatePerYear, ) = lens.getRatesPerYear(
             aDai
@@ -710,7 +788,7 @@ contract TestRatesLens is TestSetup {
             uint256 balanceOnPool,
             uint256 balanceInP2P,
             uint256 totalBalance
-        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+        ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
         (, uint256 p2pBorrowRatePerYear, , uint256 poolBorrowRatePerYear) = lens.getRatesPerYear(
             aDai

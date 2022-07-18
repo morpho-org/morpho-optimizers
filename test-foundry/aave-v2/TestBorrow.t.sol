@@ -89,7 +89,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -142,7 +142,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
