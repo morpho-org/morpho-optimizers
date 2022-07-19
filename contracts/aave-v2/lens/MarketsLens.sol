@@ -153,7 +153,40 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
+        (, p2pSupplyAmount, poolSupplyAmount) = _getTotalMarketSupply(_poolTokenAddress);
+    }
+
+    /// @notice Computes and returns the total distribution of borrows for a given market.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
+    function getTotalMarketBorrow(address _poolTokenAddress)
+        public
+        view
+        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
+    {
+        (, p2pBorrowAmount, poolBorrowAmount) = _getTotalMarketBorrow(_poolTokenAddress);
+    }
+
+    /// INTERNAL ///
+
+    /// @notice Computes and returns the total distribution of supply for a given market.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @return underlyingToken The address of the underlying ERC20 token of the given market.
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
+    function _getTotalMarketSupply(address _poolTokenAddress)
+        public
+        view
+        returns (
+            address underlyingToken,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
+        )
+    {
+        uint256 p2pSupplyIndex;
+        uint256 poolSupplyIndex;
+        (underlyingToken, p2pSupplyIndex, poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
             _poolTokenAddress
         );
 
@@ -166,20 +199,25 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Computes and returns the total distribution of borrows for a given market.
     /// @param _poolTokenAddress The address of the market to check.
+    /// @return underlyingToken The address of the underlying ERC20 token of the given market.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
-    function getTotalMarketBorrow(address _poolTokenAddress)
+    function _getTotalMarketBorrow(address _poolTokenAddress)
         public
         view
-        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
+        returns (
+            address underlyingToken,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        )
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
+        uint256 p2pBorrowIndex;
+        uint256 poolBorrowIndex;
+        (underlyingToken, p2pBorrowIndex, , poolBorrowIndex) = _getCurrentP2PBorrowIndex(
             _poolTokenAddress
         );
 
-        DataTypes.ReserveData memory reserve = pool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-        );
+        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
 
         (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
             reserve,
