@@ -37,14 +37,15 @@ contract Lens is MarketsLens {
         for (uint256 i; i < nbMarkets; ) {
             address _poolTokenAddress = markets[i];
 
-            (uint256 marketP2PSupplyAmount, uint256 marketPoolSupplyAmount) = getTotalMarketSupply(
-                _poolTokenAddress
-            );
+            (
+                address underlyingToken,
+                uint256 marketP2PSupplyAmount,
+                uint256 marketPoolSupplyAmount
+            ) = _getTotalMarketSupply(_poolTokenAddress);
 
-            address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-            uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
+            uint256 underlyingPrice = oracle.getAssetPrice(underlyingToken);
             (, , , uint256 reserveDecimals, ) = pool
-            .getConfiguration(underlyingAddress)
+            .getConfiguration(underlyingToken)
             .getParamsMemory();
 
             uint256 tokenUnit = 10**reserveDecimals;
@@ -79,14 +80,15 @@ contract Lens is MarketsLens {
         for (uint256 i; i < nbMarkets; ) {
             address _poolTokenAddress = markets[i];
 
-            (uint256 marketP2PBorrowAmount, uint256 marketPoolBorrowAmount) = getTotalMarketBorrow(
-                _poolTokenAddress
-            );
+            (
+                address underlyingToken,
+                uint256 marketP2PBorrowAmount,
+                uint256 marketPoolBorrowAmount
+            ) = _getTotalMarketBorrow(_poolTokenAddress);
 
-            address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-            uint256 underlyingPrice = oracle.getAssetPrice(underlyingAddress);
+            uint256 underlyingPrice = oracle.getAssetPrice(underlyingToken);
             (, , , uint256 reserveDecimals, ) = pool
-            .getConfiguration(underlyingAddress)
+            .getConfiguration(underlyingToken)
             .getParamsMemory();
 
             uint256 tokenUnit = 10**reserveDecimals;

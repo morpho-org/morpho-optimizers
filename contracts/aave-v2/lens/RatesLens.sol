@@ -54,6 +54,7 @@ abstract contract RatesLens is UsersLens {
 
         Indexes memory indexes;
         (
+            ,
             indexes.p2pSupplyIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
@@ -133,6 +134,7 @@ abstract contract RatesLens is UsersLens {
 
         Indexes memory indexes;
         (
+            ,
             indexes.p2pBorrowIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
@@ -197,16 +199,16 @@ abstract contract RatesLens is UsersLens {
             uint256 poolSupplyAmount
         )
     {
-        DataTypes.ReserveData memory reserve = pool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-        );
+        (
+            address underlyingToken,
+            uint256 p2pSupplyIndex,
+            uint256 poolSupplyIndex,
 
+        ) = _getCurrentP2PSupplyIndex(_poolTokenAddress);
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
-
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
-            _poolTokenAddress
-        );
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
         // do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
@@ -253,16 +255,16 @@ abstract contract RatesLens is UsersLens {
             uint256 poolBorrowAmount
         )
     {
-        DataTypes.ReserveData memory reserve = pool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-        );
+        (
+            address underlyingToken,
+            uint256 p2pBorrowIndex,
+            ,
+            uint256 poolBorrowIndex
+        ) = _getCurrentP2PBorrowIndex(_poolTokenAddress);
 
+        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
-
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
-            _poolTokenAddress
-        );
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
         // do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
@@ -312,10 +314,15 @@ abstract contract RatesLens is UsersLens {
             uint256 poolBorrowRate
         )
     {
-        DataTypes.ReserveData memory reserve = pool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-        );
+        (
+            address underlyingToken,
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = _getIndexes(_poolTokenAddress);
 
+        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
         poolSupplyRate = reserve.currentLiquidityRate;
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
@@ -327,12 +334,6 @@ abstract contract RatesLens is UsersLens {
         );
 
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-        (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = getIndexes(_poolTokenAddress);
 
         p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
