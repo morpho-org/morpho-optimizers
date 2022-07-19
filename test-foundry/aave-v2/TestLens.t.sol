@@ -549,14 +549,14 @@ contract TestLens is TestSetup {
             2,
             "collateralValue"
         );
-        assertEq(states.debtValue, expectedStates.debtValue, "debtValue");
+        assertApproxEqAbs(states.debtValue, expectedStates.debtValue, 1, "debtValue");
         assertEq(
             states.liquidationThresholdValue,
             expectedStates.liquidationThresholdValue,
             "liquidationThresholdValue"
         );
         assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        assertApproxEqAbs(states.healthFactor, expectedStates.healthFactor, 1e4, "healthFactor");
     }
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
@@ -771,8 +771,8 @@ contract TestLens is TestSetup {
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PIndexesWithBorrowDelta() public {
@@ -781,8 +781,8 @@ contract TestLens is TestSetup {
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
@@ -790,7 +790,7 @@ contract TestLens is TestSetup {
         uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PSupplyIndexWithDelta() public {
@@ -807,7 +807,7 @@ contract TestLens is TestSetup {
         uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
