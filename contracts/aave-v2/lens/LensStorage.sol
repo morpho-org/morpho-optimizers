@@ -22,8 +22,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 abstract contract LensStorage is Initializable {
     /// STORAGE ///
 
-    uint256 public constant SECONDS_PER_YEAR = 365 days;
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
+    uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant RAY = 1e27;
 

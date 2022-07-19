@@ -885,45 +885,21 @@ contract TestLens is TestSetup {
         }
     }
 
-    // function testIsLiquidatableFalse() public {
-    //     uint256 amount = 10_000 ether;
+    function testHealthFactorBelow1() public {
+        uint256 amount = 10_000 ether;
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(aDai, amount);
 
-    //     assertFalse(lens.isLiquidatable(address(borrower1)));
-    // }
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setDirectPrice(usdc, 0.5e18);
+        oracle.setDirectPrice(dai, 1e18);
 
-    // function testIsLiquidatableTrue() public {
-    //     uint256 amount = 10_000 ether;
+        uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
-
-    //     createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(aUsdc) / 2);
-
-    //     assertTrue(lens.isLiquidatable(address(borrower1)));
-    // }
-
-    // function testHealthFactorBelow1() public {
-    //     uint256 amount = 10_000 ether;
-
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
-
-    //     SimplePriceOracle oracle = createAndSetCustomPriceOracle();
-    //     oracle.setDirectPrice(usdc, 0.6e30);
-    //     oracle.setDirectPrice(dai, 1e18);
-
-    //     bool isLiquidatable = lens.isLiquidatable(address(borrower1));
-    //     uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
-
-    //     assertTrue(isLiquidatable);
-    //     assertLt(healthFactor, 1e18);
-    // }
+        assertLt(healthFactor, 1e18);
+    }
 
     function testHealthFactorAbove1() public {
         uint256 amount = 10_000 ether;
@@ -1023,246 +999,145 @@ contract TestLens is TestSetup {
         assertEq(healthFactor, uint256(1 ether).percentMul(liquidationThreshold).percentDiv(ltv));
     }
 
-    // function testComputeLiquidation() public {
-    //     uint256 amount = 10_000 ether;
+    function testLiquidationShouldBeNullWhenPriceTooLow() public {
+        uint256 amount = 10_000 ether;
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(aDai, 2 * amount);
+        borrower1.borrow(aUsdc, to6Decimals(amount));
 
-    //     createAndSetCustomPriceOracle().setDirectPrice(usdc, 1);
+        createAndSetCustomPriceOracle().setDirectPrice(dai, 1);
 
-    //     assertEq(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
-    //         0
-    //     );
-    // }
+        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai), 0);
+    }
 
-    // function testComputeLiquidation2() public {
-    //     uint256 amount = 10_000 ether;
+    function testLiquidationShouldBeNullWhenNotLiquidatable() public {
+        uint256 amount = 10_000 ether;
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(aDai, amount);
 
-    //     assertEq(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
-    //         0
-    //     );
-    // }
+        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc), 0);
+    }
 
-    // function testComputeLiquidation3() public {
-    //     uint256 amount = 10_000 ether;
+    function testLiquidationShouldNotBeAboveCloseFactor() public {
+        uint256 amount = 10_000 ether;
 
-    //     createAndSetCustomPriceOracle().setDirectPrice(
-    //         usdc,
-    //         (oracle.getUnderlyingPrice(aDai) * 2) * 1e12
-    //     );
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) * 2));
 
-    //     borrower1.approve(usdc, to6Decimals(amount));
-    //     borrower1.supply(aUsdc, to6Decimals(amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(aUsdc, to6Decimals(amount));
+        borrower1.borrow(aDai, amount);
 
-    //     createAndSetCustomPriceOracle().setDirectPrice(
-    //         usdc,
-    //         ((oracle.getUnderlyingPrice(aDai) * 79) / 100) * 1e12
-    //     );
+        createAndSetCustomPriceOracle().setDirectPrice(
+            usdc,
+            ((oracle.getAssetPrice(dai) * 79) / 100)
+        );
 
-    //     assertApproxEqAbs(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
-    //         amount.rayMul(comptroller.closeFactorMantissa()),
-    //         1
-    //     );
-    // }
+        assertApproxEqAbs(
+            lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
+            amount.percentMul(DEFAULT_LIQUIDATION_CLOSE_FACTOR),
+            1
+        );
+    }
 
-    // function testComputeLiquidation4() public {
-    //     uint256 amount = 10_000 ether;
+    function testLiquidationShouldBeHalfWhenPriceIsHalf() public {
+        uint256 amount = 10_000 ether;
 
-    //     borrower1.approve(usdc, to6Decimals(2 * amount));
-    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
-    //     borrower1.borrow(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(aDai, amount);
 
-    //     createAndSetCustomPriceOracle().setDirectPrice(
-    //         usdc,
-    //         (oracle.getUnderlyingPrice(aDai) / 2) * 1e12 // Setting the value of the collateral at the same value as the debt.
-    //     );
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) / 2));
 
-    //     assertTrue(lens.isLiquidatable(address(borrower1)));
+        assertApproxEqAbs(
+            lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
+            amount / 2,
+            1
+        );
+    }
 
-    //     assertApproxEqAbs(
-    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
-    //         amount / 2,
-    //         1
-    //     );
-    // }
+    function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
+        uint256 amount = _amount + 1e14;
+        uint256 collateralPrice = uint256(_collateralPrice) + 1;
 
-    // function testLiquidationWithUpdatedPoolIndexes() public {
-    //     uint256 amount = 10_000 ether;
+        // this is necessary to avoid compound reverting redeem because amount in USD is near zero
+        supplier2.approve(usdc, 100e6);
+        supplier2.supply(aUsdc, 100e6);
 
-    //     (, uint256 collateralFactor, ) = comptroller.markets(aUsdc);
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
 
-    //     borrower1.approve(usdc, to6Decimals(amount));
-    //     borrower1.supply(aUsdc, to6Decimals(amount));
-    //     borrower1.borrow(aDai, amount.rayMul(collateralFactor) - 10 ether);
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(aDai, 2 * amount);
+        borrower1.borrow(aUsdc, to6Decimals(amount));
 
-    //     address[] memory updatedMarkets = new address[](2);
-    //     assertFalse(
-    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
-    //         "borrower is already liquidatable"
-    //     );
+        hevm.roll(block.number + 1);
+        createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
 
-    //     hevm.roll(block.number + (31 * 24 * 60 * 4));
+        Types.LiquidityData memory states = lens.getUserBalanceStates(address(borrower1));
 
-    //     assertFalse(
-    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
-    //         "borrower is already liquidatable"
-    //     );
+        uint256 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
 
-    //     updatedMarkets[0] = address(aDai);
-    //     updatedMarkets[1] = address(aUsdc);
-    //     assertTrue(
-    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
-    //         "borrower is not liquidatable with virtually updated pool indexes"
-    //     );
+        if (states.debtValue <= states.liquidationThresholdValue) {
+            assertEq(toRepay, 0, "Should return 0 when the position is solvent");
+            return;
+        }
 
-    //     IAToken(aUsdc).accrueInterest();
-    //     IAToken(aDai).accrueInterest();
-    //     assertTrue(
-    //         lens.isLiquidatable(address(borrower1)),
-    //         "borrower is not liquidatable with updated pool indexes"
-    //     );
-    // }
+        (, , uint256 liquidationBonus, , ) = pool.getConfiguration(dai).getParamsMemory();
 
-    // function testLiquidatableWithUpdatedP2PIndexes() public {
-    //     uint256 amount = 10_000 ether;
+        if (toRepay != 0) {
+            supplier1.approve(usdc, type(uint256).max);
 
-    //     supplier2.approve(dai, amount);
-    //     supplier2.supply(aDai, amount);
+            do {
+                supplier1.liquidate(aUsdc, aDai, address(borrower1), toRepay);
+                assertLt(
+                    balanceBefore,
+                    balanceBefore = ERC20(dai).balanceOf(address(supplier1)),
+                    "balance did not increase"
+                );
 
-    //     (, uint256 collateralFactor, ) = comptroller.markets(aUsdc);
+                toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
+            } while (lens.getUserHealthFactor(address(borrower1)) < 1e18 && toRepay > 0);
 
-    //     borrower1.approve(usdc, to6Decimals(amount));
-    //     borrower1.supply(aUsdc, to6Decimals(amount));
-    //     borrower1.borrow(aDai, amount.rayMul(collateralFactor) - 10 ether);
+            // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationBonus] threshold and returned to a solvent position
+            if (states.collateralValue.percentDiv(liquidationBonus) > states.debtValue) {
+                assertGt(
+                    lens.getUserHealthFactor(address(borrower1)),
+                    1e18,
+                    "health factor less than 1"
+                );
+            } else {
+                // or the liquidator has drained all the collateral
+                states = lens.getUserBalanceStates(address(borrower1));
+                assertGt(
+                    states.debtValue,
+                    states.collateralValue.percentDiv(liquidationBonus),
+                    "debt value under collateral value"
+                );
+                assertEq(toRepay, 0, "to repay not zero");
+            }
+        } else {
+            // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
+            assertGt(
+                states.debtValue,
+                states.collateralValue.percentDiv(liquidationBonus),
+                "debt value under collateral value"
+            );
+        }
+    }
 
-    //     address[] memory updatedMarkets = new address[](2);
-    //     assertFalse(
-    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
-    //         "borrower is already liquidatable"
-    //     );
+    function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
+        testLiquidation(uint256(_amount), _collateralPrice);
+    }
 
-    //     hevm.roll(block.number + (31 * 24 * 60 * 4));
+    function testFuzzLiquidationUnderIncentiveThreshold(uint64 _amount) public {
+        testLiquidation(uint256(_amount), 0.501 ether);
+    }
 
-    //     assertFalse(
-    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
-    //         "borrower is already liquidatable"
-    //     );
-
-    //     updatedMarkets[0] = address(aDai);
-    //     updatedMarkets[1] = address(aUsdc);
-    //     assertTrue(
-    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
-    //         "borrower is not liquidatable with virtually updated p2p indexes"
-    //     );
-
-    //     morpho.updateP2PIndexes(aUsdc);
-    //     morpho.updateP2PIndexes(aDai);
-    //     assertTrue(
-    //         lens.isLiquidatable(address(borrower1)),
-    //         "borrower is not liquidatable with updated p2p indexes"
-    //     );
-    // }
-
-    // function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
-    //     uint256 amount = _amount + 1e14;
-    //     uint256 collateralPrice = uint256(_collateralPrice) + 1;
-
-    //     // this is necessary to avoid compound reverting redeem because amount in USD is near zero
-    //     supplier2.approve(usdc, 100e6);
-    //     supplier2.supply(aUsdc, 100e6);
-
-    //     uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
-
-    //     borrower1.approve(dai, 2 * amount);
-    //     borrower1.supply(aDai, 2 * amount);
-    //     borrower1.borrow(aUsdc, to6Decimals(amount));
-
-    //     moveOneBlockForwardBorrowRepay();
-    //     createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
-
-    //     (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
-    //         .getUserBalanceStates(address(borrower1));
-
-    //     uint256 borrowedPrice = oracle.getUnderlyingPrice(aUsdc);
-    //     uint256 toRepay = lens.computeLiquidationRepayAmount(
-    //         address(borrower1),
-    //         aUsdc,
-    //         aDai,
-    //         new address[](0)
-    //     );
-
-    //     if (debtValue <= maxDebtValue) {
-    //         assertEq(toRepay, 0, "Should return 0 when the position is solvent");
-    //         return;
-    //     }
-
-    //     if (toRepay != 0) {
-    //         supplier1.approve(usdc, type(uint256).max);
-
-    //         do {
-    //             supplier1.liquidate(aUsdc, aDai, address(borrower1), toRepay);
-    //             assertGt(
-    //                 ERC20(dai).balanceOf(address(supplier1)),
-    //                 balanceBefore,
-    //                 "balance did not increase"
-    //             );
-
-    //             balanceBefore = ERC20(dai).balanceOf(address(supplier1));
-    //             toRepay = lens.computeLiquidationRepayAmount(
-    //                 address(borrower1),
-    //                 aUsdc,
-    //                 aDai,
-    //                 new address[](0)
-    //             );
-    //         } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
-
-    //         // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
-    //         if (collateralValue.rayDiv(comptroller.liquidationIncentiveMantissa()) > debtValue) {
-    //             assertFalse(lens.isLiquidatable(address(borrower1)));
-    //         } else {
-    //             // or the liquidator has drained all the collateral
-    //             (collateralValue, , ) = lens.getUserBalanceStates(
-    //                 address(borrower1),
-    //                 new address[](0)
-    //             );
-    //             assertEq(
-    //                 collateralValue.rayDiv(borrowedPrice).rayDiv(
-    //                     comptroller.liquidationIncentiveMantissa()
-    //                 ),
-    //                 0
-    //             );
-    //             assertEq(toRepay, 0);
-    //         }
-    //     } else {
-    //         // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
-    //         assertEq(
-    //             collateralValue.rayDiv(borrowedPrice).rayDiv(comptroller.liquidationIncentiveMantissa()),
-    //             0
-    //         );
-    //     }
-    // }
-
-    // function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
-    //     testLiquidation(uint256(_amount), _collateralPrice);
-    // }
-
-    // function testFuzzLiquidationUnderIncentiveThreshold(uint64 _amount) public {
-    //     testLiquidation(uint256(_amount), 0.501 ether);
-    // }
-
-    // function testFuzzLiquidationAboveIncentiveThreshold(uint64 _amount) public {
-    //     testLiquidation(uint256(_amount), 0.55 ether);
-    // }
+    function testFuzzLiquidationAboveIncentiveThreshold(uint64 _amount) public {
+        testLiquidation(uint256(_amount), 0.55 ether);
+    }
 
     // /**
     //  * @dev Because of rounding errors, a liquidatable position worth less than 1e-5 USD cannot get liquidated in practice
@@ -1280,9 +1155,9 @@ contract TestLens is TestSetup {
     //  * - debtValue = 1e-6 USD
     //  * - collateralValue = 1e-6 USD (+ some dust)
     //  */
-    // function testNoRepayLiquidation() public {
-    //     testLiquidation(0, 0.5 ether);
-    // }
+    function testNoRepayLiquidation() public {
+        testLiquidation(0, 0.5 ether);
+    }
 
     struct Amounts {
         uint256 totalP2PSupply;
