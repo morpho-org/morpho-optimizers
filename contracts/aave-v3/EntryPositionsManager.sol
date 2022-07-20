@@ -107,7 +107,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         /// Peer-to-peer supply ///
 
-        // Match peer-to-peer borrow delta if any.
+        // Match peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
@@ -122,7 +122,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
         }
 
-        // Promote pool borrowers if any.
+        // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
@@ -202,7 +202,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         /// Peer-to-peer borrow ///
 
-        // Match peer-to-peer supply delta if any.
+        // Match peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
@@ -217,7 +217,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
         }
 
-        // Promote pool suppliers if any.
+        // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
