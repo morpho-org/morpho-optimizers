@@ -17,6 +17,7 @@ on:
       - "Makefile"
       - "foundry.toml"
       - "remappings.txt"
+      - ".github/actions/ci-foundry/*"
       - ".github/workflows/ci-foundry-compound.yml"
 
 jobs:
@@ -28,54 +29,8 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-node@v3
+      - uses: ./.github/actions/ci-foundry
         with:
-          node-version: "16"
-
-      - name: Node dependencies cache
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: yarn-${{ hashFiles('**/yarn.lock') }}
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Foundry fork cache
-        uses: actions/cache@v3
-        with:
-          path: "~/.foundry/cache"
-          key: foundry-${{ hashFiles('**/Makefile', '**/foundry.toml') }} # where fork block numbers & RPC are stored
-
-      - name: Foundry out cache
-        uses: actions/cache@v3
-        with:
-          path: "**/out"
-          key: foundry-out-compound # always keep compiled contracts from base branch
-
-      - name: Run tests
-        run: make ci > compound.gasreport.ansi
-        env:
-          PROTOCOL: compound
-          NETWORK: eth-mainnet
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-
-      - name: Compare gas reports
-        uses: Rubilmax/foundry-gas-report@v3.3
-        with:
-          workflowId: ci-foundry-compound.yml
-          report: compound.gasreport.ansi
-          ignore: test-foundry/**/*
-          title: Morpho-Compound gas impacts (Mainnet)
-        id: gas_diff
-
-      - name: Add gas diff to sticky comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: Compound (Mainnet)
-          message: ${{ steps.gas_diff.outputs.markdown }}
+          alchemyKey: ${{ secrets.ALCHEMY_KEY }}
+          protocol: compound
+          network: eth-mainnet
