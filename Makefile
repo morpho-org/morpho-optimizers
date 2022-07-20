@@ -3,11 +3,13 @@
 
 PROTOCOL?=compound
 NETWORK?=eth-mainnet
+SMODE?=blockchain
 
 FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
 FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
+FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
 
 ifeq (${NETWORK}, eth-mainnet)
   FOUNDRY_CHAIN_ID=1
@@ -35,8 +37,12 @@ ifeq (${NETWORK}, avalanche-mainnet)
 else
 endif
 
-ifneq (, $(filter ${NETWORK}, ropsten rinkeby))
+ifneq (, $(filter ${NETWORK}, ropsten rinkeby goerli))
   FOUNDRY_ETH_RPC_URL=https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
+endif
+
+ifeq (${SMODE}, anvil)
+  FOUNDRY_ETH_RPC_URL=http://localhost:8545
 endif
 
 
@@ -47,11 +53,13 @@ install:
 
 	@chmod +x ./scripts/**/*.sh
 
-deploy:
-	./scripts/${PROTOCOL}/deploy.sh
+anvil:
+	@echo Starting fork of ${NETWORK}
+	@anvil --fork-url ${FOUNDRY_ETH_RPC_URL}
 
-initialize:
-	./scripts/${PROTOCOL}/initialize.sh
+script-%:
+	@echo Running script $* of ${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
+	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
 create-market:
 	./scripts/create-market.sh
@@ -103,10 +111,6 @@ single-% s-%:
 ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv --match-test $* > trace.ansi
-
-run-script-%:
-	@echo Running single script $* of ${PROTOCOL} on ${NETWORK}
-	@forge script scripts/$*.s.sol:$* --private-key $PRIVATE_KEY --broadcast -vvvv
 
 
 config:
