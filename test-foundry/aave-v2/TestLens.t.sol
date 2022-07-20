@@ -1008,7 +1008,11 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(dai, 1);
 
-        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai), 0);
+        assertApproxEqAbs(
+            lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai),
+            0,
+            1e3
+        );
     }
 
     function testLiquidationShouldBeNullWhenNotLiquidatable() public {

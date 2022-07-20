@@ -287,7 +287,7 @@ contract TestWithdraw is TestSetup {
     // The supplier is matched to 2 x NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`. Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     function testWithdraw3_4() public {
         // TODO: fix that.
-        tip(dai, address(morpho), 1 ether);
+        deal(dai, address(morpho), 1 ether);
 
         _setDefaultMaxGasForMatching(
             type(uint64).max,
