@@ -7,6 +7,8 @@ import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
+
+import "./libraries/Math.sol";
 import "../common/libraries/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
@@ -21,6 +23,7 @@ abstract contract MorphoUtils is MorphoStorage {
     using PercentageMath for uint256;
     using DelegateCall for address;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// ERRORS ///
 
@@ -227,18 +230,19 @@ abstract contract MorphoUtils is MorphoStorage {
     ) internal returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         Types.AssetLiquidityData memory assetData;
-        uint256 poolTokensLength = marketsCreated.length;
-        address poolTokenAddress;
-        address underlyingAddress;
-        uint256 underlyingPrice;
+        Types.LiquidityStackVars memory vars;
+        vars.poolTokensLength = marketsCreated.length;
+        vars.userMarkets = userMarkets[_user];
 
-        for (uint256 i; i < poolTokensLength; ) {
-            poolTokenAddress = marketsCreated[i];
+        for (uint256 i; i < vars.poolTokensLength; ) {
+            vars.poolTokenAddress = marketsCreated[i];
+            vars.borrowMask = borrowMask[vars.poolTokenAddress];
 
-            if (_isSupplyingOrBorrowing(_user, poolTokenAddress)) {
-                underlyingAddress = IAToken(poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-                underlyingPrice = oracle.getAssetPrice(underlyingAddress);
-                if (poolTokenAddress != _poolTokenAddress) _updateIndexes(poolTokenAddress);
+            if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
+                vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
+                if (vars.poolTokenAddress != _poolTokenAddress)
+                    _updateIndexes(vars.poolTokenAddress);
 
                 (
                     assetData.ltv,
@@ -247,28 +251,28 @@ abstract contract MorphoUtils is MorphoStorage {
                     assetData.reserveDecimals,
                     ,
 
-                ) = pool.getConfiguration(underlyingAddress).getParams();
+                ) = pool.getConfiguration(vars.underlyingAddress).getParams();
 
                 unchecked {
                     assetData.tokenUnit = 10**assetData.reserveDecimals;
                 }
 
-                if (_isBorrowing(_user, poolTokenAddress)) {
+                if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
                     values.debtValue += _debtValue(
-                        poolTokenAddress,
+                        vars.poolTokenAddress,
                         _user,
-                        underlyingPrice,
+                        vars.underlyingPrice,
                         assetData.tokenUnit
                     );
                 }
 
                 // Cache current asset collateral value.
                 uint256 assetCollateralValue;
-                if (_isSupplying(_user, poolTokenAddress)) {
+                if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
                     assetCollateralValue = _collateralValue(
-                        poolTokenAddress,
+                        vars.poolTokenAddress,
                         _user,
-                        underlyingPrice,
+                        vars.underlyingPrice,
                         assetData.tokenUnit
                     );
                     values.collateralValue += assetCollateralValue;
@@ -278,8 +282,10 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
 
                 // Update debt variable for borrowed token.
-                if (_poolTokenAddress == poolTokenAddress && _amountBorrowed > 0)
-                    values.debtValue += (_amountBorrowed * underlyingPrice) / assetData.tokenUnit;
+                if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
+                    values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                        assetData.tokenUnit
+                    );
 
                 // Update LT variable for withdraw.
                 if (assetCollateralValue > 0)
@@ -288,11 +294,11 @@ abstract contract MorphoUtils is MorphoStorage {
                     );
 
                 // Subtract from LT variable and collateral variable for withdrawn token.
-                if (_poolTokenAddress == poolTokenAddress && _amountWithdrawn > 0) {
+                if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
                     values.collateralValue -=
-                        (_amountWithdrawn * underlyingPrice) /
+                        (_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit;
-                    values.liquidationThresholdValue -= ((_amountWithdrawn * underlyingPrice) /
+                    values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit)
                     .percentMul(assetData.liquidationThreshold);
                 }
