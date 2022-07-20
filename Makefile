@@ -110,10 +110,6 @@ single-% s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv --match-test $* | tee trace.ansi
 
-run-script-%:
-	@echo Running single script $* of ${PROTOCOL} on ${NETWORK}
-	@forge script scripts/$*.s.sol:$* --private-key $PRIVATE_KEY --broadcast -vvvv
-
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
 
