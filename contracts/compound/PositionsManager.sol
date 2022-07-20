@@ -274,6 +274,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Pool supply ///
 
+        // Supply on pool.
         if (vars.remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
@@ -370,6 +371,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Pool borrow ///
 
+        // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()

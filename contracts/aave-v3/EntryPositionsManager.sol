@@ -153,6 +153,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         /// Pool supply ///
 
+        // Supply on pool.
         if (vars.remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
                 poolIndexes[_poolTokenAddress].poolSupplyIndex
@@ -250,6 +251,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         /// Pool borrow ///
 
+        // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.rayDiv(
                 poolIndexes[_poolTokenAddress].poolBorrowIndex
