@@ -17,7 +17,6 @@ library PercentageMath {
 
     /**
      * @notice Executes a percentage multiplication
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param value The value of which the percentage needs to be calculated
      * @param percentage The percentage of the value to be calculated
      * @return result value percentmul percentage
@@ -40,7 +39,6 @@ library PercentageMath {
 
     /**
      * @notice Executes a percentage division
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param value The value of which the percentage needs to be calculated
      * @param percentage The percentage of the value to be calculated
      * @return result value percentdiv percentage
@@ -61,7 +59,6 @@ library PercentageMath {
 
     /**
      * @notice Executes a percent average, given an interval [a, b] and a percent c: a * c + b * (1 - c)
-     * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
      * @param valueA The value representing the start of the interval
      * @param valueB The value representing the end of the interval
      * @param percentage The percentage of the interval to be calculated

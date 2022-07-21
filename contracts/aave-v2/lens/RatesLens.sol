@@ -24,7 +24,7 @@ abstract contract RatesLens is UsersLens {
     /// EXTERNAL ///
 
     /// @notice Returns the supply rate per year experienced on a market after having supplied the given amount on behalf of the given user.
-    /// @dev Note: the returned supply rate is a lower bound: when supplying through Morpho-Compound,
+    /// @dev Note: the returned supply rate is a lower bound: when supplying through Morpho-Aave,
     /// a supplier could be matched more than once instantly or later and thus benefit from a higher supply rate.
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The address of the user on behalf of whom to supply.

@@ -51,17 +51,29 @@ interface ILens {
 
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
 
-    function getMarketData(address _poolTokenAddress)
+    function getMainMarketData(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 avgSupplyRatePerBlock,
+            uint256 avgBorrowRatePerBlock,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount,
+            uint256 poolSupplyAmount,
+            uint256 poolBorrowAmount
+        );
+
+    function getAdvancedMarketData(address _poolTokenAddress)
         external
         view
         returns (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex,
             uint32 lastUpdateBlockNumber,
             uint256 p2pSupplyDelta,
-            uint256 p2pBorrowDelta,
-            uint256 p2pSupplyAmount,
-            uint256 p2pBorrowAmount
+            uint256 p2pBorrowDelta
         );
 
     function getMarketConfiguration(address _poolTokenAddress)
@@ -122,7 +134,7 @@ interface ILens {
     function getEnteredMarkets(address _user)
         external
         view
-        returns (address[] memory enteredMarkets_);
+        returns (address[] memory enteredMarkets);
 
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         external
