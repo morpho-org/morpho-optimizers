@@ -337,6 +337,8 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _underlyingPrice,
         uint256 _tokenUnit
     ) internal view returns (uint256 debtValue) {
-        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
+        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
+            _tokenUnit
+        );
     }
 }
