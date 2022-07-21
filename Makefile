@@ -56,6 +56,9 @@ initialize:
 create-market:
 	./scripts/create-market.sh
 
+ci:
+	@forge test -vv --gas-report --no-match-test testFuzz
+
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv --no-match-test testFuzz
