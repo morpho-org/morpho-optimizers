@@ -52,7 +52,7 @@ runs:
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
 
     - name: Compare gas reports
-      uses: Rubilmax/foundry-gas-diff@v3.4
+      uses: Rubilmax/foundry-gas-diff@v3.6
       with:
         workflowId: ci-foundry-${{ inputs.protocol }}.yml
         report: ${{ inputs.protocol }}.gasreport.ansi
@@ -61,7 +61,9 @@ runs:
       id: gas_diff
 
     - name: Add gas diff to sticky comment
+      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         header: ${{ inputs.protocol }} (${{ inputs.network }})
         message: ${{ steps.gas_diff.outputs.markdown }}
+        delete: ${{ !steps.gas_diff.outputs.markdown }} # delete the comment in case changes no longer impacts gas costs
