@@ -112,7 +112,6 @@ ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv --match-test $* > trace.ansi
 
-
 config:
 	@forge config
 

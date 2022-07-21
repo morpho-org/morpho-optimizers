@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/compound/ICompound.sol";
 import "@contracts/compound/interfaces/IRewardsManager.sol";
+import "@contracts/compound/interfaces/IIncentivesVault.sol";
+import "@contracts/compound/interfaces/IInterestRatesManager.sol";
+import "@contracts/compound/interfaces/IPositionsManager.sol";
+import "@contracts/compound/interfaces/compound/ICompound.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -11,8 +14,8 @@ import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
 import {RewardsManager} from "@contracts/compound/RewardsManager.sol";
 import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {Morpho} from "@contracts/compound/Morpho.sol";
 import {Lens} from "@contracts/compound/lens/Lens.sol";
-import "@contracts/compound/Morpho.sol";
 
 import "@config/Config.sol";
 import "forge-std/Script.sol";
@@ -44,7 +47,7 @@ contract Deploy is Script, Config {
         interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
-        // Deploy Morpho Proxy
+        // Deploy Morpho
         Morpho morphoImpl = new Morpho();
         TransparentUpgradeableProxy morphoProxy = new TransparentUpgradeableProxy(
             address(morphoImpl),
@@ -63,8 +66,8 @@ contract Deploy is Script, Config {
         );
         morpho = Morpho(payable(morphoProxy));
 
-        // Deploy RewardsManager Proxy
-        IRewardsManager rewardsManagerImpl = new RewardsManager();
+        // Deploy RewardsManager
+        RewardsManager rewardsManagerImpl = new RewardsManager();
 
         TransparentUpgradeableProxy rewardsManagerProxy = new TransparentUpgradeableProxy(
             address(rewardsManagerImpl),
@@ -75,7 +78,7 @@ contract Deploy is Script, Config {
 
         morpho.setRewardsManager(IRewardsManager(address(rewardsManager)));
 
-        // Deploy Lens Proxy
+        // Deploy Lens
         Lens lensImpl = new Lens();
         TransparentUpgradeableProxy lensProxy = new TransparentUpgradeableProxy(
             address(lensImpl),

@@ -2,6 +2,10 @@
 pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
+import "@contracts/aave-v2/interfaces/IIncentivesVault.sol";
+import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
+import "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
+import "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
 import "@contracts/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -11,8 +15,8 @@ import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol"
 import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
+import {Morpho} from "@contracts/aave-v2/Morpho.sol";
 import {Lens} from "@contracts/aave-v2/Lens.sol";
-import "@contracts/aave-v2/Morpho.sol";
 
 import "@config/Config.sol";
 import "forge-std/Script.sol";
@@ -38,7 +42,7 @@ contract Deploy is Script, Config {
         exitPositionsManager = new ExitPositionsManager();
         interestRatesManager = new InterestRatesManager();
 
-        // Deploy Morpho Proxy
+        // Deploy Morpho
         Morpho morphoImpl = new Morpho();
         TransparentUpgradeableProxy morphoProxy = new TransparentUpgradeableProxy(
             address(morphoImpl),
@@ -55,7 +59,7 @@ contract Deploy is Script, Config {
         );
         morpho = Morpho(address(morphoProxy));
 
-        // Deploy RewardsManager Proxy
+        // Deploy RewardsManager
         IRewardsManager rewardsManagerImpl = new RewardsManagerOnPolygon();
 
         TransparentUpgradeableProxy rewardsManagerProxy = new TransparentUpgradeableProxy(
@@ -71,7 +75,7 @@ contract Deploy is Script, Config {
             ILendingPoolAddressesProvider(lendingPoolAddressesProvider)
         );
 
-        // Deploy markets
+        // Create markets
         Types.MarketParameters memory defaultMarketParameters = Types.MarketParameters({
             reserveFactor: 1000,
             p2pIndexCursor: 3333
