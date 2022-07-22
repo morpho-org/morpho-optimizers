@@ -53,6 +53,18 @@ install:
 
 	@chmod +x ./scripts/**/*.sh
 
+deploy:
+	@echo Deploying Morpho-${PROTOCOL} on ${NETWORK}
+	./scripts/${PROTOCOL}/deploy.sh
+
+initialize:
+	@echo Initializing Morpho-${PROTOCOL} on ${NETWORK}
+	./scripts/${PROTOCOL}/initialize.sh
+
+create-market:
+	@echo Creating market on Morpho-${PROTOCOL} on ${NETWORK}
+	./scripts/${PROTOCOL}/create-market.sh
+
 anvil:
 	@echo Starting fork of ${NETWORK}
 	@anvil --fork-url ${FOUNDRY_ETH_RPC_URL}

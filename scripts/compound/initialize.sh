@@ -1,7 +1,5 @@
 #!/bin/bash
 set -euo pipefail # exit on error
-export $(xargs < .env.local)
-
 
 echo "---"
 read -p "⚡❓ Initialize Morpho-Compound's Proxy on ${NETWORK}? " -n 1 -r
@@ -21,14 +19,20 @@ then
 
 	echo "Initializing Morpho-Compound's Proxy on ${NETWORK} at ${MORPHO_PROXY_ADDRESS}, with ${DEFAULT_MAX_GAS_FOR_MATCHING} defaultMaxGasForMatching, ${DUST_THRESHOLD} dustThreshold & ${MAX_SORTED_USERS} maxSortedUsers..."
 
-    POSITIONS_MANAGERO_INTEREST_RATES_MANAGER_COMPTROLLER_ADDRESS=$(cast abi-encode "tuple(address,address,address)" "${MORPHO_POSITIONS_MANAGER_ADDRESS}" "${MORPHO_INTEREST_RATES_MANAGER_ADDRESS}" "${COMPTROLLER_ADDRESS}")
-    DUST_THRESHOLD_MAX_SORTED_USERS=$(cast abi-encode "tuple(uint256,uint256)" "${DUST_THRESHOLD}" "${MAX_SORTED_USERS}")
-    DEFAULT_MAX_GAS_FOR_MATCHING=$(cast abi-encode "tuple(uint64,uint64,uint64,uint64)" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}")
-    CETH_WETH_ADDRESS=$(cast abi-encode "tuple(address,address)" "${CETH_ADDRESS}" "${WETH_ADDRESS}")
+    INITIALIZE_CALLDATA=$(
+        cast abi-encode "initialize(address,address,address,uint256,uint256,uint256,uint256,uint256,uint256,address,address)" \
+            "${MORPHO_POSITIONS_MANAGER_ADDRESS}" \
+            "${MORPHO_INTEREST_RATES_MANAGER_ADDRESS}" \
+            "${COMPTROLLER_ADDRESS}" \
+            "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" "${DEFAULT_MAX_GAS_FOR_MATCHING}" \
+            "${DUST_THRESHOLD}" \
+            "${MAX_SORTED_USERS}" \
+            "${CETH_ADDRESS}" \
+            "${WETH_ADDRESS}"
+    )
 
     cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        "${MORPHO_PROXY_ADDRESS}" \
-        0x34544040"${POSITIONS_MANAGERO_INTEREST_RATES_MANAGER_COMPTROLLER_ADDRESS:2}""${DEFAULT_MAX_GAS_FOR_MATCHING:2}""${DUST_THRESHOLD_MAX_SORTED_USERS:2}""${CETH_WETH_ADDRESS:2}"
+        "${MORPHO_PROXY_ADDRESS}" 0x34544040"${INITIALIZE_CALLDATA:2}"
 
     echo "🎉 Morpho Proxy initialized!"
 fi
@@ -46,11 +50,9 @@ then
 	echo "Initializing Morpho-Compound's RewardsManager Proxy on ${NETWORK} at ${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}..."
 
     cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}" \
-        "initialize(address)" "${MORPHO_PROXY_ADDRESS}"
+        "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}" "initialize(address)" "${MORPHO_PROXY_ADDRESS}"
     cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        "${MORPHO_PROXY_ADDRESS}" \
-        "setRewardsManager(address)" "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}"
+        "${MORPHO_PROXY_ADDRESS}" "setRewardsManager(address)" "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}"
 
     echo "🎉 RewardsManager Proxy initialized!"
 fi
@@ -68,8 +70,7 @@ then
 	echo "Initializing Morpho-Compound's Lens Proxy on ${NETWORK} at ${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}..."
 
     cast send --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}" \
-        "initialize(address)" "${MORPHO_PROXY_ADDRESS}"
+        "${MORPHO_REWARDS_MANAGER_PROXY_ADDRESS}" "initialize(address)" "${MORPHO_PROXY_ADDRESS}"
 
     echo "🎉 Lens Proxy initialized!"
 fi
