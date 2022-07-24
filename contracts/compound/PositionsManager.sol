@@ -649,7 +649,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.remainingGasForMatching
             );
 
-            // Increase the peer-to-peer borrow delta if needed.
+            // Increase the peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
                     ICToken(_poolTokenAddress).borrowIndex()
@@ -823,7 +823,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.remainingGasForMatching
             );
 
-            // Increase the peer-to-peer supply delta if needed.
+            // Increase the peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
                     ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.

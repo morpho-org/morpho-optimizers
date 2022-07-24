@@ -379,7 +379,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching
             );
 
-            // Increase peer-to-peer borrow delta if needed.
+            // Increase peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
                     poolIndexes[_poolTokenAddress].poolBorrowIndex
@@ -557,7 +557,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching
             );
 
-            // Increase peer-to-peer supply delta if needed.
+            // Increase peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
                     vars.poolSupplyIndex
