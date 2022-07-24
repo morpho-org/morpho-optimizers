@@ -226,9 +226,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.remainingToSupply = _amount;
 
-        /// Supply in peer-to-peer ///
+        /// Peer-to-peer supply ///
 
-        // Match borrow peer-to-peer delta first if any.
+        // Match peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
             if (deltaInUnderlying > vars.remainingToSupply) {
@@ -243,7 +243,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
         }
 
-        // Match pool borrowers if any.
+        // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
@@ -272,8 +272,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
-        /// Supply on pool ///
+        /// Pool supply ///
 
+        // Supply on pool.
         if (vars.remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
@@ -316,9 +317,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
         uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
-        /// Borrow in peer-to-peer ///
+        /// Peer-to-peer borrow ///
 
-        // Match supply peer-to-peer delta first if any.
+        // Match peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
             if (deltaInUnderlying > remainingToBorrow || deltaInUnderlying > withdrawable) {
@@ -335,7 +336,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
         }
 
-        // Match pool suppliers if any.
+        // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
@@ -368,8 +369,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
         }
 
-        /// Borrow on pool ///
+        /// Pool borrow ///
 
+        // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
@@ -528,8 +530,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
-        /// Soft withdraw ///
+        /// Pool withdraw ///
 
+        // Withdraw supply on pool.
         uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
         if (onPoolSupply > 0) {
             uint256 maxToWithdrawOnPool = onPoolSupply.mul(vars.poolSupplyIndex);
@@ -581,9 +584,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ); // In peer-to-peer unit
         _updateSupplierInDS(_poolTokenAddress, _supplier);
 
-        /// Transfer withdraw ///
-
-        // Reduce peer-to-peer supply delta first if any.
+        // Reduce peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
 
@@ -611,7 +612,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
-        // Match pool suppliers if any.
+        /// Transfer withdraw ///
+
+        // Promote pool suppliers.
         if (
             vars.remainingToWithdraw > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
@@ -636,9 +639,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
             _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
-        /// Hard withdraw ///
+        /// Breaking withdraw ///
 
-        // Unmatch peer-to-peer borrowers.
+        // Demote peer-to-peer borrowers.
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
@@ -646,7 +649,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.remainingGasForMatching
             );
 
-            // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
+            // Increase the peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
                     ICToken(_poolTokenAddress).borrowIndex()
@@ -697,8 +700,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
 
-        /// Soft repay ///
+        /// Pool repay ///
 
+        // Repay borrow on pool.
         vars.borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool;
         if (vars.borrowedOnPool > 0) {
             vars.maxToRepayOnPool = vars.borrowedOnPool.mul(vars.poolBorrowIndex);
@@ -743,7 +747,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ); // In peer-to-peer unit.
         _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
-        // Reduce peer-to-peer borrow delta first if any.
+        // Reduce peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
             if (deltaInUnderlying > vars.remainingToRepay) {
@@ -786,7 +790,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer repay ///
 
-        // Match pool borrowers if any.
+        // Promote pool borrowers.
         if (
             vars.remainingToRepay > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
@@ -809,9 +813,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
 
-        /// Hard repay ///
+        /// Breaking repay ///
 
-        // Unmatch peer-to-peer suppliers.
+        // Demote peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
@@ -819,7 +823,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.remainingGasForMatching
             );
 
-            // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
+            // Increase the peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
                     ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
