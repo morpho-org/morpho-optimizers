@@ -30,13 +30,13 @@ interface IRewardsManager {
     ) external view returns (uint256);
 
     function claimRewards(
-        IRewardsController rewardsController,
+        IRewardsController _rewardsController,
         address[] calldata _assets,
         address _user
     ) external returns (address[] memory rewardsList, uint256[] memory claimedAmounts);
 
     function updateUserAssetAndAccruedRewards(
-        IRewardsController rewardsController,
+        IRewardsController _rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,

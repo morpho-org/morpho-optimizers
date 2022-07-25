@@ -99,16 +99,16 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @return rewardsList The list of reward tokens.
     /// @return claimedAmounts The list of claimed reward amounts.
     function claimRewards(
-        IRewardsController rewardsController,
+        IRewardsController _rewardsController,
         address[] calldata _assets,
         address _user
     ) external onlyMorpho returns (address[] memory rewardsList, uint256[] memory claimedAmounts) {
-        rewardsList = rewardsController.getRewardsList();
+        rewardsList = _rewardsController.getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         uint256 assetsLength = _assets.length;
         claimedAmounts = new uint256[](rewardsListLength);
 
-        _updateDataMultiple(rewardsController, _user, _getUserAssetBalances(_assets, _user));
+        _updateDataMultiple(_rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
         for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
@@ -141,13 +141,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The current total supply of underlying assets for this distribution.
     function updateUserAssetAndAccruedRewards(
-        IRewardsController rewardsController,
+        IRewardsController _rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) external onlyMorpho {
-        _updateData(rewardsController, _user, _asset, _userBalance, _totalSupply);
+        _updateData(_rewardsController, _user, _asset, _userBalance, _totalSupply);
     }
 
     /// @notice Returns user's accrued rewards for the specified assets and reward token
@@ -312,17 +312,17 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The total supply of the asset.
     function _updateData(
-        IRewardsController rewardsController,
+        IRewardsController _rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) internal {
-        address[] memory availableRewards = rewardsController.getRewardsByAsset(_asset);
+        address[] memory availableRewards = _rewardsController.getRewardsByAsset(_asset);
         if (availableRewards.length == 0) return;
 
         unchecked {
-            uint256 assetUnit = 10**rewardsController.getAssetDecimals(_asset);
+            uint256 assetUnit = 10**_rewardsController.getAssetDecimals(_asset);
 
             for (uint128 i; i < availableRewards.length; ++i) {
                 address reward = availableRewards[i];
@@ -361,14 +361,14 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _user The address of the user.
     /// @param _userAssetBalances The list of structs with the user balance and total supply of a set of assets.
     function _updateDataMultiple(
-        IRewardsController rewardsController,
+        IRewardsController _rewardsController,
         address _user,
         UserAssetBalance[] memory _userAssetBalances
     ) internal {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
         for (uint256 i; i < userAssetBalancesLength; ) {
             _updateData(
-                rewardsController,
+                _rewardsController,
                 _user,
                 _userAssetBalances[i].asset,
                 _userAssetBalances[i].balance,
