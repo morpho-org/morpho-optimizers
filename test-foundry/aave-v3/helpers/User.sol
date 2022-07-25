@@ -146,8 +146,4 @@ contract User is Test {
     function setTreasuryVault(address _newTreasuryVault) external {
         morpho.setTreasuryVault(_newTreasuryVault);
     }
-
-    function setRewardsControllerOnRewardsManager(address _rewardsController) external {
-        rewardsManager.setRewardsController(_rewardsController);
-    }
 }
