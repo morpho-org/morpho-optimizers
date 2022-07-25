@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
-import "./interfaces/IGetterUnderlyingAsset.sol";
+import "./interfaces/IPoolToken.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
@@ -520,7 +520,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             userAssetBalances[i].asset = asset;
 
             DataTypes.ReserveData memory reserve = pool.getReserveData(
-                IGetterUnderlyingAsset(userAssetBalances[i].asset).UNDERLYING_ASSET_ADDRESS()
+                IPoolToken(userAssetBalances[i].asset).UNDERLYING_ASSET_ADDRESS()
             );
 
             if (asset == reserve.aTokenAddress)
