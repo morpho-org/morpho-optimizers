@@ -13,11 +13,6 @@ abstract contract UsersLens is IndexesLens {
     using WadRayMath for uint256;
     using Math for uint256;
 
-    /// ERRORS ///
-
-    /// @notice Thrown when the Compound's oracle failed.
-    error CompoundOracleFailed();
-
     /// EXTERNAL ///
 
     /// @notice Returns all markets entered by a given user.
@@ -71,7 +66,6 @@ abstract contract UsersLens is IndexesLens {
             if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(userMarkets, poolToken)) {
                 assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
 
-                data.collateralValue += assetData.collateralValue;
                 data.debtValue += assetData.debtValue;
                 data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
                 data.liquidationThresholdValue += assetData.collateralValue.percentMul(
@@ -86,7 +80,6 @@ abstract contract UsersLens is IndexesLens {
 
         assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
 
-        data.collateralValue += assetData.collateralValue;
         data.debtValue += assetData.debtValue;
         data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
         data.liquidationThresholdValue += assetData.collateralValue.percentMul(
@@ -248,15 +241,16 @@ abstract contract UsersLens is IndexesLens {
                         .divUp(assetData.tokenUnit);
 
                     if (_withdrawnAmount > 0) {
-                        liquidityData.collateralValue -=
-                            (_withdrawnAmount * assetData.underlyingPrice) /
-                            assetData.tokenUnit;
-                        liquidityData.maxLoanToValue -= ((_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit)
-                        .percentMul(assetData.ltv);
-                        liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit)
-                        .percentMul(assetData.liquidationThreshold);
+                        uint256 assetCollateralValue = (_withdrawnAmount *
+                            assetData.underlyingPrice) / assetData.tokenUnit;
+
+                        liquidityData.collateralValue -= assetCollateralValue;
+                        liquidityData.maxLoanToValue -= assetCollateralValue.percentMul(
+                            assetData.ltv
+                        );
+                        liquidityData.liquidationThresholdValue -= assetCollateralValue.percentMul(
+                            assetData.liquidationThreshold
+                        );
                     }
                 }
             }

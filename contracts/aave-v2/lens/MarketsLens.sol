@@ -76,10 +76,10 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Returns non-updated indexes, the block at which they were last updated and the total deltas of a given market.
     /// @param _poolTokenAddress The address of the market of which to get advanced data.
-    /// @return p2pSupplyIndex The peer-to-peer supply index of the given market (in wad).
-    /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in wad).
-    /// @return poolSupplyIndex The pool supply index of the given market (in wad).
-    /// @return poolBorrowIndex The pool borrow index of the given market (in wad).
+    /// @return p2pSupplyIndex The peer-to-peer supply index of the given market (in ray).
+    /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in ray).
+    /// @return poolSupplyIndex The pool supply index of the given market (in ray).
+    /// @return poolBorrowIndex The pool borrow index of the given market (in ray).
     /// @return lastUpdateTimestamp The block number at which pool indexes were last updated.
     /// @return p2pSupplyDelta The total supply delta (in underlying).
     /// @return p2pBorrowDelta The total borrow delta (in underlying).
