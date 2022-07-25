@@ -1,14 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
-
 interface IRewardsManager {
     function initialize(address _morpho) external;
-
-    function rewardsController() external view returns (IRewardsController);
-
-    function setRewardsController(address) external;
 
     function getUserAccruedRewards(
         address[] calldata _assets,

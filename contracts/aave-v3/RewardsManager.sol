@@ -38,15 +38,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
     mapping(address => mapping(address => RewardData)) internal localAssetData; // The local data related to a given asset (either aToken or debt token). asset -> reward -> RewardData
 
-    IRewardsController public rewardsController;
     IMorpho public morpho;
     IPool public pool;
 
     /// EVENTS ///
-
-    /// @notice Emitted when the address of the `rewardsController` is set.
-    /// @param _rewardsController The new address of the `rewardsController`.
-    event RewardsControllerSet(address indexed _rewardsController);
 
     /// @dev Emitted when rewards of an asset are accrued on behalf of a user.
     /// @param _asset The address of the incentivized asset.
@@ -94,18 +89,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         __Ownable_init();
 
         morpho = IMorpho(_morpho);
-        rewardsController = IMorpho(_morpho).rewardsController();
         pool = IPool(morpho.pool());
     }
 
     /// EXTERNAL ///
-
-    /// @notice Sets the `rewardsController`.
-    /// @param _rewardsController The address of the `rewardsController`.
-    function setRewardsController(address _rewardsController) external onlyOwner {
-        rewardsController = IRewardsController(_rewardsController);
-        emit RewardsControllerSet(_rewardsController);
-    }
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
@@ -117,7 +104,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         onlyMorpho
         returns (address[] memory rewardsList, uint256[] memory claimedAmounts)
     {
-        rewardsList = rewardsController.getRewardsList();
+        rewardsList = morpho.rewardsController().getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         uint256 assetsLength = _assets.length;
         claimedAmounts = new uint256[](rewardsListLength);
@@ -194,7 +181,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         returns (address[] memory rewardsList, uint256[] memory unclaimedAmounts)
     {
         UserAssetBalance[] memory userAssetBalances = _getUserAssetBalances(_assets, _user);
-        rewardsList = rewardsController.getRewardsList();
+        rewardsList = morpho.rewardsController().getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         unclaimedAmounts = new uint256[](rewardsListLength);
 
@@ -330,6 +317,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 _userBalance,
         uint256 _totalSupply
     ) internal {
+        IRewardsController rewardsController = morpho.rewardsController();
         address[] memory availableRewards = rewardsController.getRewardsByAsset(_asset);
         uint256 numAvailableRewards = availableRewards.length;
         if (numAvailableRewards == 0) return;
@@ -431,7 +419,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         uint256 assetUnit;
         unchecked {
-            assetUnit = 10**rewardsController.getAssetDecimals(_userAssetBalance.asset);
+            assetUnit = 10**morpho.rewardsController().getAssetDecimals(_userAssetBalance.asset);
         }
 
         (, uint256 nextIndex) = _getAssetIndex(
@@ -493,7 +481,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 uint256 emissionPerSecond,
                 uint256 lastUpdateTimestamp,
                 uint256 distributionEnd
-            ) = rewardsController.getRewardsData(_asset, _reward);
+            ) = morpho.rewardsController().getRewardsData(_asset, _reward);
 
             if (
                 emissionPerSecond == 0 ||
