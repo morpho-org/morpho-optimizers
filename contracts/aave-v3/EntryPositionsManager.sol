@@ -98,7 +98,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
             _setSupplying(_onBehalf, vars.borrowMask, true);
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
@@ -125,7 +125,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchBorrowers(
@@ -184,7 +184,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_amount == 0) revert AmountIsZero();
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
             revert BorrowingNotEnabled();
 
@@ -221,7 +221,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchSuppliers(
@@ -306,10 +306,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
+                address underlyingToken = market[poolToken].underlyingToken;
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In base currency.
                 (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-                .getConfiguration(underlyingAddress)
+                .getConfiguration(underlyingToken)
                 .getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 

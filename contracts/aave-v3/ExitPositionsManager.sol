@@ -200,16 +200,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenBorrowedAddress = market[_poolTokenBorrowedAddress].underlyingToken;
 
         uint256 amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower).percentMul(closeFactor) // Max liquidatable debt.
         );
 
-        address tokenCollateralAddress = IAToken(_poolTokenCollateralAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenCollateralAddress = market[_poolTokenCollateralAddress].underlyingToken;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
@@ -272,7 +270,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
@@ -348,7 +346,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Promote pool suppliers.
         if (
             vars.remainingToWithdraw > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
@@ -429,7 +427,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
@@ -527,7 +525,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Promote pool borrowers.
         if (
             vars.remainingToRepay > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
@@ -623,8 +621,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
+                address underlyingToken = market[poolToken].underlyingToken;
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingToken); // In base currency.
                 (
                     assetData.ltv,
                     assetData.liquidationThreshold,
@@ -632,7 +630,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     assetData.reserveDecimals,
                     ,
 
-                ) = pool.getConfiguration(underlyingAddress).getParams();
+                ) = pool.getConfiguration(underlyingToken).getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
                 if (_isBorrowing(vars.userMarkets, borrowMask))

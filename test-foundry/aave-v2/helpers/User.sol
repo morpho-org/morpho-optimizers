@@ -40,10 +40,11 @@ contract User {
     }
 
     function createMarket(
-        address _underlyingTokenAddress,
-        Types.MarketParameters calldata _marketParams
+        address _underlyingToken,
+        uint16 _reserveFactor,
+        uint16 _p2pIndexCursor
     ) external {
-        morpho.createMarket(_underlyingTokenAddress, _marketParams);
+        morpho.createMarket(_underlyingToken, _reserveFactor, _p2pIndexCursor);
     }
 
     function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
