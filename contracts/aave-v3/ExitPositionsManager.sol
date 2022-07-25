@@ -674,6 +674,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (bool) {
+        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+        // For safety concerns and as a withdraw on Morpho can trigger a borrow on pool, Morpho prevents withdrawals in such circumstances.
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (
+            priceOracleSentinel != address(0) &&
+            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+        ) return false;
+
         return
             _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
