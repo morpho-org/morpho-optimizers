@@ -193,6 +193,14 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
+    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setPauseStatusForAllMarkets(true);
+
+        morpho.setPauseStatusForAllMarkets(true);
+    }
+
     function testOnlyOwnerCanSetClaimRewardsStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -200,13 +208,5 @@ contract TestGovernance is TestSetup {
 
         morpho.setClaimRewardsPauseStatus(true);
         assertTrue(morpho.isClaimRewardsPaused());
-    }
-
-    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusForAllMarkets(true);
-
-        morpho.setPauseStatusForAllMarkets(true);
     }
 }
