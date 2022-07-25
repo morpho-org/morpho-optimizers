@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IPoolToken.sol";
@@ -99,25 +98,25 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _user The address of the user.
     /// @return rewardsList The list of reward tokens.
     /// @return claimedAmounts The list of claimed reward amounts.
-    function claimRewards(address[] calldata _assets, address _user)
-        external
-        onlyMorpho
-        returns (address[] memory rewardsList, uint256[] memory claimedAmounts)
-    {
-        rewardsList = morpho.rewardsController().getRewardsList();
+    function claimRewards(
+        IRewardsController rewardsController,
+        address[] calldata _assets,
+        address _user
+    ) external onlyMorpho returns (address[] memory rewardsList, uint256[] memory claimedAmounts) {
+        rewardsList = rewardsController.getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         uint256 assetsLength = _assets.length;
         claimedAmounts = new uint256[](rewardsListLength);
 
-        _updateDataMultiple(_user, _getUserAssetBalances(_assets, _user));
+        _updateDataMultiple(rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
         for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
 
             for (uint256 j; j < rewardsListLength; ) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
-                .usersData[_user]
-                .accrued;
+                    .usersData[_user]
+                    .accrued;
 
                 if (rewardAmount != 0) {
                     claimedAmounts[j] += rewardAmount;
@@ -142,12 +141,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The current total supply of underlying assets for this distribution.
     function updateUserAssetAndAccruedRewards(
+        IRewardsController rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) external onlyMorpho {
-        _updateData(_user, _asset, _userBalance, _totalSupply);
+        _updateData(rewardsController, _user, _asset, _userBalance, _totalSupply);
     }
 
     /// @notice Returns user's accrued rewards for the specified assets and reward token
@@ -189,8 +189,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         for (uint256 i; i < userAssetBalances.length; ) {
             for (uint256 j; j < rewardsListLength; ) {
                 unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset][rewardsList[j]]
-                .usersData[_user]
-                .accrued;
+                    .usersData[_user]
+                    .accrued;
 
                 if (userAssetBalances[i].balance == 0) continue;
 
@@ -312,13 +312,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The total supply of the asset.
     function _updateData(
+        IRewardsController rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) internal {
-        IRewardsController rewardsController = morpho.rewardsController();
-
         address[] memory availableRewards = rewardsController.getRewardsByAsset(_asset);
         if (availableRewards.length == 0) return;
 
@@ -361,12 +360,15 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @dev Accrues all the rewards of the assets specified in the userAssetBalances list.
     /// @param _user The address of the user.
     /// @param _userAssetBalances The list of structs with the user balance and total supply of a set of assets.
-    function _updateDataMultiple(address _user, UserAssetBalance[] memory _userAssetBalances)
-        internal
-    {
+    function _updateDataMultiple(
+        IRewardsController rewardsController,
+        address _user,
+        UserAssetBalance[] memory _userAssetBalances
+    ) internal {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
         for (uint256 i; i < userAssetBalancesLength; ) {
             _updateData(
+                rewardsController,
                 _user,
                 _userAssetBalances[i].asset,
                 _userAssetBalances[i].balance,
@@ -525,12 +527,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             if (asset == reserve.aTokenAddress)
                 userAssetBalances[i].balance = morpho
-                .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                    .supplyBalanceInOf(reserve.aTokenAddress, _user)
+                    .onPool;
             else if (asset == reserve.variableDebtTokenAddress)
                 userAssetBalances[i].balance = morpho
-                .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                    .borrowBalanceInOf(reserve.aTokenAddress, _user)
+                    .onPool;
             else revert InvalidAsset();
 
             userAssetBalances[i].totalSupply = IScaledBalanceToken(asset).scaledTotalSupply();
