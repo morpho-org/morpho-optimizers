@@ -4,8 +4,9 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestPausableMarket is TestSetup {
-    address[] aAaveArray = [aAave];
-    address[] aDaiArray = [aDai];
+    address[] public aDaiArray = [aDai];
+    address[] public aAaveArray = [aAave];
+    uint256[] public amountArray = [1 ether];
 
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -87,7 +88,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aDai, 1);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
     }
 
     function testShouldDisableAllMarketsWhenGloballyPaused(uint8 _random1, uint8 _random2) public {
@@ -149,7 +150,7 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -170,7 +171,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aAave, 1 ether);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aAaveArray, amountArray);
     }
 
     function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
@@ -204,7 +205,7 @@ contract TestPausableMarket is TestSetup {
         liquidator.approve(usdc, toLiquidate);
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -227,6 +228,6 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aAave, 1 ether);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aAaveArray, amountArray);
     }
 }
