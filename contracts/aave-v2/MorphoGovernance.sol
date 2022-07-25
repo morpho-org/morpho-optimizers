@@ -134,6 +134,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
         uint256 _maxSortedUsers
     ) external initializer {
+        if (_maxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
+
         __ReentrancyGuard_init();
         __Ownable_init();
 
