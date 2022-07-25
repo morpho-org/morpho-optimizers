@@ -317,14 +317,21 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 _userBalance,
         uint256 _totalSupply
     ) internal {
-        IRewardsController rewardsController = morpho.rewardsController();
-        address[] memory availableRewards = rewardsController.getRewardsByAsset(_asset);
-        uint256 numAvailableRewards = availableRewards.length;
-        if (numAvailableRewards == 0) return;
+        uint256 assetUnit;
+        uint256 numAvailableRewards;
+        address[] memory availableRewards;
+
+        {
+            IRewardsController rewardsController = morpho.rewardsController();
+
+            availableRewards = rewardsController.getRewardsByAsset(_asset);
+            numAvailableRewards = availableRewards.length;
+            if (numAvailableRewards == 0) return;
+
+            assetUnit = 10**rewardsController.getAssetDecimals(_asset);
+        }
 
         unchecked {
-            uint256 assetUnit = 10**rewardsController.getAssetDecimals(_asset);
-
             for (uint128 i; i < numAvailableRewards; ++i) {
                 address reward = availableRewards[i];
                 RewardData storage localRewardData = localAssetData[_asset][reward];
