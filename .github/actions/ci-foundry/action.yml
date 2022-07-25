@@ -52,7 +52,7 @@ runs:
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
 
     - name: Compare gas reports
-      uses: Rubilmax/foundry-gas-diff@v3.6
+      uses: Rubilmax/foundry-gas-diff@v3.7
       with:
         workflowId: ci-foundry-${{ inputs.protocol }}.yml
         report: ${{ inputs.protocol }}.gasreport.ansi

@@ -21,6 +21,8 @@
   - certora/**/*
 
 "⚙️ ci":
+  - .github/actions/*
+  - .github/actions/**/*
   - .github/workflows/*
   - .github/workflows/**/*
 
