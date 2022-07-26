@@ -158,7 +158,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
-    /// @notice Thrown when a user tries to repay its debt after borrowing in the same block, with the same tx.origin.
+    /// @notice Thrown when a user's debt is trying to be repaid after having been borrowed in the same block, with the same tx.origin.
     error SameTxBorrowRepay();
 
     /// @notice Thrown when the supply is paused.
