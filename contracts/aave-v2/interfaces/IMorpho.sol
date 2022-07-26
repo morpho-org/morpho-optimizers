@@ -19,7 +19,6 @@ interface IMorpho {
     function NO_REFERRAL_CODE() external view returns(uint8);
     function VARIABLE_INTEREST_MODE() external view returns(uint8);
     function MAX_BASIS_POINTS() external view returns(uint16);
-    function MAX_CLAIMABLE_RESERVE() external view returns(uint16);
     function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns(uint16);
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns(uint256);
     function BORROWING_MASK() external view returns(uint256);
@@ -31,6 +30,7 @@ interface IMorpho {
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
     function deltas(address) external view returns (Types.Delta memory);
+    function marketsCreated(uint256) external view returns (address);
     function market(address) external view returns (Types.Market memory);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
@@ -74,7 +74,7 @@ interface IMorpho {
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
-    function claimToTreasury(address[] calldata _poolTokenAddresses) external;
+    function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts) external;
     function createMarket(address _underlyingToken, uint16 _reserveFactor, uint16 _p2pIndexCursor) external;
 
     /// USERS ///
