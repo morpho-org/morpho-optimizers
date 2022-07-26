@@ -2,8 +2,8 @@
 
 // gives us all of the dispatcher summaries in these files
 import "../helpers/erc20.spec"
-import "../helpers/compound/PoolToken.spec"
-import "../helpers/compound/SymbolicOracle.spec"
+import "../helpers/compound/specs/PoolToken.spec"
+import "../helpers/compound/specs/SymbolicOracle.spec"
 import "../helpers/compound/specs/SymbolicComptroller.spec"
 
 // allows us to reference the poolToken in the spec
