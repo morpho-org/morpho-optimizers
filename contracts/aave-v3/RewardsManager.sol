@@ -94,6 +94,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// EXTERNAL ///
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @param _rewardsController The rewards controller used to query active rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return rewardsList The list of reward tokens.
@@ -115,8 +116,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             for (uint256 j; j < rewardsListLength; ) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
-                    .usersData[_user]
-                    .accrued;
+                .usersData[_user]
+                .accrued;
 
                 if (rewardAmount != 0) {
                     claimedAmounts[j] += rewardAmount;
@@ -136,6 +137,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
     /// @notice Updates the unclaimed rewards of a user.
     /// @dev Only called by Morpho at positions updates in the data structure.
+    /// @param _rewardsController The rewards controller used to query active rewards.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _userBalance The current user asset balance.
@@ -189,8 +191,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         for (uint256 i; i < userAssetBalances.length; ) {
             for (uint256 j; j < rewardsListLength; ) {
                 unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset][rewardsList[j]]
-                    .usersData[_user]
-                    .accrued;
+                .usersData[_user]
+                .accrued;
 
                 if (userAssetBalances[i].balance == 0) continue;
 
@@ -307,6 +309,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Iterates and accrues all the rewards for asset of the specific user.
+    /// @param _rewardsController The rewards controller used to query active rewards.
     /// @param _user The user address.
     /// @param _asset The address of the reference asset of the distribution.
     /// @param _userBalance The current user asset balance.
@@ -527,12 +530,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             if (asset == reserve.aTokenAddress)
                 userAssetBalances[i].balance = morpho
-                    .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                    .onPool;
+                .supplyBalanceInOf(reserve.aTokenAddress, _user)
+                .onPool;
             else if (asset == reserve.variableDebtTokenAddress)
                 userAssetBalances[i].balance = morpho
-                    .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                    .onPool;
+                .borrowBalanceInOf(reserve.aTokenAddress, _user)
+                .onPool;
             else revert InvalidAsset();
 
             userAssetBalances[i].totalSupply = IScaledBalanceToken(asset).scaledTotalSupply();
