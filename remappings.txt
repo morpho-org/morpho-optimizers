@@ -6,3 +6,6 @@ forge-std/=lib/forge-std/src/
 @aave/periphery-v3/=lib/aave-v3-periphery/
 
 @contracts/=contracts/
+@config/=config/eth-mainnet/compound/
+@setup/=test-foundry/compound/setup/deployment/
+@test-common/=test-foundry/common/

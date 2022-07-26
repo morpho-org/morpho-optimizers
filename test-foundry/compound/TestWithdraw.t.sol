@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {Attacker} from "./helpers/Attacker.sol";
-import "./setup/TestSetup.sol";
+import "@setup/TestSetup.sol";
 
 contract TestWithdraw is TestSetup {
     using CompoundMath for uint256;

@@ -16,12 +16,12 @@ import "@contracts/compound/InterestRatesManager.sol";
 import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/lens/Lens.sol";
 
-import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/Chains.sol";
-import "../helpers/SimplePriceOracle.sol";
-import "../helpers/DumbOracle.sol";
-import {User} from "../helpers/User.sol";
-import {Utils} from "./Utils.sol";
+import "@test-common/helpers/MorphoToken.sol";
+import "@test-common/helpers/Chains.sol";
+import "../../helpers/SimplePriceOracle.sol";
+import "../../helpers/DumbOracle.sol";
+import {User} from "../../helpers/User.sol";
+import {Utils} from "../Utils.sol";
 import "@config/Config.sol";
 import "forge-std/console.sol";
 import "forge-std/Vm.sol";
@@ -78,97 +78,19 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
-
         comptroller = IComptroller(comptrollerAddress);
-        interestRatesManager = new InterestRatesManager();
-        positionsManager = new PositionsManager();
-
-        /// Deploy proxies ///
-
-        proxyAdmin = new ProxyAdmin();
-
-        morphoImplV1 = new Morpho();
-        morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
-
-        morphoProxy.changeAdmin(address(proxyAdmin));
-        morpho = Morpho(payable(address(morphoProxy)));
-        morpho.initialize(
-            positionsManager,
-            interestRatesManager,
-            comptroller,
-            defaultMaxGasForMatching,
-            1,
-            20,
-            cEth,
-            wEth
-        );
-
+        interestRatesManager = InterestRatesManager(interestRatesManager);
+        positionsManager = PositionsManager(positionsManager);
+        morphoImplV1 = Morpho(morphoImplementation);
+        morpho = Morpho(morpho);
         treasuryVault = new User(morpho);
-
         oracle = ICompoundOracle(comptroller.oracle());
-        morpho.setTreasuryVault(address(treasuryVault));
-
-        /// Create markets ///
-
-        createMarket(cDai);
-        createMarket(cUsdc);
-        createMarket(cWbtc);
-        createMarket(cUsdt);
-        createMarket(cBat);
-        createMarket(cEth);
-
-        hevm.roll(block.number + 1);
-
-        ///  Create Morpho token, deploy Incentives Vault and activate COMP rewards ///
-
-        morphoToken = new MorphoToken(address(this));
+        morphoToken = MorphoToken();
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            IComptroller(comptrollerAddress),
-            IMorpho(address(morpho)),
-            morphoToken,
-            address(1),
-            dumbOracle
-        );
-        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
-        morpho.setIncentivesVault(incentivesVault);
-
-        rewardsManagerImplV1 = new RewardsManager();
-        rewardsManagerProxy = new TransparentUpgradeableProxy(
-            address(rewardsManagerImplV1),
-            address(proxyAdmin),
-            ""
-        );
-        rewardsManager = RewardsManager(address(rewardsManagerProxy));
-        rewardsManager.initialize(address(morpho));
-
-        morpho.setRewardsManager(rewardsManager);
-
-        lensImplV1 = new Lens();
-        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
-        lens = Lens(address(lensProxy));
-        lens.initialize(address(morpho));
-    }
-
-    function createMarket(address _cToken) internal {
-        Types.MarketParameters memory marketParams = Types.MarketParameters(0, 3_333);
-        morpho.createMarket(_cToken, marketParams);
-
-        // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
-        pools.push(_cToken);
-
-        hevm.label(_cToken, ERC20(_cToken).symbol());
-        if (_cToken == cEth) hevm.label(wEth, "WETH");
-        else {
-            address underlying = ICToken(_cToken).underlying();
-            hevm.label(underlying, ERC20(underlying).symbol());
-        }
+        rewardsManagerImplV1 = RewardsManager(rewardsManagerImplementation);
+        rewardsManager = RewardsManager(rewardsManager);
+        lensImplV1 = Lens(lensImplementation);
+        lens = Lens(lens);
     }
 
     function initUsers() internal {
