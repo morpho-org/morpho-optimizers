@@ -147,6 +147,15 @@ abstract contract MorphoUtils is MorphoStorage {
         return _userMarkets & BORROWING_MASK != 0;
     }
 
+    function _isBorrowingFirstAndSupplyingSecond(
+        uint256 _userMarkets,
+        uint256 _firstBorrowMask,
+        uint256 _secondBorrowMask
+    ) internal pure returns (bool) {
+        uint256 targetMask = _firstBorrowMask | (_secondBorrowMask << 1);
+        return _userMarkets & targetMask == targetMask;
+    }
+
     /// @notice Sets if the user is borrowing on a market.
     /// @param _user The user to set for.
     /// @param _borrowMask The borrow mask of the market to mark as borrowed.

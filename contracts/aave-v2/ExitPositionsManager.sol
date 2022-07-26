@@ -185,10 +185,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
-        uint256 userMarkets = userMarkets[_borrower];
         if (
-            !_isBorrowing(userMarkets, borrowMask[_poolTokenBorrowedAddress]) ||
-            !_isSupplying(userMarkets, borrowMask[_poolTokenCollateralAddress])
+            !_isBorrowingFirstAndSupplyingSecond(
+                userMarkets[_borrower],
+                borrowMask[_poolTokenBorrowedAddress],
+                borrowMask[_poolTokenCollateralAddress]
+            )
         ) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenBorrowedAddress);
@@ -212,12 +214,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = pool
-        .getConfiguration(tokenCollateralAddress)
-        .getParamsMemory();
-        (, , , vars.borrowedReserveDecimals, ) = pool
-        .getConfiguration(tokenBorrowedAddress)
-        .getParamsMemory();
+        {
+            IPool poolMem = pool;
+            (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
+            .getConfiguration(tokenCollateralAddress)
+            .getParams();
+            (, , , vars.borrowedReserveDecimals, , ) = poolMem
+            .getConfiguration(tokenBorrowedAddress)
+            .getParams();
+        }
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
