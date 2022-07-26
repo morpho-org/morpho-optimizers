@@ -388,7 +388,7 @@ contract TestLiquidate is TestSetup {
         }
     }
 
-    function testCannotBorrowLiquidateInSameBlock() public {
+    function testCannotBorrowLiquidateInSameTransaction() public {
         uint256 amount = 10_000 ether;
 
         SimplePriceOracle oracle = createAndSetCustomPriceOracle();
@@ -402,7 +402,7 @@ contract TestLiquidate is TestSetup {
 
         borrower2.approve(dai, amount);
         hevm.prank(address(borrower2));
-        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        hevm.expectRevert(abi.encodeWithSignature("SameTxBorrowRepay()"));
         morpho.liquidate(cDai, cUsdc, address(borrower1), amount / 3);
     }
 }

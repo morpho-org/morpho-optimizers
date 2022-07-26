@@ -762,7 +762,20 @@ contract TestRepay is TestSetup {
         testEqualityLarge(onPool, 0);
     }
 
-    function testCannotBorrowRepayInSameBlock() public {
+    function testBorrowRepayInSameBlock() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+        borrower1.borrow(cDai, amount);
+
+        borrower2.approve(dai, amount);
+        hevm.prank(address(borrower2), address(borrower2));
+        morpho.repay(cDai, address(borrower1), amount);
+    }
+
+    function testCannotBorrowRepayInSameTransaction() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
@@ -772,11 +785,11 @@ contract TestRepay is TestSetup {
 
         borrower1.approve(dai, amount);
         hevm.prank(address(borrower1));
-        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        hevm.expectRevert(abi.encodeWithSignature("SameTxBorrowRepay()"));
         morpho.repay(cDai, address(borrower1), amount);
     }
 
-    function testCannotBorrowRepayOnBehalfInSameBlock() public {
+    function testCannotBorrowRepayOnBehalfInSameTransaction() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
@@ -786,7 +799,7 @@ contract TestRepay is TestSetup {
 
         borrower2.approve(dai, amount);
         hevm.prank(address(borrower2));
-        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        hevm.expectRevert(abi.encodeWithSignature("SameTxBorrowRepay()"));
         morpho.repay(cDai, address(borrower1), amount);
     }
 
