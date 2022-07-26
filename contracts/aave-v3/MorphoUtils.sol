@@ -229,6 +229,38 @@ abstract contract MorphoUtils is MorphoStorage {
             userBorrowBalance.onPool.rayMul(poolIndexes[_poolTokenAddress].poolBorrowIndex);
     }
 
+    /// @dev Calculates the value of the collateral.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _collateralValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 collateralValue) {
+        collateralValue =
+            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
+            _tokenUnit;
+    }
+
+    /// @dev Calculates the value of the debt.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _debtValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 debtValue) {
+        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
+            _tokenUnit
+        );
+    }
+
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
@@ -254,6 +286,7 @@ abstract contract MorphoUtils is MorphoStorage {
             if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
                 vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
                 vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
+
                 if (vars.poolTokenAddress != _poolTokenAddress)
                     _updateIndexes(vars.poolTokenAddress);
 
@@ -289,10 +322,9 @@ abstract contract MorphoUtils is MorphoStorage {
                         assetData.tokenUnit
                     );
                     values.collateralValue += assetCollateralValue;
+                    // Calculate LTV for borrow.
+                    values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
                 }
-
-                // Update LTV variable for borrow.
-                values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
 
                 // Update debt variable for borrowed token.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
@@ -321,37 +353,5 @@ abstract contract MorphoUtils is MorphoStorage {
                 ++i;
             }
         }
-    }
-
-    /// @dev Calculates the value of the collateral.
-    /// @param _poolToken The pool token to calculate the value for.
-    /// @param _user The user address.
-    /// @param _underlyingPrice The underlying price.
-    /// @param _tokenUnit The token unit.
-    function _collateralValue(
-        address _poolToken,
-        address _user,
-        uint256 _underlyingPrice,
-        uint256 _tokenUnit
-    ) internal view returns (uint256 collateralValue) {
-        collateralValue =
-            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
-            _tokenUnit;
-    }
-
-    /// @dev Calculates the value of the debt.
-    /// @param _poolToken The pool token to calculate the value for.
-    /// @param _user The user address.
-    /// @param _underlyingPrice The underlying price.
-    /// @param _tokenUnit The token unit.
-    function _debtValue(
-        address _poolToken,
-        address _user,
-        uint256 _underlyingPrice,
-        uint256 _tokenUnit
-    ) internal view returns (uint256 debtValue) {
-        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
-            _tokenUnit
-        );
     }
 }
