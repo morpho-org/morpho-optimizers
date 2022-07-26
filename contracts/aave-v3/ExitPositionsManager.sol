@@ -331,8 +331,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ); // In peer-to-peer supply unit.
         _updateSupplierInDS(_poolTokenAddress, _supplier);
 
-        /// Transfer withdraw ///
-
         // Reduce peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
@@ -349,6 +347,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
+
+        /// Transfer withdraw ///
 
         // Promote pool suppliers.
         if (
@@ -376,7 +376,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Breaking withdraw ///
 
-        // Unmote peer-to-peer borrowers.
+        // Demote peer-to-peer borrowers.
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
