@@ -158,8 +158,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
-    /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
-    error SameBlockBorrowRepay();
+    /// @notice Thrown when a user tries to repay its debt after borrowing in the same block, with the same tx.origin.
+    error SameTxBorrowRepay();
 
     /// @notice Thrown when the supply is paused.
     error SupplyPaused();
@@ -323,11 +323,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         );
     }
 
-    function lastBorrowHash(address sender) public view returns (bytes32) {
-        return keccak256(abi.encode(block.number, tx.origin, sender));
-        //  Could maybe use msg.data, tx.gasprice, ...
-    }
-
     /// @dev Implements borrow logic.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
@@ -344,7 +339,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
-        lastBorrow = lastBorrowHash(msg.sender);
+        lastBorrowHash = transactionHash(msg.sender);
 
         if (_isLiquidatable(msg.sender, _poolToken, 0, _amount)) revert UnauthorisedBorrow();
         ERC20 underlyingToken = _getUnderlying(_poolToken);
@@ -755,7 +750,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        if (lastBorrow == lastBorrowHash(_onBehalf)) revert SameBlockBorrowRepay();
+        if (lastBorrowHash == transactionHash(_onBehalf)) revert SameTxBorrowRepay();
 
         ERC20 underlyingToken = _getUnderlying(_poolToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
@@ -1012,5 +1007,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
             enteredMarkets[_user].pop();
         }
+    }
+
+    /// @dev Computes the hash of some data of the transaction.
+    /// @param _user The address of the account interacting in the transaction.
+    /// @return The hash of some data of the transaction.
+    function transactionHash(address _user) internal view returns (bytes32) {
+        return keccak256(abi.encode(block.number, tx.origin, _user));
     }
 }
