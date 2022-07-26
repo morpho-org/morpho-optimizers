@@ -202,7 +202,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        address tokenBorrowedAddress = market[_poolTokenBorrowedAddress].underlyingToken;
+        LiquidateVars memory vars;
+        address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
+        .UNDERLYING_ASSET_ADDRESS();
 
         uint256 amountToLiquidate = Math.min(
             _amount,
