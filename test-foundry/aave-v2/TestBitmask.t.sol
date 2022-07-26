@@ -157,7 +157,7 @@ contract TestBitmask is TestSetup {
     }
 
     function isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        uint256 bmask = morpho.borrowMask(_market);
+        bytes32 bmask = morpho.borrowMask(_market);
         return morpho.userMarkets(_user) & (bmask | (bmask << 1)) != 0;
     }
 

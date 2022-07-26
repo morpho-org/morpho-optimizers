@@ -115,6 +115,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     // Struct to avoid stack too deep.
     struct HealthFactorVars {
         uint256 i;
+        bytes32 userMarkets;
         uint256 numberOfMarketsCreated;
     }
 
@@ -201,16 +202,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenBorrowedAddress = market[_poolTokenBorrowedAddress].underlyingToken;
 
         uint256 amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower).percentMul(closeFactor) // Max liquidatable debt.
         );
 
-        address tokenCollateralAddress = IAToken(_poolTokenCollateralAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenCollateralAddress = market[_poolTokenCollateralAddress].underlyingToken;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
@@ -276,13 +275,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
 
-        /// Soft withdraw ///
+        /// Pool withdraw ///
 
         vars.onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
         if (vars.onPoolSupply > 0) {
@@ -332,7 +331,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Transfer withdraw ///
 
-        // Reduce peer-to-peer supply delta first if any.
+        // Reduce peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
@@ -349,10 +348,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
-        // Match pool suppliers if any.
+        // Promote pool suppliers.
         if (
             vars.remainingToWithdraw > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
@@ -373,9 +372,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (vars.toWithdraw > 0)
             _withdrawFromPool(underlyingToken, _poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
-        /// Hard withdraw ///
+        /// Breaking withdraw ///
 
-        // Unmatch peer-to-peer borrowers.
+        // Unmote peer-to-peer borrowers.
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
@@ -383,7 +382,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching
             );
 
-            // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
+            // Increase peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
                     poolIndexes[_poolTokenAddress].poolBorrowIndex
@@ -433,14 +432,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
 
-        /// Soft repay ///
+        /// Pool repay ///
 
         vars.borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool;
         if (vars.borrowedOnPool > 0) {
@@ -487,7 +486,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ); // In peer-to-peer borrow unit.
         _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
-        // Reduce peer-to-peer borrow delta first if any.
+        // Reduce peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
@@ -528,10 +527,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Transfer repay ///
 
-        // Match pool borrowers if any.
+        // Promote pool borrowers.
         if (
             vars.remainingToRepay > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
@@ -551,9 +550,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
-        /// Hard repay ///
+        /// Breaking repay ///
 
-        // Unmatch peer-to-peer suppliers.
+        // Unmote peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
@@ -561,7 +560,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching
             );
 
-            // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
+            // Increase peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
                     vars.poolSupplyIndex
@@ -608,63 +607,23 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        uint256 userMarkets = userMarkets[_user];
+        HealthFactorVars memory vars;
+        vars.userMarkets = userMarkets[_user];
 
         // If the user is not borrowing any asset, return an infinite health factor.
-        if (!_isBorrowingAny(userMarkets)) return type(uint256).max;
+        if (!_isBorrowingAny(vars.userMarkets)) return type(uint256).max;
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        Types.LiquidityData memory values = _liquidityData(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            0
+        );
 
-        HealthFactorVars memory vars;
-        Types.AssetLiquidityData memory assetData;
-        Types.LiquidityData memory liquidityData;
-        vars.numberOfMarketsCreated = marketsCreated.length;
-
-        for (; vars.i < vars.numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[vars.i];
-            uint256 borrowMask = borrowMask[poolToken];
-
-            if (_isSupplyingOrBorrowing(userMarkets, borrowMask)) {
-                if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
-
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-                (
-                    assetData.ltv,
-                    assetData.liquidationThreshold,
-                    ,
-                    assetData.reserveDecimals,
-                    ,
-
-                ) = pool.getConfiguration(underlyingAddress).getParams();
-                assetData.tokenUnit = 10**assetData.reserveDecimals;
-
-                if (_isBorrowing(userMarkets, borrowMask))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-
-                if (_isSupplying(userMarkets, borrowMask)) {
-                    assetData.collateralValue =
-                        (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-                    liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                        assetData.liquidationThreshold
-                    );
-                }
-
-                if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
-                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                        assetData.underlyingPrice) / assetData.tokenUnit)
-                    .percentMul(assetData.liquidationThreshold);
-            }
-
-            unchecked {
-                ++vars.i;
-            }
-        }
-
-        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+        return
+            values.debtValue > 0
+                ? values.liquidationThresholdValue.wadDiv(values.debtValue)
+                : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.
@@ -677,6 +636,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal returns (bool) {
+        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+        // For safety concerns and as a withdraw on Morpho can trigger a borrow on pool, Morpho prevents withdrawals in such circumstances.
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (
+            priceOracleSentinel != address(0) &&
+            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+        ) return false;
+
         return
             _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;

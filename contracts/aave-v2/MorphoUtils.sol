@@ -8,6 +8,7 @@ import "./libraries/aave/ReserveConfiguration.sol";
 import "../common/libraries/DelegateCall.sol";
 import "./libraries/aave/PercentageMath.sol";
 import "./libraries/aave/WadRayMath.sol";
+import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
 
@@ -21,6 +22,7 @@ abstract contract MorphoUtils is MorphoStorage {
     using PercentageMath for uint256;
     using DelegateCall for address;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// ERRORS ///
 
@@ -35,25 +37,25 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreated(address _poolTokenAddress) {
-        if (!marketStatus[_poolTokenAddress].isCreated) revert MarketNotCreated();
+        if (!market[_poolTokenAddress].isCreated) revert MarketNotCreated();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus = marketStatus[_poolTokenAddress];
-        if (!marketStatus.isCreated) revert MarketNotCreated();
-        if (marketStatus.isPaused) revert MarketPaused();
+        Types.Market memory market = market[_poolTokenAddress];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isPaused) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus = marketStatus[_poolTokenAddress];
-        if (!marketStatus.isCreated) revert MarketNotCreated();
-        if (marketStatus.isPaused || marketStatus.isPartiallyPaused) revert MarketPaused();
+        Types.Market memory market = market[_poolTokenAddress];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isPaused || market.isPartiallyPaused) revert MarketPaused();
         _;
     }
 
@@ -116,7 +118,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
-    function _isSupplyingOrBorrowing(uint256 _userMarkets, uint256 _borrowMask)
+    function _isSupplyingOrBorrowing(bytes32 _userMarkets, bytes32 _borrowMask)
         internal
         pure
         returns (bool)
@@ -128,7 +130,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
-    function _isBorrowing(uint256 _userMarkets, uint256 _borrowMask) internal pure returns (bool) {
+    function _isBorrowing(bytes32 _userMarkets, bytes32 _borrowMask) internal pure returns (bool) {
         return _userMarkets & _borrowMask != 0;
     }
 
@@ -136,14 +138,14 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @param _borrowMask The borrow mask of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
-    function _isSupplying(uint256 _userMarkets, uint256 _borrowMask) internal pure returns (bool) {
+    function _isSupplying(bytes32 _userMarkets, bytes32 _borrowMask) internal pure returns (bool) {
         return _userMarkets & (_borrowMask << 1) != 0;
     }
 
     /// @dev Returns if a user has been borrowing from any market.
     /// @param _userMarkets The bitmask encoding the markets entered by the user.
     /// @return True if the user has been borrowing on any market, false otherwise.
-    function _isBorrowingAny(uint256 _userMarkets) internal pure returns (bool) {
+    function _isBorrowingAny(bytes32 _userMarkets) internal pure returns (bool) {
         return _userMarkets & BORROWING_MASK != 0;
     }
 
@@ -167,7 +169,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _borrowing True if the user is borrowing, false otherwise.
     function _setBorrowing(
         address _user,
-        uint256 _borrowMask,
+        bytes32 _borrowMask,
         bool _borrowing
     ) internal {
         if (_borrowing) userMarkets[_user] |= _borrowMask;
@@ -180,7 +182,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _supplying True if the user is supplying, false otherwise.
     function _setSupplying(
         address _user,
-        uint256 _borrowMask,
+        bytes32 _borrowMask,
         bool _supplying
     ) internal {
         if (_supplying) userMarkets[_user] |= _borrowMask << 1;
@@ -225,5 +227,152 @@ abstract contract MorphoUtils is MorphoStorage {
         return
             userBorrowBalance.inP2P.rayMul(p2pBorrowIndex[_poolTokenAddress]) +
             userBorrowBalance.onPool.rayMul(poolIndexes[_poolTokenAddress].poolBorrowIndex);
+    }
+
+    /// @dev Gets all markets of the user.
+    /// @param _user The user address.
+    /// @return markets The markets the user is participating in.
+    function _getUserMarkets(address _user) internal view returns (address[] memory markets) {
+        markets = new address[](marketsCreated.length);
+        uint256 marketLength;
+        bytes32 userMarketsCached = userMarkets[_user];
+        unchecked {
+            for (uint256 i; i < markets.length; ++i) {
+                if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
+                    markets[marketLength] = marketsCreated[i];
+                    ++marketLength;
+                }
+            }
+        }
+
+        // Resize the array for return
+        assembly {
+            mstore(markets, marketLength)
+        }
+    }
+
+    /// @dev Calculates the value of the collateral.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _collateralValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 collateralValue) {
+        collateralValue =
+            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
+            _tokenUnit;
+    }
+
+    /// @dev Calculates the value of the debt.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _debtValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 debtValue) {
+        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
+            _tokenUnit
+        );
+    }
+
+    /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
+    /// @param _user The user address.
+    /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
+    /// @param _amountWithdrawn The amount that is being withdrawn.
+    /// @param _amountBorrowed The amount that is being borrowed.
+    /// @return values The struct containing health factor, collateral, debt, ltv, liquidation threshold values.
+    function _liquidityData(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _amountWithdrawn,
+        uint256 _amountBorrowed
+    ) internal returns (Types.LiquidityData memory values) {
+        Types.LiquidityStackVars memory vars;
+        Types.AssetLiquidityData memory assetData;
+
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        vars.userMarkets = userMarkets[_user];
+        vars.poolTokensLength = marketsCreated.length;
+
+        for (uint256 i; i < vars.poolTokensLength; ) {
+            vars.poolTokenAddress = marketsCreated[i];
+            vars.borrowMask = borrowMask[vars.poolTokenAddress];
+            if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
+                vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
+
+                if (vars.poolTokenAddress != _poolTokenAddress)
+                    _updateIndexes(vars.poolTokenAddress);
+
+                (
+                    assetData.ltv,
+                    assetData.liquidationThreshold,
+                    ,
+                    assetData.reserveDecimals,
+
+                ) = pool.getConfiguration(vars.underlyingAddress).getParamsMemory();
+
+                unchecked {
+                    assetData.tokenUnit = 10**assetData.reserveDecimals;
+                }
+
+                if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
+                    values.debtValue += _debtValue(
+                        vars.poolTokenAddress,
+                        _user,
+                        vars.underlyingPrice,
+                        assetData.tokenUnit
+                    );
+                }
+
+                // Cache current asset collateral value.
+                uint256 assetCollateralValue;
+                if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
+                    assetCollateralValue = _collateralValue(
+                        vars.poolTokenAddress,
+                        _user,
+                        vars.underlyingPrice,
+                        assetData.tokenUnit
+                    );
+                    values.collateralValue += assetCollateralValue;
+                    // Calculate LTV for borrow.
+                    values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
+                }
+
+                // Add debt value for borrowed token.
+                if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
+                    values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                        assetData.tokenUnit
+                    );
+
+                // Update LT variable for withdraw.
+                if (assetCollateralValue > 0)
+                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                        assetData.liquidationThreshold
+                    );
+
+                // Subtract from liquidation threshold value and collateral value for withdrawn token.
+                if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
+                    values.collateralValue -=
+                        (_amountWithdrawn * vars.underlyingPrice) /
+                        assetData.tokenUnit;
+                    values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
+                        assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 }

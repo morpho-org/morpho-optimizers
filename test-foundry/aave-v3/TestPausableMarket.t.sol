@@ -13,7 +13,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.setPauseStatus(aDai, true);
 
         morpho.setPauseStatus(aDai, true);
-        (, bool isPaused, ) = morpho.marketStatus(aDai);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
         assertTrue(isPaused, "paused is false");
     }
 
@@ -22,27 +22,43 @@ contract TestPausableMarket is TestSetup {
         supplier1.setPartialPauseStatus(aDai, true);
 
         morpho.setPartialPauseStatus(aDai, true);
-        (, , bool isPartiallyPaused) = morpho.marketStatus(aDai);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
+    }
+
+    function testAllMarketsPauseUnpause() public {
+        morpho.setPauseStatusForAllMarkets(true);
+
+        for (uint256 i; i < pools.length; ++i) {
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
+            assertTrue(isPaused, "paused is false");
+        }
+
+        morpho.setPauseStatusForAllMarkets(false);
+
+        for (uint256 i; i < pools.length; ++i) {
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
+            assertFalse(isPaused, "paused is true");
+        }
     }
 
     function testPauseUnpause() public {
         morpho.setPauseStatus(aDai, true);
-        (, bool isPaused, ) = morpho.marketStatus(aDai);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
         assertTrue(isPaused, "paused is false");
 
         morpho.setPauseStatus(aDai, false);
-        (, isPaused, ) = morpho.marketStatus(aDai);
+        (, , , , isPaused, , ) = morpho.market(aDai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
         morpho.setPartialPauseStatus(aDai, true);
-        (, , bool isPartiallyPaused) = morpho.marketStatus(aDai);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
         morpho.setPartialPauseStatus(aDai, false);
-        (, , isPartiallyPaused) = morpho.marketStatus(aDai);
+        (, , , , , isPartiallyPaused, ) = morpho.market(aDai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
@@ -75,41 +91,37 @@ contract TestPausableMarket is TestSetup {
         morpho.claimToTreasury(aDaiArray, amountArray);
     }
 
-    function testShouldDisableAllMarketsWhenGloballyPaused() public {
+    function testShouldDisableAllMarketsWhenGloballyPaused(uint8 _random1, uint8 _random2) public {
         morpho.setPauseStatusForAllMarkets(true);
 
         uint256 poolsLength = pools.length;
-        for (uint256 i; i < poolsLength; ++i) {
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-            supplier1.supply(pools[i], 1);
+        address market1 = pools[_random1 % poolsLength];
+        address market2 = pools[_random2 % poolsLength];
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-            supplier1.borrow(pools[i], 1);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.supply(market1, 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-            supplier1.withdraw(pools[i], 1);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.borrow(market1, 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-            supplier1.repay(pools[i], 1);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.withdraw(market1, 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-            supplier1.liquidate(pools[i], pools[0], address(supplier1), 1);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.repay(market1, 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-            supplier1.liquidate(pools[0], pools[i], address(supplier1), 1);
-        }
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.liquidate(market1, market2, address(supplier1), 1);
     }
 
     function testShouldDisableMarketWhenPaused() public {
-        // TODO: fix that.
-        deal(usdt, address(morpho), 1);
-
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, amount);
 
         (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
+        toBorrow = toBorrow / 2;
         supplier1.borrow(aUsdc, toBorrow);
 
         morpho.setPauseStatus(aDai, true);

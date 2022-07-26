@@ -67,15 +67,15 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolTokenAddress) external view returns (bool) {
-        return morpho.marketStatus(_poolTokenAddress).isCreated;
+        return morpho.market(_poolTokenAddress).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        return marketStatus.isCreated && !marketStatus.isPaused;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        return market.isCreated && !market.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
@@ -86,15 +86,15 @@ contract Lens {
         view
         returns (bool)
     {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        return marketStatus.isCreated && !marketStatus.isPaused && !marketStatus.isPartiallyPaused;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
     }
 
     /// @notice Returns the current balance state of the user.
     /// @param _user The user to determine liquidity for.
     /// @return liquidityData The liquidity data of the user.
     function getUserBalanceStates(address _user)
-        external
+        public
         view
         returns (Types.LiquidityData memory liquidityData)
     {
@@ -111,46 +111,20 @@ contract Lens {
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
-        Types.LiquidityData memory data;
-        Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 numberOfCreatedMarkets = createdMarkets.length;
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
-
-            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(_user, poolToken)) {
-                assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
-
-                data.collateralValue += assetData.collateralValue;
-                data.debtValue += assetData.debtValue;
-                data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
-
-        data.collateralValue += assetData.collateralValue;
-        data.debtValue += assetData.debtValue;
-        data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-        data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-            assetData.liquidationThreshold
+        Types.LiquidityData memory data = getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
+        Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            _user,
+            _poolTokenAddress,
+            oracle
         );
-
-        data.healthFactor = data.debtValue == 0
-            ? type(uint256).max
-            : data.liquidationThresholdValue.wadDiv(data.debtValue);
+        uint256 healthFactor = data.debtValue > 0
+            ? data.liquidationThresholdValue.wadDiv(data.debtValue)
+            : type(uint256).max;
 
         // Not possible to withdraw nor borrow.
-        if (data.healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
+        if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
         if (data.debtValue == 0)
             withdrawable =
@@ -178,11 +152,11 @@ contract Lens {
         address _poolTokenAddress,
         IPriceOracleGetter _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
-        address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
-        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In ETH.
+        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
-        .getConfiguration(underlyingAddress)
+        .getConfiguration(underlyingToken)
         .getParamsMemory();
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
@@ -251,10 +225,39 @@ contract Lens {
                 ++i;
             }
         }
+    }
 
-        liquidityData.healthFactor = liquidityData.debtValue == 0
-            ? type(uint256).max
-            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+    /// @dev Returns the hypothetical health factor of a user
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return healthFactor The health factor of the user.
+    function getUserHypotheticalHealthFactor(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) public view returns (uint256 healthFactor) {
+        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        healthFactor = liquidityData.debtValue > 0
+            ? liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue)
+            : type(uint256).max;
+    }
+
+    /// @dev Returns the current health factor of a user
+    /// @param _user The user to determine liquidity for.
+    /// @return healthFactor The health factor of the user.
+    function getUserHealthFactor(address _user) public view returns (uint256 healthFactor) {
+        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
+        healthFactor = liquidityData.debtValue > 0
+            ? liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue)
+            : type(uint256).max;
     }
 
     /// @notice Returns the updated peer-to-peer indexes.
@@ -271,7 +274,7 @@ contract Lens {
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+            Types.Market memory market = morpho.market(_poolTokenAddress);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
@@ -284,8 +287,8 @@ contract Lens {
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
             );
 
@@ -301,7 +304,7 @@ contract Lens {
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+            Types.Market memory market = morpho.market(_poolTokenAddress);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
@@ -314,8 +317,8 @@ contract Lens {
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
             );
 
@@ -331,7 +334,7 @@ contract Lens {
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+            Types.Market memory market = morpho.market(_poolTokenAddress);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
@@ -344,8 +347,8 @@ contract Lens {
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
+                market.reserveFactor,
+                market.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
             );
 
@@ -388,7 +391,7 @@ contract Lens {
 
     /// @notice Returns market's configuration.
     /// @return isCreated_ Whether the market is created or not.
-    /// @return p2pDisabled_ Whether user are put in peer-to-peer or not.
+    /// @return isP2PDisabled_ Whether user are put in peer-to-peer or not.
     /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor_ The reserve actor applied to this market.
@@ -397,18 +400,18 @@ contract Lens {
         view
         returns (
             bool isCreated_,
-            bool p2pDisabled_,
+            bool isP2PDisabled_,
             bool isPaused_,
             bool isPartiallyPaused_,
             uint256 reserveFactor_
         )
     {
-        Types.MarketStatus memory marketStatus_ = morpho.marketStatus(_poolTokenAddress);
-        isCreated_ = marketStatus_.isCreated;
-        p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
-        isPaused_ = marketStatus_.isPaused;
-        isPartiallyPaused_ = marketStatus_.isPartiallyPaused;
-        reserveFactor_ = morpho.marketParameters(_poolTokenAddress).reserveFactor;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        isCreated_ = market.isCreated;
+        isP2PDisabled_ = market.isP2PDisabled;
+        isPaused_ = market.isPaused;
+        isPartiallyPaused_ = market.isPartiallyPaused;
+        reserveFactor_ = market.reserveFactor;
     }
 
     /// INTERNAL ///
@@ -598,10 +601,10 @@ contract Lens {
         view
         returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
-        address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
         return (
-            pool.getReserveNormalizedIncome(underlyingAddress),
-            pool.getReserveNormalizedVariableDebt(underlyingAddress)
+            pool.getReserveNormalizedIncome(underlyingToken),
+            pool.getReserveNormalizedVariableDebt(underlyingToken)
         );
     }
 

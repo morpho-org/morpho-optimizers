@@ -31,12 +31,10 @@ interface IMorpho {
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
     function deltas(address) external view returns (Types.Delta memory);
-    function marketParameters(address) external view returns (Types.MarketParameters memory);
-    function p2pDisabled(address) external view returns (bool);
+    function market(address) external view returns (Types.Market memory);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
     function poolIndexes(address) external view returns (Types.PoolIndexes memory);
-    function marketStatus(address) external view returns (Types.MarketStatus memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
@@ -46,8 +44,8 @@ interface IMorpho {
     function incentivesVault() external view returns (IIncentivesVault);
     function pool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
-    function borrowMask(address) external view returns (uint256);
-    function userMarkets(address) external view returns (uint256);
+    function borrowMask(address) external view returns (bytes32);
+    function userMarkets(address) external view returns (bytes32);
 
     /// UTILS ///
 
@@ -66,7 +64,7 @@ interface IMorpho {
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
-    function setP2PDisabled(address _poolTokenAddress, bool _p2pDisabled) external;
+    function setP2PDisabledStatus(address _poolTokenAddress, bool _isP2PDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function setPauseStatusForAllMarkets(bool _newStatus) external;
@@ -77,7 +75,7 @@ interface IMorpho {
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function claimToTreasury(address[] calldata _poolTokenAddresses) external;
-    function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams) external;
+    function createMarket(address _underlyingToken, uint16 _reserveFactor, uint16 _p2pIndexCursor) external;
 
     /// USERS ///
 

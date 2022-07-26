@@ -20,29 +20,40 @@ contract TestLens is TestSetup {
         supplier1.supply(aDai, amount);
 
         (, , , , , uint256 healthFactor) = pool.getUserAccountData(address(morpho));
-        Types.LiquidityData memory liquidityData = lens.getUserHypotheticalBalanceStates(
-            address(supplier1),
-            address(0),
-            0,
-            0
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after supply"
         );
-        assertEq(liquidityData.healthFactor, healthFactor, "after supply");
 
         supplier1.borrow(aUsdc, toBorrow);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        liquidityData = lens.getUserHypotheticalBalanceStates(address(supplier1), address(0), 0, 0);
-        assertEq(liquidityData.healthFactor, healthFactor, "after borrow");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after borrow"
+        );
 
         supplier1.withdraw(aDai, 2 ether);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        liquidityData = lens.getUserHypotheticalBalanceStates(address(supplier1), address(0), 0, 0);
-        assertEq(liquidityData.healthFactor, healthFactor, "after withdraw");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after withdraw"
+        );
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.repay(aUsdc, 2 ether);
         (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        liquidityData = lens.getUserHypotheticalBalanceStates(address(supplier1), address(0), 0, 0);
-        assertEq(liquidityData.healthFactor, healthFactor, "after repay");
+        assertApproxEqAbs(
+            lens.getUserHealthFactor(address(supplier1)),
+            healthFactor,
+            healthFactor / 1e8,
+            "after repay"
+        );
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
@@ -337,7 +348,9 @@ contract TestLens is TestSetup {
             liquidationThresholdDai
         );
         expectedStates.maxLoanToValue = expectedStates.collateralValue.percentMul(ltvDai);
-        expectedStates.healthFactor = expectedStates.liquidationThresholdValue.wadDiv(
+
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debtValue);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debtValue
         );
 
@@ -349,7 +362,7 @@ contract TestLens is TestSetup {
             "liquidationThresholdValue"
         );
         assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        assertEq(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrowWithMultipleAssets() public {
@@ -403,7 +416,8 @@ contract TestLens is TestSetup {
             (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
             10**reserveDecimals;
 
-        expectedStates.healthFactor = expectedStates.liquidationThresholdValue.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debtValue);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debtValue
         );
 
@@ -420,7 +434,7 @@ contract TestLens is TestSetup {
             "liquidationThresholdValue"
         );
         assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        assertEq(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
@@ -500,7 +514,8 @@ contract TestLens is TestSetup {
         (, , , reserveDecimals, ) = pool.getConfiguration(usdt).getParamsMemory();
         expectedStates.debtValue += (toBorrow * oracle.getAssetPrice(usdt)) / 10**reserveDecimals;
 
-        expectedStates.healthFactor = expectedStates.liquidationThresholdValue.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debtValue);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debtValue
         );
 
@@ -517,7 +532,7 @@ contract TestLens is TestSetup {
             "liquidationThresholdValue"
         );
         assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        assertEq(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
     function testEnteredMarkets() public {
@@ -572,20 +587,28 @@ contract TestLens is TestSetup {
     function testGetMarketConfiguration() public {
         (
             bool isCreated,
-            bool p2pDisabled,
+            bool isP2PDisabled,
             bool isPaused,
             bool isPartiallyPaused,
             uint256 reserveFactor
         ) = lens.getMarketConfiguration(aDai);
 
-        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(aDai);
+        (
+            ,
+            ,
+            ,
+            bool isCreated_,
+            bool isPaused_,
+            bool isPartiallyPaused_,
+            bool isP2PDisabled_
+        ) = morpho.market(aDai);
 
         assertTrue(isCreated == isCreated_);
-        assertTrue(p2pDisabled == morpho.p2pDisabled(aDai));
+        assertTrue(isP2PDisabled == isP2PDisabled_);
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
-        (uint16 expectedReserveFactor, ) = morpho.marketParameters(aDai);
+        (, uint16 expectedReserveFactor, , , , , ) = morpho.market(aDai);
         assertTrue(reserveFactor == expectedReserveFactor);
     }
 

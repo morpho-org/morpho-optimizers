@@ -1,9 +1,10 @@
-name: Foundry tests
+name: Foundry tests (Morpho-Compound)
 
 on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     paths:
       - "lib/**"
@@ -16,50 +17,20 @@ on:
       - "Makefile"
       - "foundry.toml"
       - "remappings.txt"
+      - ".github/actions/ci-foundry/*"
       - ".github/workflows/ci-foundry-compound.yml"
 
 jobs:
   morpho-compound-eth-mainnet:
-    name: Morpho-Compound [eth-mainnet]
+    name: eth-mainnet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - uses: actions/setup-node@v3
+      - uses: ./.github/actions/ci-foundry
         with:
-          node-version: "16"
-
-      - name: Node dependencies cache
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: yarn-${{ hashFiles('**/yarn.lock') }}
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Foundry fork cache
-        uses: actions/cache@v3
-        with:
-          path: "~/.foundry/cache"
-          key: foundry-${{ hashFiles('**/Makefile', '**/foundry.toml') }} # where fork block numbers & RPC are stored
-
-      - name: Foundry out cache
-        uses: actions/cache@v3
-        with:
-          path: "**/out"
-          key: foundry-out-compound # always keep compiled contracts from base branch
-
-      - name: Run tests
-        run: make test
-        env:
-          PROTOCOL: compound
-          NETWORK: eth-mainnet
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          alchemyKey: ${{ secrets.ALCHEMY_KEY }}
+          protocol: compound
+          network: eth-mainnet

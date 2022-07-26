@@ -61,7 +61,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct SupplyVars {
-        uint256 borrowMask;
+        bytes32 borrowMask;
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
@@ -69,8 +69,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct BorrowAllowedVars {
-        uint256 userMarkets;
         uint256 i;
+        bytes32 userMarkets;
         uint256 numberOfMarketsCreated;
     }
 
@@ -98,16 +98,16 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
             _setSupplying(_onBehalf, vars.borrowMask, true);
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.poolBorrowIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
         vars.remainingToSupply = _amount;
 
-        /// Supply in peer-to-peer ///
+        /// Peer-to-peer supply ///
 
-        // Match borrow peer-to-peer delta first if any.
+        // Match peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
@@ -122,10 +122,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
         }
 
-        // Match pool borrowers if any.
+        // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchBorrowers(
@@ -151,8 +151,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
-        /// Supply on pool ///
+        /// Pool supply ///
 
+        // Supply on pool.
         if (vars.remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
                 poolIndexes[_poolTokenAddress].poolSupplyIndex
@@ -183,13 +184,13 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_amount == 0) revert AmountIsZero();
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(market[_poolTokenAddress].underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
 
-        uint256 borrowMask = borrowMask[_poolTokenAddress];
+        bytes32 borrowMask = borrowMask[_poolTokenAddress];
         if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
             _setBorrowing(msg.sender, borrowMask, true);
 
@@ -200,9 +201,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
 
-        /// Borrow in peer-to-peer ///
+        /// Peer-to-peer borrow ///
 
-        // Match supply peer-to-peer delta first if any.
+        // Match peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
@@ -217,10 +218,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
         }
 
-        // Match pool suppliers if any.
+        // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
+            !market[_poolTokenAddress].isP2PDisabled &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchSuppliers(
@@ -248,8 +249,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             _withdrawFromPool(underlyingToken, _poolTokenAddress, toWithdraw); // Reverts on error.
         }
 
-        /// Borrow on pool ///
+        /// Pool borrow ///
 
+        // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.rayDiv(
                 poolIndexes[_poolTokenAddress].poolBorrowIndex
@@ -279,62 +281,22 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
-        // In response, Morpho mirrors this behavior.
-        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-        if (
-            priceOracleSentinel != address(0) &&
-            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
-        ) return false;
-
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-
-        BorrowAllowedVars memory vars;
-        Types.AssetLiquidityData memory assetData;
-        Types.LiquidityData memory liquidityData;
-        vars.numberOfMarketsCreated = marketsCreated.length;
-        vars.userMarkets = userMarkets[_user];
-
-        for (; vars.i < vars.numberOfMarketsCreated; ) {
-            address poolToken = marketsCreated[vars.i];
-            uint256 borrowMask = borrowMask[poolToken];
-
-            if (_isSupplyingOrBorrowing(vars.userMarkets, borrowMask)) {
-                if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
-
-                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-                (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-                .getConfiguration(underlyingAddress)
-                .getParams();
-                assetData.tokenUnit = 10**assetData.reserveDecimals;
-
-                if (_isBorrowing(vars.userMarkets, borrowMask))
-                    liquidityData.debtValue +=
-                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-
-                if (_isSupplying(vars.userMarkets, borrowMask)) {
-                    assetData.collateralValue =
-                        (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-
-                    liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(
-                        assetData.ltv
-                    );
-                }
-
-                if (_poolTokenAddress == poolToken)
-                    liquidityData.debtValue +=
-                        (_borrowedAmount * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-            }
-
-            unchecked {
-                ++vars.i;
-            }
+        {
+            // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+            // In response, Morpho mirrors this behavior.
+            address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+            if (
+                priceOracleSentinel != address(0) &&
+                !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+            ) return false;
         }
 
-        return liquidityData.debtValue <= liquidityData.maxLoanToValue;
+        Types.LiquidityData memory values = _liquidityData(
+            _user,
+            _poolTokenAddress,
+            0,
+            _borrowedAmount
+        );
+        return values.debtValue <= values.maxLoanToValue;
     }
 }
