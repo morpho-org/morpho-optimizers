@@ -215,13 +215,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
         {
-            IPool poolMem = pool;
-            (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
+            ILendingPool poolMem = pool;
+            (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
             .getConfiguration(tokenCollateralAddress)
-            .getParams();
-            (, , , vars.borrowedReserveDecimals, , ) = poolMem
+            .getParamsMemory();
+            (, , , vars.borrowedReserveDecimals, ) = poolMem
             .getConfiguration(tokenBorrowedAddress)
-            .getParams();
+            .getParamsMemory();
         }
 
         unchecked {
