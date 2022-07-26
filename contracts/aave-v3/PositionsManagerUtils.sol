@@ -95,6 +95,6 @@ abstract contract PositionsManagerUtils is MatchingEngine {
             0
         ) return;
 
-        pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this));
+        pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this)); // Reverts if debt is 0.
     }
 }
