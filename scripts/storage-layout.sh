@@ -32,19 +32,19 @@ if [[ $func == "check" ]]; then
   new_filename=${filename}.temp
   generate $new_filename
   if ! cmp -s $filename $new_filename ; then
-    echo "storage layout test: fails ❌"
+    echo "Storage layout test: fails ❌"
     echo "The following lines are different:"
     diff -a --suppress-common-lines "$filename" "$new_filename"
     rm $new_filename
     exit 1
   else
-    echo "storage layout test: passes ✅"
+    echo "Storage layout test: passes ✅"
     rm $new_filename
     exit 0
   fi
 elif [[ $func == "generate" ]]; then
   generate "$filename"
 else
-  echo "unknown command. Use 'generate' or 'check' as the first argument."
+  echo "Unknown command. Use 'generate' or 'check' as the first argument."
   exit 1
 fi
