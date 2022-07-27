@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
-import "./interfaces/IGetterUnderlyingAsset.sol";
+import "./interfaces/IPoolToken.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
@@ -38,15 +37,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
     mapping(address => mapping(address => RewardData)) internal localAssetData; // The local data related to a given asset (either aToken or debt token). asset -> reward -> RewardData
 
-    IRewardsController public rewardsController;
     IMorpho public morpho;
     IPool public pool;
 
     /// EVENTS ///
-
-    /// @notice Emitted when the address of the `rewardsController` is set.
-    /// @param _rewardsController The new address of the `rewardsController`.
-    event RewardsControllerSet(address indexed _rewardsController);
 
     /// @dev Emitted when rewards of an asset are accrued on behalf of a user.
     /// @param _asset The address of the incentivized asset.
@@ -94,35 +88,28 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         __Ownable_init();
 
         morpho = IMorpho(_morpho);
-        rewardsController = IMorpho(_morpho).rewardsController();
         pool = IPool(morpho.pool());
     }
 
     /// EXTERNAL ///
 
-    /// @notice Sets the `rewardsController`.
-    /// @param _rewardsController The address of the `rewardsController`.
-    function setRewardsController(address _rewardsController) external onlyOwner {
-        rewardsController = IRewardsController(_rewardsController);
-        emit RewardsControllerSet(_rewardsController);
-    }
-
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @param _rewardsController The rewards controller used to query active rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return rewardsList The list of reward tokens.
     /// @return claimedAmounts The list of claimed reward amounts.
-    function claimRewards(address[] calldata _assets, address _user)
-        external
-        onlyMorpho
-        returns (address[] memory rewardsList, uint256[] memory claimedAmounts)
-    {
-        rewardsList = rewardsController.getRewardsList();
+    function claimRewards(
+        IRewardsController _rewardsController,
+        address[] calldata _assets,
+        address _user
+    ) external onlyMorpho returns (address[] memory rewardsList, uint256[] memory claimedAmounts) {
+        rewardsList = _rewardsController.getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         uint256 assetsLength = _assets.length;
         claimedAmounts = new uint256[](rewardsListLength);
 
-        _updateDataMultiple(_user, _getUserAssetBalances(_assets, _user));
+        _updateDataMultiple(_rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
         for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
@@ -150,17 +137,19 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
     /// @notice Updates the unclaimed rewards of a user.
     /// @dev Only called by Morpho at positions updates in the data structure.
+    /// @param _rewardsController The rewards controller used to query active rewards.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The current total supply of underlying assets for this distribution.
     function updateUserAssetAndAccruedRewards(
+        IRewardsController _rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) external onlyMorpho {
-        _updateData(_user, _asset, _userBalance, _totalSupply);
+        _updateData(_rewardsController, _user, _asset, _userBalance, _totalSupply);
     }
 
     /// @notice Returns user's accrued rewards for the specified assets and reward token
@@ -194,7 +183,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         returns (address[] memory rewardsList, uint256[] memory unclaimedAmounts)
     {
         UserAssetBalance[] memory userAssetBalances = _getUserAssetBalances(_assets, _user);
-        rewardsList = rewardsController.getRewardsList();
+        rewardsList = morpho.rewardsController().getRewardsList();
         uint256 rewardsListLength = rewardsList.length;
         unclaimedAmounts = new uint256[](rewardsListLength);
 
@@ -320,24 +309,25 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Iterates and accrues all the rewards for asset of the specific user.
+    /// @param _rewardsController The rewards controller used to query active rewards.
     /// @param _user The user address.
     /// @param _asset The address of the reference asset of the distribution.
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The total supply of the asset.
     function _updateData(
+        IRewardsController _rewardsController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) internal {
-        address[] memory availableRewards = rewardsController.getRewardsByAsset(_asset);
-        uint256 numAvailableRewards = availableRewards.length;
-        if (numAvailableRewards == 0) return;
+        address[] memory availableRewards = _rewardsController.getRewardsByAsset(_asset);
+        if (availableRewards.length == 0) return;
 
         unchecked {
-            uint256 assetUnit = 10**rewardsController.getAssetDecimals(_asset);
+            uint256 assetUnit = 10**_rewardsController.getAssetDecimals(_asset);
 
-            for (uint128 i; i < numAvailableRewards; ++i) {
+            for (uint128 i; i < availableRewards.length; ++i) {
                 address reward = availableRewards[i];
                 RewardData storage localRewardData = localAssetData[_asset][reward];
 
@@ -373,12 +363,15 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @dev Accrues all the rewards of the assets specified in the userAssetBalances list.
     /// @param _user The address of the user.
     /// @param _userAssetBalances The list of structs with the user balance and total supply of a set of assets.
-    function _updateDataMultiple(address _user, UserAssetBalance[] memory _userAssetBalances)
-        internal
-    {
+    function _updateDataMultiple(
+        IRewardsController _rewardsController,
+        address _user,
+        UserAssetBalance[] memory _userAssetBalances
+    ) internal {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
         for (uint256 i; i < userAssetBalancesLength; ) {
             _updateData(
+                _rewardsController,
                 _user,
                 _userAssetBalances[i].asset,
                 _userAssetBalances[i].balance,
@@ -431,7 +424,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         uint256 assetUnit;
         unchecked {
-            assetUnit = 10**rewardsController.getAssetDecimals(_userAssetBalance.asset);
+            assetUnit = 10**morpho.rewardsController().getAssetDecimals(_userAssetBalance.asset);
         }
 
         (, uint256 nextIndex) = _getAssetIndex(
@@ -493,7 +486,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 uint256 emissionPerSecond,
                 uint256 lastUpdateTimestamp,
                 uint256 distributionEnd
-            ) = rewardsController.getRewardsData(_asset, _reward);
+            ) = morpho.rewardsController().getRewardsData(_asset, _reward);
 
             if (
                 emissionPerSecond == 0 ||
@@ -532,7 +525,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             userAssetBalances[i].asset = asset;
 
             DataTypes.ReserveData memory reserve = pool.getReserveData(
-                IGetterUnderlyingAsset(userAssetBalances[i].asset).UNDERLYING_ASSET_ADDRESS()
+                IPoolToken(userAssetBalances[i].asset).UNDERLYING_ASSET_ADDRESS()
             );
 
             if (asset == reserve.aTokenAddress)

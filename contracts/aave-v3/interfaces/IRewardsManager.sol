@@ -6,10 +6,6 @@ import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 interface IRewardsManager {
     function initialize(address _morpho) external;
 
-    function rewardsController() external view returns (IRewardsController);
-
-    function setRewardsController(address) external;
-
     function getUserAccruedRewards(
         address[] calldata _assets,
         address _user,
@@ -33,14 +29,17 @@ interface IRewardsManager {
         address _reward
     ) external view returns (uint256);
 
-    function claimRewards(address[] calldata _assets, address _user)
-        external
-        returns (address[] memory rewardsList, uint256[] memory claimedAmounts);
+    function claimRewards(
+        IRewardsController _rewardsController,
+        address[] calldata _assets,
+        address _user
+    ) external returns (address[] memory rewardsList, uint256[] memory claimedAmounts);
 
     function updateUserAssetAndAccruedRewards(
-        address,
-        address,
-        uint256,
-        uint256
+        IRewardsController _rewardsController,
+        address _user,
+        address _asset,
+        uint256 _userBalance,
+        uint256 _totalSupply
     ) external;
 }

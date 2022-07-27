@@ -196,7 +196,13 @@ contract Morpho is MorphoGovernance {
         returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
     {
         if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(_assets, msg.sender);
+
+        IRewardsController rewardsController = rewardsController;
+        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(
+            rewardsController,
+            _assets,
+            msg.sender
+        );
         uint256 rewardTokensLength = rewardTokens.length;
 
         rewardsController.claimAllRewardsToSelf(_assets);
