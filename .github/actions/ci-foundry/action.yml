@@ -61,9 +61,15 @@ runs:
       id: gas_diff
 
     - name: Add gas diff to sticky comment
-      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+      if: contains(github.event_name, 'pull_request') && steps.gas_diff.outputs.markdown
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         header: ${{ inputs.protocol }} (${{ inputs.network }})
         message: ${{ steps.gas_diff.outputs.markdown }}
-        delete: ${{ !steps.gas_diff.outputs.markdown }} # delete the comment in case changes no longer impacts gas costs
+
+    - name: Delete sticky comment when no gas diff
+      if: contains(github.event_name, 'pull_request') && !steps.gas_diff.outputs.markdown
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        header: ${{ inputs.protocol }} (${{ inputs.network }})
+        delete: true
