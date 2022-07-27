@@ -27,7 +27,7 @@ jobs:
       - name: Foundry fork cache
         uses: actions/cache@v3
         with:
-          path: "~/.foundry/cache"
+          path: "~/.foundry/out"
           key: foundry-${{ hashFiles('Makefile', 'foundry.toml') }} # where fork block numbers & RPC are stored
 
       - name: Run tests
