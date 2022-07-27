@@ -104,6 +104,14 @@ ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv --match-test $* > trace.ansi
 
+storage-layout-generate:
+	$(eval FOUNDRY_SRC=contracts/${PROTOCOL}/)
+	@./scripts/storage-layout.sh generate .storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+
+storage-layout-check: 
+	$(eval FOUNDRY_SRC=contracts/${PROTOCOL}/)
+	@./scripts/storage-layout.sh check .storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+
 config:
 	@forge config
 
