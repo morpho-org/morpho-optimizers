@@ -43,8 +43,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public p2pDisabled; // Whether the peer-to-peer market is open or not.
-    mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in wad).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in wad).
+    mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in wad).
     mapping(address => Types.LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
     mapping(address => Types.MarketStatus) public marketStatus; // Market status.
