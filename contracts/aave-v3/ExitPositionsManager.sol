@@ -187,7 +187,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount
     ) external {
         if (
-            !_isBorrowingFirstAndSupplyingSecond(
+            !_isBorrowingAndSupplying(
                 userMarkets[_borrower],
                 borrowMask[_poolTokenBorrowedAddress],
                 borrowMask[_poolTokenCollateralAddress]
