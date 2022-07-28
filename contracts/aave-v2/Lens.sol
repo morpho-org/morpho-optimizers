@@ -9,9 +9,9 @@ import "./interfaces/IMorpho.sol";
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho/data-structures/contracts/HeapOrdering.sol";
-import "../common/libraries/PercentageMath.sol";
-import "../common/libraries/WadRayMath.sol";
-import "./libraries/Math.sol";
+import "@morpho/morpho-utils/math/PercentageMath.sol";
+import "@morpho/morpho-utils/math/WadRayMath.sol";
+import "@morpho/morpho-utils/math/Math.sol";
 
 /// @title Lens.
 /// @author Morpho Labs.

@@ -5,10 +5,10 @@ import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
 import {ReserveConfiguration, DataTypes} from "./libraries/aave/ReserveConfiguration.sol";
-import {PercentageMath} from "../common/libraries/PercentageMath.sol";
-import {WadRayMath} from "../common/libraries/WadRayMath.sol";
-import "../common/libraries/DelegateCall.sol";
-import "./libraries/Math.sol";
+import "@morpho/morpho-utils/DelegateCall.sol";
+import "@morpho/morpho-utils/math/PercentageMath.sol";
+import "@morpho/morpho-utils/math/WadRayMath.sol";
+import "@morpho/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 
