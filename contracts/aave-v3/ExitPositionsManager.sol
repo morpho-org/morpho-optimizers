@@ -194,17 +194,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             )
         ) revert UserNotMemberOfMarket();
 
-        LiquidateVars memory vars;
-
         _updateIndexes(_poolTokenBorrowedAddress);
         _updateIndexes(_poolTokenCollateralAddress);
 
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        LiquidateVars memory vars;
-        address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenBorrowedAddress = market[_poolTokenBorrowedAddress].underlyingToken;
 
         uint256 amountToLiquidate = Math.min(
             _amount,
@@ -215,6 +211,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
+        LiquidateVars memory vars;
         {
             IPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
