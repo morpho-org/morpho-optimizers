@@ -18,3 +18,6 @@
 	path = lib/solmate
 	url = https://github.com/Rari-Capital/solmate
 	ignore = dirty
+[submodule "lib/morpho-utils"]
+	path = lib/morpho-utils
+	url = https://github.com/morpho-labs/morpho-utils
