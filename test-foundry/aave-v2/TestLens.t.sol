@@ -223,6 +223,43 @@ contract TestLens is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
+    function testMaxCapacitiesWithSupplyAndBorrow() public {
+        uint256 amount = 100 ether;
+
+        borrower1.approve(aave, amount);
+        borrower1.supply(aAave, amount);
+
+        (uint256 withdrawableAaveBefore, uint256 borrowableAaveBefore) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
+        (uint256 withdrawableDaiBefore, uint256 borrowableDaiBefore) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+
+        borrower1.borrow(aDai, borrowableDaiBefore / 2);
+
+        (uint256 withdrawableAaveAfter, uint256 borrowableAaveAfter) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
+        (uint256 withdrawableDaiAfter, uint256 borrowableDaiAfter) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+
+        (uint256 ltvAave, , , , ) = pool.getConfiguration(aave).getParamsMemory();
+
+        assertEq(withdrawableAaveBefore, amount, "cannot withdraw all AAVE");
+        assertEq(borrowableAaveBefore, amount.percentMul(ltvAave), "cannot borrow all AAVE");
+        assertEq(withdrawableDaiBefore, 0, "can withdraw DAI not supplied");
+        assertApproxEqAbs(
+            borrowableDaiBefore,
+            amount.percentMul(ltvAave).wadMul(
+                oracle.getAssetPrice(aave).wadDiv(oracle.getAssetPrice(dai))
+            ),
+            1e3,
+            "cannot borrow all DAI"
+        );
+        assertEq(withdrawableAaveAfter, withdrawableAaveBefore / 2, "cannot withdraw half AAVE");
+        assertEq(borrowableAaveAfter, borrowableAaveBefore / 2, "cannot borrow half AAVE");
+        assertEq(withdrawableDaiAfter, withdrawableDaiBefore / 2, "cannot wiothdraw half DAI");
+        assertEq(borrowableDaiAfter, borrowableDaiBefore / 2, "cannot borrow half DAI");
+    }
+
     function testUserBalanceWithoutMatching() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
