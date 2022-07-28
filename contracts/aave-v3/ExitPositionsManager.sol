@@ -105,7 +105,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
-        bytes32 userMarkets;
         uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
@@ -187,12 +186,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
-        LiquidateVars memory vars;
-        vars.userMarkets = userMarkets[_borrower];
         if (
-            !_isBorrowing(vars.userMarkets, borrowMask[_poolTokenBorrowedAddress]) ||
-            !_isSupplying(vars.userMarkets, borrowMask[_poolTokenCollateralAddress])
+            !_isBorrowingAndSupplying(
+                userMarkets[_borrower],
+                borrowMask[_poolTokenBorrowedAddress],
+                borrowMask[_poolTokenCollateralAddress]
+            )
         ) revert UserNotMemberOfMarket();
+
+        LiquidateVars memory vars;
 
         _updateIndexes(_poolTokenBorrowedAddress);
         _updateIndexes(_poolTokenCollateralAddress);
@@ -211,12 +213,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-        .getConfiguration(tokenCollateralAddress)
-        .getParams();
-        (, , , vars.borrowedReserveDecimals, , ) = pool
-        .getConfiguration(tokenBorrowedAddress)
-        .getParams();
+        {
+            IPool poolMem = pool;
+            (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
+            .getConfiguration(tokenCollateralAddress)
+            .getParams();
+            (, , , vars.borrowedReserveDecimals, , ) = poolMem
+            .getConfiguration(tokenBorrowedAddress)
+            .getParams();
+        }
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
