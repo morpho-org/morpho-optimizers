@@ -21,49 +21,6 @@ contract TestLens is TestSetup {
         uint256 totalBalance;
     }
 
-    function testCheckHealthFactor() public {
-        uint256 amount = 10 ether;
-        uint256 toBorrow = to6Decimals(5 ether);
-        supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(aDai, amount);
-
-        (, , , , , uint256 healthFactor) = pool.getUserAccountData(address(morpho));
-        assertApproxEqAbs(
-            lens.getUserHealthFactor(address(supplier1)),
-            healthFactor,
-            healthFactor / 1e8,
-            "after supply"
-        );
-
-        supplier1.borrow(aUsdc, toBorrow);
-        (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        assertApproxEqAbs(
-            lens.getUserHealthFactor(address(supplier1)),
-            healthFactor,
-            healthFactor / 1e8,
-            "after borrow"
-        );
-
-        supplier1.withdraw(aDai, 2 ether);
-        (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        assertApproxEqAbs(
-            lens.getUserHealthFactor(address(supplier1)),
-            healthFactor,
-            healthFactor / 1e8,
-            "after withdraw"
-        );
-
-        supplier1.approve(usdc, type(uint256).max);
-        supplier1.repay(aUsdc, 2 ether);
-        (, , , , , healthFactor) = pool.getUserAccountData(address(morpho));
-        assertApproxEqAbs(
-            lens.getUserHealthFactor(address(supplier1)),
-            healthFactor,
-            healthFactor / 1e8,
-            "after repay"
-        );
-    }
-
     function testUserLiquidityDataForAssetWithNothing() public {
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
@@ -277,7 +234,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getCurrentSupplyBalanceInOf(address(borrower1), aDai);
+        .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -302,7 +259,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getCurrentBorrowBalanceInOf(address(borrower1), aUsdc);
+        .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -728,8 +685,8 @@ contract TestLens is TestSetup {
     function testGetOutdatedIndexes() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + (31 * 24 * 60 * 4));
@@ -758,8 +715,8 @@ contract TestLens is TestSetup {
     function testGetUpdatedIndexes() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + (31 * 24 * 60 * 4));
@@ -957,12 +914,11 @@ contract TestLens is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
-        (uint256 usdcLtv, , , , ) = pool.getConfiguration(dai).getParamsMemory();
-
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
-        uint256 expectedHealthFactor = (2 * amount).percentMul(usdcLtv).wadDiv(amount);
 
-        assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e8);
+        (, uint256 liquidationThreshold, , , ) = pool.getConfiguration(usdc).getParamsMemory();
+
+        assertEq(healthFactor, uint256(2 ether).percentMul(liquidationThreshold));
     }
 
     function testHealthFactorShouldBeInfinityForPureSuppliers() public {
@@ -990,12 +946,11 @@ contract TestLens is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
-        (uint256 usdcLtv, , , , ) = pool.getConfiguration(dai).getParamsMemory();
-
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
-        uint256 expectedHealthFactor = (2 * amount).percentMul(usdcLtv).wadDiv(amount);
 
-        assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e8);
+        (, uint256 liquidationThreshold, , , ) = pool.getConfiguration(usdc).getParamsMemory();
+
+        assertEq(healthFactor, uint256(2 ether).percentMul(liquidationThreshold));
     }
 
     function testHealthFactorEqual1() public {
@@ -1011,9 +966,13 @@ contract TestLens is TestSetup {
 
         uint256 borrower1HealthFactor = lens.getUserHealthFactor(address(borrower1));
 
+        oracle.setDirectPrice(usdc, 2e18); // let borrower2 borrow as much as they want
+
         borrower2.approve(usdc, to6Decimals(2 * amount));
         borrower2.supply(aUsdc, to6Decimals(2 * amount));
-        borrower2.borrow(aDai, amount.rayMul(borrower1HealthFactor));
+        borrower2.borrow(aDai, amount.wadMul(borrower1HealthFactor));
+
+        oracle.setDirectPrice(usdc, 1e18);
 
         uint256 borrower2HealthFactor = lens.getUserHealthFactor(address(borrower2));
 
@@ -1035,7 +994,11 @@ contract TestLens is TestSetup {
 
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
 
-        assertEq(healthFactor, 1e18);
+        (uint256 ltv, uint256 liquidationThreshold, , , ) = pool
+        .getConfiguration(usdc)
+        .getParamsMemory();
+
+        assertEq(healthFactor, uint256(1 ether).percentMul(liquidationThreshold).percentDiv(ltv));
     }
 
     // function testComputeLiquidation() public {
@@ -1329,8 +1292,8 @@ contract TestLens is TestSetup {
     function testTotalSupplyBorrowWithHalfSupplyDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(aave, amount);
+        borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -1339,7 +1302,7 @@ contract TestLens is TestSetup {
         _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
-        indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(wEth);
+        indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(aave);
         indexes.daiP2PBorrowIndexBefore = morpho.p2pBorrowIndex(aDai);
 
         hevm.roll(block.number + 1);
@@ -1349,7 +1312,7 @@ contract TestLens is TestSetup {
 
         {
             SimplePriceOracle oracle = createAndSetCustomPriceOracle();
-            oracle.setDirectPrice(wEth, 2 ether);
+            oracle.setDirectPrice(aave, 2 ether);
             oracle.setDirectPrice(dai, 1 ether);
         }
 
@@ -1362,10 +1325,10 @@ contract TestLens is TestSetup {
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
-        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(aWeth);
-        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(aWeth);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(aAave);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(aAave);
 
-        indexes.ethPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(wEth);
+        indexes.ethPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(aave);
         indexes.daiPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(dai);
         indexes.daiP2PBorrowIndexAfter = morpho.p2pBorrowIndex(aDai);
 
@@ -1418,8 +1381,8 @@ contract TestLens is TestSetup {
     function testTotalSupplyBorrowWithHalfBorrowDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(aave, amount);
+        borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -1428,7 +1391,7 @@ contract TestLens is TestSetup {
         _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
-        indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(wEth);
+        indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(aave);
         indexes.daiP2PSupplyIndexBefore = morpho.p2pSupplyIndex(aDai);
 
         hevm.roll(block.number + 1);
@@ -1437,7 +1400,7 @@ contract TestLens is TestSetup {
 
         {
             SimplePriceOracle oracle = createAndSetCustomPriceOracle();
-            oracle.setDirectPrice(wEth, 2 ether);
+            oracle.setDirectPrice(aave, 2 ether);
             oracle.setDirectPrice(dai, 1 ether);
         }
 
@@ -1450,10 +1413,10 @@ contract TestLens is TestSetup {
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
-        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(aWeth);
-        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(aWeth);
+        (amounts.ethP2PSupply, amounts.ethPoolSupply) = lens.getTotalMarketSupply(aAave);
+        (amounts.ethP2PBorrow, amounts.ethPoolBorrow) = lens.getTotalMarketBorrow(aAave);
 
-        indexes.ethPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(wEth);
+        indexes.ethPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(aave);
         indexes.daiPoolSupplyIndexAfter = pool.getReserveNormalizedIncome(dai);
         indexes.daiP2PSupplyIndexAfter = morpho.p2pSupplyIndex(aDai);
 

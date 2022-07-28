@@ -100,7 +100,7 @@ gas-report:
 
 test-common:
 	@echo Running all common tests on ${NETWORK}
-	@forge test -vvv -c test-foundry/common
+	@forge test -vv -c test-foundry/common
 
 contract-% c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}

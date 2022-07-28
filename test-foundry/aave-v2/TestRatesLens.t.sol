@@ -54,8 +54,8 @@ contract TestRatesLens is TestSetup {
     function testUserBorrowRateShouldEqualPoolRateWhenNotMatched() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         uint256 borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(aDai, address(borrower1));
@@ -67,14 +67,14 @@ contract TestRatesLens is TestSetup {
     function testUserSupplyBorrowRatesShouldEqualP2PRatesWhenFullyMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wbtc, amount);
-        supplier1.supply(aWbtc, amount);
+        supplier1.approve(wbtc, to8Decimals(amount));
+        supplier1.supply(aWbtc, to8Decimals(amount));
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
@@ -88,29 +88,29 @@ contract TestRatesLens is TestSetup {
     function testUserSupplyRateShouldEqualMidrateWhenHalfMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wbtc, amount);
-        supplier1.supply(aWbtc, amount);
+        supplier1.approve(wbtc, to8Decimals(amount));
+        supplier1.supply(aWbtc, to8Decimals(amount));
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount / 2);
 
         uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1e4);
+        assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1);
     }
 
     function testUserBorrowRateShouldEqualMidrateWhenHalfMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wbtc, amount);
-        supplier1.supply(aWbtc, amount);
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        supplier1.approve(wbtc, to8Decimals(amount));
+        supplier1.supply(aWbtc, to8Decimals(amount));
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
 
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
@@ -119,14 +119,14 @@ contract TestRatesLens is TestSetup {
         uint256 borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(aDai, address(borrower1));
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(borrowRatePerYear, (p2pBorrowRate + poolBorrowRate) / 2, 1e4);
+        assertApproxEqAbs(borrowRatePerYear, (p2pBorrowRate + poolBorrowRate) / 2, 1);
     }
 
     function testSupplyRateShouldEqualPoolRateWithFullSupplyDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -143,14 +143,14 @@ contract TestRatesLens is TestSetup {
 
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 1e4);
+        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 1);
     }
 
     function testBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -166,7 +166,7 @@ contract TestRatesLens is TestSetup {
 
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(p2pBorrowRate, poolBorrowRate, 1e4);
+        assertApproxEqAbs(p2pBorrowRate, poolBorrowRate, 1);
     }
 
     function testNextSupplyRateShouldEqual0WhenNoSupply() public {
@@ -220,7 +220,7 @@ contract TestRatesLens is TestSetup {
             uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
             uint256 expectedTotalBalance
-        ) = lens.getCurrentSupplyBalanceInOf(address(supplier1), aDai);
+        ) = lens.getCurrentSupplyBalanceInOf(aDai, address(supplier1));
 
         assertGt(supplyRatePerYear, 0, "zero supply rate per block");
         assertEq(supplyRatePerYear, expectedSupplyRatePerYear, "unexpected supply rate per block");
@@ -232,8 +232,8 @@ contract TestRatesLens is TestSetup {
     function testNextBorrowRateShouldEqualCurrentRateWhenNoNewBorrow() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 1000);
@@ -253,7 +253,7 @@ contract TestRatesLens is TestSetup {
             uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
             uint256 expectedTotalBalance
-        ) = lens.getCurrentBorrowBalanceInOf(address(borrower1), aDai);
+        ) = lens.getCurrentBorrowBalanceInOf(aDai, address(borrower1));
 
         assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
         assertEq(borrowRatePerYear, expectedBorrowRatePerYear, "unexpected borrow rate per block");
@@ -324,8 +324,8 @@ contract TestRatesLens is TestSetup {
     function testNextSupplyRateShouldEqualP2PRateWhenFullMatch() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 1000);
@@ -385,7 +385,7 @@ contract TestRatesLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEqAbs(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding error at supply
+        assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance"); // compound rounding error at supply
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
         assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
     }
@@ -393,8 +393,8 @@ contract TestRatesLens is TestSetup {
     function testNextSupplyRateShouldEqualMidrateWhenHalfMatch() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount / 2);
 
         (
@@ -420,7 +420,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerYear,
             (p2pSupplyRatePerYear + poolSupplyRatePerYear) / 2,
-            1e4,
+            1,
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
@@ -461,15 +461,15 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerYear,
             (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
-            1e4,
+            1,
             "unexpected borrow rate per block"
         );
-        assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1e9, "unexpected pool balance");
-        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
+        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
         assertApproxEqAbs(
             totalBalance,
             expectedBalanceOnPool + expectedBalanceInP2P,
-            1e9,
+            1,
             "unexpected total balance"
         );
     }
@@ -477,8 +477,8 @@ contract TestRatesLens is TestSetup {
     function testNextSupplyRateShouldEqualPoolRateWhenFullMatchButP2PDisabled() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
-        borrower1.supply(aWeth, amount);
+        borrower1.approve(aave, amount);
+        borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 1000);
@@ -552,8 +552,8 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount / 2);
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         (
@@ -576,15 +576,15 @@ contract TestRatesLens is TestSetup {
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
-        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
-        assertApproxEqAbs(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
+        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
+        assertApproxEqAbs(totalBalance, expectedBalanceInP2P, 1, "unexpected total balance");
     }
 
     function testNextBorrowRateShouldEqualP2PRateWhenDoubleBorrow() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount / 2);
 
         supplier1.approve(dai, amount);
@@ -606,19 +606,19 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerYear,
             p2pBorrowRatePerYear,
-            1e4,
+            1,
             "unexpected borrow rate per block"
         );
-        assertApproxEqAbs(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding errors
-        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
-        assertApproxEqAbs(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
+        assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance"); // compound rounding errors
+        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
+        assertApproxEqAbs(totalBalance, expectedBalanceInP2P, 1, "unexpected total balance");
     }
 
     function testNextSupplyRateShouldEqualP2PRateWithFullBorrowDeltaAndNoBorrowerOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -659,8 +659,8 @@ contract TestRatesLens is TestSetup {
     function testNextBorrowRateShouldEqualP2PRateWithFullSupplyDeltaAndNoSupplierOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
         supplier1.approve(dai, amount);
@@ -702,8 +702,8 @@ contract TestRatesLens is TestSetup {
     function testNextSupplyRateShouldEqualMidrateWithHalfBorrowDeltaAndNoBorrowerOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount / 2);
 
         supplier1.approve(dai, amount / 2);
@@ -746,7 +746,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerYear,
             (p2pSupplyRatePerYear + poolSupplyRatePerYear) / 2,
-            1e4,
+            1,
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
@@ -761,8 +761,8 @@ contract TestRatesLens is TestSetup {
     function testNextBorrowRateShouldEqualMidrateWithHalfSupplyDeltaAndNoSupplierOnPool() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wbtc, amount);
-        borrower1.supply(aWbtc, amount);
+        borrower1.approve(wbtc, to8Decimals(amount));
+        borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount / 2);
 
         supplier1.approve(dai, amount / 2);
@@ -806,7 +806,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerYear,
             (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
-            1e4,
+            1,
             "unexpected borrow rate per block"
         );
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
@@ -824,11 +824,11 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount / 2);
 
-        borrower2.approve(wEth, amount);
+        borrower2.approve(aave, amount);
         borrower2.supply(aAave, amount);
         borrower2.borrow(aDai, amount / 2);
 
@@ -891,16 +891,13 @@ contract TestRatesLens is TestSetup {
 
         (, , uint256 poolSupplyAmount) = lens.getAverageSupplyRatePerYear(aDai);
 
-        assertEq(
-            poolSupplyAmount,
-            IAToken(aDai).balanceOf(address(morpho)).rayMul(pool.getReserveNormalizedIncome(dai))
-        );
+        assertEq(poolSupplyAmount, IAToken(aDai).balanceOf(address(morpho)));
     }
 
     function testPoolBorrowAmountShouldBeEqualToPoolAmount() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
@@ -908,13 +905,7 @@ contract TestRatesLens is TestSetup {
 
         (, , uint256 poolBorrowAmount) = lens.getAverageBorrowRatePerYear(aDai);
 
-        assertApproxEqAbs(
-            poolBorrowAmount,
-            IVariableDebtToken(pool.getReserveData(dai).variableDebtTokenAddress)
-                .scaledBalanceOf(address(morpho))
-                .rayMul(pool.getReserveNormalizedVariableDebt(dai)),
-            1e4
-        );
+        assertApproxEqAbs(poolBorrowAmount, amount, 1);
     }
 
     function testAverageSupplyRateShouldEqualPoolRateWhenNoMatch() public {
@@ -927,17 +918,16 @@ contract TestRatesLens is TestSetup {
         .getAverageSupplyRatePerYear(aDai);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
-        uint256 expectedPoolSupplyRate = reserve.currentLiquidityRate;
 
-        assertApproxEqAbs(supplyRatePerYear, expectedPoolSupplyRate, 1);
-        assertApproxEqAbs(poolSupplyAmount, amount, 1e7);
+        assertApproxEqAbs(supplyRatePerYear, reserve.currentLiquidityRate, 1);
+        assertApproxEqAbs(poolSupplyAmount, amount, 1);
         assertEq(p2pSupplyAmount, 0);
     }
 
     function testAverageBorrowRateShouldEqualPoolRateWhenNoMatch() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
@@ -945,9 +935,8 @@ contract TestRatesLens is TestSetup {
         .getAverageBorrowRatePerYear(aDai);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
-        uint256 expectedBorrowRatePerYear = reserve.currentVariableBorrowRate;
 
-        assertApproxEqAbs(borrowRatePerYear, expectedBorrowRatePerYear, 1);
+        assertApproxEqAbs(borrowRatePerYear, reserve.currentVariableBorrowRate, 1);
         assertEq(poolBorrowAmount, amount);
         assertEq(p2pBorrowAmount, 0);
     }
@@ -955,13 +944,13 @@ contract TestRatesLens is TestSetup {
     function testAverageRatesShouldEqualP2PRatesWhenFullyMatched() public {
         uint256 amount = 10_000 ether;
 
-        supplier1.approve(wEth, amount);
+        supplier1.approve(aave, amount);
         supplier1.supply(aAave, amount);
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
@@ -973,10 +962,10 @@ contract TestRatesLens is TestSetup {
 
         assertApproxEqAbs(supplyRatePerYear, p2pSupplyRate, 1, "unexpected supply rate");
         assertApproxEqAbs(borrowRatePerYear, p2pBorrowRate, 1, "unexpected borrow rate");
-        assertApproxEqAbs(poolSupplyAmount, poolBorrowAmount, 1e9);
-        assertApproxEqAbs(poolBorrowAmount, 0, 1e7);
+        assertApproxEqAbs(poolSupplyAmount, poolBorrowAmount, 1);
+        assertApproxEqAbs(poolBorrowAmount, 0, 1);
         assertEq(p2pSupplyAmount, p2pBorrowAmount);
-        assertApproxEqAbs(p2pBorrowAmount, amount, 1e9);
+        assertApproxEqAbs(p2pBorrowAmount, amount, 1);
     }
 
     function testAverageSupplyRateShouldEqualMidrateWhenHalfMatched() public {
@@ -985,7 +974,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount / 2);
 
@@ -1001,7 +990,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
@@ -1014,7 +1003,7 @@ contract TestRatesLens is TestSetup {
     function testAverageSupplyRateShouldEqualPoolRateWithFullSupplyDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aUsdc, to6Decimals(amount));
 
@@ -1031,17 +1020,15 @@ contract TestRatesLens is TestSetup {
         borrower1.repay(aUsdc, type(uint256).max);
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aUsdc);
+        DataTypes.ReserveData memory reserve = pool.getReserveData(usdc);
 
-        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
-        uint256 expectedPoolSupplyRate = reserve.currentLiquidityRate;
-
-        assertApproxEqAbs(avgSupplyRate, expectedPoolSupplyRate, 2);
+        assertApproxEqAbs(avgSupplyRate, reserve.currentLiquidityRate, 2);
     }
 
     function testAverageBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(wEth, amount);
+        borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
         borrower1.borrow(aDai, amount);
 
@@ -1057,10 +1044,8 @@ contract TestRatesLens is TestSetup {
         supplier1.withdraw(aDai, type(uint256).max);
 
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
-
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
-        uint256 expectedBorrowRatePerYear = reserve.currentVariableBorrowRate;
 
-        assertApproxEqAbs(avgBorrowRate, expectedBorrowRatePerYear, 1);
+        assertApproxEqAbs(avgBorrowRate, reserve.currentVariableBorrowRate, 1);
     }
 }
