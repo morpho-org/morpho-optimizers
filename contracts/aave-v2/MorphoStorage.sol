@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IEntryPositionsManager.sol";
 import "./interfaces/IExitPositionsManager.sol";
