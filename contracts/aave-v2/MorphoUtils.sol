@@ -5,10 +5,10 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
-import "@morpho/morpho-utils/DelegateCall.sol";
-import "@morpho/morpho-utils/math/PercentageMath.sol";
-import "@morpho/morpho-utils/math/WadRayMath.sol";
-import "@morpho/morpho-utils/math/Math.sol";
+import "@morpho-labs/morpho-utils/DelegateCall.sol";
+import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 

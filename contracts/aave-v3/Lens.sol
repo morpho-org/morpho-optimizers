@@ -7,11 +7,11 @@ import {IPool} from "./interfaces/aave/IPool.sol";
 import "./interfaces/IMorpho.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
-import {PercentageMath} from "@morpho/morpho-utils/math/PercentageMath.sol";
-import {WadRayMath} from "@morpho/morpho-utils/math/WadRayMath.sol";
+import {PercentageMath} from "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import {WadRayMath} from "@morpho-labs/morpho-utils/math/WadRayMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho/data-structures/contracts/HeapOrdering.sol";
-import "@morpho/morpho-utils/math/Math.sol";
+import "@morpho-labs/data-structures/contracts/HeapOrdering.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 
 /// @title Lens.
 /// @author Morpho Labs.
