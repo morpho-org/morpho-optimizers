@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import {ReserveConfiguration, DataTypes} from "./libraries/aave/ReserveConfiguration.sol";
+import "./libraries/aave/ReserveConfiguration.sol";
 import "@morpho/morpho-utils/DelegateCall.sol";
 import "@morpho/morpho-utils/math/PercentageMath.sol";
 import "@morpho/morpho-utils/math/WadRayMath.sol";

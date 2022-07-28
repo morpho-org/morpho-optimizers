@@ -2,7 +2,7 @@
 pragma solidity 0.8.10;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
-import {IPool, IPoolAddressesProvider} from "./interfaces/aave/IPool.sol";
+import "./interfaces/aave/IPool.sol";
 import "./interfaces/IEntryPositionsManager.sol";
 import "./interfaces/IExitPositionsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";

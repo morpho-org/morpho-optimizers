@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
-import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
+import "./libraries/aave/ReserveConfiguration.sol";
 import "@morpho/morpho-utils/DelegateCall.sol";
 import "@morpho/morpho-utils/math/PercentageMath.sol";
 import "@morpho/morpho-utils/math/WadRayMath.sol";
