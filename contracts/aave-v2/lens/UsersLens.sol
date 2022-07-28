@@ -68,18 +68,15 @@ abstract contract UsersLens is IndexesLens {
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
-        if (data.debtValue == 0)
-            withdrawable =
-                (assetData.collateralValue * assetData.tokenUnit) /
-                assetData.underlyingPrice;
-        else
-            withdrawable =
-                ((data.liquidationThresholdValue - data.debtValue) * assetData.tokenUnit) /
-                assetData.underlyingPrice;
-
         borrowable =
             ((data.maxLoanToValue - data.debtValue) * assetData.tokenUnit) /
             assetData.underlyingPrice;
+        withdrawable =
+            (assetData.collateralValue * assetData.tokenUnit) /
+            assetData.underlyingPrice;
+
+        if (assetData.ltv != 0)
+            withdrawable = Math.min(withdrawable, borrowable.percentDiv(assetData.ltv));
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.

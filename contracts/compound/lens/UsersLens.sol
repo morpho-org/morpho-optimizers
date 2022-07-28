@@ -68,19 +68,14 @@ abstract contract UsersLens is IndexesLens {
         // Not possible to withdraw nor borrow.
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
-            assetData.underlyingPrice
-        );
-
+        borrowable = (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice);
         withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
         if (assetData.collateralFactor != 0) {
             withdrawable = CompoundMath.min(
                 withdrawable,
-                differenceInUnderlying.div(assetData.collateralFactor)
+                borrowable.div(assetData.collateralFactor)
             );
         }
-
-        borrowable = differenceInUnderlying;
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
