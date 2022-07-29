@@ -394,13 +394,12 @@ abstract contract RatesLens is UsersLens {
         uint256 _p2pSupplyIndex,
         uint256 _poolSupplyIndex
     ) internal view returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount) {
-        ICToken poolToken = ICToken(_poolToken);
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
         p2pSupplyAmount =
             delta.p2pSupplyAmount.mul(_p2pSupplyIndex) -
             delta.p2pSupplyDelta.mul(_poolSupplyIndex);
-        poolSupplyAmount = poolToken.balanceOf(address(morpho)).mul(_poolSupplyIndex);
+        poolSupplyAmount = ICToken(_poolToken).balanceOf(address(morpho)).mul(_poolSupplyIndex);
     }
 
     /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
@@ -414,15 +413,14 @@ abstract contract RatesLens is UsersLens {
         uint256 _p2pBorrowIndex,
         uint256 _poolBorrowIndex
     ) internal view returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount) {
-        ICToken poolToken = ICToken(_poolToken);
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
         p2pBorrowAmount =
             delta.p2pBorrowAmount.mul(_p2pBorrowIndex) -
             delta.p2pBorrowDelta.mul(_poolBorrowIndex);
-        poolBorrowAmount = poolToken
+        poolBorrowAmount = ICToken(_poolToken)
         .borrowBalanceStored(address(morpho))
-        .div(poolToken.borrowIndex())
+        .div(ICToken(_poolToken).borrowIndex())
         .mul(_poolBorrowIndex);
     }
 

@@ -323,20 +323,18 @@ abstract contract MorphoGovernance is MorphoUtils {
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
         if (results[0] != 0) revert MarketCreationFailedOnCompound();
 
-        ICToken poolToken = ICToken(_poolToken);
-
         // Same initial index as Compound.
         uint256 initialIndex;
         if (_poolToken == cEth) initialIndex = 2e26;
-        else initialIndex = 2 * 10**(16 + ERC20(poolToken.underlying()).decimals() - 8);
+        else initialIndex = 2 * 10**(16 + ERC20(ICToken(_poolToken).underlying()).decimals() - 8);
         p2pSupplyIndex[_poolToken] = initialIndex;
         p2pBorrowIndex[_poolToken] = initialIndex;
 
         Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolToken];
 
         poolIndexes.lastUpdateBlockNumber = uint32(block.number);
-        poolIndexes.lastSupplyPoolIndex = uint112(poolToken.exchangeRateCurrent());
-        poolIndexes.lastBorrowPoolIndex = uint112(poolToken.borrowIndex());
+        poolIndexes.lastSupplyPoolIndex = uint112(ICToken(_poolToken).exchangeRateCurrent());
+        poolIndexes.lastBorrowPoolIndex = uint112(ICToken(_poolToken).borrowIndex());
 
         marketParameters[_poolToken] = _marketParams;
 
