@@ -3,7 +3,7 @@ pragma solidity 0.8.10;
 
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract Utils is Test {
     using WadRayMath for uint256;

@@ -18,6 +18,8 @@ contract Config {
     address constant aWeth = 0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8;
     address constant aWmatic = 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97;
 
+    address constant wrappedNativeToken = wmatic;
+    address constant aWrappedNativeToken = aWmatic;
     address constant rewardToken = address(0);
 
     address constant stableDebtDai = 0xd94112B5B62d53C9402e7A60289c6810dEF1dC9B;
@@ -27,4 +29,5 @@ contract Config {
     address constant poolDataProviderAddress = 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654;
     address constant poolAddressesProviderAddress = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address constant rewardsControllerAddress = 0x929EC64c34a17401F460460D4B9390518E5B473e;
+    address constant swapRouterAddress = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 }

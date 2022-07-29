@@ -126,7 +126,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         emit TokensTransferred(_token, _amount);
     }
 
-    /// @notice Trades COMP tokens for MORPHO tokens and sends them to the receiver.
+    /// @notice Trades reward tokens for MORPHO tokens and sends them to the receiver.
     /// @dev The amount of rewards to trade for MORPHO tokens is supposed to have been transferred to this contract before calling the function.
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.

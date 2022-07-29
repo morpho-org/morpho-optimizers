@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
@@ -35,8 +35,8 @@ import {DumbOracle} from "../../../aave-v2/helpers/DumbOracle.sol";
 import "../../../common/helpers/Chains.sol";
 import {User} from "../../../aave-v2/helpers/User.sol";
 import {Utils} from "../../../aave-v2/setup/Utils.sol";
-import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
+import "@forge-std/stdlib.sol";
+import "@forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetupFuzzing is Config, Utils, stdCheats {
@@ -170,8 +170,8 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
     function createMarket(address _aToken) internal {
         address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
-        Types.MarketParameters memory marketParams = Types.MarketParameters(0, 3_333);
-        morpho.createMarket(underlying, marketParams);
+        Types.Market memory market = Types.Market(0, 3_333);
+        morpho.createMarket(underlying, market);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_aToken);
@@ -281,21 +281,21 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas!).
-    /// @param _poolTokenAddress The market address.
+    /// @param _poolToken The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
-    function getApproxP2PRates(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolToken)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+            IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()
         );
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (uint16 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(_poolTokenAddress);
+        (uint16 reserveFactor, uint256 p2pIndexCursor) = morpho.market(_poolToken);
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *
@@ -308,9 +308,9 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     /// @notice Returns the underlying for a given market.
-    /// @param _poolTokenAddress The address of the market.
-    function getUnderlying(address _poolTokenAddress) internal view returns (address) {
-        return IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+    /// @param _poolToken The address of the market.
+    function getUnderlying(address _poolToken) internal view returns (address) {
+        return IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
     }
 
     /// @notice Returns the asset and its underlying for a given market, excluding USDT.

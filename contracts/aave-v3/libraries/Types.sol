@@ -36,10 +36,10 @@ library Types {
     }
 
     struct Delta {
-        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in aToken). (in wad)
-        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in adUnit). (in wad)
-        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit). (in wad)
-        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit). (in wad)
+        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in aToken). (in underlying decimals)
+        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in adUnit). (in underlying decimals)
+        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit). (in underlying decimals)
+        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit). (in underlying decimals)
     }
 
     struct AssetLiquidityData {
@@ -48,16 +48,15 @@ library Types {
         uint256 liquidationThreshold; // The liquidation threshold applied on this token (in basis point).
         uint256 ltv; // The LTV applied on this token (in basis point).
         uint256 underlyingPrice; // The price of the token (In base currency in wad).
-        uint256 collateralValue; // The collateral value of the asset (In base currency in wad).
-        uint256 debtValue; // The debt value of the asset (In base currency in wad).
+        uint256 collateral; // The collateral value of the asset (In base currency in wad).
+        uint256 debt; // The debt value of the asset (In base currency in wad).
     }
 
     struct LiquidityData {
-        uint256 healthFactor; // The health factor of the user (in basis points).
-        uint256 collateralValue; // The collateral value (In base currency in wad).
-        uint256 maxLoanToValue; // The max loan to value (In base currency in wad).
-        uint256 liquidationThresholdValue; // The liquidation threshold value (In base currency in wad).
-        uint256 debtValue; // The debt value (In base currency in wad).
+        uint256 collateral; // The collateral value (In base currency in wad).
+        uint256 maxDebt; // The max debt value (In base currency in wad).
+        uint256 liquidationThreshold; // The liquidation threshold value (In base currency in wad).
+        uint256 debt; // The debt value (In base currency in wad).
     }
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
@@ -67,14 +66,22 @@ library Types {
         uint112 poolBorrowIndex; // Last pool borrow index (in ray).
     }
 
-    struct MarketParameters {
+    struct Market {
+        address underlyingToken; // The underlying address of the market.
         uint16 reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10 000). The default value is 0.
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
-    }
-
-    struct MarketStatus {
         bool isCreated; // Whether or not this market is created.
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+        bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
+    }
+
+    struct LiquidityStackVars {
+        address poolToken;
+        uint256 poolTokensLength;
+        bytes32 userMarkets;
+        bytes32 borrowMask;
+        address underlyingAddress;
+        uint256 underlyingPrice;
     }
 }

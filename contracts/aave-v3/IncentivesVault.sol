@@ -124,7 +124,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Trades reward tokens for MORPHO tokens and sends them to the receiver.
     /// @param _receiver The address of the receiver.
     /// @param _rewardsList The list of reward tokens.
-    /// @param _claimedAmounts The list of unclaimed reward amounts.
+    /// @param _claimedAmounts The list of claimed reward amounts.
     function tradeRewardTokensForMorphoTokens(
         address _receiver,
         address[] memory _rewardsList,
@@ -155,6 +155,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         }
 
         morphoToken.safeTransfer(_receiver, amountOut);
+
         emit RewardTokensTraded(_receiver, amountOut);
     }
 }

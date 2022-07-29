@@ -4,10 +4,12 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestFees is TestSetup {
-    using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    address[] aDaiArray = [aDai];
+    address[] public aDaiArray = [aDai];
+    address[] public aAaveArray = [aAave];
+    uint256[] public amountArray = [1 ether];
+    uint256[] public maxAmountArray = [type(uint256).max];
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
         hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
@@ -27,7 +29,7 @@ contract TestFees is TestSetup {
     function testOwnerShouldBeAbleToClaimFees() public {
         uint256 balanceBefore = IERC20(dai).balanceOf(morpho.treasuryVault());
         _createFeeOnMorpho(1_000);
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
         uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
@@ -40,7 +42,7 @@ contract TestFees is TestSetup {
         _createFeeOnMorpho(1_000);
 
         hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
     }
 
     function testShouldCollectTheRightAmountOfFees() public {
@@ -59,12 +61,13 @@ contract TestFees is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         (uint256 newSupplyIndex, uint256 newBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
 
-        uint256 expectedFees = toBorrow
-        .rayMul(newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex))
-        .percentMul(morpho.MAX_CLAIMABLE_RESERVE());
+        uint256 expectedFees = toBorrow.rayMul(
+            newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex)
+        );
 
         supplier1.repay(aDai, type(uint256).max);
-        morpho.claimToTreasury(aDaiArray);
+
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
         uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
@@ -76,7 +79,7 @@ contract TestFees is TestSetup {
 
         _createFeeOnMorpho(0);
 
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
 
         uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
         assertEq(balanceAfter, balanceBefore);
@@ -89,7 +92,7 @@ contract TestFees is TestSetup {
         // Pause market.
         morpho.setPauseStatus(aDai, true);
 
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
 
         uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
         assertEq(balanceAfter, balanceBefore);
@@ -102,7 +105,7 @@ contract TestFees is TestSetup {
         // Partially pause market.
         morpho.setPartialPauseStatus(aDai, true);
 
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
 
         uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
         assertEq(balanceAfter, balanceBefore);

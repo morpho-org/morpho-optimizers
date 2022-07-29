@@ -120,20 +120,20 @@ contract TestSupply is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 expectedInP2P;
+        uint256 expectedInP2PInUnderlying;
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerBorrower, "amount per borrower");
+            testEquality(expectedInP2PInUnderlying, amountPerBorrower, "amount per borrower");
             testEquality(onPool, 0, "on pool per borrower");
         }
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        expectedInP2P = underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai));
+        uint256 expectedInP2P = underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai));
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, 0);
@@ -169,13 +169,13 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2PInUnderlying;
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pBorrowIndex);
 
             testEquality(expectedInP2PInUnderlying, amountPerBorrower, "borrower in peer-to-peer");
             testEquality(onPool, 0);
@@ -183,7 +183,7 @@ contract TestSupply is TestSetup {
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pBorrowIndex(aDai));
+        uint256 expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pSupplyIndex(aDai));
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
         testEquality(inP2P, expectedInP2P, "in peer-to-peer");

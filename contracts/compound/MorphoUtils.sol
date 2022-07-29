@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./libraries/CompoundMath.sol";
-import "../common/libraries/DelegateCall.sol";
+import "@morpho-labs/morpho-utils/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
 
@@ -31,25 +31,25 @@ abstract contract MorphoUtils is MorphoStorage {
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreated(address _poolTokenAddress) {
-        if (!marketStatus[_poolTokenAddress].isCreated) revert MarketNotCreated();
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreated(address _poolToken) {
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndNotPaused(address _poolToken) {
+        Types.MarketStatus memory marketStatus_ = marketStatus[_poolToken];
         if (!marketStatus_.isCreated) revert MarketNotCreated();
         if (marketStatus_.isPaused) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
+        Types.MarketStatus memory marketStatus_ = marketStatus[_poolToken];
         if (!marketStatus_.isCreated) revert MarketNotCreated();
         if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
         _;
@@ -75,76 +75,70 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Gets the head of the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the head.
+    /// @param _poolToken The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
     /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, Types.PositionType _positionType)
+    function getHead(address _poolToken, Types.PositionType _positionType)
         external
         view
         returns (address head)
     {
         if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            head = suppliersInP2P[_poolTokenAddress].getHead();
+            head = suppliersInP2P[_poolToken].getHead();
         else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            head = suppliersOnPool[_poolTokenAddress].getHead();
+            head = suppliersOnPool[_poolToken].getHead();
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            head = borrowersInP2P[_poolTokenAddress].getHead();
+            head = borrowersInP2P[_poolToken].getHead();
         else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            head = borrowersOnPool[_poolTokenAddress].getHead();
+            head = borrowersOnPool[_poolToken].getHead();
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the user.
+    /// @param _poolToken The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.
     /// @return next The next user in the data structure.
     function getNext(
-        address _poolTokenAddress,
+        address _poolToken,
         Types.PositionType _positionType,
         address _user
     ) external view returns (address next) {
         if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
+            next = suppliersInP2P[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
+            next = suppliersOnPool[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
+            next = borrowersInP2P[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+            next = borrowersOnPool[_poolToken].getNext(_user);
     }
 
     /// @notice Updates the peer-to-peer indexes.
     /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
-    /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress)
-        external
-        isMarketCreated(_poolTokenAddress)
-    {
-        _updateP2PIndexes(_poolTokenAddress);
+    /// @param _poolToken The address of the market to update.
+    function updateP2PIndexes(address _poolToken) external isMarketCreated(_poolToken) {
+        _updateP2PIndexes(_poolToken);
     }
 
     /// INTERNAL ///
 
     /// @dev Updates the peer-to-peer indexes.
     /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
-    /// @param _poolTokenAddress The address of the market to update.
-    function _updateP2PIndexes(address _poolTokenAddress) internal {
+    /// @param _poolToken The address of the market to update.
+    function _updateP2PIndexes(address _poolToken) internal {
         address(interestRatesManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                interestRatesManager.updateP2PIndexes.selector,
-                _poolTokenAddress
-            )
+            abi.encodeWithSelector(interestRatesManager.updateP2PIndexes.selector, _poolToken)
         );
     }
 
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
     /// @param _user The user to check.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The amount of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     function _isLiquidatable(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal view returns (bool) {
@@ -163,7 +157,7 @@ abstract contract MorphoUtils is MorphoStorage {
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
 
-            if (_poolTokenAddress == poolTokenEntered) {
+            if (_poolToken == poolTokenEntered) {
                 if (_borrowedAmount > 0)
                     debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
 
@@ -181,68 +175,68 @@ abstract contract MorphoUtils is MorphoStorage {
         return debtValue > maxDebtValue;
     }
 
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @notice Returns the data related to `_poolToken` for the `_user`.
     /// @dev Note: Must be called after calling `_updateP2PIndexes()` to have the most up-to-date indexes.
     /// @param _user The user to determine data for.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
     function _getUserLiquidityDataForAsset(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         ICompoundOracle _oracle
     ) internal view returns (Types.AssetLiquidityData memory assetData) {
-        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
+        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
-        (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
+        (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
+        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolToken, _user).mul(
             assetData.underlyingPrice
         );
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
+        assetData.debtValue = _getUserBorrowBalanceInOf(_poolToken, _user).mul(
             assetData.underlyingPrice
         );
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
-    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the supply amount.
+    /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function _getUserSupplyBalanceInOf(address _poolToken, address _user)
         internal
         view
         returns (uint256)
     {
-        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolTokenAddress][_user];
+        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
         return
-            userSupplyBalance.inP2P.mul(p2pSupplyIndex[_poolTokenAddress]) +
-            userSupplyBalance.onPool.mul(ICToken(_poolTokenAddress).exchangeRateStored());
+            userSupplyBalance.inP2P.mul(p2pSupplyIndex[_poolToken]) +
+            userSupplyBalance.onPool.mul(ICToken(_poolToken).exchangeRateStored());
     }
 
-    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the borrow amount.
+    /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
+    function _getUserBorrowBalanceInOf(address _poolToken, address _user)
         internal
         view
         returns (uint256)
     {
-        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolTokenAddress][_user];
+        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
         return
-            userBorrowBalance.inP2P.mul(p2pBorrowIndex[_poolTokenAddress]) +
-            userBorrowBalance.onPool.mul(ICToken(_poolTokenAddress).borrowIndex());
+            userBorrowBalance.inP2P.mul(p2pBorrowIndex[_poolToken]) +
+            userBorrowBalance.onPool.mul(ICToken(_poolToken).borrowIndex());
     }
 
     /// @dev Returns the underlying ERC20 token related to the pool token.
-    /// @param _poolTokenAddress The address of the pool token.
+    /// @param _poolToken The address of the pool token.
     /// @return The underlying ERC20 token.
-    function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
-        if (_poolTokenAddress == cEth)
+    function _getUnderlying(address _poolToken) internal view returns (ERC20) {
+        if (_poolToken == cEth)
             // cETH has no underlying() function.
             return ERC20(wEth);
-        else return ERC20(ICToken(_poolTokenAddress).underlying());
+        else return ERC20(ICToken(_poolToken).underlying());
     }
 }

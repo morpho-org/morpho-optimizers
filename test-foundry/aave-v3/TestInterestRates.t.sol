@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "@contracts/aave-v3/InterestRatesManager.sol";
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract TestInterestRates is InterestRatesManager, Test {
     using PercentageMath for uint256;

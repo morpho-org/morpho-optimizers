@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/InterestRatesManager.sol";
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract TestInterestRates is InterestRatesManager, Test {
     Vm public hevm = Vm(HEVM_ADDRESS);

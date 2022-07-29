@@ -74,9 +74,9 @@ contract TestRepay is TestSetup {
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(onPoolBorrower1, expectedOnPool);
-        testEquality(inP2PSupplier, inP2PBorrower1);
+        testEquality(onPoolSupplier, 0, "supplier on pool");
+        testEquality(onPoolBorrower1, expectedOnPool, "borrower on pool");
+        testEquality(inP2PSupplier, inP2PBorrower1, "equality");
 
         // An available borrower onPool
         uint256 availableBorrowerAmount = borrowedAmount / 4;
@@ -382,8 +382,8 @@ contract TestRepay is TestSetup {
     function testDeltaRepay() public {
         // Allows only 10 unmatch borrowers
         if (block.chainid == Chains.POLYGON_MAINNET)
-            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
-        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
+            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
+        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;

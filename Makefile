@@ -56,6 +56,9 @@ initialize:
 create-market:
 	./scripts/create-market.sh
 
+ci:
+	@forge test -vv --gas-report --no-match-test testFuzz
+
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv --no-match-test testFuzz
@@ -100,6 +103,12 @@ single-% s-%:
 ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv --match-test $* > trace.ansi
+
+storage-layout-generate:
+	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+
+storage-layout-check: 
+	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
 
 config:
 	@forge config

@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+
     // The borrower tries to borrow more than his collateral allows, the transaction reverts.
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
@@ -13,7 +15,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedBorrow()"));
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 
@@ -74,12 +76,12 @@ contract TestBorrow is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        testEquality(inP2P, supplyInP2P);
+        testEquality(inP2P, supplyInP2P, "in P2P");
 
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
 
-        testEquality(onPool, expectedOnPool);
+        testEquality(onPool, expectedOnPool, "on pool");
     }
 
     // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
@@ -216,5 +218,18 @@ contract TestBorrow is TestSetup {
 
         hevm.expectRevert(EntryPositionsManager.BorrowingNotEnabled.selector);
         borrower1.borrow(aAave, amount / 2);
+    }
+
+    function testShouldNotAllowSmallBorrow() public {
+        (uint256 ltv, , , , ) = pool.getConfiguration(dai).getParamsMemory();
+
+        createAndSetCustomPriceOracle().setDirectPrice(dai, 1e8);
+
+        uint256 amount = 1 ether;
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, amount);
+
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
     }
 }

@@ -35,18 +35,18 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Supplies underlying tokens in a specific market.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying) to supply.
     function supply(
-        address _poolTokenAddress,
+        address _poolToken,
         address _onBehalf,
         uint256 _amount
-    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
         address(entryPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 entryPositionsManager.supplyLogic.selector,
-                _poolTokenAddress,
+                _poolToken,
                 msg.sender,
                 _onBehalf,
                 _amount,
@@ -57,20 +57,20 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Supplies underlying tokens in a specific market.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying) to supply.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supply(
-        address _poolTokenAddress,
+        address _poolToken,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
         address(entryPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 entryPositionsManager.supplyLogic.selector,
-                _poolTokenAddress,
+                _poolToken,
                 msg.sender,
                 _onBehalf,
                 _amount,
@@ -80,17 +80,17 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Borrows underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    function borrow(address _poolTokenAddress, uint256 _amount)
+    function borrow(address _poolToken, uint256 _amount)
         external
         nonReentrant
-        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress)
+        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
     {
         address(entryPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 entryPositionsManager.borrowLogic.selector,
-                _poolTokenAddress,
+                _poolToken,
                 _amount,
                 defaultMaxGasForMatching.borrow
             )
@@ -98,18 +98,18 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Borrows underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function borrow(
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
         address(entryPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 entryPositionsManager.borrowLogic.selector,
-                _poolTokenAddress,
+                _poolToken,
                 _amount,
                 _maxGasForMatching
             )
@@ -117,17 +117,17 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Withdraws underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
-    function withdraw(address _poolTokenAddress, uint256 _amount)
+    function withdraw(address _poolToken, uint256 _amount)
         external
         nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
+        isMarketCreatedAndNotPaused(_poolToken)
     {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 exitPositionsManager.withdrawLogic.selector,
-                _poolTokenAddress,
+                _poolToken,
                 _amount,
                 msg.sender,
                 msg.sender,
@@ -138,18 +138,18 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Repays debt of the user.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repay(
-        address _poolTokenAddress,
+        address _poolToken,
         address _onBehalf,
         uint256 _amount
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolToken) {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 exitPositionsManager.repayLogic.selector,
-                _poolTokenAddress,
+                _poolToken,
                 msg.sender,
                 _onBehalf,
                 _amount,
@@ -159,26 +159,26 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Liquidates a position.
-    /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
-    /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
+    /// @param _poolTokenBorrowed The address of the pool token the liquidator wants to repay.
+    /// @param _poolTokenCollateral The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
     /// @param _amount The amount of token (in underlying) to repay.
     function liquidate(
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress,
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
     )
         external
         nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenBorrowedAddress)
-        isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
+        isMarketCreatedAndNotPaused(_poolTokenBorrowed)
+        isMarketCreatedAndNotPaused(_poolTokenCollateral)
     {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 exitPositionsManager.liquidateLogic.selector,
-                _poolTokenBorrowedAddress,
-                _poolTokenCollateralAddress,
+                _poolTokenBorrowed,
+                _poolTokenCollateral,
                 _borrower,
                 _amount
             )
@@ -196,7 +196,13 @@ contract Morpho is MorphoGovernance {
         returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
     {
         if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(_assets, msg.sender);
+
+        IRewardsController rewardsController = rewardsController;
+        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(
+            rewardsController,
+            _assets,
+            msg.sender
+        );
         uint256 rewardTokensLength = rewardTokens.length;
 
         rewardsController.claimAllRewardsToSelf(_assets);

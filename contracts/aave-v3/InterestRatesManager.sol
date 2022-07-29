@@ -3,9 +3,9 @@ pragma solidity 0.8.10;
 
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-import "./libraries/Math.sol";
+import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 
@@ -35,13 +35,13 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// EVENTS ///
 
     /// @notice Emitted when the peer-to-peer indexes of a market are updated.
-    /// @param _poolTokenAddress The address of the market updated.
+    /// @param _poolToken The address of the market updated.
     /// @param _p2pSupplyIndex The updated supply index from peer-to-peer unit to underlying.
     /// @param _p2pBorrowIndex The updated borrow index from peer-to-peer unit to underlying.
     /// @param _poolSupplyIndex The updated pool supply index.
     /// @param _poolBorrowIndex The updated pool borrow index.
     event P2PIndexesUpdated(
-        address indexed _poolTokenAddress,
+        address indexed _poolToken,
         uint256 _p2pSupplyIndex,
         uint256 _p2pBorrowIndex,
         uint256 _poolSupplyIndex,
@@ -51,40 +51,40 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// EXTERNAL ///
 
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
-    /// @param _poolTokenAddress The address of the market to update.
-    function updateIndexes(address _poolTokenAddress) external {
-        Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolTokenAddress];
+    /// @param _poolToken The address of the market to update.
+    function updateIndexes(address _poolToken) external {
+        Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolToken];
 
         if (block.timestamp > marketPoolIndexes.lastUpdateTimestamp) {
-            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+            Types.Market storage market = market[_poolToken];
 
-            address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+            address underlyingToken = market.underlyingToken;
             uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
             uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
             Params memory params = Params(
-                p2pSupplyIndex[_poolTokenAddress],
-                p2pBorrowIndex[_poolTokenAddress],
+                p2pSupplyIndex[_poolToken],
+                p2pBorrowIndex[_poolToken],
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 marketPoolIndexes.poolSupplyIndex,
                 marketPoolIndexes.poolBorrowIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolTokenAddress]
+                market.reserveFactor,
+                market.p2pIndexCursor,
+                deltas[_poolToken]
             );
 
             (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
 
-            p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
-            p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
+            p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
+            p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
 
             marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
             marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
             marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
 
             emit P2PIndexesUpdated(
-                _poolTokenAddress,
+                _poolToken,
                 newP2PSupplyIndex,
                 newP2PBorrowIndex,
                 newPoolSupplyIndex,

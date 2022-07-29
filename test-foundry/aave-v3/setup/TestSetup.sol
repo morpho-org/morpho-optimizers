@@ -6,7 +6,7 @@ import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@contracts/aave-v3/interfaces/aave/IPool.sol";
 import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
 import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v3/interfaces/IMorpho.sol";
@@ -14,8 +14,6 @@ import "@contracts/aave-v3/interfaces/IMorpho.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v3/libraries/Types.sol";
@@ -36,8 +34,8 @@ import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
-import "forge-std/console.sol";
-import "forge-std/Vm.sol";
+import "@forge-std/console.sol";
+import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -170,8 +168,7 @@ contract TestSetup is Config, Utils {
 
     function createMarket(address _aToken) internal {
         address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
-        Types.MarketParameters memory marketParams = Types.MarketParameters(0, 3_333);
-        morpho.createMarket(underlying, marketParams);
+        morpho.createMarket(underlying, 0, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_aToken);
@@ -279,21 +276,21 @@ contract TestSetup is Config, Utils {
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas!).
-    /// @param _poolTokenAddress The market address.
+    /// @param _poolToken The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
-    function getApproxP2PRates(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolToken)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
         DataTypes.ReserveData memory reserveData = pool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+            IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()
         );
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (uint16 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(_poolTokenAddress);
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolToken);
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

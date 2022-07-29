@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPool.sol";
+import "./interfaces/IEntryPositionsManager.sol";
+import "./interfaces/IExitPositionsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
-import "./interfaces/IEntryPositionsManager.sol";
-import "./interfaces/IExitPositionsManager.sol";
 
-import "@morpho/data-structures/contracts/HeapOrdering.sol";
+import "@morpho-labs/data-structures/contracts/HeapOrdering.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -26,14 +24,15 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
-    uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max proportion of reserve fee claimable by the DAO at once (90% in basis points).
-    uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
+    uint256 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
-    uint256 public constant BORROWING_MASK =
-        0x5555555555555555555555555555555555555555555555555555555555555555;
     uint256 public constant MAX_NB_OF_MARKETS = 128;
+    bytes32 public constant BORROWING_MASK =
+        0x5555555555555555555555555555555555555555555555555555555555555555;
+    bytes32 public constant ONE =
+        0x0000000000000000000000000000000000000000000000000000000000000001;
 
-    bool public isClaimRewardsPaused; // Whether it's possible to claim rewards or not.
+    bool public isClaimRewardsPaused; // Whether claiming rewards is paused or not.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
 
@@ -45,19 +44,17 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => HeapOrdering.HeapArray) internal borrowersOnPool; // For a given market, the borrowers on Aave.
     mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user. aToken -> user -> balances.
     mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. aToken -> user -> balances.
-    mapping(address => uint256) public userMarkets; // The markets entered by a user as a bitmask.
+    mapping(address => bytes32) public userMarkets; // The markets entered by a user as a bitmask.
 
     /// MARKETS STORAGE ///
 
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public p2pDisabled; // Whether the peer-to-peer market is open or not.
     mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
     mapping(address => Types.PoolIndexes) public poolIndexes; // Last pool index stored.
-    mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
-    mapping(address => Types.MarketStatus) public marketStatus; // Market status.
+    mapping(address => Types.Market) public market; // Market information.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
-    mapping(address => uint256) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
+    mapping(address => bytes32) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
 
     /// CONTRACTS AND ADDRESSES ///
 

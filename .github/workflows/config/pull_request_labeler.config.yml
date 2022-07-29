@@ -3,29 +3,31 @@
   - contracts/common/**/*
   - contracts/aave-v2/*
   - contracts/aave-v2/**/*
-  - test-foundry/aave-v2/*
-  - test-foundry/aave-v2/**/*
 
 "👻 aave-v3":
   - contracts/common/*
   - contracts/common/**/*
   - contracts/aave-v3/*
   - contracts/aave-v3/**/*
-  - test-foundry/aave-v3/*
-  - test-foundry/aave-v3/**/*
 
 "🟢 compound":
   - contracts/common/*
   - contracts/common/**/*
   - contracts/compound/*
   - contracts/compound/**/*
-  - test-foundry/compound/*
-  - test-foundry/compound/**/*
 
 "🧮 certora":
   - certora/*
   - certora/**/*
 
 "⚙️ ci":
+  - .github/actions/*
+  - .github/actions/**/*
   - .github/workflows/*
   - .github/workflows/**/*
+
+"🧪 testing":
+  - test-foundry/**/*
+
+"🏹 fuzzing":
+  - test-foundry/fuzzing/**/*

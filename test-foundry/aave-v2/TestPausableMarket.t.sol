@@ -4,15 +4,16 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestPausableMarket is TestSetup {
-    address[] aAaveArray = [aAave];
-    address[] aDaiArray = [aDai];
+    address[] public aDaiArray = [aDai];
+    address[] public aAaveArray = [aAave];
+    uint256[] public amountArray = [1 ether];
 
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setPauseStatus(aDai, true);
 
         morpho.setPauseStatus(aDai, true);
-        (, bool isPaused, ) = morpho.marketStatus(aDai);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
         assertTrue(isPaused, "paused is false");
     }
 
@@ -21,7 +22,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.setPartialPauseStatus(aDai, true);
 
         morpho.setPartialPauseStatus(aDai, true);
-        (, , bool isPartiallyPaused) = morpho.marketStatus(aDai);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
@@ -29,35 +30,35 @@ contract TestPausableMarket is TestSetup {
         morpho.setPauseStatusForAllMarkets(true);
 
         for (uint256 i; i < pools.length; ++i) {
-            (, bool isPaused, ) = morpho.marketStatus(pools[i]);
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
             assertTrue(isPaused, "paused is false");
         }
 
         morpho.setPauseStatusForAllMarkets(false);
 
         for (uint256 i; i < pools.length; ++i) {
-            (, bool isPaused, ) = morpho.marketStatus(pools[i]);
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
             assertFalse(isPaused, "paused is true");
         }
     }
 
     function testPauseUnpause() public {
         morpho.setPauseStatus(aDai, true);
-        (, bool isPaused, ) = morpho.marketStatus(aDai);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
         assertTrue(isPaused, "paused is false");
 
         morpho.setPauseStatus(aDai, false);
-        (, isPaused, ) = morpho.marketStatus(aDai);
+        (, , , , isPaused, , ) = morpho.market(aDai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
         morpho.setPartialPauseStatus(aDai, true);
-        (, , bool isPartiallyPaused) = morpho.marketStatus(aDai);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
         morpho.setPartialPauseStatus(aDai, false);
-        (, , isPartiallyPaused) = morpho.marketStatus(aDai);
+        (, , , , , isPartiallyPaused, ) = morpho.market(aDai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
@@ -87,30 +88,32 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aDai, 1);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
     }
 
-    function testShouldDisableAllMarketsWhenGloballyPaused(uint8 _random1, uint8 _random2) public {
+    function testShouldDisableAllMarketsWhenGloballyPaused() public {
         morpho.setPauseStatusForAllMarkets(true);
 
         uint256 poolsLength = pools.length;
-        address market1 = pools[_random1 % poolsLength];
-        address market2 = pools[_random2 % poolsLength];
+        for (uint256 i; i < poolsLength; ++i) {
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.supply(pools[i], 1);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.supply(market1, 1);
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.borrow(pools[i], 1);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.borrow(market1, 1);
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.withdraw(pools[i], 1);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.withdraw(market1, 1);
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.repay(pools[i], 1);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.repay(market1, 1);
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.liquidate(pools[i], pools[0], address(supplier1), 1);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.liquidate(market1, market2, address(supplier1), 1);
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.liquidate(pools[0], pools[i], address(supplier1), 1);
+        }
     }
 
     function testShouldDisableMarketWhenPaused() public {
@@ -120,7 +123,6 @@ contract TestPausableMarket is TestSetup {
         supplier1.supply(aDai, amount);
 
         (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
-        toBorrow = toBorrow / 2;
         supplier1.borrow(aUsdc, toBorrow);
 
         morpho.setPauseStatus(aDai, true);
@@ -149,7 +151,7 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        morpho.claimToTreasury(aDaiArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -170,7 +172,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aAave, 1 ether);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aAaveArray, amountArray);
     }
 
     function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
@@ -204,7 +206,7 @@ contract TestPausableMarket is TestSetup {
         liquidator.approve(usdc, toLiquidate);
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aDaiArray, amountArray);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -227,6 +229,6 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aAave, 1 ether);
 
-        morpho.claimToTreasury(aAaveArray);
+        morpho.claimToTreasury(aAaveArray, amountArray);
     }
 }
