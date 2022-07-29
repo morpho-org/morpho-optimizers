@@ -44,7 +44,7 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }} # always keep compiled contracts from base branch
 
     - name: Run tests
-      run: make ci > ${{ inputs.protocol }}.gasreport.ansi
+      run: make ci | tee ${{ inputs.protocol }}.gasreport.ansi
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
