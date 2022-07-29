@@ -54,7 +54,7 @@ library Types {
 
     struct LiquidityData {
         uint256 collateral; // The collateral value (In base currency in wad).
-        uint256 maxDebt; // The max loan to value (In base currency in wad).
+        uint256 maxDebt; // The max debt value (In base currency in wad).
         uint256 liquidationThreshold; // The liquidation threshold value (In base currency in wad).
         uint256 debt; // The debt value (In base currency in wad).
     }

@@ -54,7 +54,7 @@ library Types {
 
     struct LiquidityData {
         uint256 collateral; // The collateral value (in ETH).
-        uint256 maxDebt; // The max loan to value (in ETH).
+        uint256 maxDebt; // The max debt value (in ETH).
         uint256 liquidationThreshold; // The liquidation threshold value (in ETH).
         uint256 debt; // The debt value (in ETH).
     }
