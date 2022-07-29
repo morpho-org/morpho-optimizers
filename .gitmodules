@@ -1,23 +1,18 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-	ignore = dirty
 [submodule "lib/data-structures"]
 	path = lib/data-structures
 	url = https://github.com/morpho-labs/data-structures
-	ignore = dirty
 [submodule "lib/aave-v3-core"]
 	path = lib/aave-v3-core
 	url = https://github.com/aave/aave-v3-core
-	ignore = dirty
 [submodule "lib/aave-v3-periphery"]
 	path = lib/aave-v3-periphery
 	url = https://github.com/aave/aave-v3-periphery
-	ignore = dirty
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/Rari-Capital/solmate
-	ignore = dirty
 [submodule "lib/morpho-utils"]
 	path = lib/morpho-utils
 	url = https://github.com/morpho-labs/morpho-utils
