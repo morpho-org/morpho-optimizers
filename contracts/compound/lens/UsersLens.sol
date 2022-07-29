@@ -33,13 +33,13 @@ abstract contract UsersLens is IndexesLens {
         return morpho.getEnteredMarkets(_user);
     }
 
-    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
+    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolToken` (in underlyings).
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
     /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
+    function getUserMaxCapacitiesForAsset(address _user, address _poolToken)
         external
         view
         returns (uint256 withdrawable, uint256 borrowable)
@@ -53,7 +53,7 @@ abstract contract UsersLens is IndexesLens {
         for (uint256 i; i < nbEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
-            if (_poolTokenAddress != poolTokenEntered) {
+            if (_poolToken != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, false, oracle);
 
                 data.maxDebtValue += assetData.maxDebtValue;
@@ -65,7 +65,7 @@ abstract contract UsersLens is IndexesLens {
             }
         }
 
-        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, true, oracle);
+        assetData = getUserLiquidityDataForAsset(_user, _poolToken, true, oracle);
 
         data.maxDebtValue += assetData.maxDebtValue;
         data.debtValue += assetData.debtValue;
@@ -90,13 +90,13 @@ abstract contract UsersLens is IndexesLens {
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
     /// @param _user The potential liquidatee.
-    /// @param _poolTokenBorrowedAddress The address of the market to repay.
-    /// @param _poolTokenCollateralAddress The address of the market to seize.
+    /// @param _poolTokenBorrowed The address of the market to repay.
+    /// @param _poolTokenCollateral The address of the market to seize.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     function computeLiquidationRepayAmount(
         address _user,
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress,
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
         address[] calldata _updatedMarkets
     ) external view returns (uint256 toRepay) {
         address[] memory updatedMarkets = new address[](_updatedMarkets.length + 2);
@@ -110,23 +110,20 @@ abstract contract UsersLens is IndexesLens {
             }
         }
 
-        updatedMarkets[updatedMarkets.length - 2] = _poolTokenBorrowedAddress;
-        updatedMarkets[updatedMarkets.length - 1] = _poolTokenCollateralAddress;
+        updatedMarkets[updatedMarkets.length - 2] = _poolTokenBorrowed;
+        updatedMarkets[updatedMarkets.length - 1] = _poolTokenCollateral;
         if (!isLiquidatable(_user, updatedMarkets)) return 0;
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
         (, , uint256 totalCollateralBalance) = getCurrentSupplyBalanceInOf(
-            _poolTokenCollateralAddress,
+            _poolTokenCollateral,
             _user
         );
-        (, , uint256 totalBorrowBalance) = getCurrentBorrowBalanceInOf(
-            _poolTokenBorrowedAddress,
-            _user
-        );
+        (, , uint256 totalBorrowBalance) = getCurrentBorrowBalanceInOf(_poolTokenBorrowed, _user);
 
-        uint256 borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        uint256 collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
+        uint256 borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowed);
+        uint256 collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateral);
         if (borrowedPrice == 0 || collateralPrice == 0) revert CompoundOracleFailed();
 
         uint256 maxROIRepay = totalCollateralBalance.mul(collateralPrice).div(borrowedPrice).div(
@@ -208,12 +205,12 @@ abstract contract UsersLens is IndexesLens {
     }
 
     /// @notice Returns the balance in underlying of a given user in a given market.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _user The user to determine balances of.
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getCurrentSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
         public
         view
         returns (
@@ -222,25 +219,21 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
-            _poolTokenAddress
-        );
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
 
-        balanceOnPool = morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-            poolSupplyIndex
-        );
-        balanceInP2P = morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(p2pSupplyIndex);
+        balanceOnPool = morpho.supplyBalanceInOf(_poolToken, _user).onPool.mul(poolSupplyIndex);
+        balanceInP2P = morpho.supplyBalanceInOf(_poolToken, _user).inP2P.mul(p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
 
     /// @notice Returns the borrow balance in underlying of a given user in a given market.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _user The user to determine balances of.
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getCurrentBorrowBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
         public
         view
         returns (
@@ -249,28 +242,24 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
-            _poolTokenAddress
-        );
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
 
-        balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-            poolBorrowIndex
-        );
-        balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(p2pBorrowIndex);
+        balanceOnPool = morpho.borrowBalanceInOf(_poolToken, _user).onPool.mul(poolBorrowIndex);
+        balanceInP2P = morpho.borrowBalanceInOf(_poolToken, _user).inP2P.mul(p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
 
     /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return debtValue The current debt value of the user.
     /// @return maxDebtValue The maximum debt value possible of the user.
     function getUserHypotheticalBalanceStates(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) public view returns (uint256 debtValue, uint256 maxDebtValue) {
@@ -294,7 +283,7 @@ abstract contract UsersLens is IndexesLens {
                 ++i;
             }
 
-            if (_poolTokenAddress == poolTokenEntered) {
+            if (_poolToken == poolTokenEntered) {
                 if (_borrowedAmount > 0)
                     debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
 
@@ -306,39 +295,39 @@ abstract contract UsersLens is IndexesLens {
         }
     }
 
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
+    /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
     /// @param _user The user to determine data for.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
     function getUserLiquidityDataForAsset(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         bool _getUpdatedIndexes,
         ICompoundOracle _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
-        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
+        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
 
-        (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
+        (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
 
         (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
             uint256 poolSupplyIndex,
             uint256 poolBorrowIndex
-        ) = getIndexes(_poolTokenAddress, _getUpdatedIndexes);
+        ) = getIndexes(_poolToken, _getUpdatedIndexes);
 
         assetData.collateralValue = _getUserSupplyBalanceInOf(
-            _poolTokenAddress,
+            _poolToken,
             _user,
             p2pSupplyIndex,
             poolSupplyIndex
         ).mul(assetData.underlyingPrice);
 
         assetData.debtValue = _getUserBorrowBalanceInOf(
-            _poolTokenAddress,
+            _poolToken,
             _user,
             p2pBorrowIndex,
             poolBorrowIndex
@@ -399,40 +388,34 @@ abstract contract UsersLens is IndexesLens {
 
     /// INTERNAL ///
 
-    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the supply amount.
+    /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
     function _getUserSupplyBalanceInOf(
-        address _poolTokenAddress,
+        address _poolToken,
         address _user,
         uint256 _p2pSupplyIndex,
         uint256 _poolSupplyIndex
     ) internal view returns (uint256) {
-        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
-            _poolTokenAddress,
-            _user
-        );
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
 
         return
             supplyBalance.inP2P.mul(_p2pSupplyIndex) + supplyBalance.onPool.mul(_poolSupplyIndex);
     }
 
-    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the borrow amount.
+    /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
     function _getUserBorrowBalanceInOf(
-        address _poolTokenAddress,
+        address _poolToken,
         address _user,
         uint256 _p2pBorrowIndex,
         uint256 _poolBorrowIndex
     ) internal view returns (uint256) {
-        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
-            _poolTokenAddress,
-            _user
-        );
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
 
         return
             borrowBalance.inP2P.mul(_p2pBorrowIndex) + borrowBalance.onPool.mul(_poolBorrowIndex);

@@ -276,21 +276,21 @@ contract TestSetup is Config, Utils {
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas!).
-    /// @param _poolTokenAddress The market address.
+    /// @param _poolToken The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
-    function getApproxP2PRates(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolToken)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
         DataTypes.ReserveData memory reserveData = pool.getReserveData(
-            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+            IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()
         );
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolTokenAddress);
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolToken);
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

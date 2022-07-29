@@ -19,21 +19,21 @@ abstract contract PositionsManagerUtils is MatchingEngine {
     /// COMMON EVENTS ///
 
     /// @notice Emitted when the peer-to-peer borrow delta is updated.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _p2pBorrowDelta The peer-to-peer borrow delta after update.
-    event P2PBorrowDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pBorrowDelta);
+    event P2PBorrowDeltaUpdated(address indexed _poolToken, uint256 _p2pBorrowDelta);
 
     /// @notice Emitted when the peer-to-peer supply delta is updated.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _p2pSupplyDelta The peer-to-peer supply delta after update.
-    event P2PSupplyDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pSupplyDelta);
+    event P2PSupplyDeltaUpdated(address indexed _poolToken, uint256 _p2pSupplyDelta);
 
     /// @notice Emitted when the supply and peer-to-peer borrow amounts are updated.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _p2pSupplyAmount The peer-to-peer supply amount after update.
     /// @param _p2pBorrowAmount The peer-to-peer borrow amount after update.
     event P2PAmountsUpdated(
-        address indexed _poolTokenAddress,
+        address indexed _poolToken,
         uint256 _p2pSupplyAmount,
         uint256 _p2pBorrowAmount
     );
@@ -57,15 +57,15 @@ abstract contract PositionsManagerUtils is MatchingEngine {
 
     /// @dev Withdraws underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _amount The amount of token (in underlying).
     function _withdrawFromPool(
         ERC20 _underlyingToken,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amount
     ) internal {
         // Withdraw only what is possible. The remaining dust is taken from the contract balance.
-        _amount = Math.min(IAToken(_poolTokenAddress).balanceOf(address(this)), _amount);
+        _amount = Math.min(IAToken(_poolToken).balanceOf(address(this)), _amount);
         pool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 

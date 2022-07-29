@@ -32,13 +32,13 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// EVENTS ///
 
     /// @notice Emitted when the peer-to-peer indexes of a market are updated.
-    /// @param _poolTokenAddress The address of the market updated.
+    /// @param _poolToken The address of the market updated.
     /// @param _p2pSupplyIndex The updated supply index from peer-to-peer unit to underlying.
     /// @param _p2pBorrowIndex The updated borrow index from peer-to-peer unit to underlying.
     /// @param _poolSupplyIndex The updated pool supply index.
     /// @param _poolBorrowIndex The updated pool borrow index.
     event P2PIndexesUpdated(
-        address indexed _poolTokenAddress,
+        address indexed _poolToken,
         uint256 _p2pSupplyIndex,
         uint256 _p2pBorrowIndex,
         uint256 _poolSupplyIndex,
@@ -48,39 +48,39 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// EXTERNAL ///
 
     /// @notice Updates the peer-to-peer indexes.
-    /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress) external {
-        Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+    /// @param _poolToken The address of the market to update.
+    function updateP2PIndexes(address _poolToken) external {
+        Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolToken];
 
         if (block.number > poolIndexes.lastUpdateBlockNumber) {
-            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+            Types.MarketParameters storage marketParams = marketParameters[_poolToken];
 
-            uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-            uint256 poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
+            uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateCurrent();
+            uint256 poolBorrowIndex = ICToken(_poolToken).borrowIndex();
 
             Params memory params = Params(
-                p2pSupplyIndex[_poolTokenAddress],
-                p2pBorrowIndex[_poolTokenAddress],
+                p2pSupplyIndex[_poolToken],
+                p2pBorrowIndex[_poolToken],
                 poolSupplyIndex,
                 poolBorrowIndex,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
-                deltas[_poolTokenAddress]
+                deltas[_poolToken]
             );
 
             (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
 
-            p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
-            p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
+            p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
+            p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
 
             poolIndexes.lastUpdateBlockNumber = uint32(block.number);
             poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
             poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
 
             emit P2PIndexesUpdated(
-                _poolTokenAddress,
+                _poolToken,
                 newP2PSupplyIndex,
                 newP2PBorrowIndex,
                 poolSupplyIndex,

@@ -77,7 +77,7 @@ library Types {
     }
 
     struct LiquidityStackVars {
-        address poolTokenAddress;
+        address poolToken;
         uint256 poolTokensLength;
         bytes32 userMarkets;
         bytes32 borrowMask;

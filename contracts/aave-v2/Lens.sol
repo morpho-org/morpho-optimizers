@@ -64,29 +64,29 @@ contract Lens {
     /// GETTERS ///
 
     /// @notice Checks if a market is created.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreated(address _poolTokenAddress) external view returns (bool) {
-        return morpho.market(_poolTokenAddress).isCreated;
+    function isMarketCreated(address _poolToken) external view returns (bool) {
+        return morpho.market(_poolToken).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        Types.Market memory market = morpho.market(_poolTokenAddress);
+    function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
+        Types.Market memory market = morpho.market(_poolToken);
         return market.isCreated && !market.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress)
+    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
         external
         view
         returns (bool)
     {
-        Types.Market memory market = morpho.market(_poolTokenAddress);
+        Types.Market memory market = morpho.market(_poolToken);
         return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
     }
 
@@ -101,12 +101,12 @@ contract Lens {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
 
-    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
+    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolToken` (in underlyings).
     /// @param _user The user to determine the capacities for.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
     /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
+    function getUserMaxCapacitiesForAsset(address _user, address _poolToken)
         external
         view
         returns (uint256 withdrawable, uint256 borrowable)
@@ -116,7 +116,7 @@ contract Lens {
         Types.LiquidityData memory data = getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
         Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
             _user,
-            _poolTokenAddress,
+            _poolToken,
             oracle
         );
         uint256 healthFactor = data.debt > 0
@@ -136,19 +136,19 @@ contract Lens {
         borrowable = ((data.maxDebt - data.debt) * assetData.tokenUnit) / assetData.underlyingPrice;
     }
 
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @notice Returns the data related to `_poolToken` for the `_user`.
     /// @dev Note: must be called after calling `accrueInterest()` on the aToken to have the most up to date values.
     /// @param _user The user to determine data for.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolToken The address of the market.
+    /// @param _poolToken The address of the market.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
     function getUserLiquidityDataForAsset(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         IPriceOracleGetter _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
-        address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        address underlyingToken = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
@@ -157,22 +157,22 @@ contract Lens {
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
         assetData.debt =
-            (_getUserBorrowBalanceInOf(_poolTokenAddress, _user) * assetData.underlyingPrice) /
+            (_getUserBorrowBalanceInOf(_poolToken, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;
         assetData.collateral =
-            (_getUserSupplyBalanceInOf(_poolTokenAddress, _user) * assetData.underlyingPrice) /
+            (_getUserSupplyBalanceInOf(_poolToken, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;
     }
 
     /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return liquidityData The liquidity data of the user.
     function getUserHypotheticalBalanceStates(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
@@ -197,7 +197,7 @@ contract Lens {
                 );
                 liquidityData.debt += assetData.debt;
 
-                if (_poolTokenAddress == poolToken) {
+                if (_poolToken == poolToken) {
                     if (_borrowedAmount > 0)
                         liquidityData.debt +=
                             (_borrowedAmount * assetData.underlyingPrice) /
@@ -225,19 +225,19 @@ contract Lens {
 
     /// @dev Returns the hypothetical health factor of a user
     /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return healthFactor The health factor of the user.
     function getUserHypotheticalHealthFactor(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) public view returns (uint256 healthFactor) {
         Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
             _user,
-            _poolTokenAddress,
+            _poolToken,
             _withdrawnAmount,
             _borrowedAmount
         );
@@ -257,35 +257,35 @@ contract Lens {
     }
 
     /// @notice Returns the updated peer-to-peer indexes.
-    /// @param _poolTokenAddress The address of the market to update.
+    /// @param _poolToken The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
-    function getUpdatedP2PIndexes(address _poolTokenAddress)
+    function getUpdatedP2PIndexes(address _poolToken)
         external
         view
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
-        if (block.timestamp == morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp) {
-            newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
-            newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
+        if (block.timestamp == morpho.poolIndexes(_poolToken).lastUpdateTimestamp) {
+            newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolToken);
+            newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolToken);
         } else {
-            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.Market memory market = morpho.market(_poolTokenAddress);
+            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolToken);
+            Types.Market memory market = morpho.market(_poolToken);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
-                _poolTokenAddress
+                _poolToken
             );
 
             Params memory params = Params(
-                morpho.p2pSupplyIndex(_poolTokenAddress),
-                morpho.p2pBorrowIndex(_poolTokenAddress),
+                morpho.p2pSupplyIndex(_poolToken),
+                morpho.p2pBorrowIndex(_poolToken),
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 market.reserveFactor,
                 market.p2pIndexCursor,
-                morpho.deltas(_poolTokenAddress)
+                morpho.deltas(_poolToken)
             );
 
             (newP2PSupplyIndex, newP2PBorrowIndex) = _computeP2PIndexes(params);
@@ -293,29 +293,29 @@ contract Lens {
     }
 
     /// @notice Returns the updated peer-to-peer supply index.
-    /// @param _poolTokenAddress The address of the market to update.
+    /// @param _poolToken The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp)
-            return morpho.p2pSupplyIndex(_poolTokenAddress);
+    function getUpdatedP2PSupplyIndex(address _poolToken) public view returns (uint256) {
+        if (block.timestamp == morpho.poolIndexes(_poolToken).lastUpdateTimestamp)
+            return morpho.p2pSupplyIndex(_poolToken);
         else {
-            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.Market memory market = morpho.market(_poolTokenAddress);
+            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolToken);
+            Types.Market memory market = morpho.market(_poolToken);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
-                _poolTokenAddress
+                _poolToken
             );
 
             Params memory params = Params(
-                morpho.p2pSupplyIndex(_poolTokenAddress),
-                morpho.p2pBorrowIndex(_poolTokenAddress),
+                morpho.p2pSupplyIndex(_poolToken),
+                morpho.p2pBorrowIndex(_poolToken),
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 market.reserveFactor,
                 market.p2pIndexCursor,
-                morpho.deltas(_poolTokenAddress)
+                morpho.deltas(_poolToken)
             );
 
             return _computeP2PSupplyIndex(params);
@@ -323,29 +323,29 @@ contract Lens {
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
-    /// @param _poolTokenAddress The address of the market to update.
+    /// @param _poolToken The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp)
-            return morpho.p2pBorrowIndex(_poolTokenAddress);
+    function getUpdatedP2PBorrowIndex(address _poolToken) public view returns (uint256) {
+        if (block.timestamp == morpho.poolIndexes(_poolToken).lastUpdateTimestamp)
+            return morpho.p2pBorrowIndex(_poolToken);
         else {
-            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
-            Types.Market memory market = morpho.market(_poolTokenAddress);
+            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolToken);
+            Types.Market memory market = morpho.market(_poolToken);
 
             (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
-                _poolTokenAddress
+                _poolToken
             );
 
             Params memory params = Params(
-                morpho.p2pSupplyIndex(_poolTokenAddress),
-                morpho.p2pBorrowIndex(_poolTokenAddress),
+                morpho.p2pSupplyIndex(_poolToken),
+                morpho.p2pBorrowIndex(_poolToken),
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 market.reserveFactor,
                 market.p2pIndexCursor,
-                morpho.deltas(_poolTokenAddress)
+                morpho.deltas(_poolToken)
             );
 
             return _computeP2PBorrowIndex(params);
@@ -360,7 +360,7 @@ contract Lens {
     /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in adUnit).
     /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer unit).
     /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer unit).
-    function getMarketData(address _poolTokenAddress)
+    function getMarketData(address _poolToken)
         external
         view
         returns (
@@ -374,15 +374,15 @@ contract Lens {
         )
     {
         {
-            Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+            Types.Delta memory delta = morpho.deltas(_poolToken);
             p2pSupplyDelta_ = delta.p2pSupplyDelta;
             p2pBorrowDelta_ = delta.p2pBorrowDelta;
             p2pSupplyAmount_ = delta.p2pSupplyAmount;
             p2pBorrowAmount_ = delta.p2pBorrowAmount;
         }
-        p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
-        p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
-        lastUpdateTimestamp_ = morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp;
+        p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolToken);
+        p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolToken);
+        lastUpdateTimestamp_ = morpho.poolIndexes(_poolToken).lastUpdateTimestamp;
     }
 
     /// @notice Returns market's configuration.
@@ -391,7 +391,7 @@ contract Lens {
     /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor_ The reserve actor applied to this market.
-    function getMarketConfiguration(address _poolTokenAddress)
+    function getMarketConfiguration(address _poolToken)
         external
         view
         returns (
@@ -402,7 +402,7 @@ contract Lens {
             uint256 reserveFactor_
         )
     {
-        Types.Market memory market = morpho.market(_poolTokenAddress);
+        Types.Market memory market = morpho.market(_poolToken);
         isCreated_ = market.isCreated;
         isP2PDisabled_ = market.isP2PDisabled;
         isPaused_ = market.isPaused;
@@ -589,57 +589,55 @@ contract Lens {
     }
 
     /// @dev Computes and returns Aave's updated indexes.
-    /// @param _poolTokenAddress The address of the market to compute.
+    /// @param _poolToken The address of the market to compute.
     /// @return newSupplyIndex The updated supply index.
     /// @return newBorrowIndex The updated borrow index.
-    function _computePoolIndexes(address _poolTokenAddress)
+    function _computePoolIndexes(address _poolToken)
         internal
         view
         returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
-        address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        address underlyingToken = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
         return (
             pool.getReserveNormalizedIncome(underlyingToken),
             pool.getReserveNormalizedVariableDebt(underlyingToken)
         );
     }
 
-    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the supply amount.
+    /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function _getUserSupplyBalanceInOf(address _poolToken, address _user)
         internal
         view
         returns (uint256)
     {
         return
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(
-                getUpdatedP2PSupplyIndex(_poolTokenAddress)
+            morpho.supplyBalanceInOf(_poolToken, _user).inP2P.rayMul(
+                getUpdatedP2PSupplyIndex(_poolToken)
             ) +
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
-                pool.getReserveNormalizedIncome(
-                    IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-                )
+            morpho.supplyBalanceInOf(_poolToken, _user).onPool.rayMul(
+                pool.getReserveNormalizedIncome(IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS())
             );
     }
 
-    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the borrow amount.
+    /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
+    function _getUserBorrowBalanceInOf(address _poolToken, address _user)
         internal
         view
         returns (uint256)
     {
         return
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(
-                getUpdatedP2PBorrowIndex(_poolTokenAddress)
+            morpho.borrowBalanceInOf(_poolToken, _user).inP2P.rayMul(
+                getUpdatedP2PBorrowIndex(_poolToken)
             ) +
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
+            morpho.borrowBalanceInOf(_poolToken, _user).onPool.rayMul(
                 pool.getReserveNormalizedVariableDebt(
-                    IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+                    IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()
                 )
             );
     }

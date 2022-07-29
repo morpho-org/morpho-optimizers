@@ -50,43 +50,43 @@ contract User is Test {
         morpho.createMarket(_underlyingToken, _reserveFactor, _p2pIndexCursor);
     }
 
-    function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
-        morpho.setReserveFactor(_poolTokenAddress, _reserveFactor);
+    function setReserveFactor(address _poolToken, uint16 _reserveFactor) external {
+        morpho.setReserveFactor(_poolToken, _reserveFactor);
     }
 
-    function supply(address _poolTokenAddress, uint256 _amount) external {
+    function supply(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
-        morpho.supply(_poolTokenAddress, address(this), _amount);
+        morpho.supply(_poolToken, address(this), _amount);
     }
 
     function supply(
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
         hevm.warp(block.timestamp + tm);
-        morpho.supply(_poolTokenAddress, address(this), _amount, _maxGasForMatching);
+        morpho.supply(_poolToken, address(this), _amount, _maxGasForMatching);
     }
 
-    function withdraw(address _poolTokenAddress, uint256 _amount) external {
-        morpho.withdraw(_poolTokenAddress, _amount);
+    function withdraw(address _poolToken, uint256 _amount) external {
+        morpho.withdraw(_poolToken, _amount);
     }
 
-    function borrow(address _poolTokenAddress, uint256 _amount) external {
-        morpho.borrow(_poolTokenAddress, _amount);
+    function borrow(address _poolToken, uint256 _amount) external {
+        morpho.borrow(_poolToken, _amount);
     }
 
     function borrow(
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        morpho.borrow(_poolTokenAddress, _amount, _maxGasForMatching);
+        morpho.borrow(_poolToken, _amount, _maxGasForMatching);
     }
 
-    function repay(address _poolTokenAddress, uint256 _amount) external {
+    function repay(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
-        morpho.repay(_poolTokenAddress, address(this), _amount);
+        morpho.repay(_poolToken, address(this), _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
@@ -104,18 +104,13 @@ contract User is Test {
     }
 
     function liquidate(
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress,
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
     ) external {
         hevm.warp(block.timestamp + tm);
-        morpho.liquidate(
-            _poolTokenBorrowedAddress,
-            _poolTokenCollateralAddress,
-            _borrower,
-            _amount
-        );
+        morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _amount);
     }
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {
@@ -139,8 +134,8 @@ contract User is Test {
         morpho.setPauseStatus(_marketAddress, _newStatus);
     }
 
-    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external {
-        morpho.setPartialPauseStatus(_poolTokenAddress, _newStatus);
+    function setPartialPauseStatus(address _poolToken, bool _newStatus) external {
+        morpho.setPartialPauseStatus(_poolToken, _newStatus);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
