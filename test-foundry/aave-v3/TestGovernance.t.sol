@@ -129,31 +129,27 @@ contract TestGovernance is TestSetup {
         assertTrue(isP2PDisabled);
     }
 
-    function testOnlyOwnerShouldSetEntryManager() public {
-        IEntryPositionsManager entryManagerV2 = new EntryPositionsManager();
+    function testOnlyOwnerShouldSetEntryPositionsManager() public {
+        IEntryPositionsManager entryPositionsManagerV2 = new EntryPositionsManager();
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setEntryPositionsManager(entryManagerV2);
+        morpho.setEntryPositionsManager(entryPositionsManagerV2);
 
-        morpho.setEntryPositionsManager(entryManagerV2);
-        assertEq(address(morpho.entryPositionsManager()), address(entryManagerV2));
+        morpho.setEntryPositionsManager(entryPositionsManagerV2);
+        assertEq(address(morpho.entryPositionsManager()), address(entryPositionsManagerV2));
     }
 
-    // TODO: add rewards
-    // function testOnlyOwnerShouldSetRewardsManager() public {
-    //     IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche(
-    //         pool,
-    //         IMorpho(address(morpho))
-    //     );
+    function testOnlyOwnerShouldSetRewardsManager() public {
+        IRewardsManager rewardsManagerV2 = new RewardsManager();
 
-    //     hevm.prank(address(0));
-    //     hevm.expectRevert("Ownable: caller is not the owner");
-    //     morpho.setRewardsManager(rewardsManagerV2);
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setRewardsManager(rewardsManagerV2);
 
-    //     morpho.setRewardsManager(rewardsManagerV2);
-    //     assertEq(address(morpho.rewardsManager()), address(rewardsManagerV2));
-    // }
+        morpho.setRewardsManager(rewardsManagerV2);
+        assertEq(address(morpho.rewardsManager()), address(rewardsManagerV2));
+    }
 
     function testOnlyOwnerShouldSetInterestRatesManager() public {
         IInterestRatesManager interestRatesV2 = new InterestRatesManager();
@@ -193,14 +189,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
-    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusForAllMarkets(true);
-
-        morpho.setPauseStatusForAllMarkets(true);
-    }
-
     function testOnlyOwnerCanSetClaimRewardsStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -208,5 +196,13 @@ contract TestGovernance is TestSetup {
 
         morpho.setClaimRewardsPauseStatus(true);
         assertTrue(morpho.isClaimRewardsPaused());
+    }
+
+    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setPauseStatusForAllMarkets(true);
+
+        morpho.setPauseStatusForAllMarkets(true);
     }
 }

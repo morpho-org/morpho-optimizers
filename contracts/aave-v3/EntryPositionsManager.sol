@@ -297,6 +297,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             0,
             _borrowedAmount
         );
-        return values.debtValue <= values.maxLoanToValue;
+        return values.debt <= values.maxDebt;
     }
 }

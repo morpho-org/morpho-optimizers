@@ -169,7 +169,7 @@ contract TestWithdraw is TestSetup {
 
         testEqualityLarge(onPoolSupplier, expectedOnPool, "supplier on pool");
         testEqualityLarge(onPoolBorrower, 0, "borrower on pool");
-        testEquality(inP2PSupplier, inP2PBorrower, "in P2P");
+        testEquality(inP2PSupplier, inP2PBorrower, "equality");
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint256 NMAX = 20;
@@ -341,7 +341,7 @@ contract TestWithdraw is TestSetup {
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        // supplier withdraws suppliedAmounts
+        // supplier withdraws suppliedAmount
         supplier1.withdraw(aDai, suppliedAmount);
 
         // Check balances for supplier1

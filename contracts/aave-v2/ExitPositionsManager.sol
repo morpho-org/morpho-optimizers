@@ -199,9 +199,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
 
-        LiquidateVars memory vars;
-        address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenBorrowedAddress = market[_poolTokenBorrowedAddress].underlyingToken;
 
         uint256 amountToLiquidate = Math.min(
             _amount,
@@ -210,11 +208,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             ) // Max liquidatable debt.
         );
 
-        address tokenCollateralAddress = IAToken(_poolTokenCollateralAddress)
-        .UNDERLYING_ASSET_ADDRESS();
+        address tokenCollateralAddress = market[_poolTokenCollateralAddress].underlyingToken;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
+        LiquidateVars memory vars;
         {
             ILendingPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
@@ -623,9 +621,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         );
 
         return
-            values.debtValue > 0
-                ? values.liquidationThresholdValue.wadDiv(values.debtValue)
-                : type(uint256).max;
+            values.debt > 0 ? values.liquidationThreshold.wadDiv(values.debt) : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.

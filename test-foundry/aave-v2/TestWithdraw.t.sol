@@ -170,9 +170,9 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedIncome(dai)
         );
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        testEquality(onPoolSupplier, expectedOnPool, "supplier on pool");
+        testEquality(onPoolBorrower, 0, "borrower on pool");
+        testEquality(inP2PSupplier, inP2PBorrower, "equality");
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint256 NMAX = 20;
@@ -192,17 +192,20 @@ contract TestWithdraw is TestSetup {
 
         // Check balances for supplier1
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        testEquality(onPoolSupplier, 0);
-        testEquality(inP2PSupplier, 0);
+        testEquality(onPoolSupplier, 0, "supplier on pool");
+        testEquality(inP2PSupplier, 0, "supplier in P2P");
 
         // Check balances for the borrower
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, p2pSupplyIndex);
+        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            borrowedAmount,
+            morpho.p2pBorrowIndex(aDai)
+        );
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
+        testEquality(onPoolBorrower, 0, "borrower on pool");
 
         uint256 inP2P;
         uint256 onPool;
@@ -214,8 +217,8 @@ contract TestWithdraw is TestSetup {
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
             uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerSupplier);
-            testEquality(onPool, 0);
+            testEquality(expectedInP2P, amountPerSupplier, "new supplier in P2P");
+            testEquality(onPool, 0, "new supplier on pool");
         }
     }
 
@@ -249,9 +252,9 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedIncome(dai)
         );
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        testEquality(onPoolSupplier, expectedOnPool, "supplier on pool");
+        testEquality(onPoolBorrower, 0, "borrower on pool");
+        testEquality(inP2PSupplier, inP2PBorrower, "equality P2P");
 
         // Supplier1 withdraws 75% of supplied amount
         supplier1.withdraw(aDai, (75 * suppliedAmount) / 100);
@@ -269,8 +272,8 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool);
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower in pool 2");
 
         // Check balances for supplier
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
@@ -287,7 +290,7 @@ contract TestWithdraw is TestSetup {
     // The supplier is matched to 2 x NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`. Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     function testWithdraw3_4() public {
         // TODO: fix that.
-        tip(dai, address(morpho), 1 ether);
+        deal(dai, address(morpho), 1 ether);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -346,8 +349,8 @@ contract TestWithdraw is TestSetup {
 
         // Check balances for supplier1
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        testEquality(onPoolSupplier, 0);
-        testEquality(inP2PSupplier, 0);
+        testEquality(onPoolSupplier, 0, "supplier on pool");
+        testEquality(inP2PSupplier, 0, "supplier in P2P");
 
         // Check balances for the borrower
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
@@ -362,8 +365,8 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool);
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower on pool");
 
         uint256 inP2P;
         uint256 onPool;
@@ -532,7 +535,7 @@ contract TestWithdraw is TestSetup {
                     (expectedBorrowBalanceInUnderlying * 2) / 100,
                     "not expected underlying balance"
                 );
-                testEquality(onPoolBorrower, 0);
+                testEquality(onPoolBorrower, 0, "on pool borrower");
             }
         }
 

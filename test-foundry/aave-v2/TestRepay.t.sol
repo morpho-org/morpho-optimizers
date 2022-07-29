@@ -74,9 +74,9 @@ contract TestRepay is TestSetup {
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(onPoolBorrower1, expectedOnPool);
-        testEquality(inP2PSupplier, inP2PBorrower1);
+        testEquality(onPoolSupplier, 0, "supplier on pool");
+        testEquality(onPoolBorrower1, expectedOnPool, "borrower on pool");
+        testEquality(inP2PSupplier, inP2PBorrower1, "equality");
 
         // An available borrower onPool
         uint256 availableBorrowerAmount = borrowedAmount / 4;

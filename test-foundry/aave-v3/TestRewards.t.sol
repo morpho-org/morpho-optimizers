@@ -4,6 +4,16 @@ pragma solidity 0.8.10;
 import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
+    function testShouldRevertWhenClaimRewardsIsPaused() public {
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        morpho.setClaimRewardsPauseStatus(true);
+
+        hevm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
+        morpho.claimRewards(aDaiInArray, false);
+    }
+
     function testShouldClaimRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
@@ -44,16 +54,6 @@ contract TestRewards is TestSetup {
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
 
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
-    }
-
-    function testShouldRevertWhenClaimRewardsIsPaused() public {
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
-
-        morpho.setClaimRewardsPauseStatus(true);
-
-        hevm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
-        morpho.claimRewards(aDaiInArray, false);
     }
 
     function testShouldGetRightAmountOfSupplyRewards() public {

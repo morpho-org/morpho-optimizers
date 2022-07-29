@@ -229,28 +229,6 @@ abstract contract MorphoUtils is MorphoStorage {
             userBorrowBalance.onPool.rayMul(poolIndexes[_poolTokenAddress].poolBorrowIndex);
     }
 
-    /// @dev Gets all markets of the user.
-    /// @param _user The user address.
-    /// @return markets The markets the user is participating in.
-    function _getUserMarkets(address _user) internal view returns (address[] memory markets) {
-        markets = new address[](marketsCreated.length);
-        uint256 marketLength;
-        bytes32 userMarketsCached = userMarkets[_user];
-        unchecked {
-            for (uint256 i; i < markets.length; ++i) {
-                if (_isSupplyingOrBorrowing(userMarketsCached, borrowMask[marketsCreated[i]])) {
-                    markets[marketLength] = marketsCreated[i];
-                    ++marketLength;
-                }
-            }
-        }
-
-        // Resize the array for return
-        assembly {
-            mstore(markets, marketLength)
-        }
-    }
-
     /// @dev Calculates the value of the collateral.
     /// @param _poolToken The pool token to calculate the value for.
     /// @param _user The user address.
@@ -261,10 +239,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _user,
         uint256 _underlyingPrice,
         uint256 _tokenUnit
-    ) internal view returns (uint256 collateralValue) {
-        collateralValue =
-            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
-            _tokenUnit;
+    ) internal view returns (uint256 collateral) {
+        collateral = (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
     }
 
     /// @dev Calculates the value of the debt.
@@ -277,10 +253,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _user,
         uint256 _underlyingPrice,
         uint256 _tokenUnit
-    ) internal view returns (uint256 debtValue) {
-        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
-            _tokenUnit
-        );
+    ) internal view returns (uint256 debt) {
+        debt = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(_tokenUnit);
     }
 
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
@@ -295,18 +269,18 @@ abstract contract MorphoUtils is MorphoStorage {
         uint256 _amountWithdrawn,
         uint256 _amountBorrowed
     ) internal returns (Types.LiquidityData memory values) {
-        Types.LiquidityStackVars memory vars;
-        Types.AssetLiquidityData memory assetData;
-
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        vars.userMarkets = userMarkets[_user];
+        Types.AssetLiquidityData memory assetData;
+        Types.LiquidityStackVars memory vars;
         vars.poolTokensLength = marketsCreated.length;
+        vars.userMarkets = userMarkets[_user];
 
         for (uint256 i; i < vars.poolTokensLength; ) {
             vars.poolTokenAddress = marketsCreated[i];
             vars.borrowMask = borrowMask[vars.poolTokenAddress];
+
             if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
-                vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                vars.underlyingAddress = market[vars.poolTokenAddress].underlyingToken;
                 vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
 
                 if (vars.poolTokenAddress != _poolTokenAddress)
@@ -325,7 +299,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 }
 
                 if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                    values.debtValue += _debtValue(
+                    values.debt += _debtValue(
                         vars.poolTokenAddress,
                         _user,
                         vars.underlyingPrice,
@@ -342,29 +316,29 @@ abstract contract MorphoUtils is MorphoStorage {
                         vars.underlyingPrice,
                         assetData.tokenUnit
                     );
-                    values.collateralValue += assetCollateralValue;
+                    values.collateral += assetCollateralValue;
                     // Calculate LTV for borrow.
-                    values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
+                    values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
                 }
 
-                // Add debt value for borrowed token.
+                // Update debt variable for borrowed token.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
-                    values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(
                         assetData.tokenUnit
                     );
 
                 // Update LT variable for withdraw.
                 if (assetCollateralValue > 0)
-                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                    values.liquidationThreshold += assetCollateralValue.percentMul(
                         assetData.liquidationThreshold
                     );
 
-                // Subtract from liquidation threshold value and collateral value for withdrawn token.
+                // Subtract withdrawn amount from liquidation threshold and collateral.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
-                    values.collateralValue -=
+                    values.collateral -=
                         (_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit;
-                    values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
+                    values.liquidationThreshold -= ((_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit)
                     .percentMul(assetData.liquidationThreshold);
                 }

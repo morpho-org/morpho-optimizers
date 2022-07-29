@@ -7,8 +7,8 @@ contract TestMorphoGetters is TestSetup {
     using WadRayMath for uint256;
 
     struct UserBalanceStates {
-        uint256 collateralValue;
-        uint256 debtValue;
+        uint256 collateral;
+        uint256 debt;
         uint256 maxDebtValue;
     }
 
@@ -104,7 +104,7 @@ contract TestMorphoGetters is TestSetup {
         }
     }
 
-    function testGetAllMarkets() public {
+    function testGetMarketsCreated() public {
         for (uint256 i; i < pools.length; i++) {
             assertEq(morpho.marketsCreated(i), pools[i]);
         }

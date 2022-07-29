@@ -194,8 +194,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             )
         ) revert UserNotMemberOfMarket();
 
-        LiquidateVars memory vars;
-
         _updateIndexes(_poolTokenBorrowedAddress);
         _updateIndexes(_poolTokenCollateralAddress);
 
@@ -213,6 +211,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
+        LiquidateVars memory vars;
         {
             IPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
@@ -329,8 +328,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ); // In peer-to-peer supply unit.
         _updateSupplierInDS(_poolTokenAddress, _supplier);
 
-        /// Transfer withdraw ///
-
         // Reduce peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
@@ -347,6 +344,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
+
+        /// Transfer withdraw ///
 
         // Promote pool suppliers.
         if (
@@ -374,7 +373,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Breaking withdraw ///
 
-        // Unmote peer-to-peer borrowers.
+        // Demote peer-to-peer borrowers.
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
@@ -621,9 +620,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         );
 
         return
-            values.debtValue > 0
-                ? values.liquidationThresholdValue.wadDiv(values.debtValue)
-                : type(uint256).max;
+            values.debt > 0 ? values.liquidationThreshold.wadDiv(values.debt) : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.

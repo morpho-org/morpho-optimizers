@@ -134,6 +134,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
         uint256 _maxSortedUsers
     ) external initializer {
+        if (_maxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
+
         __ReentrancyGuard_init();
         __Ownable_init();
 
@@ -343,10 +345,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokenAddresses[i];
 
-            Types.Market memory status = market[poolToken];
-            if (!status.isCreated || status.isPaused || status.isPartiallyPaused) continue;
+            Types.Market memory market = market[poolToken];
+            if (!market.isCreated || market.isPaused || market.isPartiallyPaused) continue;
 
-            ERC20 underlyingToken = ERC20(market[poolToken].underlyingToken);
+            ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
             if (underlyingBalance == 0) continue;
