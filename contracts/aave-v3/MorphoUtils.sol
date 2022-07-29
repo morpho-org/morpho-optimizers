@@ -334,7 +334,7 @@ abstract contract MorphoUtils is MorphoStorage {
                         assetData.liquidationThreshold
                     );
 
-                // Subtract from LT variable and collateral variable for withdrawn token.
+                // Subtract withdrawn amount from liquidation threshold and collateral.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
                     values.collateral -=
                         (_amountWithdrawn * vars.underlyingPrice) /
