@@ -24,8 +24,8 @@ import "../../../compound/helpers/SimplePriceOracle.sol";
 import "../../../compound/helpers/DumbOracle.sol";
 import {User} from "../../../compound/helpers/User.sol";
 import {Utils} from "../../../compound/setup/Utils.sol";
-import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
+import "@forge-std/stdlib.sol";
+import "@forge-std/console.sol";
 import "@config/Config.sol";
 
 interface IAdminComptroller {

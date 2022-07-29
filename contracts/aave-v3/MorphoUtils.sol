@@ -4,12 +4,11 @@ pragma solidity 0.8.10;
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-
-import "./libraries/Math.sol";
-import "../common/libraries/DelegateCall.sol";
+import "./libraries/aave/ReserveConfiguration.sol";
+import "@morpho-labs/morpho-utils/DelegateCall.sol";
+import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 
@@ -230,6 +229,34 @@ abstract contract MorphoUtils is MorphoStorage {
             userBorrowBalance.onPool.rayMul(poolIndexes[_poolTokenAddress].poolBorrowIndex);
     }
 
+    /// @dev Calculates the value of the collateral.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _collateralValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 collateral) {
+        collateral = (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
+    }
+
+    /// @dev Calculates the value of the debt.
+    /// @param _poolToken The pool token to calculate the value for.
+    /// @param _user The user address.
+    /// @param _underlyingPrice The underlying price.
+    /// @param _tokenUnit The token unit.
+    function _debtValue(
+        address _poolToken,
+        address _user,
+        uint256 _underlyingPrice,
+        uint256 _tokenUnit
+    ) internal view returns (uint256 debt) {
+        debt = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(_tokenUnit);
+    }
+
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
     /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
@@ -253,8 +280,9 @@ abstract contract MorphoUtils is MorphoStorage {
             vars.borrowMask = borrowMask[vars.poolTokenAddress];
 
             if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
-                vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                vars.underlyingAddress = market[vars.poolTokenAddress].underlyingToken;
                 vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
+
                 if (vars.poolTokenAddress != _poolTokenAddress)
                     _updateIndexes(vars.poolTokenAddress);
 
@@ -272,7 +300,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 }
 
                 if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                    values.debtValue += _debtValue(
+                    values.debt += _debtValue(
                         vars.poolTokenAddress,
                         _user,
                         vars.underlyingPrice,
@@ -289,30 +317,29 @@ abstract contract MorphoUtils is MorphoStorage {
                         vars.underlyingPrice,
                         assetData.tokenUnit
                     );
-                    values.collateralValue += assetCollateralValue;
+                    values.collateral += assetCollateralValue;
+                    // Calculate LTV for borrow.
+                    values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
                 }
-
-                // Update LTV variable for borrow.
-                values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
 
                 // Update debt variable for borrowed token.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
-                    values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(
                         assetData.tokenUnit
                     );
 
                 // Update LT variable for withdraw.
                 if (assetCollateralValue > 0)
-                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                    values.liquidationThreshold += assetCollateralValue.percentMul(
                         assetData.liquidationThreshold
                     );
 
-                // Subtract from LT variable and collateral variable for withdrawn token.
+                // Subtract withdrawn amount from liquidation threshold and collateral.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
-                    values.collateralValue -=
+                    values.collateral -=
                         (_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit;
-                    values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
+                    values.liquidationThreshold -= ((_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit)
                     .percentMul(assetData.liquidationThreshold);
                 }
@@ -322,37 +349,5 @@ abstract contract MorphoUtils is MorphoStorage {
                 ++i;
             }
         }
-    }
-
-    /// @dev Calculates the value of the collateral.
-    /// @param _poolToken The pool token to calculate the value for.
-    /// @param _user The user address.
-    /// @param _underlyingPrice The underlying price.
-    /// @param _tokenUnit The token unit.
-    function _collateralValue(
-        address _poolToken,
-        address _user,
-        uint256 _underlyingPrice,
-        uint256 _tokenUnit
-    ) internal view returns (uint256 collateralValue) {
-        collateralValue =
-            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
-            _tokenUnit;
-    }
-
-    /// @dev Calculates the value of the debt.
-    /// @param _poolToken The pool token to calculate the value for.
-    /// @param _user The user address.
-    /// @param _underlyingPrice The underlying price.
-    /// @param _tokenUnit The token unit.
-    function _debtValue(
-        address _poolToken,
-        address _user,
-        uint256 _underlyingPrice,
-        uint256 _tokenUnit
-    ) internal view returns (uint256 debtValue) {
-        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
-            _tokenUnit
-        );
     }
 }

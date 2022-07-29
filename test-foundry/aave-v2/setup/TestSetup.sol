@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
@@ -36,8 +36,8 @@ import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import "@forge-std/Test.sol";
+import "@forge-std/console.sol";
 
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);

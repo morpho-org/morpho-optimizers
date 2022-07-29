@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "./aave/IPool.sol";
 import "./IEntryPositionsManager.sol";
 import "./IExitPositionsManager.sol";
 import "./IInterestRatesManager.sol";
@@ -15,6 +15,14 @@ import "../libraries/Types.sol";
 interface IMorpho {
 
     /// STORAGE ///
+
+    function NO_REFERRAL_CODE() external view returns(uint8);
+    function VARIABLE_INTEREST_MODE() external view returns(uint8);
+    function MAX_BASIS_POINTS() external view returns(uint16);
+    function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns(uint16);
+    function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns(uint256);
+    function BORROWING_MASK() external view returns(uint256);
+    function MAX_NB_OF_MARKETS() external view returns(uint256);
 
     function isClaimRewardsPaused() external view returns (bool);
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
@@ -56,12 +64,13 @@ interface IMorpho {
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
-    function setPauseStatus(address _poolTokenAddress, bool _isP2PDisabled) external;
     function setP2PDisabledStatus(address _poolTokenAddress, bool _isP2PDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
-    function setPauseStatus(address _poolTokenAddress) external;
-    function setPartialPauseStatus(address _poolTokenAddress) external;
+    function setPauseStatusForAllMarkets(bool _newStatus) external;
+    function setClaimRewardsPauseStatus(bool _newStatus) external;
+    function setPauseStatus(address _poolTokenAddress, bool _newStatus) external;
+    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external;
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
@@ -77,5 +86,5 @@ interface IMorpho {
     function withdraw(address _poolTokenAddress, uint256 _amount) external;
     function repay(address _poolTokenAddress, address _onBehalf, uint256 _amount) external;
     function liquidate(address _poolTokenBorrowedAddress, address _poolTokenCollateralAddress, address _borrower, uint256 _amount) external;
-    function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);
+    function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);
 }

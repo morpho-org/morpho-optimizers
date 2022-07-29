@@ -130,14 +130,14 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetEntryPositionsManager() public {
-        IEntryPositionsManager EntryPositionsManagerV2 = new EntryPositionsManager();
+        IEntryPositionsManager entryPositionsManagerV2 = new EntryPositionsManager();
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setEntryPositionsManager(EntryPositionsManagerV2);
+        morpho.setEntryPositionsManager(entryPositionsManagerV2);
 
-        morpho.setEntryPositionsManager(EntryPositionsManagerV2);
-        assertEq(address(morpho.entryPositionsManager()), address(EntryPositionsManagerV2));
+        morpho.setEntryPositionsManager(entryPositionsManagerV2);
+        assertEq(address(morpho.entryPositionsManager()), address(entryPositionsManagerV2));
     }
 
     function testOnlyOwnerShouldSetRewardsManager() public {

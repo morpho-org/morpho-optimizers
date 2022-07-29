@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
@@ -35,8 +35,8 @@ import {DumbOracle} from "../../../aave-v2/helpers/DumbOracle.sol";
 import "../../../common/helpers/Chains.sol";
 import {User} from "../../../aave-v2/helpers/User.sol";
 import {Utils} from "../../../aave-v2/setup/Utils.sol";
-import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
+import "@forge-std/stdlib.sol";
+import "@forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetupFuzzing is Config, Utils, stdCheats {

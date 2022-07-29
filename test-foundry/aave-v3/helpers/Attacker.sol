@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@contracts/aave-v3/interfaces/aave/IPool.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 

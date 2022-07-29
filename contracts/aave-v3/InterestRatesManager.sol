@@ -3,9 +3,9 @@ pragma solidity 0.8.10;
 
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-import "./libraries/Math.sol";
+import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 

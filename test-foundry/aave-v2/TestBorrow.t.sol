@@ -15,7 +15,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedBorrow()"));
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 
@@ -76,12 +76,12 @@ contract TestBorrow is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        testEquality(inP2P, supplyInP2P);
+        testEquality(inP2P, supplyInP2P, "in P2P");
 
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
 
-        testEquality(onPool, expectedOnPool);
+        testEquality(onPool, expectedOnPool, "on pool");
     }
 
     // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.

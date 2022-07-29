@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/InterestRatesManager.sol";
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract TestInterestRateFuzzing is InterestRatesManager, Test {
     Vm public hevm = Vm(HEVM_ADDRESS);

@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./libraries/CompoundMath.sol";
-import "../common/libraries/DelegateCall.sol";
+import "@morpho-labs/morpho-utils/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
 

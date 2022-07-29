@@ -3,16 +3,15 @@ pragma solidity 0.8.10;
 
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import {IPool} from "./interfaces/aave/IPool.sol";
 import "./interfaces/IMorpho.sol";
 
-import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
-import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
+import "./libraries/aave/ReserveConfiguration.sol";
+import {PercentageMath} from "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import {WadRayMath} from "@morpho-labs/morpho-utils/math/WadRayMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho/data-structures/contracts/HeapOrdering.sol";
-import "./libraries/Math.sol";
+import "@morpho-labs/data-structures/contracts/HeapOrdering.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 
 /// @title Lens.
 /// @author Morpho Labs.
@@ -120,25 +119,21 @@ contract Lens {
             _poolTokenAddress,
             oracle
         );
-        uint256 healthFactor = data.debtValue > 0
-            ? data.liquidationThresholdValue.wadDiv(data.debtValue)
+        uint256 healthFactor = data.debt > 0
+            ? data.liquidationThreshold.wadDiv(data.debt)
             : type(uint256).max;
 
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
-        if (data.debtValue == 0)
-            withdrawable =
-                (assetData.collateralValue * assetData.tokenUnit) /
-                assetData.underlyingPrice;
+        if (data.debt == 0)
+            withdrawable = (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice;
         else
             withdrawable =
-                ((data.liquidationThresholdValue - data.debtValue) * assetData.tokenUnit) /
+                ((data.liquidationThreshold - data.debt) * assetData.tokenUnit) /
                 assetData.underlyingPrice;
 
-        borrowable =
-            ((data.maxLoanToValue - data.debtValue) * assetData.tokenUnit) /
-            assetData.underlyingPrice;
+        borrowable = ((data.maxDebt - data.debt) * assetData.tokenUnit) / assetData.underlyingPrice;
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
@@ -161,10 +156,10 @@ contract Lens {
         .getParams();
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
-        assetData.debtValue =
+        assetData.debt =
             (_getUserBorrowBalanceInOf(_poolTokenAddress, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;
-        assetData.collateralValue =
+        assetData.collateral =
             (_getUserSupplyBalanceInOf(_poolTokenAddress, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;
     }
@@ -195,27 +190,27 @@ contract Lens {
                     oracle
                 );
 
-                liquidityData.collateralValue += assetData.collateralValue;
-                liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                liquidityData.collateral += assetData.collateral;
+                liquidityData.maxDebt += assetData.collateral.percentMul(assetData.ltv);
+                liquidityData.liquidationThreshold += assetData.collateral.percentMul(
                     assetData.liquidationThreshold
                 );
-                liquidityData.debtValue += assetData.debtValue;
+                liquidityData.debt += assetData.debt;
 
                 if (_poolTokenAddress == poolToken) {
                     if (_borrowedAmount > 0)
-                        liquidityData.debtValue +=
+                        liquidityData.debt +=
                             (_borrowedAmount * assetData.underlyingPrice) /
                             assetData.tokenUnit;
 
                     if (_withdrawnAmount > 0) {
-                        liquidityData.collateralValue -=
+                        liquidityData.collateral -=
                             (_withdrawnAmount * assetData.underlyingPrice) /
                             assetData.tokenUnit;
-                        liquidityData.maxLoanToValue -= ((_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit)
+                        liquidityData.maxDebt -= ((_withdrawnAmount * assetData.underlyingPrice) /
+                            assetData.tokenUnit)
                         .percentMul(assetData.ltv);
-                        liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
+                        liquidityData.liquidationThreshold -= ((_withdrawnAmount *
                             assetData.underlyingPrice) / assetData.tokenUnit)
                         .percentMul(assetData.liquidationThreshold);
                     }
@@ -246,8 +241,8 @@ contract Lens {
             _withdrawnAmount,
             _borrowedAmount
         );
-        healthFactor = liquidityData.debtValue > 0
-            ? liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue)
+        healthFactor = liquidityData.debt > 0
+            ? liquidityData.liquidationThreshold.wadDiv(liquidityData.debt)
             : type(uint256).max;
     }
 
@@ -256,8 +251,8 @@ contract Lens {
     /// @return healthFactor The health factor of the user.
     function getUserHealthFactor(address _user) public view returns (uint256 healthFactor) {
         Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
-        healthFactor = liquidityData.debtValue > 0
-            ? liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue)
+        healthFactor = liquidityData.debt > 0
+            ? liquidityData.liquidationThreshold.wadDiv(liquidityData.debt)
             : type(uint256).max;
     }
 
@@ -658,28 +653,5 @@ contract Lens {
             morpho.userMarkets(_user) &
                 (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
             0;
-    }
-
-    function calculateLinearInterest(uint256 rate, uint256 lastUpdateTimestamp)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 timeDifference = block.timestamp - lastUpdateTimestamp;
-
-        return ((rate * timeDifference) / SECONDS_PER_YEAR) + WadRayMath.RAY;
-    }
-
-    function calculateCompoundedInterest(uint256 rate, uint256 lastUpdateTimestamp)
-        public
-        view
-        returns (uint256)
-    {
-        return
-            MathUtils.calculateCompoundedInterest(
-                rate,
-                uint40(lastUpdateTimestamp),
-                block.timestamp
-            );
     }
 }

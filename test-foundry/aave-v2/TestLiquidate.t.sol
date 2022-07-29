@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using PercentageMath for uint256;
 
     // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function testShouldNotBePossibleToLiquidateUserAboveWater() public {
@@ -156,10 +157,9 @@ contract TestLiquidate is TestSetup {
         uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
-        uint256 amountToSeize = (toRepay *
-            borrowedPrice *
-            vars.collateralTokenUnit *
-            vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
+        uint256 amountToSeize = ((toRepay * borrowedPrice * vars.collateralTokenUnit) /
+            (vars.borrowedTokenUnit * collateralPrice))
+        .percentMul(vars.liquidationBonus);
 
         assertApproxEqAbs(
             onPoolBorrower,
