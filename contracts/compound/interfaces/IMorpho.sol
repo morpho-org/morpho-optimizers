@@ -39,11 +39,11 @@ interface IMorpho {
 
     /// GETTERS ///
 
-    function updateP2PIndexes(address _poolTokenAddress) external;
+    function updateP2PIndexes(address _poolToken) external;
     function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
-    function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head);
-    function getNext(address _poolTokenAddress, Types.PositionType _positionType, address _user) external view returns (address next);
+    function getHead(address _poolToken, Types.PositionType _positionType) external view returns (address head);
+    function getNext(address _poolToken, Types.PositionType _positionType, address _user) external view returns (address next);
 
     /// GOVERNANCE ///
 
@@ -54,25 +54,25 @@ interface IMorpho {
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setP2PDisabled(address _poolTokenAddress, bool _p2pDisabled) external;
-    function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
-    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
+    function setP2PDisabled(address _poolToken, bool _p2pDisabled) external;
+    function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
+    function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
     function setPauseStatusForAllMarkets(bool _newStatus) external;
-    function setPauseStatus(address _poolTokenAddress, bool _newStatus) external;
-    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external;
-    function setPauseStatus(address _poolTokenAddress) external;
-    function setPartialPauseStatus(address _poolTokenAddress) external;
-    function claimToTreasury(address[] calldata _poolTokenAddresses, uint256[] calldata _amounts) external;
-    function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _params) external;
+    function setPauseStatus(address _poolToken, bool _newStatus) external;
+    function setPartialPauseStatus(address _poolToken, bool _newStatus) external;
+    function setPauseStatus(address _poolToken) external;
+    function setPartialPauseStatus(address _poolToken) external;
+    function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;
+    function createMarket(address _poolToken, Types.MarketParameters calldata _params) external;
 
     /// USERS ///
 
-    function supply(address _poolTokenAddress, address _onBehalf, uint256 _amount) external;
-    function supply(address _poolTokenAddress, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) external;
-    function borrow(address _poolTokenAddress, uint256 _amount) external;
-    function borrow(address _poolTokenAddress, uint256 _amount, uint256 _maxGasForMatching) external;
-    function withdraw(address _poolTokenAddress, uint256 _amount) external;
-    function repay(address _poolTokenAddress, address _onBehalf, uint256 _amount) external;
-    function liquidate(address _poolTokenBorrowedAddress, address _poolTokenCollateralAddress, address _borrower, uint256 _amount) external;
+    function supply(address _poolToken, address _onBehalf, uint256 _amount) external;
+    function supply(address _poolToken, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) external;
+    function borrow(address _poolToken, uint256 _amount) external;
+    function borrow(address _poolToken, uint256 _amount, uint256 _maxGasForMatching) external;
+    function withdraw(address _poolToken, uint256 _amount) external;
+    function repay(address _poolToken, address _onBehalf, uint256 _amount) external;
+    function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external;
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken) external returns (uint256 claimedAmount);
 }

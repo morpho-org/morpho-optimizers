@@ -271,21 +271,19 @@ contract TestSetup is Config, Utils {
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
-    /// @param _poolTokenAddress The market address.
+    /// @param _poolToken The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in wad).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in wad).
-    function getApproxP2PRates(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolToken)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
-        ICToken cToken = ICToken(_poolTokenAddress);
+        ICToken cToken = ICToken(_poolToken);
 
         uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
         uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
-        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(
-            _poolTokenAddress
-        );
+        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(_poolToken);
 
         // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

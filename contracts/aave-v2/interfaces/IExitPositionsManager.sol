@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IExitPositionsManager {
     function withdrawLogic(
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amount,
         address _supplier,
         address _receiver,
@@ -11,7 +11,7 @@ interface IExitPositionsManager {
     ) external;
 
     function repayLogic(
-        address _poolTokenAddress,
+        address _poolToken,
         address _repayer,
         address _onBehalf,
         uint256 _amount,
@@ -19,8 +19,8 @@ interface IExitPositionsManager {
     ) external;
 
     function liquidateLogic(
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress,
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
     ) external;

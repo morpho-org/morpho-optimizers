@@ -20,17 +20,17 @@ abstract contract RewardsLens is MarketsLens {
     /// EXTERNAL ///
 
     /// @notice Returns the unclaimed COMP rewards for the given cToken addresses.
-    /// @param _poolTokenAddresses The cToken addresses for which to compute the rewards.
+    /// @param _poolTokens The cToken addresses for which to compute the rewards.
     /// @param _user The address of the user.
-    function getUserUnclaimedRewards(address[] calldata _poolTokenAddresses, address _user)
+    function getUserUnclaimedRewards(address[] calldata _poolTokens, address _user)
         external
         view
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = rewardsManager.userUnclaimedCompRewards(_user);
 
-        for (uint256 i; i < _poolTokenAddresses.length; ) {
-            address cTokenAddress = _poolTokenAddresses[i];
+        for (uint256 i; i < _poolTokens.length; ) {
+            address cTokenAddress = _poolTokens[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
             if (!isListed) revert InvalidPoolToken();
@@ -56,16 +56,16 @@ abstract contract RewardsLens is MarketsLens {
 
     /// @notice Returns the accrued COMP rewards of a user since the last update.
     /// @param _supplier The address of the supplier.
-    /// @param _poolTokenAddress The cToken address.
+    /// @param _poolToken The cToken address.
     /// @param _balance The user balance of tokens in the distribution.
     /// @return The accrued COMP rewards.
     function getAccruedSupplierComp(
         address _supplier,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _balance
     ) public view returns (uint256) {
-        uint256 supplyIndex = getCurrentCompSupplyIndex(_poolTokenAddress);
-        uint256 supplierIndex = rewardsManager.compSupplierIndex(_poolTokenAddress, _supplier);
+        uint256 supplyIndex = getCurrentCompSupplyIndex(_poolToken);
+        uint256 supplierIndex = rewardsManager.compSupplierIndex(_poolToken, _supplier);
 
         if (supplierIndex == 0) return 0;
         return (_balance * (supplyIndex - supplierIndex)) / 1e36;
@@ -73,39 +73,39 @@ abstract contract RewardsLens is MarketsLens {
 
     /// @notice Returns the accrued COMP rewards of a user since the last update.
     /// @param _borrower The address of the borrower.
-    /// @param _poolTokenAddress The cToken address.
+    /// @param _poolToken The cToken address.
     /// @param _balance The user balance of tokens in the distribution.
     /// @return The accrued COMP rewards.
     function getAccruedBorrowerComp(
         address _borrower,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _balance
     ) public view returns (uint256) {
-        uint256 borrowIndex = getCurrentCompBorrowIndex(_poolTokenAddress);
-        uint256 borrowerIndex = rewardsManager.compBorrowerIndex(_poolTokenAddress, _borrower);
+        uint256 borrowIndex = getCurrentCompBorrowIndex(_poolToken);
+        uint256 borrowerIndex = rewardsManager.compBorrowerIndex(_poolToken, _borrower);
 
         if (borrowerIndex == 0) return 0;
         return (_balance * (borrowIndex - borrowerIndex)) / 1e36;
     }
 
     /// @notice Returns the updated COMP supply index.
-    /// @param _poolTokenAddress The cToken address.
+    /// @param _poolToken The cToken address.
     /// @return The updated COMP supply index.
-    function getCurrentCompSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getCurrentCompSupplyIndex(address _poolToken) public view returns (uint256) {
         IComptroller.CompMarketState memory localSupplyState = rewardsManager
-        .getLocalCompSupplyState(_poolTokenAddress);
+        .getLocalCompSupplyState(_poolToken);
 
         if (localSupplyState.block == block.number) return localSupplyState.index;
         else {
             IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
-                _poolTokenAddress
+                _poolToken
             );
 
             uint256 deltaBlocks = block.number - supplyState.block;
-            uint256 supplySpeed = comptroller.compSupplySpeeds(_poolTokenAddress);
+            uint256 supplySpeed = comptroller.compSupplySpeeds(_poolToken);
 
             if (deltaBlocks > 0 && supplySpeed > 0) {
-                uint256 supplyTokens = ICToken(_poolTokenAddress).totalSupply();
+                uint256 supplyTokens = ICToken(_poolToken).totalSupply();
                 uint256 compAccrued = deltaBlocks * supplySpeed;
                 uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
 
@@ -117,22 +117,22 @@ abstract contract RewardsLens is MarketsLens {
     }
 
     /// @notice Returns the updated COMP borrow index.
-    /// @param _poolTokenAddress The cToken address.
+    /// @param _poolToken The cToken address.
     /// @return The updated COMP borrow index.
-    function getCurrentCompBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getCurrentCompBorrowIndex(address _poolToken) public view returns (uint256) {
         IComptroller.CompMarketState memory localBorrowState = rewardsManager
-        .getLocalCompBorrowState(_poolTokenAddress);
+        .getLocalCompBorrowState(_poolToken);
 
         if (localBorrowState.block == block.number) return localBorrowState.index;
         else {
             IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
-                _poolTokenAddress
+                _poolToken
             );
             uint256 deltaBlocks = block.number - borrowState.block;
-            uint256 borrowSpeed = comptroller.compBorrowSpeeds(_poolTokenAddress);
+            uint256 borrowSpeed = comptroller.compBorrowSpeeds(_poolToken);
 
             if (deltaBlocks > 0 && borrowSpeed > 0) {
-                ICToken cToken = ICToken(_poolTokenAddress);
+                ICToken cToken = ICToken(_poolToken);
 
                 uint256 borrowAmount = cToken.totalBorrows().div(cToken.borrowIndex());
                 uint256 compAccrued = deltaBlocks * borrowSpeed;

@@ -35,25 +35,25 @@ abstract contract MorphoUtils is MorphoStorage {
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreated(address _poolTokenAddress) {
-        if (!market[_poolTokenAddress].isCreated) revert MarketNotCreated();
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreated(address _poolToken) {
+        if (!market[_poolToken].isCreated) revert MarketNotCreated();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        Types.Market memory market = market[_poolTokenAddress];
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndNotPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (market.isPaused) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
-        Types.Market memory market = market[_poolTokenAddress];
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (market.isPaused || market.isPartiallyPaused) revert MarketPaused();
         _;
@@ -68,48 +68,48 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Gets the head of the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the head.
+    /// @param _poolToken The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
     /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, Types.PositionType _positionType)
+    function getHead(address _poolToken, Types.PositionType _positionType)
         external
         view
         returns (address head)
     {
         if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            head = suppliersInP2P[_poolTokenAddress].getHead();
+            head = suppliersInP2P[_poolToken].getHead();
         else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            head = suppliersOnPool[_poolTokenAddress].getHead();
+            head = suppliersOnPool[_poolToken].getHead();
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            head = borrowersInP2P[_poolTokenAddress].getHead();
-        else head = borrowersOnPool[_poolTokenAddress].getHead();
+            head = borrowersInP2P[_poolToken].getHead();
+        else head = borrowersOnPool[_poolToken].getHead();
         // Borrowers on pool.
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the user.
+    /// @param _poolToken The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.
     /// @return next The next user in the data structure.
     function getNext(
-        address _poolTokenAddress,
+        address _poolToken,
         Types.PositionType _positionType,
         address _user
     ) external view returns (address next) {
         if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
+            next = suppliersInP2P[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
+            next = suppliersOnPool[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+            next = borrowersInP2P[_poolToken].getNext(_user);
+        else next = borrowersOnPool[_poolToken].getNext(_user);
         // Borrowers on pool.
     }
 
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
-    /// @param _poolTokenAddress The address of the market to update.
-    function updateIndexes(address _poolTokenAddress) external isMarketCreated(_poolTokenAddress) {
-        _updateIndexes(_poolTokenAddress);
+    /// @param _poolToken The address of the market to update.
+    function updateIndexes(address _poolToken) external isMarketCreated(_poolToken) {
+        _updateIndexes(_poolToken);
     }
 
     /// INTERNAL ///
@@ -190,43 +190,43 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).
-    /// @param _poolTokenAddress The address of the market to update.
-    function _updateIndexes(address _poolTokenAddress) internal {
+    /// @param _poolToken The address of the market to update.
+    function _updateIndexes(address _poolToken) internal {
         address(interestRatesManager).functionDelegateCall(
-            abi.encodeWithSelector(interestRatesManager.updateIndexes.selector, _poolTokenAddress)
+            abi.encodeWithSelector(interestRatesManager.updateIndexes.selector, _poolToken)
         );
     }
 
-    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the supply amount.
+    /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function _getUserSupplyBalanceInOf(address _poolToken, address _user)
         internal
         view
         returns (uint256)
     {
-        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolTokenAddress][_user];
+        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
         return
-            userSupplyBalance.inP2P.rayMul(p2pSupplyIndex[_poolTokenAddress]) +
-            userSupplyBalance.onPool.rayMul(poolIndexes[_poolTokenAddress].poolSupplyIndex);
+            userSupplyBalance.inP2P.rayMul(p2pSupplyIndex[_poolToken]) +
+            userSupplyBalance.onPool.rayMul(poolIndexes[_poolToken].poolSupplyIndex);
     }
 
-    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the borrow amount.
+    /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
+    function _getUserBorrowBalanceInOf(address _poolToken, address _user)
         internal
         view
         returns (uint256)
     {
-        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolTokenAddress][_user];
+        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
         return
-            userBorrowBalance.inP2P.rayMul(p2pBorrowIndex[_poolTokenAddress]) +
-            userBorrowBalance.onPool.rayMul(poolIndexes[_poolTokenAddress].poolBorrowIndex);
+            userBorrowBalance.inP2P.rayMul(p2pBorrowIndex[_poolToken]) +
+            userBorrowBalance.onPool.rayMul(poolIndexes[_poolToken].poolBorrowIndex);
     }
 
     /// @dev Calculates the value of the collateral.
@@ -259,13 +259,13 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
     /// @param _user The user address.
-    /// @param _poolTokenAddress The pool token that is being borrowed or withdrawn.
+    /// @param _poolToken The pool token that is being borrowed or withdrawn.
     /// @param _amountWithdrawn The amount that is being withdrawn.
     /// @param _amountBorrowed The amount that is being borrowed.
     /// @return values The struct containing health factor, collateral, debt, ltv, liquidation threshold values.
     function _liquidityData(
         address _user,
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amountWithdrawn,
         uint256 _amountBorrowed
     ) internal returns (Types.LiquidityData memory values) {
@@ -276,15 +276,14 @@ abstract contract MorphoUtils is MorphoStorage {
         vars.userMarkets = userMarkets[_user];
 
         for (uint256 i; i < vars.poolTokensLength; ) {
-            vars.poolTokenAddress = marketsCreated[i];
-            vars.borrowMask = borrowMask[vars.poolTokenAddress];
+            vars.poolToken = marketsCreated[i];
+            vars.borrowMask = borrowMask[vars.poolToken];
 
             if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
-                vars.underlyingAddress = market[vars.poolTokenAddress].underlyingToken;
+                vars.underlyingAddress = market[vars.poolToken].underlyingToken;
                 vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
 
-                if (vars.poolTokenAddress != _poolTokenAddress)
-                    _updateIndexes(vars.poolTokenAddress);
+                if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
                 (
                     assetData.ltv,
@@ -301,7 +300,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
                 if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
                     values.debt += _debtValue(
-                        vars.poolTokenAddress,
+                        vars.poolToken,
                         _user,
                         vars.underlyingPrice,
                         assetData.tokenUnit
@@ -312,7 +311,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 uint256 assetCollateralValue;
                 if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
                     assetCollateralValue = _collateralValue(
-                        vars.poolTokenAddress,
+                        vars.poolToken,
                         _user,
                         vars.underlyingPrice,
                         assetData.tokenUnit
@@ -323,7 +322,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 }
 
                 // Update debt variable for borrowed token.
-                if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
+                if (_poolToken == vars.poolToken && _amountBorrowed > 0)
                     values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(
                         assetData.tokenUnit
                     );
@@ -335,7 +334,7 @@ abstract contract MorphoUtils is MorphoStorage {
                     );
 
                 // Subtract withdrawn amount from liquidation threshold and collateral.
-                if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
+                if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
                     values.collateral -=
                         (_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit;

@@ -34,13 +34,13 @@ contract Lens is RewardsLens {
 
         uint256 nbMarkets = markets.length;
         for (uint256 i; i < nbMarkets; ) {
-            address _poolTokenAddress = markets[i];
+            address _poolToken = markets[i];
 
             (uint256 marketP2PSupplyAmount, uint256 marketPoolSupplyAmount) = getTotalMarketSupply(
-                _poolTokenAddress
+                _poolToken
             );
 
-            uint256 underlyingPrice = oracle.getUnderlyingPrice(_poolTokenAddress);
+            uint256 underlyingPrice = oracle.getUnderlyingPrice(_poolToken);
             if (underlyingPrice == 0) revert CompoundOracleFailed();
 
             p2pSupplyAmount += marketP2PSupplyAmount.mul(underlyingPrice);
@@ -72,13 +72,13 @@ contract Lens is RewardsLens {
 
         uint256 nbMarkets = markets.length;
         for (uint256 i; i < nbMarkets; ) {
-            address _poolTokenAddress = markets[i];
+            address _poolToken = markets[i];
 
             (uint256 marketP2PBorrowAmount, uint256 marketPoolBorrowAmount) = getTotalMarketBorrow(
-                _poolTokenAddress
+                _poolToken
             );
 
-            uint256 underlyingPrice = oracle.getUnderlyingPrice(_poolTokenAddress);
+            uint256 underlyingPrice = oracle.getUnderlyingPrice(_poolToken);
             if (underlyingPrice == 0) revert CompoundOracleFailed();
 
             p2pBorrowAmount += marketP2PBorrowAmount.mul(underlyingPrice);

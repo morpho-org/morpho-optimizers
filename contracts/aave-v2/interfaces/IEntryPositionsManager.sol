@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IEntryPositionsManager {
     function supplyLogic(
-        address _poolTokenAddress,
+        address _poolToken,
         address _supplier,
         address _onBehalf,
         uint256 _amount,
@@ -11,7 +11,7 @@ interface IEntryPositionsManager {
     ) external;
 
     function borrowLogic(
-        address _poolTokenAddress,
+        address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;
