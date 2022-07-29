@@ -280,7 +280,7 @@ abstract contract MorphoUtils is MorphoStorage {
             vars.borrowMask = borrowMask[vars.poolTokenAddress];
 
             if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
-                vars.underlyingAddress = IAToken(vars.poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+                vars.underlyingAddress = market[vars.poolTokenAddress].underlyingToken;
                 vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
 
                 if (vars.poolTokenAddress != _poolTokenAddress)
