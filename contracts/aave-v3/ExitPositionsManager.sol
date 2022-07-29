@@ -620,9 +620,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         );
 
         return
-            values.debtValue > 0
-                ? values.liquidationThresholdValue.wadDiv(values.debtValue)
-                : type(uint256).max;
+            values.debt > 0 ? values.liquidationThreshold.wadDiv(values.debt) : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.

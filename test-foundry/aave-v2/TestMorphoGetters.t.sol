@@ -7,8 +7,8 @@ contract TestMorphoGetters is TestSetup {
     using WadRayMath for uint256;
 
     struct UserBalanceStates {
-        uint256 collateralValue;
-        uint256 debtValue;
+        uint256 collateral;
+        uint256 debt;
         uint256 maxDebtValue;
     }
 

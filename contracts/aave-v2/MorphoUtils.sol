@@ -239,10 +239,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _user,
         uint256 _underlyingPrice,
         uint256 _tokenUnit
-    ) internal view returns (uint256 collateralValue) {
-        collateralValue =
-            (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) /
-            _tokenUnit;
+    ) internal view returns (uint256 collateral) {
+        collateral = (_getUserSupplyBalanceInOf(_poolToken, _user) * _underlyingPrice) / _tokenUnit;
     }
 
     /// @dev Calculates the value of the debt.
@@ -255,10 +253,8 @@ abstract contract MorphoUtils is MorphoStorage {
         address _user,
         uint256 _underlyingPrice,
         uint256 _tokenUnit
-    ) internal view returns (uint256 debtValue) {
-        debtValue = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(
-            _tokenUnit
-        );
+    ) internal view returns (uint256 debt) {
+        debt = (_getUserBorrowBalanceInOf(_poolToken, _user) * _underlyingPrice).divUp(_tokenUnit);
     }
 
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
@@ -303,7 +299,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 }
 
                 if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                    values.debtValue += _debtValue(
+                    values.debt += _debtValue(
                         vars.poolTokenAddress,
                         _user,
                         vars.underlyingPrice,
@@ -320,29 +316,29 @@ abstract contract MorphoUtils is MorphoStorage {
                         vars.underlyingPrice,
                         assetData.tokenUnit
                     );
-                    values.collateralValue += assetCollateralValue;
+                    values.collateral += assetCollateralValue;
                     // Calculate LTV for borrow.
-                    values.maxLoanToValue += assetCollateralValue.percentMul(assetData.ltv);
+                    values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
                 }
 
                 // Update debt variable for borrowed token.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountBorrowed > 0)
-                    values.debtValue += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(
                         assetData.tokenUnit
                     );
 
                 // Update LT variable for withdraw.
                 if (assetCollateralValue > 0)
-                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                    values.liquidationThreshold += assetCollateralValue.percentMul(
                         assetData.liquidationThreshold
                     );
 
                 // Subtract from LT variable and collateral variable for withdrawn token.
                 if (_poolTokenAddress == vars.poolTokenAddress && _amountWithdrawn > 0) {
-                    values.collateralValue -=
+                    values.collateral -=
                         (_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit;
-                    values.liquidationThresholdValue -= ((_amountWithdrawn * vars.underlyingPrice) /
+                    values.liquidationThreshold -= ((_amountWithdrawn * vars.underlyingPrice) /
                         assetData.tokenUnit)
                     .percentMul(assetData.liquidationThreshold);
                 }
