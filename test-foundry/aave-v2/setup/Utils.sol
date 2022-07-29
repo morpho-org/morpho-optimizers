@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract Utils is Test {
     using WadRayMath for uint256;

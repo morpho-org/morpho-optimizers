@@ -34,8 +34,8 @@ import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
-import "forge-std/console.sol";
-import "forge-std/Vm.sol";
+import "@forge-std/console.sol";
+import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);

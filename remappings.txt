@@ -1,4 +1,4 @@
-forge-std/=lib/forge-std/src/
+@forge-std/=lib/forge-std/src/
 @morpho-labs/morpho-utils/=lib/morpho-utils/src/
 @morpho-labs/data-structures/=lib/data-structures/
 @rari-capital/solmate/=lib/solmate/

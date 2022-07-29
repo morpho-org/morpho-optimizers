@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 
 import "@contracts/aave-v3/Morpho.sol";
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract User is Test {
     using SafeTransferLib for ERC20;

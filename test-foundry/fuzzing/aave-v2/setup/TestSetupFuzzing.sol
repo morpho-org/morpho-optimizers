@@ -35,8 +35,8 @@ import {DumbOracle} from "../../../aave-v2/helpers/DumbOracle.sol";
 import "../../../common/helpers/Chains.sol";
 import {User} from "../../../aave-v2/helpers/User.sol";
 import {Utils} from "../../../aave-v2/setup/Utils.sol";
-import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
+import "@forge-std/stdlib.sol";
+import "@forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetupFuzzing is Config, Utils, stdCheats {

@@ -10,7 +10,7 @@ import "@contracts/aave-v2/IncentivesVault.sol";
 import "../common/helpers/MorphoToken.sol";
 import "./helpers/DumbOracle.sol";
 import "@config/Config.sol";
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 contract TestIncentivesVault is Test, Config {
     using SafeTransferLib for ERC20;
