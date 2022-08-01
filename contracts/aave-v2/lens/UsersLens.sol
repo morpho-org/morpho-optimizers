@@ -97,7 +97,7 @@ abstract contract UsersLens is IndexesLens {
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress
     ) external view returns (uint256) {
-        if (getUserHealthFactor(_user) > HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return 0;
+        if (!isLiquidatable(_user)) return 0;
 
         (
             address collateralToken,
@@ -313,6 +313,13 @@ abstract contract UsersLens is IndexesLens {
         if (liquidityData.debtValue == 0) return type(uint256).max;
 
         return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+    }
+
+    /// @dev Checks whether a liquidation can be performed on a given user.
+    /// @param _user The user to check.
+    /// @return whether or not the user is liquidatable.
+    function isLiquidatable(address _user) public view returns (bool) {
+        return getUserHealthFactor(_user) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// INTERNAL ///
