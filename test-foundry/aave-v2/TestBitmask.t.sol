@@ -11,8 +11,8 @@ contract TestBitmask is TestSetup {
         supplier1.approve(usdc, to6Decimals(23 ether));
         supplier1.supply(aUsdc, to6Decimals(23 ether));
 
-        supplier1.approve(wEth, 1 ether);
-        supplier1.supply(aWeth, 1 ether);
+        supplier1.approve(aave, 1 ether);
+        supplier1.supply(aAave, 1 ether);
 
         assertTrue(isSupplying(address(supplier1), aDai));
         assertFalse(isBorrowing(address(supplier1), aDai));
@@ -22,9 +22,9 @@ contract TestBitmask is TestSetup {
         assertFalse(isBorrowing(address(supplier1), aUsdc));
         assertTrue(isSupplyingOrBorrowing(address(supplier1), aUsdc));
 
-        assertTrue(isSupplying(address(supplier1), aWeth));
-        assertFalse(isBorrowing(address(supplier1), aWeth));
-        assertTrue(isSupplyingOrBorrowing(address(supplier1), aWeth));
+        assertTrue(isSupplying(address(supplier1), aAave));
+        assertFalse(isBorrowing(address(supplier1), aAave));
+        assertTrue(isSupplyingOrBorrowing(address(supplier1), aAave));
 
         assertFalse(isBorrowingAny(address(supplier1)));
 
@@ -39,7 +39,7 @@ contract TestBitmask is TestSetup {
 
         borrower1.borrow(aDai, 1 ether);
         borrower1.borrow(aUsdc, to6Decimals(23 ether));
-        borrower1.borrow(aWeth, 1e12 wei);
+        borrower1.borrow(aUsdt, to6Decimals(2 ether));
 
         assertTrue(isSupplying(address(borrower1), aDai));
         assertTrue(isBorrowing(address(borrower1), aDai));
@@ -49,9 +49,9 @@ contract TestBitmask is TestSetup {
         assertTrue(isBorrowing(address(borrower1), aUsdc));
         assertTrue(isSupplyingOrBorrowing(address(borrower1), aUsdc));
 
-        assertFalse(isSupplying(address(borrower1), aWeth));
-        assertTrue(isBorrowing(address(borrower1), aWeth));
-        assertTrue(isSupplyingOrBorrowing(address(borrower1), aWeth));
+        assertFalse(isSupplying(address(borrower1), aUsdt));
+        assertTrue(isBorrowing(address(borrower1), aUsdt));
+        assertTrue(isSupplyingOrBorrowing(address(borrower1), aUsdt));
 
         assertTrue(isBorrowingAny(address(borrower1)));
 

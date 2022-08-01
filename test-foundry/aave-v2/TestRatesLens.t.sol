@@ -166,7 +166,7 @@ contract TestRatesLens is TestSetup {
 
         (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(p2pBorrowRate, poolBorrowRate, 1);
+        assertApproxEqAbs(p2pBorrowRate, poolBorrowRate, 1e3);
     }
 
     function testNextSupplyRateShouldEqual0WhenNoSupply() public {
