@@ -13,7 +13,7 @@ abstract contract IndexesLens is MarketsLens {
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolTokenAddress The address of the market.
     /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolTokenAddress);
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
@@ -47,7 +47,7 @@ abstract contract IndexesLens is MarketsLens {
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolTokenAddress The address of the market.
     /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
+    function getP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
         Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolTokenAddress);
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);

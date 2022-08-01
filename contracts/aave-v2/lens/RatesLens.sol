@@ -241,16 +241,15 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The user to compute the supply rate per year for.
     /// @return The supply rate per year the user is currently experiencing (in wad).
-    function getUpdatedUserSupplyRatePerYear(address _poolTokenAddress, address _user)
+    function getUserSupplyRatePerYear(address _poolTokenAddress, address _user)
         public
         view
         returns (uint256)
     {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getUpdatedUserSupplyBalance(_user, _poolTokenAddress);
+        (uint256 balanceOnPool, uint256 balanceInP2P, uint256 totalBalance) = getUserSupplyBalance(
+            _user,
+            _poolTokenAddress
+        );
 
         return
             _computeUserSupplyRatePerYear(
@@ -265,16 +264,15 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolTokenAddress The address of the market.
     /// @param _user The user to compute the borrow rate per year for.
     /// @return The borrow rate per year the user is currently experiencing (in wad).
-    function getUpdatedUserBorrowRatePerYear(address _poolTokenAddress, address _user)
+    function getUserBorrowRatePerYear(address _poolTokenAddress, address _user)
         public
         view
         returns (uint256)
     {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getUpdatedUserBorrowBalance(_user, _poolTokenAddress);
+        (uint256 balanceOnPool, uint256 balanceInP2P, uint256 totalBalance) = getUserBorrowBalance(
+            _user,
+            _poolTokenAddress
+        );
 
         return
             _computeUserBorrowRatePerYear(
