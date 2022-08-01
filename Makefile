@@ -7,13 +7,18 @@ NETWORK?=eth-mainnet
 
 FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
+
+ifdef FOUNDRY_ETH_RPC_URL
+  FOUNDRY_TEST=test-foundry/live/${PROTOCOL}/
+endif
+
 FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
 
 ifeq (${NETWORK}, eth-mainnet)
   FOUNDRY_CHAIN_ID=1
-  FOUNDRY_FORK_BLOCK_NUMBER=14292587
+  FOUNDRY_FORK_BLOCK_NUMBER?=14292587
 endif
 
 ifeq (${NETWORK}, eth-ropsten)
@@ -25,24 +30,23 @@ ifeq (${NETWORK}, eth-goerli)
 endif
 
 ifeq (${NETWORK}, polygon-mainnet)
-  FOUNDRY_CHAIN_ID=137
-  FOUNDRY_FORK_BLOCK_NUMBER=22116728
-
   ifeq (${PROTOCOL}, aave-v3)
-    FOUNDRY_FORK_BLOCK_NUMBER=29116728
+    FOUNDRY_FORK_BLOCK_NUMBER?=29116728
     FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
   endif
+
+  FOUNDRY_CHAIN_ID=137
+  FOUNDRY_FORK_BLOCK_NUMBER?=22116728
 endif
 
 ifeq (${NETWORK}, avalanche-mainnet)
+  ifeq (${PROTOCOL}, aave-v3)
+    FOUNDRY_FORK_BLOCK_NUMBER?=15675271
+  endif
+
   FOUNDRY_CHAIN_ID=43114
   FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-  FOUNDRY_FORK_BLOCK_NUMBER=12675271
-
-  ifeq (${PROTOCOL}, aave-v3)
-    FOUNDRY_FORK_BLOCK_NUMBER=15675271
-  endif
-else
+  FOUNDRY_FORK_BLOCK_NUMBER?=12675271
 endif
 
 ifeq (${SMODE}, local)
@@ -70,32 +74,32 @@ create-market:
 	./scripts/${PROTOCOL}/create-market.sh
 
 anvil:
-	@echo Starting fork of ${NETWORK}
-	@anvil --fork-url ${FOUNDRY_ETH_RPC_URL}
+	@echo Starting fork of ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@anvil --fork-url ${FOUNDRY_ETH_RPC_URL} --fork-block-number ${FOUNDRY_FORK_BLOCK_NUMBER}
 
 script-%:
 	@echo Running script $* of ${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
 test:
-	@echo Running all ${PROTOCOL} tests on ${NETWORK}
+	@echo Running all ${PROTOCOL} tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge test -vv | tee trace.ansi
 
 coverage:
-	@echo Create coverage report for ${PROTOCOL} tests on ${NETWORK}
+	@echo Create coverage report for ${PROTOCOL} tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge coverage
 
 coverage-lcov:
-	@echo Create coverage lcov for ${PROTOCOL} tests on ${NETWORK}
+	@echo Create coverage lcov for ${PROTOCOL} tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge coverage --report lcov
 
 fuzz:
 	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
-	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK}
+	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge test -vv
 
 gas-report:
-	@echo Creating gas report for ${PROTOCOL} on ${NETWORK}
+	@echo Creating gas report for ${PROTOCOL} on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge test --gas-report
 
 test-common:
@@ -103,11 +107,11 @@ test-common:
 	@FOUNDRY_TEST=test-foundry/common forge test -vvv
 
 contract-% c-%:
-	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
+	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge test -vvv --match-contract $* | tee trace.ansi
 
 single-% s-%:
-	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
+	@echo Running single test $* of ${PROTOCOL} on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
 	@forge test -vvv --match-test $* | tee trace.ansi
 
 storage-layout-generate:

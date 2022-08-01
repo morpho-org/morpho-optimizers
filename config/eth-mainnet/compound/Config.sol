@@ -2,6 +2,9 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/compound/ICompound.sol";
+import {IIncentivesVault} from "@contracts/compound/interfaces/IIncentivesVault.sol";
+import {IPositionsManager} from "@contracts/compound/interfaces/IPositionsManager.sol";
+import {IInterestRatesManager} from "@contracts/compound/interfaces/IInterestRatesManager.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -55,12 +58,12 @@ contract Config {
     IComptroller public comptroller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
+
     TransparentUpgradeableProxy public lensProxy =
         TransparentUpgradeableProxy(payable(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67));
     TransparentUpgradeableProxy public morphoProxy =
         TransparentUpgradeableProxy(payable(0x8888882f8f843896699869179fB6E4f7e3B58888));
-    TransparentUpgradeableProxy public rewardsManagerProxy =
-        TransparentUpgradeableProxy(payable(0x78681e63b6f3ad81ecD64AECC404d765b529C80d));
+    TransparentUpgradeableProxy public rewardsManagerProxy;
 
     Lens public lensImplV1;
     Morpho public morphoImplV1;
@@ -69,7 +72,7 @@ contract Config {
     Lens public lens;
     Morpho public morpho;
     RewardsManager public rewardsManager;
-    IncentivesVault public incentivesVault;
-    PositionsManager public positionsManager;
-    InterestRatesManager public interestRatesManager;
+    IIncentivesVault public incentivesVault;
+    IPositionsManager public positionsManager;
+    IInterestRatesManager public interestRatesManager;
 }
