@@ -16,15 +16,15 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolTokenAddress) external view returns (bool) {
-        return morpho.marketStatus(_poolTokenAddress).isCreated;
+        return morpho.market(_poolTokenAddress).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        return marketStatus.isCreated && !marketStatus.isPaused;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        return market.isCreated && !market.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
@@ -35,8 +35,8 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (bool)
     {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        return marketStatus.isCreated && !marketStatus.isPaused && !marketStatus.isPartiallyPaused;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
     }
 
     /// @notice Returns all created markets.
@@ -111,7 +111,7 @@ abstract contract MarketsLens is RatesLens {
     /// @notice Returns market's configuration.
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
-    /// @return p2pDisabled Whether user are put in peer-to-peer or not.
+    /// @return isP2PDisabled Whether user are put in peer-to-peer or not.
     /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor The reserve factor applied to this market.
@@ -122,7 +122,7 @@ abstract contract MarketsLens is RatesLens {
         returns (
             address underlying,
             bool isCreated,
-            bool p2pDisabled,
+            bool isP2PDisabled,
             bool isPaused,
             bool isPartiallyPaused,
             uint16 reserveFactor,
@@ -131,15 +131,13 @@ abstract contract MarketsLens is RatesLens {
     {
         underlying = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
-        isCreated = marketStatus.isCreated;
-        p2pDisabled = morpho.p2pDisabled(_poolTokenAddress);
-        isPaused = marketStatus.isPaused;
-        isPartiallyPaused = marketStatus.isPartiallyPaused;
-
-        Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
-        reserveFactor = marketParams.reserveFactor;
-        p2pIndexCursor = marketParams.p2pIndexCursor;
+        Types.Market memory market = morpho.market(_poolTokenAddress);
+        isCreated = market.isCreated;
+        isP2PDisabled = market.isP2PDisabled;
+        isPaused = market.isPaused;
+        isPartiallyPaused = market.isPartiallyPaused;
+        reserveFactor = market.reserveFactor;
+        p2pIndexCursor = market.p2pIndexCursor;
     }
 
     /// PUBLIC ///
@@ -186,7 +184,7 @@ abstract contract MarketsLens is RatesLens {
     {
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
-        (underlyingToken, p2pSupplyIndex, poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
+        (underlyingToken, , p2pSupplyIndex, poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
             _poolTokenAddress
         );
 
@@ -213,7 +211,7 @@ abstract contract MarketsLens is RatesLens {
     {
         uint256 p2pBorrowIndex;
         uint256 poolBorrowIndex;
-        (underlyingToken, p2pBorrowIndex, , poolBorrowIndex) = _getCurrentP2PBorrowIndex(
+        (underlyingToken, , p2pBorrowIndex, , poolBorrowIndex) = _getCurrentP2PBorrowIndex(
             _poolTokenAddress
         );
 

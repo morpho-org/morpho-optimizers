@@ -353,7 +353,7 @@ abstract contract UsersLens is IndexesLens {
     {
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
-        (underlyingToken, p2pSupplyIndex, poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
+        (underlyingToken, , p2pSupplyIndex, poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
             _poolTokenAddress
         );
 
@@ -384,7 +384,7 @@ abstract contract UsersLens is IndexesLens {
     {
         uint256 p2pBorrowIndex;
         uint256 poolBorrowIndex;
-        (underlyingToken, p2pBorrowIndex, , poolBorrowIndex) = _getCurrentP2PBorrowIndex(
+        (underlyingToken, , p2pBorrowIndex, , poolBorrowIndex) = _getCurrentP2PBorrowIndex(
             _poolTokenAddress
         );
 
