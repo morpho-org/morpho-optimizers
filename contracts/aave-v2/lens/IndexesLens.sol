@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./MarketsLens.sol";
+import "./LensStorage.sol";
 
 /// @title IndexesLens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol market indexes & rates.
-abstract contract IndexesLens is MarketsLens {
+abstract contract IndexesLens is LensStorage {
     /// PUBLIC ///
 
     /// @notice Returns the updated peer-to-peer supply index.

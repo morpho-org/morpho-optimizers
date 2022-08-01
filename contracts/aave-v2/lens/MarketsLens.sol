@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./LensStorage.sol";
+import "./RatesLens.sol";
 
 /// @title MarketsLens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol markets.
-abstract contract MarketsLens is LensStorage {
+abstract contract MarketsLens is RatesLens {
+    using WadRayMath for uint256;
+
     /// EXTERNAL ///
 
     /// @notice Checks if a market is created.
@@ -43,67 +45,100 @@ abstract contract MarketsLens is LensStorage {
         return morpho.getMarketsCreated();
     }
 
-    /// @notice Returns market's data.
-    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
-    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
-    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in pool supply unit).
-    /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in pool borrow unit).
-    /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer supply unit).
-    /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer borrow unit).
-    function getMarketData(address _poolTokenAddress)
+    /// @notice For a given market, returns the average supply/borrow rates and amounts of underlying asset supplied and borrowed through Morpho, on the underlying pool and matched peer-to-peer.
+    /// @dev The returned values are not updated.
+    /// @param _poolTokenAddress The address of the market of which to get main data.
+    /// @return avgSupplyRatePerYear The average supply rate experienced on the given market.
+    /// @return avgBorrowRatePerYear The average borrow rate experienced on the given market.
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, without the supply delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, without the borrow delta (in underlying).
+    function getMainMarketData(address _poolTokenAddress)
         external
         view
         returns (
-            uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_,
-            uint256 p2pSupplyDelta_,
-            uint256 p2pBorrowDelta_,
-            uint256 p2pSupplyAmount_,
-            uint256 p2pBorrowAmount_
+            uint256 avgSupplyRatePerYear,
+            uint256 avgBorrowRatePerYear,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount,
+            uint256 poolSupplyAmount,
+            uint256 poolBorrowAmount
         )
     {
-        {
-            Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-            p2pSupplyDelta_ = delta.p2pSupplyDelta;
-            p2pBorrowDelta_ = delta.p2pBorrowDelta;
-            p2pSupplyAmount_ = delta.p2pSupplyAmount;
-            p2pBorrowAmount_ = delta.p2pBorrowAmount;
-        }
-        p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
-        p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
+        (avgSupplyRatePerYear, p2pSupplyAmount, poolSupplyAmount) = getAverageSupplyRatePerYear(
+            _poolTokenAddress
+        );
+        (avgBorrowRatePerYear, p2pBorrowAmount, poolBorrowAmount) = getAverageBorrowRatePerYear(
+            _poolTokenAddress
+        );
+    }
+
+    /// @notice Returns non-updated indexes, the block at which they were last updated and the total deltas of a given market.
+    /// @param _poolTokenAddress The address of the market of which to get advanced data.
+    /// @return p2pSupplyIndex The peer-to-peer supply index of the given market (in wad).
+    /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in wad).
+    /// @return poolSupplyIndex The pool supply index of the given market (in wad).
+    /// @return poolBorrowIndex The pool borrow index of the given market (in wad).
+    /// @return lastUpdateTimestamp The block number at which pool indexes were last updated.
+    /// @return p2pSupplyDelta The total supply delta (in underlying).
+    /// @return p2pBorrowDelta The total borrow delta (in underlying).
+    function getAdvancedMarketData(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex,
+            uint32 lastUpdateTimestamp,
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta
+        )
+    {
+        (p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = getIndexes(
+            _poolTokenAddress
+        );
+
+        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        p2pSupplyDelta = delta.p2pSupplyDelta.rayMul(poolSupplyIndex);
+        p2pBorrowDelta = delta.p2pBorrowDelta.rayMul(poolBorrowIndex);
+
+        Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
+        lastUpdateTimestamp = poolIndexes.lastUpdateTimestamp;
     }
 
     /// @notice Returns market's configuration.
-    /// @return underlying_ The underlying token address.
-    /// @return isCreated_ Whether the market is created or not.
-    /// @return p2pDisabled_ Whether user are put in peer-to-peer or not.
-    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
-    /// @return reserveFactor_ The reserve factor applied to this market.
-    /// @return p2pIndexCursor_ The p2p index cursor applied to this market.
+    /// @return underlying The underlying token address.
+    /// @return isCreated Whether the market is created or not.
+    /// @return p2pDisabled Whether user are put in peer-to-peer or not.
+    /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+    /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return reserveFactor The reserve factor applied to this market.
+    /// @return p2pIndexCursor The p2p index cursor applied to this market.
     function getMarketConfiguration(address _poolTokenAddress)
         external
         view
         returns (
-            address underlying_,
-            bool isCreated_,
-            bool p2pDisabled_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            uint16 reserveFactor_,
-            uint16 p2pIndexCursor_
+            address underlying,
+            bool isCreated,
+            bool p2pDisabled,
+            bool isPaused,
+            bool isPartiallyPaused,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor
         )
     {
-        underlying_ = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        underlying = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
-        Types.MarketStatus memory marketStatus_ = morpho.marketStatus(_poolTokenAddress);
-        isCreated_ = marketStatus_.isCreated;
-        p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
-        isPaused_ = marketStatus_.isPaused;
-        isPartiallyPaused_ = marketStatus_.isPartiallyPaused;
+        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolTokenAddress);
+        isCreated = marketStatus.isCreated;
+        p2pDisabled = morpho.p2pDisabled(_poolTokenAddress);
+        isPaused = marketStatus.isPaused;
+        isPartiallyPaused = marketStatus.isPartiallyPaused;
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
-        reserveFactor_ = marketParams.reserveFactor;
-        p2pIndexCursor_ = marketParams.p2pIndexCursor;
+        reserveFactor = marketParams.reserveFactor;
+        p2pIndexCursor = marketParams.p2pIndexCursor;
     }
 }

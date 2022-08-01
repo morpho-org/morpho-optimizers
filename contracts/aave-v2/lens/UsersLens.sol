@@ -21,11 +21,11 @@ abstract contract UsersLens is IndexesLens {
 
     /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
-    /// @return enteredMarkets_ The list of markets entered by this user.
+    /// @return enteredMarkets The list of markets entered by this user.
     function getEnteredMarkets(address _user)
         external
         view
-        returns (address[] memory enteredMarkets_)
+        returns (address[] memory enteredMarkets)
     {
         address[] memory createdMarkets = morpho.getMarketsCreated();
         uint256 nbCreatedMarkets = createdMarkets.length;
@@ -46,27 +46,16 @@ abstract contract UsersLens is IndexesLens {
             }
         }
 
-        enteredMarkets_ = new address[](nbEnteredMarkets);
+        enteredMarkets = new address[](nbEnteredMarkets);
 
         uint256 j;
         for (i = 0; i < nbCreatedMarkets; ) {
-            if (createdMarkets[i] != address(0)) enteredMarkets_[j++] = createdMarkets[i];
+            if (createdMarkets[i] != address(0)) enteredMarkets[j++] = createdMarkets[i];
 
             unchecked {
                 ++i;
             }
         }
-    }
-
-    /// @notice Returns the current balance state of the user.
-    /// @param _user The user to determine liquidity for.
-    /// @return liquidityData The liquidity data of the user.
-    function getUserBalanceStates(address _user)
-        external
-        view
-        returns (Types.LiquidityData memory liquidityData)
-    {
-        return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
 
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
@@ -184,15 +173,32 @@ abstract contract UsersLens is IndexesLens {
     //     toRepay = maxROIRepay > maxRepayable ? maxRepayable : maxROIRepay;
     // }
 
+    /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
+    /// @param _user The user of whom to get the health factor.
+    /// @return the health factor of the given user (in wad).
+    function getUserHealthFactor(address _user) external view returns (uint256) {
+        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
+        if (liquidityData.debtValue == 0) return type(uint256).max;
+
+        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+    }
+
     /// PUBLIC ///
 
+    /// @notice Returns the collateral value, debt value and max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @return the liquidity data of the user.
+    function getUserBalanceStates(address _user) public view returns (Types.LiquidityData memory) {
+        return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
+    }
+
     /// @notice Returns the balance in underlying of a given user in a given market.
-    /// @param _user The user to determine balances of.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _user The user to determine balances of.
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUserSupplyBalance(address _user, address _poolTokenAddress)
+    function getUserSupplyBalance(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -215,12 +221,12 @@ abstract contract UsersLens is IndexesLens {
     }
 
     /// @notice Returns the borrow balance in underlying of a given user in a given market.
-    /// @param _user The user to determine balances of.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _user The user to determine balances of.
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUserBorrowBalance(address _user, address _poolTokenAddress)
+    function getUserBorrowBalance(address _poolTokenAddress, address _user)
         public
         view
         returns (
@@ -373,9 +379,14 @@ abstract contract UsersLens is IndexesLens {
         uint256 _p2pSupplyIndex,
         uint256 _poolSupplyIndex
     ) internal view returns (uint256) {
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+            _poolTokenAddress,
+            _user
+        );
+
         return
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(_p2pSupplyIndex) +
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(_poolSupplyIndex);
+            supplyBalance.inP2P.rayMul(_p2pSupplyIndex) +
+            supplyBalance.onPool.rayMul(_poolSupplyIndex);
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
@@ -388,8 +399,13 @@ abstract contract UsersLens is IndexesLens {
         uint256 _p2pBorrowIndex,
         uint256 _poolBorrowIndex
     ) internal view returns (uint256) {
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
+            _poolTokenAddress,
+            _user
+        );
+
         return
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(_p2pBorrowIndex) +
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(_poolBorrowIndex);
+            borrowBalance.inP2P.rayMul(_p2pBorrowIndex) +
+            borrowBalance.onPool.rayMul(_poolBorrowIndex);
     }
 }
