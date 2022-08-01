@@ -1097,7 +1097,7 @@ contract TestLens is TestSetup {
 
         uint256 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
 
-        if (states.debtValue <= states.liquidationThresholdValue) {
+        if (states.debt <= states.liquidationThreshold) {
             assertEq(toRepay, 0, "Should return 0 when the position is solvent");
             return;
         }
@@ -1119,14 +1119,14 @@ contract TestLens is TestSetup {
             } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
 
             // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationBonus] threshold and returned to a solvent position
-            if (states.collateralValue.percentDiv(liquidationBonus) > states.debtValue) {
+            if (states.collateral.percentDiv(liquidationBonus) > states.debt) {
                 assertFalse(lens.isLiquidatable(address(borrower1)), "borrower1 liquidatable");
             } else {
                 // or the liquidator has drained all the collateral
                 states = lens.getUserBalanceStates(address(borrower1));
                 assertGt(
-                    states.debtValue,
-                    states.collateralValue.percentDiv(liquidationBonus),
+                    states.debt,
+                    states.collateral.percentDiv(liquidationBonus),
                     "debt value under collateral value"
                 );
                 assertEq(toRepay, 0, "to repay not zero");
@@ -1134,8 +1134,8 @@ contract TestLens is TestSetup {
         } else {
             // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
             assertGt(
-                states.debtValue,
-                states.collateralValue.percentDiv(liquidationBonus),
+                states.debt,
+                states.collateral.percentDiv(liquidationBonus),
                 "debt value under collateral value"
             );
         }
@@ -1157,17 +1157,17 @@ contract TestLens is TestSetup {
     //  * @dev Because of rounding errors, a liquidatable position worth less than 1e-5 USD cannot get liquidated in practice
     //  * Explanation with amount = 1e13 (1e-5 USDC borrowed):
     //  * 0. Before changing the collateralPrice, position is not liquidatable:
-    //  * - debtValue = 9e-6 USD (compound rounding error, should be 1e-5 USD)
-    //  * - collateralValue = 2e-5 USD (+ some dust because of rounding errors, should be 2e-5 USD)
+    //  * - debt = 9e-6 USD (compound rounding error, should be 1e-5 USD)
+    //  * - collateral = 2e-5 USD (+ some dust because of rounding errors, should be 2e-5 USD)
     //  * 1. collateralPrice is set to 0.501 ether, position is under the [1 / liquidationIncentive] threshold:
-    //  * - debtValue = 9e-6 USD (compound rounding error, should be 1e-5 USD => position should be above the [1 / liquidationIncentive] threshold)
-    //  * - collateralValue = 1.001e-5 USD
+    //  * - debt = 9e-6 USD (compound rounding error, should be 1e-5 USD => position should be above the [1 / liquidationIncentive] threshold)
+    //  * - collateral = 1.001e-5 USD
     //  * 2. Liquidation happens, position is now above the [1 / liquidationIncentive] threshold:
-    //  * - toRepay = 4e-6 USD (debtValue * closeFactor = 4.5e-6 truncated to 4e-6)
-    //  * - debtValue = 6e-6 (because of p2p units rounding errors: 9e-6 - 4e-6 ~= 6e-6)
+    //  * - toRepay = 4e-6 USD (debt * closeFactor = 4.5e-6 truncated to 4e-6)
+    //  * - debt = 6e-6 (because of p2p units rounding errors: 9e-6 - 4e-6 ~= 6e-6)
     //  * 3. After several liquidations, the position is still considered liquidatable but no collateral can be liquidated:
-    //  * - debtValue = 1e-6 USD
-    //  * - collateralValue = 1e-6 USD (+ some dust)
+    //  * - debt = 1e-6 USD
+    //  * - collateral = 1e-6 USD (+ some dust)
     //  */
     function testNoRepayLiquidation() public {
         testLiquidation(0, 0.5 ether);

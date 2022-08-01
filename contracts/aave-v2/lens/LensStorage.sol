@@ -7,11 +7,11 @@ import "../interfaces/aave/IAToken.sol";
 import "../interfaces/IMorpho.sol";
 
 import "../libraries/aave/ReserveConfiguration.sol";
-import "../libraries/aave/PercentageMath.sol";
-import "../libraries/aave/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
 import "../libraries/aave/DataTypes.sol";
 import "../libraries/InterestRatesModel.sol";
-import "../libraries/Math.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
