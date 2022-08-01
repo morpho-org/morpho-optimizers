@@ -537,7 +537,7 @@ contract TestLens is TestSetup {
             "liquidationThreshold"
         );
         assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
-        assertApproxEqAbs(states.healthFactor, expectedStates.healthFactor, 1e4, "healthFactor");
+        assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e4, "healthFactor");
     }
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
