@@ -6,20 +6,34 @@ import "./setup/TestSetup.sol";
 contract TestSupply is TestSetup {
     using CompoundMath for uint256;
 
-    function testSupply1() public {
-        uint256 amount = 10000 ether;
+    function testShouldSupplyAmountP2PAndOnPool(uint256 amount) public {
+        vm.assume(amount >= 1e9 && amount <= ERC20(dai).balanceOf(address(supplier1)));
+
+        uint256 morphoDaiBalanceBefore = ERC20(dai).balanceOf(address(morpho));
+        uint256 morphoBalanceOnPoolBefore = ERC20(cDai).balanceOf(address(morpho));
 
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
         uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedOnPool = amount.div(poolSupplyIndex);
-
-        assertEq(ERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
-        assertEq(onPool, expectedOnPool, "on pool");
-        assertEq(inP2P, 0, "in peer-to-peer");
+        assertEq(
+            onPool.mul(poolSupplyIndex) + inP2P.mul(p2pSupplyIndex),
+            amount.div(poolSupplyIndex).mul(poolSupplyIndex), // rounding errors
+            "unexpected supplied amount"
+        );
+        assertEq(
+            ERC20(dai).balanceOf(address(morpho)),
+            morphoDaiBalanceBefore,
+            "unexpected morpho DAI balance"
+        );
+        assertEq(
+            ERC20(cDai).balanceOf(address(morpho)) - morphoBalanceOnPoolBefore,
+            onPool,
+            "unexpected DAI balance on pool"
+        );
     }
 }
