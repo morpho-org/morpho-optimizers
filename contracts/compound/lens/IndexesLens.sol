@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "../libraries/InterestRatesModel.sol";
-import "../libraries/CompoundMath.sol";
 
 import "./LensStorage.sol";
 
