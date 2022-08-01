@@ -9,10 +9,10 @@ contract TestLens is TestSetup {
     using WadRayMath for uint256;
 
     struct UserBalanceStates {
-        uint256 collateralValue;
-        uint256 debtValue;
-        uint256 maxDebtValue;
-        uint256 liquidationValue;
+        uint256 collateral;
+        uint256 debt;
+        uint256 maxDebt;
+        uint256 liquidation;
     }
 
     struct UserBalance {
@@ -29,8 +29,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-        .getConfiguration(dai)
-        .getParamsMemory();
+            .getConfiguration(dai)
+            .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
 
@@ -56,8 +56,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-        .getConfiguration(dai)
-        .getParamsMemory();
+            .getConfiguration(dai)
+            .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
@@ -85,8 +85,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-        .getConfiguration(dai)
-        .getParamsMemory();
+            .getConfiguration(dai)
+            .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
@@ -125,8 +125,8 @@ contract TestLens is TestSetup {
         uint256 decimalsUsdc;
 
         (expectedDataUsdc.ltv, expectedDataUsdc.liquidationThreshold, , decimalsUsdc, ) = pool
-        .getConfiguration(usdc)
-        .getParamsMemory();
+            .getConfiguration(usdc)
+            .getParamsMemory();
         expectedDataUsdc.underlyingPrice = oracle.getAssetPrice(usdc);
         expectedDataUsdc.tokenUnit = 10**decimalsUsdc;
         expectedDataUsdc.debt =
@@ -145,15 +145,15 @@ contract TestLens is TestSetup {
             "underlyingPriceUsdc"
         );
         assertEq(assetDataUsdc.tokenUnit, expectedDataUsdc.tokenUnit, "tokenUnitUsdc");
-        assertEq(assetDataUsdc.collateral, 0, "collateralValueUsdc");
-        assertEq(assetDataUsdc.debt, expectedDataUsdc.debt, "debtValueUsdc");
+        assertEq(assetDataUsdc.collateral, 0, "collateralUsdc");
+        assertEq(assetDataUsdc.debt, expectedDataUsdc.debt, "debtUsdc");
 
         Types.AssetLiquidityData memory expectedDataDai;
         uint256 decimalsDai;
 
         (expectedDataDai.ltv, expectedDataDai.liquidationThreshold, , decimalsDai, ) = pool
-        .getConfiguration(dai)
-        .getParamsMemory();
+            .getConfiguration(dai)
+            .getParamsMemory();
         expectedDataDai.underlyingPrice = oracle.getAssetPrice(dai);
         expectedDataDai.tokenUnit = 10**decimalsDai;
         expectedDataDai.collateral =
@@ -172,8 +172,8 @@ contract TestLens is TestSetup {
             "underlyingPriceDai"
         );
         assertEq(assetDataDai.tokenUnit, expectedDataDai.tokenUnit, "tokenUnitDai");
-        assertEq(assetDataDai.collateral, expectedDataDai.collateral, "collateralValueDai");
-        assertEq(assetDataDai.debt, 0, "debtValueDai");
+        assertEq(assetDataDai.collateral, expectedDataDai.collateral, "collateralDai");
+        assertEq(assetDataDai.debt, 0, "debtDai");
     }
 
     function testMaxCapicitiesWithNothing() public {
@@ -234,7 +234,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
+            .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -259,7 +259,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
+            .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -300,7 +300,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
+            .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -324,7 +324,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
+            .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -412,9 +412,8 @@ contract TestLens is TestSetup {
         (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aUsdc);
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aUsdt);
 
-        uint256 expectedBorrowableUsdt = ((assetDataUsdc.collateralValue.percentMul(
-            assetDataUsdc.ltv
-        ) + assetDataDai.collateralValue.percentMul(assetDataDai.ltv)) * assetDataUsdt.tokenUnit) /
+        uint256 expectedBorrowableUsdt = ((assetDataUsdc.collateral.percentMul(assetDataUsdc.ltv) +
+            assetDataDai.collateral.percentMul(assetDataDai.ltv)) * assetDataUsdt.tokenUnit) /
             assetDataUsdt.underlyingPrice;
 
         assertEq(withdrawableUsdc, to6Decimals(amount), "unexpected new withdrawable usdc");
@@ -452,8 +451,8 @@ contract TestLens is TestSetup {
 
         // DAI data
         (uint256 ltvDai, uint256 liquidationThresholdDai, , uint256 decimalsDai, ) = pool
-        .getConfiguration(dai)
-        .getParamsMemory();
+            .getConfiguration(dai)
+            .getParamsMemory();
         uint256 underlyingPriceDai = oracle.getAssetPrice(dai);
         uint256 tokenUnitDai = 10**decimalsDai;
 
@@ -498,8 +497,8 @@ contract TestLens is TestSetup {
 
         // USDC data
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-        .getConfiguration(usdc)
-        .getParamsMemory();
+            .getConfiguration(usdc)
+            .getParamsMemory();
         uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
             10**decimals;
         expectedStates.collateral += collateralValueToAdd;
@@ -531,14 +530,14 @@ contract TestLens is TestSetup {
         );
 
         assertApproxEqAbs(states.collateral, expectedStates.collateral, 2, "collateral");
-        assertEq(states.debt, expectedStates.debt, "debt");
+        assertApproxEqAbs(states.debt, expectedStates.debt, 1, "debt");
         assertEq(
             states.liquidationThreshold,
             expectedStates.liquidationThreshold,
             "liquidationThreshold"
         );
         assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
-        assertEq(healthFactor, expectedHealthFactor, "healthFactor");
+        assertApproxEqAbs(states.healthFactor, expectedStates.healthFactor, 1e4, "healthFactor");
     }
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
@@ -749,8 +748,8 @@ contract TestLens is TestSetup {
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PIndexesWithBorrowDelta() public {
@@ -759,8 +758,8 @@ contract TestLens is TestSetup {
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
@@ -768,7 +767,7 @@ contract TestLens is TestSetup {
         uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PSupplyIndexWithDelta() public {
@@ -785,7 +784,7 @@ contract TestLens is TestSetup {
         uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
@@ -995,8 +994,8 @@ contract TestLens is TestSetup {
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
 
         (uint256 ltv, uint256 liquidationThreshold, , , ) = pool
-        .getConfiguration(usdc)
-        .getParamsMemory();
+            .getConfiguration(usdc)
+            .getParamsMemory();
 
         assertEq(healthFactor, uint256(1 ether).percentMul(liquidationThreshold).percentDiv(ltv));
     }
@@ -1319,9 +1318,9 @@ contract TestLens is TestSetup {
         Amounts memory amounts;
 
         (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
-        .getTotalSupply();
+            .getTotalSupply();
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
-        .getTotalBorrow();
+            .getTotalBorrow();
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
@@ -1407,9 +1406,9 @@ contract TestLens is TestSetup {
         Amounts memory amounts;
 
         (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
-        .getTotalSupply();
+            .getTotalSupply();
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
-        .getTotalBorrow();
+            .getTotalBorrow();
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
