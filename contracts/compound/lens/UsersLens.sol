@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../interfaces/compound/ICompound.sol";
-import "../interfaces/IMorpho.sol";
-
-import "../libraries/CompoundMath.sol";
-
 import "./IndexesLens.sol";
 
 /// @title UsersLens.
