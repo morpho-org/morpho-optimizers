@@ -526,7 +526,6 @@ contract TestLens is TestSetup {
         (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
-            uint32 lastUpdateBlockNumber,
             uint256 p2pSupplyDelta_,
             uint256 p2pBorrowDelta_,
             uint256 p2pSupplyAmount_,
@@ -535,8 +534,7 @@ contract TestLens is TestSetup {
 
         assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(aDai));
         assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(aDai));
-        (uint32 expectedLastUpdateBlockNumber, , ) = morpho.poolIndexes(aDai);
-        assertEq(lastUpdateBlockNumber, expectedLastUpdateBlockNumber);
+
         (
             uint256 p2pSupplyDelta,
             uint256 p2pBorrowDelta,
@@ -552,12 +550,15 @@ contract TestLens is TestSetup {
 
     function testGetMarketConfiguration() public {
         (
+            address underlying,
             bool isCreated,
             bool isP2PDisabled,
             bool isPaused,
             bool isPartiallyPaused,
-            uint256 reserveFactor
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor
         ) = lens.getMarketConfiguration(aDai);
+        assertTrue(underlying == IAToken(aDai).UNDERLYING_ASSET_ADDRESS());
 
         (
             ,
@@ -574,17 +575,72 @@ contract TestLens is TestSetup {
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
-        (, uint16 expectedReserveFactor, , , , , ) = morpho.market(aDai);
+        (, uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor, , , , ) = morpho.market(
+            aDai
+        );
         assertTrue(reserveFactor == expectedReserveFactor);
+        assertTrue(p2pIndexCursor == expectedP2PIndexCursor);
     }
 
-    function testGetUpdatedP2PIndexes() public {
-        hevm.warp(block.timestamp + 365 days);
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
+    function testGetOutdatedIndexes() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = lens.getIndexes(aDai);
+
+        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
+        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+
+        assertEq(
+            poolSupplyIndex,
+            pool.getReserveNormalizedIncome(dai),
+            "pool supply indexes different"
+        );
+        assertEq(
+            poolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
+    }
+
+    function testGetIndexes() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(dai),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
     }
 
     function testGetUpdatedP2PIndexesWithSupplyDelta() public {
@@ -661,5 +717,1067 @@ contract TestLens is TestSetup {
         borrower1.borrow(aDai, amount / 4);
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, type(uint256).max);
+    }
+
+    function testGetEnteredMarkets() public {
+        uint256 amount = 1e12;
+        supplier1.approve(dai, amount);
+        supplier1.approve(usdc, amount);
+        supplier1.approve(usdt, amount);
+        supplier1.supply(aDai, amount);
+        supplier1.supply(aUsdc, amount);
+        supplier1.supply(aUsdt, amount);
+
+        address[] memory enteredMarkets = lens.getEnteredMarkets(address(supplier1));
+        uint256 userMarketsBitmask = morpho.userMarkets(address(supplier1));
+
+        uint256 j;
+        for (uint256 i; i < pools.length; ) {
+            address market = pools[i];
+
+            for (j = 0; j < enteredMarkets.length; ) {
+                if (enteredMarkets[j] == market) break;
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            uint256 marketBitmask = morpho.borrowMask(market);
+            if (userMarketsBitmask & (marketBitmask | (marketBitmask << 1)) != 0)
+                assertLt(j, enteredMarkets.length, "market entered not in enteredMarkets");
+            else assertEq(j, enteredMarkets.length, "market not entered in enteredMarkets");
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function testGetRatesPerYear() public {
+        hevm.roll(block.number + 1_000);
+        (
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
+        ) = lens.getRatesPerYear(aDai);
+
+        (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(aDai);
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(
+            IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
+        );
+        uint256 expectedPoolSupplyRate = reserve.currentLiquidityRate;
+        uint256 expectedPoolBorrowRate = reserve.currentVariableBorrowRate;
+
+        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
+        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
+        assertEq(poolSupplyRate, expectedPoolSupplyRate);
+        assertEq(poolBorrowRate, expectedPoolBorrowRate);
+    }
+
+    // function testIsLiquidatableFalse() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     assertFalse(lens.isLiquidatable(address(borrower1), new address[](0)));
+    // }
+
+    // function testIsLiquidatableTrue() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(aUsdc) / 2);
+
+    //     assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
+    // }
+
+    // function testComputeLiquidation() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     createAndSetCustomPriceOracle().setDirectPrice(usdc, 1);
+
+    //     assertEq(
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //         0
+    //     );
+    // }
+
+    // function testComputeLiquidation2() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     assertEq(
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //         0
+    //     );
+    // }
+
+    // function testComputeLiquidation3() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     createAndSetCustomPriceOracle().setDirectPrice(
+    //         usdc,
+    //         (oracle.getUnderlyingPrice(aDai) * 2) * 1e12
+    //     );
+
+    //     borrower1.approve(usdc, to6Decimals(amount));
+    //     borrower1.supply(aUsdc, to6Decimals(amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     createAndSetCustomPriceOracle().setDirectPrice(
+    //         usdc,
+    //         ((oracle.getUnderlyingPrice(aDai) * 79) / 100) * 1e12
+    //     );
+
+    //     assertApproxEq(
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //         amount.rayMul(comptroller.closeFactorMantissa()),
+    //         1
+    //     );
+    // }
+
+    // function testComputeLiquidation4() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     borrower1.approve(usdc, to6Decimals(2 * amount));
+    //     borrower1.supply(aUsdc, to6Decimals(2 * amount));
+    //     borrower1.borrow(aDai, amount);
+
+    //     createAndSetCustomPriceOracle().setDirectPrice(
+    //         usdc,
+    //         (oracle.getUnderlyingPrice(aDai) / 2) * 1e12 // Setting the value of the collateral at the same value as the debt.
+    //     );
+
+    //     assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
+
+    //     assertApproxEq(
+    //         lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc, new address[](0)),
+    //         amount / 2,
+    //         1
+    //     );
+    // }
+
+    // function testLiquidationWithPoolIndexes() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     (, uint256 collateralFactor, ) = comptroller.markets(aUsdc);
+
+    //     borrower1.approve(usdc, to6Decimals(amount));
+    //     borrower1.supply(aUsdc, to6Decimals(amount));
+    //     borrower1.borrow(aDai, amount.rayMul(collateralFactor) - 10 ether);
+
+    //     address[] memory updatedMarkets = new address[](2);
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     hevm.roll(block.number + (31 * 24 * 60 * 4));
+
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     updatedMarkets[0] = address(aDai);
+    //     updatedMarkets[1] = address(aUsdc);
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is not liquidatable with virtually updated pool indexes"
+    //     );
+
+    //     ICToken(aUsdc).accrueInterest();
+    //     ICToken(aDai).accrueInterest();
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1), new address[](0)),
+    //         "borrower is not liquidatable with updated pool indexes"
+    //     );
+    // }
+
+    // function testLiquidatableWithP2PIndexes() public {
+    //     uint256 amount = 10_000 ether;
+
+    //     supplier2.approve(dai, amount);
+    //     supplier2.supply(aDai, amount);
+
+    //     (, uint256 collateralFactor, ) = comptroller.markets(aUsdc);
+
+    //     borrower1.approve(usdc, to6Decimals(amount));
+    //     borrower1.supply(aUsdc, to6Decimals(amount));
+    //     borrower1.borrow(aDai, amount.rayMul(collateralFactor) - 10 ether);
+
+    //     address[] memory updatedMarkets = new address[](2);
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     hevm.roll(block.number + (31 * 24 * 60 * 4));
+
+    //     assertFalse(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is already liquidatable"
+    //     );
+
+    //     updatedMarkets[0] = address(aDai);
+    //     updatedMarkets[1] = address(aUsdc);
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1), updatedMarkets),
+    //         "borrower is not liquidatable with virtually updated p2p indexes"
+    //     );
+
+    //     morpho.updateIndexes(aUsdc);
+    //     morpho.updateIndexes(aDai);
+    //     assertTrue(
+    //         lens.isLiquidatable(address(borrower1), new address[](0)),
+    //         "borrower is not liquidatable with updated p2p indexes"
+    //     );
+    // }
+
+    // function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
+    //     uint256 amount = _amount + 1e14;
+    //     uint256 collateralPrice = uint256(_collateralPrice) + 1;
+
+    //     // this is necessary to avoid compound reverting redeem because amount in USD is near zero
+    //     supplier2.approve(usdc, 100e6);
+    //     supplier2.supply(aUsdc, 100e6);
+
+    //     uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
+
+    //     borrower1.approve(dai, 2 * amount);
+    //     borrower1.supply(aDai, 2 * amount);
+    //     borrower1.borrow(aUsdc, to6Decimals(amount));
+
+    //     moveOneBlockForwardBorrowRepay();
+    //     createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
+
+    //     (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
+    //         .getUserBalanceStates(address(borrower1), new address[](0));
+
+    //     uint256 borrowedPrice = oracle.getUnderlyingPrice(aUsdc);
+    //     uint256 toRepay = lens.computeLiquidationRepayAmount(
+    //         address(borrower1),
+    //         aUsdc,
+    //         aDai,
+    //         new address[](0)
+    //     );
+
+    //     if (debtValue <= maxDebtValue) {
+    //         assertEq(toRepay, 0, "Should return 0 when the position is solvent");
+    //         return;
+    //     }
+
+    //     if (toRepay != 0) {
+    //         supplier1.approve(usdc, type(uint256).max);
+
+    //         do {
+    //             supplier1.liquidate(aUsdc, aDai, address(borrower1), toRepay);
+    //             assertGt(
+    //                 ERC20(dai).balanceOf(address(supplier1)),
+    //                 balanceBefore,
+    //                 "balance did not increase"
+    //             );
+
+    //             balanceBefore = ERC20(dai).balanceOf(address(supplier1));
+    //             toRepay = lens.computeLiquidationRepayAmount(
+    //                 address(borrower1),
+    //                 aUsdc,
+    //                 aDai,
+    //                 new address[](0)
+    //             );
+    //         } while (lens.isLiquidatable(address(borrower1), new address[](0)) && toRepay > 0);
+
+    //         // either the liquidatee's position (borrow value rayDivided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
+    //         if (collateralValue.rayDiv(comptroller.liquidationIncentiveMantissa()) > debtValue) {
+    //             assertFalse(lens.isLiquidatable(address(borrower1), new address[](0)));
+    //         } else {
+    //             // or the liquidator has drained all the collateral
+    //             (collateralValue, , ) = lens.getUserBalanceStates(
+    //                 address(borrower1),
+    //                 new address[](0)
+    //             );
+    //             assertEq(
+    //                 collateralValue.rayDiv(borrowedPrice).rayDiv(
+    //                     comptroller.liquidationIncentiveMantissa()
+    //                 ),
+    //                 0
+    //             );
+    //             assertEq(toRepay, 0);
+    //         }
+    //     } else {
+    //         // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
+    //         assertEq(
+    //             collateralValue.rayDiv(borrowedPrice).rayDiv(comptroller.liquidationIncentiveMantissa()),
+    //             0
+    //         );
+    //     }
+    // }
+
+    // function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
+    //     testLiquidation(uint256(_amount), _collateralPrice);
+    // }
+
+    // function testFuzzLiquidationUnderIncentiveThreshold(uint64 _amount) public {
+    //     testLiquidation(uint256(_amount), 0.501 ether);
+    // }
+
+    // function testFuzzLiquidationAboveIncentiveThreshold(uint64 _amount) public {
+    //     testLiquidation(uint256(_amount), 0.55 ether);
+    // }
+
+    // /**
+    //  * @dev Because of rounding errors, a liquidatable position worth less than 1e-5 USD cannot get liquidated in practice
+    //  * Explanation with amount = 1e13 (1e-5 USDC borrowed):
+    //  * 0. Before changing the collateralPrice, position is not liquidatable:
+    //  * - debtValue = 9e-6 USD (compound rounding error, should be 1e-5 USD)
+    //  * - collateralValue = 2e-5 USD (+ some dust because of rounding errors, should be 2e-5 USD)
+    //  * 1. collateralPrice is set to 0.501 ether, position is under the [1 / liquidationIncentive] threshold:
+    //  * - debtValue = 9e-6 USD (compound rounding error, should be 1e-5 USD => position should be above the [1 / liquidationIncentive] threshold)
+    //  * - collateralValue = 1.001e-5 USD
+    //  * 2. Liquidation happens, position is now above the [1 / liquidationIncentive] threshold:
+    //  * - toRepay = 4e-6 USD (debtValue * closeFactor = 4.5e-6 truncated to 4e-6)
+    //  * - debtValue = 6e-6 (because of p2p units rounding errors: 9e-6 - 4e-6 ~= 6e-6)
+    //  * 3. After several liquidations, the position is still considered liquidatable but no collateral can be liquidated:
+    //  * - debtValue = 1e-6 USD
+    //  * - collateralValue = 1e-6 USD (+ some dust)
+    //  */
+    // function testNoRepayLiquidation() public {
+    //     testLiquidation(0, 0.5 ether);
+    // }
+
+    function testSupplyRateShouldEqual0WhenNoSupply() public {
+        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+
+        assertEq(supplyRatePerYear, 0);
+    }
+
+    function testBorrowRateShouldEqual0WhenNoBorrow() public {
+        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+
+        assertEq(borrowRatePerYear, 0);
+    }
+
+    function testUserSupplyRateShouldEqualPoolRateWhenNotMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(
+            IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
+        );
+        assertApproxEq(supplyRatePerYear, reserve.currentLiquidityRate, 1);
+    }
+
+    function testUserBorrowRateShouldEqualPoolRateWhenNotMatched() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(
+            IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
+        );
+        assertApproxEq(borrowRatePerYear, reserve.currentVariableBorrowRate, 1);
+    }
+
+    function testUserSupplyBorrowRatesShouldEqualP2PRatesWhenFullyMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(aWeth, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertApproxEq(supplyRatePerYear, p2pSupplyRate, 1, "unexpected supply rate");
+        assertApproxEq(borrowRatePerYear, p2pBorrowRate, 1, "unexpected borrow rate");
+    }
+
+    function testUserSupplyRateShouldEqualMidrateWhenHalfMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(aWeth, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount / 2);
+
+        uint256 supplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
+
+        assertApproxEq(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1e4);
+    }
+
+    function testUserBorrowRateShouldEqualMidrateWhenHalfMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(aWeth, amount);
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+
+        supplier1.approve(dai, amount / 2);
+        supplier1.supply(aDai, amount / 2);
+        borrower1.borrow(aDai, amount);
+
+        uint256 borrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerYear(aDai);
+
+        assertApproxEq(borrowRatePerYear, (p2pBorrowRate + poolBorrowRate) / 2, 1e4);
+    }
+
+    function testSupplyRateShouldEqualPoolRateWithFullSupplyDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 100);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
+
+        assertApproxEq(p2pSupplyRate, poolSupplyRate, 1e4);
+    }
+
+    function testBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 100);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = lens.getRatesPerYear(aDai);
+
+        assertApproxEq(p2pBorrowRate, poolBorrowRate, 1e4);
+    }
+
+    function testNextSupplyRateShouldEqual0WhenNoSupply() public {
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), 0);
+
+        assertEq(supplyRatePerYear, 0, "non zero supply rate per block");
+        assertEq(balanceOnPool, 0, "non zero pool balance");
+        assertEq(balanceInP2P, 0, "non zero p2p balance");
+        assertEq(totalBalance, 0, "non zero total balance");
+    }
+
+    function testNextBorrowRateShouldEqual0WhenNoBorrow() public {
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), 0);
+
+        assertEq(borrowRatePerYear, 0, "non zero borrow rate per block");
+        assertEq(balanceOnPool, 0, "non zero pool balance");
+        assertEq(balanceInP2P, 0, "non zero p2p balance");
+        assertEq(totalBalance, 0, "non zero total balance");
+    }
+
+    function testNextSupplyRateShouldEqualCurrentRateWhenNoNewSupply() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), 0);
+
+        uint256 expectedSupplyRatePerYear = lens.getUserSupplyRatePerYear(aDai, address(supplier1));
+        (
+            uint256 expectedBalanceOnPool,
+            uint256 expectedBalanceInP2P,
+            uint256 expectedTotalBalance
+        ) = lens.getUserSupplyBalance(address(supplier1), aDai);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertEq(supplyRatePerYear, expectedSupplyRatePerYear, "unexpected supply rate per block");
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedTotalBalance, "unexpected total balance");
+    }
+
+    function testNextBorrowRateShouldEqualCurrentRateWhenNoNewBorrow() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), 0);
+
+        uint256 expectedBorrowRatePerYear = lens.getUserBorrowRatePerYear(aDai, address(borrower1));
+        (
+            uint256 expectedBalanceOnPool,
+            uint256 expectedBalanceInP2P,
+            uint256 expectedTotalBalance
+        ) = lens.getUserBorrowBalance(address(borrower1), aDai);
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertEq(borrowRatePerYear, expectedBorrowRatePerYear, "unexpected borrow rate per block");
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedTotalBalance, "unexpected total balance");
+    }
+
+    function testNextSupplyRateShouldEqualPoolRateWhenNoBorrowerOnPool() public {
+        uint256 amount = 10_000 ether;
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(
+            IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
+        );
+        uint256 expectedSupplyRatePerYear = reserve.currentLiquidityRate;
+        uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertApproxEq(
+            supplyRatePerYear,
+            expectedSupplyRatePerYear,
+            1,
+            "unexpected supply rate per block"
+        );
+        assertEq(
+            balanceOnPool,
+            amount.rayDiv(poolSupplyIndex).rayMul(poolSupplyIndex),
+            "unexpected pool balance"
+        );
+        assertEq(balanceInP2P, 0, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            amount.rayDiv(poolSupplyIndex).rayMul(poolSupplyIndex),
+            "unexpected total balance"
+        );
+    }
+
+    function testNextBorrowRateShouldEqualPoolRateWhenNoSupplierOnPool() public {
+        uint256 amount = 10_000 ether;
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(supplier1), amount);
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(
+            IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
+        );
+        uint256 expectedBorrowRatePerYear = reserve.currentVariableBorrowRate;
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertApproxEq(
+            borrowRatePerYear,
+            expectedBorrowRatePerYear,
+            1,
+            "unexpected borrow rate per block"
+        );
+        assertApproxEq(balanceOnPool, amount, 1, "unexpected pool balance");
+        assertEq(balanceInP2P, 0, "unexpected p2p balance");
+        assertApproxEq(totalBalance, amount, 1, "unexpected total balance");
+    }
+
+    function testNextSupplyRateShouldEqualP2PRateWhenFullMatch() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+
+        (uint256 p2pSupplyRatePerYear, , , ) = lens.getRatesPerYear(aDai);
+
+        morpho.updateIndexes(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+
+        uint256 expectedBalanceInP2P = amount.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertApproxEq(
+            supplyRatePerYear,
+            p2pSupplyRatePerYear,
+            1,
+            "unexpected supply rate per block"
+        );
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
+    }
+
+    function testNextBorrowRateShouldEqualP2PRateWhenFullMatch() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        hevm.roll(block.number + 1000);
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+
+        (, uint256 p2pBorrowRatePerYear, , ) = lens.getRatesPerYear(aDai);
+
+        morpho.updateIndexes(aDai);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
+
+        uint256 expectedBalanceInP2P = amount.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertApproxEq(
+            borrowRatePerYear,
+            p2pBorrowRatePerYear,
+            1,
+            "unexpected borrow rate per block"
+        );
+        assertApproxEq(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding error at supply
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
+    }
+
+    function testNextSupplyRateShouldEqualMidrateWhenHalfMatch() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount / 2);
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+
+        (uint256 p2pSupplyRatePerYear, , uint256 poolSupplyRatePerYear, ) = lens.getRatesPerYear(
+            aDai
+        );
+
+        uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+
+        uint256 expectedBalanceOnPool = (amount / 2).rayDiv(poolSupplyIndex).rayMul(
+            poolSupplyIndex
+        );
+        uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertApproxEq(
+            supplyRatePerYear,
+            (p2pSupplyRatePerYear + poolSupplyRatePerYear) / 2,
+            1e4,
+            "unexpected supply rate per block"
+        );
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            "unexpected total balance"
+        );
+    }
+
+    function testNextBorrowRateShouldEqualMidrateWhenHalfMatch() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount / 2);
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+
+        (, uint256 p2pBorrowRatePerYear, , uint256 poolBorrowRatePerYear) = lens.getRatesPerYear(
+            aDai
+        );
+
+        uint256 poolBorrowIndex = pool.getReserveNormalizedVariableDebt(dai);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
+
+        uint256 expectedBalanceOnPool = (amount / 2).rayDiv(poolBorrowIndex).rayMul(
+            poolBorrowIndex
+        );
+        uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertApproxEq(
+            borrowRatePerYear,
+            (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
+            1e4,
+            "unexpected borrow rate per block"
+        );
+        assertApproxEq(balanceOnPool, expectedBalanceOnPool, 1e9, "unexpected pool balance");
+        assertApproxEq(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            1e9,
+            "unexpected total balance"
+        );
+    }
+
+    function testNextSupplyRateShouldEqualP2PRateWhenDoubleSupply() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount / 2);
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount / 2);
+
+        (uint256 p2pSupplyRatePerYear, , , ) = lens.getRatesPerYear(aDai);
+
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+        uint256 expectedBalanceInP2P = amount.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertApproxEq(
+            supplyRatePerYear,
+            p2pSupplyRatePerYear,
+            1,
+            "unexpected supply rate per block"
+        );
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertApproxEq(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEq(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
+    }
+
+    function testNextBorrowRateShouldEqualP2PRateWhenDoubleBorrow() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount / 2);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount / 2);
+
+        (, uint256 p2pBorrowRatePerYear, , ) = lens.getRatesPerYear(aDai);
+
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
+        uint256 expectedBalanceInP2P = amount.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertApproxEq(
+            borrowRatePerYear,
+            p2pBorrowRatePerYear,
+            1e4,
+            "unexpected borrow rate per block"
+        );
+        assertApproxEq(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding errors
+        assertApproxEq(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
+        assertApproxEq(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
+    }
+
+    function testNextSupplyRateShouldEqualP2PRateWithFullBorrowDeltaAndNoBorrowerOnPool() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 100);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+
+        (uint256 p2pSupplyRatePerYear, , , ) = lens.getRatesPerYear(aDai);
+
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+        uint256 expectedBalanceInP2P = amount.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertApproxEq(
+            supplyRatePerYear,
+            p2pSupplyRatePerYear,
+            1,
+            "unexpected supply rate per block"
+        );
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
+    }
+
+    function testNextBorrowRateShouldEqualP2PRateWithFullSupplyDeltaAndNoSupplierOnPool() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount);
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 100);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+
+        (, uint256 p2pBorrowRatePerYear, , ) = lens.getRatesPerYear(aDai);
+
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
+        uint256 expectedBalanceInP2P = amount.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertApproxEq(
+            borrowRatePerYear,
+            p2pBorrowRatePerYear,
+            1,
+            "unexpected borrow rate per block"
+        );
+        assertEq(balanceOnPool, 0, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
+    }
+
+    function testNextSupplyRateShouldEqualMidrateWithHalfBorrowDeltaAndNoBorrowerOnPool() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount / 2);
+
+        supplier1.approve(dai, amount / 2);
+        supplier1.supply(aDai, amount / 2);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 1);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        uint256 daiBorrowdelta; // should be (amount / 2) but compound rounding leads to a slightly different amount which we need to compute
+        {
+            (, uint256 p2pBorrowDelta, , ) = morpho.deltas(aDai);
+            daiBorrowdelta = p2pBorrowDelta.rayMul(pool.getReserveNormalizedVariableDebt(dai));
+        }
+
+        (
+            uint256 supplyRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextSupplyRatePerYear(aDai, address(supplier1), amount);
+
+        (uint256 p2pSupplyRatePerYear, , uint256 poolSupplyRatePerYear, ) = lens.getRatesPerYear(
+            aDai
+        );
+
+        uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+
+        uint256 expectedBalanceOnPool = (amount - daiBorrowdelta).rayDiv(poolSupplyIndex).rayMul(
+            poolSupplyIndex
+        );
+        uint256 expectedBalanceInP2P = daiBorrowdelta.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
+
+        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertApproxEq(
+            supplyRatePerYear,
+            (p2pSupplyRatePerYear + poolSupplyRatePerYear) / 2,
+            1e4,
+            "unexpected supply rate per block"
+        );
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            "unexpected total balance"
+        );
+    }
+
+    function testNextBorrowRateShouldEqualMidrateWithHalfSupplyDeltaAndNoSupplierOnPool() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(aWeth, amount);
+        borrower1.borrow(aDai, amount / 2);
+
+        supplier1.approve(dai, amount / 2);
+        supplier1.supply(aDai, amount / 2);
+
+        morpho.setDefaultMaxGasForMatching(
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 0, repay: 0})
+        );
+
+        hevm.roll(block.number + 1);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        uint256 daiSupplydelta; // should be (amount / 2) but compound rounding leads to a slightly different amount which we need to compute
+        {
+            (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
+            daiSupplydelta = p2pSupplyDelta.rayMul(pool.getReserveNormalizedIncome(dai));
+        }
+
+        (
+            uint256 borrowRatePerYear,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = lens.getNextBorrowRatePerYear(aDai, address(borrower1), amount);
+
+        (, uint256 p2pBorrowRatePerYear, , uint256 poolBorrowRatePerYear) = lens.getRatesPerYear(
+            aDai
+        );
+
+        uint256 poolBorrowIndex = pool.getReserveNormalizedVariableDebt(dai);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
+
+        uint256 expectedBalanceOnPool = (amount - daiSupplydelta).rayDiv(poolBorrowIndex).rayMul(
+            poolBorrowIndex
+        );
+        uint256 expectedBalanceInP2P = daiSupplydelta.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
+
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertApproxEq(
+            borrowRatePerYear,
+            (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
+            1e4,
+            "unexpected borrow rate per block"
+        );
+        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
+        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertEq(
+            totalBalance,
+            expectedBalanceOnPool + expectedBalanceInP2P,
+            "unexpected total balance"
+        );
     }
 }

@@ -37,6 +37,12 @@ abstract contract MarketsLens is LensStorage {
         return marketStatus.isCreated && !marketStatus.isPaused && !marketStatus.isPartiallyPaused;
     }
 
+    /// @notice Returns all created markets.
+    /// @return The list of market addresses.
+    function getAllMarkets() external view returns (address[] memory) {
+        return morpho.getMarketsCreated();
+    }
+
     /// @notice Returns market's data.
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.

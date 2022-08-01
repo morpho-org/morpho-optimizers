@@ -19,6 +19,45 @@ abstract contract UsersLens is IndexesLens {
 
     /// EXTERNAL ///
 
+    /// @notice Returns all markets entered by a given user.
+    /// @param _user The address of the user.
+    /// @return enteredMarkets_ The list of markets entered by this user.
+    function getEnteredMarkets(address _user)
+        external
+        view
+        returns (address[] memory enteredMarkets_)
+    {
+        address[] memory createdMarkets = morpho.getMarketsCreated();
+        uint256 nbCreatedMarkets = createdMarkets.length;
+        uint256 userMarketsBitmask = morpho.userMarkets(_user);
+
+        uint256 i;
+        uint256 nbEnteredMarkets;
+        for (; i < nbCreatedMarkets; ) {
+            address market = createdMarkets[i];
+
+            uint256 marketBitmask = morpho.borrowMask(market);
+            if (userMarketsBitmask & (marketBitmask | (marketBitmask << 1)) != 0)
+                ++nbEnteredMarkets;
+            else createdMarkets[i] = address(0);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        enteredMarkets_ = new address[](nbEnteredMarkets);
+
+        uint256 j;
+        for (i = 0; i < nbCreatedMarkets; ) {
+            if (createdMarkets[i] != address(0)) enteredMarkets_[j++] = createdMarkets[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     /// @notice Returns the current balance state of the user.
     /// @param _user The user to determine liquidity for.
     /// @return liquidityData The liquidity data of the user.
@@ -153,7 +192,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedUserSupplyBalance(address _user, address _poolTokenAddress)
+    function getUserSupplyBalance(address _user, address _poolTokenAddress)
         public
         view
         returns (
@@ -162,12 +201,15 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        balanceOnPool = morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+            _poolTokenAddress,
+            _user
+        );
+
+        balanceOnPool = supplyBalance.onPool.rayMul(
             pool.getReserveNormalizedIncome(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
         );
-        balanceInP2P = morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(
-            getUpdatedP2PSupplyIndex(_poolTokenAddress)
-        );
+        balanceInP2P = supplyBalance.inP2P.rayMul(getP2PSupplyIndex(_poolTokenAddress));
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -178,7 +220,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
-    function getUpdatedUserBorrowBalance(address _user, address _poolTokenAddress)
+    function getUserBorrowBalance(address _user, address _poolTokenAddress)
         public
         view
         returns (
@@ -187,14 +229,17 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
+            _poolTokenAddress,
+            _user
+        );
+
+        balanceOnPool = borrowBalance.onPool.rayMul(
             pool.getReserveNormalizedVariableDebt(
                 IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
             )
         );
-        balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(
-            getUpdatedP2PBorrowIndex(_poolTokenAddress)
-        );
+        balanceInP2P = borrowBalance.inP2P.rayMul(getP2PBorrowIndex(_poolTokenAddress));
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
