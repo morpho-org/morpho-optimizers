@@ -817,25 +817,6 @@ contract TestLens is TestSetup {
         }
     }
 
-    function testGetRatesPerBlock() public {
-        hevm.roll(block.number + 1_000);
-        (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
-        ) = lens.getRatesPerBlock(cDai);
-
-        (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(cDai);
-        uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
-        uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
-
-        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
-        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
-        assertEq(poolSupplyRate, expectedPoolSupplyRate);
-        assertEq(poolBorrowRate, expectedPoolBorrowRate);
-    }
-
     function testIsLiquidatableFalse() public {
         uint256 amount = 10_000 ether;
 
