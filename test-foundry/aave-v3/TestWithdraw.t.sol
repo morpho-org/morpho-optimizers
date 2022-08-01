@@ -565,7 +565,7 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdrawAll() public {
-        // 1.5e6 allows only 10 unmatch borrowers
+        // Allows only 10 unmatch borrowers
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.5e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
