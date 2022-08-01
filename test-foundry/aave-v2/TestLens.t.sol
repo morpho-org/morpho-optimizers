@@ -1079,15 +1079,11 @@ contract TestLens is TestSetup {
                 );
 
                 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
-            } while (lens.getUserHealthFactor(address(borrower1)) < 1e18 && toRepay > 0);
+            } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
 
             // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationBonus] threshold and returned to a solvent position
             if (states.collateralValue.percentDiv(liquidationBonus) > states.debtValue) {
-                assertGt(
-                    lens.getUserHealthFactor(address(borrower1)),
-                    1e18,
-                    "health factor less than 1"
-                );
+                assertFalse(lens.isLiquidatable(address(borrower1)), "borrower1 liquidatable");
             } else {
                 // or the liquidator has drained all the collateral
                 states = lens.getUserBalanceStates(address(borrower1));
