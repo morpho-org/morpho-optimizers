@@ -61,19 +61,15 @@ abstract contract UsersLens is IndexesLens {
             _poolTokenAddress,
             oracle
         );
-        uint256 healthFactor = data.debtValue > 0
-            ? data.liquidationThresholdValue.wadDiv(data.debtValue)
+        uint256 healthFactor = data.debt > 0
+            ? data.liquidationThreshold.wadDiv(data.debt)
             : type(uint256).max;
 
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
-        borrowable =
-            ((data.maxLoanToValue - data.debtValue) * assetData.tokenUnit) /
-            assetData.underlyingPrice;
-        withdrawable =
-            (assetData.collateralValue * assetData.tokenUnit) /
-            assetData.underlyingPrice;
+        borrowable = ((data.maxDebt - data.debt) * assetData.tokenUnit) / assetData.underlyingPrice;
+        withdrawable = (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice;
 
         if (assetData.ltv != 0)
             withdrawable = Math.min(withdrawable, borrowable.percentDiv(assetData.ltv));
@@ -200,27 +196,26 @@ abstract contract UsersLens is IndexesLens {
                     oracle
                 );
 
-                liquidityData.collateralValue += assetData.collateralValue;
-                liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                liquidityData.collateral += assetData.collateral;
+                liquidityData.maxDebt += assetData.collateral.percentMul(assetData.ltv);
+                liquidityData.liquidationThreshold += assetData.collateral.percentMul(
                     assetData.liquidationThreshold
                 );
-                liquidityData.debtValue += assetData.debtValue;
+                liquidityData.debt += assetData.debt;
 
                 if (_poolTokenAddress == poolToken) {
                     if (_borrowedAmount > 0)
-                        liquidityData.debtValue += (_borrowedAmount * assetData.underlyingPrice)
-                        .divUp(assetData.tokenUnit);
+                        liquidityData.debt += (_borrowedAmount * assetData.underlyingPrice).divUp(
+                            assetData.tokenUnit
+                        );
 
                     if (_withdrawnAmount > 0) {
-                        uint256 assetCollateralValue = (_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit;
+                        uint256 assetCollateral = (_withdrawnAmount * assetData.underlyingPrice) /
+                            assetData.tokenUnit;
 
-                        liquidityData.collateralValue -= assetCollateralValue;
-                        liquidityData.maxLoanToValue -= assetCollateralValue.percentMul(
-                            assetData.ltv
-                        );
-                        liquidityData.liquidationThresholdValue -= assetCollateralValue.percentMul(
+                        liquidityData.collateral -= assetCollateral;
+                        liquidityData.maxDebt -= assetCollateral.percentMul(assetData.ltv);
+                        liquidityData.liquidationThreshold -= assetCollateral.percentMul(
                             assetData.liquidationThreshold
                         );
                     }
@@ -270,10 +265,8 @@ abstract contract UsersLens is IndexesLens {
         );
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
-        assetData.debtValue = (totalDebtBalance * assetData.underlyingPrice).divUp(
-            assetData.tokenUnit
-        );
-        assetData.collateralValue =
+        assetData.debt = (totalDebtBalance * assetData.underlyingPrice).divUp(assetData.tokenUnit);
+        assetData.collateral =
             (totalCollateralBalance * assetData.underlyingPrice) /
             assetData.tokenUnit;
     }
@@ -303,9 +296,9 @@ abstract contract UsersLens is IndexesLens {
             _withdrawnAmount,
             _borrowedAmount
         );
-        if (liquidityData.debtValue == 0) return type(uint256).max;
+        if (liquidityData.debt == 0) return type(uint256).max;
 
-        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+        return liquidityData.liquidationThreshold.wadDiv(liquidityData.debt);
     }
 
     /// @dev Checks whether a liquidation can be performed on a given user.
