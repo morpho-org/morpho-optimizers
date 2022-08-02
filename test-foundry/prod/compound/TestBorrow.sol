@@ -12,6 +12,8 @@ contract TestBorrow is TestSetup {
         uint256 decimals;
         uint256 wEthPrice;
         uint256 underlyingPrice;
+        uint256 underlyingBalanceBefore;
+        uint256 underlyingBalanceAfter;
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
         uint256 p2pBorrowIndex;
@@ -46,6 +48,7 @@ contract TestBorrow is TestSetup {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         test.wEthPrice = oracle.getUnderlyingPrice(cEth);
         test.underlyingPrice = oracle.getUnderlyingPrice(address(test.poolToken));
+        test.underlyingBalanceBefore = test.underlying.balanceOf(address(borrower1));
 
         uint256 wEthBalance = ERC20(wEth).balanceOf(address(borrower1));
 
@@ -68,6 +71,7 @@ contract TestBorrow is TestSetup {
         borrower1.supply(cEth, wEthBalance);
         borrower1.borrow(address(test.poolToken), amount);
 
+        test.underlyingBalanceAfter = test.underlying.balanceOf(address(borrower1));
         test.p2pBorrowIndex = morpho.p2pBorrowIndex(address(test.poolToken));
         test.poolBorrowIndex = test.poolToken.borrowIndex();
         test.borrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
@@ -91,6 +95,11 @@ contract TestBorrow is TestSetup {
         test.underlyingOnPoolBefore = test.balanceOnPool.mul(test.poolBorrowIndex);
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
 
+        assertEq(
+            test.underlyingBalanceAfter - test.underlyingBalanceBefore,
+            amount,
+            "unexpected underlying balance change"
+        );
         assertLe(
             test.underlyingOnPoolBefore + test.underlyingInP2PBefore,
             amount,
@@ -171,5 +180,17 @@ contract TestBorrow is TestSetup {
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );
+    }
+
+    function testShouldNotBorrowZeroAmount(uint8 marketIndex) public {
+        address[] memory markets = lens.getAllMarkets();
+
+        vm.assume(marketIndex < markets.length);
+
+        BorrowTest memory test;
+        test.poolToken = ICToken(markets[marketIndex]);
+
+        vm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        borrower1.borrow(address(test.poolToken), 0);
     }
 }
