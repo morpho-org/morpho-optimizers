@@ -82,19 +82,19 @@ ci:
 
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv --no-match-test testFuzz
+	@forge test -vv
 
 test-ansi:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
-	@forge test -vv --no-match-test testFuzz > trace.ansi
+	@forge test -vv > trace.ansi
 
 coverage:
 	@echo Create coverage report for ${PROTOCOL} tests on ${NETWORK}
-	@forge coverage --no-match-test testFuzz
+	@forge coverage
 
 coverage-lcov:
 	@echo Create coverage lcov for ${PROTOCOL} tests on ${NETWORK}
-	@forge coverage --report lcov --no-match-test testFuzz
+	@forge coverage --report lcov
 
 fuzz:
 	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
@@ -111,11 +111,11 @@ test-common:
 
 contract-% c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv/$*.t.sol --match-contract $*
+	@forge test -vvv --match-contract $*
 
 ansi-c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
-	@forge test -vvv/$*.t.sol --match-contract $* > trace.ansi
+	@forge test -vvv --match-contract $* > trace.ansi
 
 single-% s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
