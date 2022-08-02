@@ -31,10 +31,10 @@ contract TestSupply is TestSetup {
         uint256 totalUnderlyingAfter;
     }
 
-    function testShouldSupplyAmountP2PAndOnPool(uint8 marketIndex, uint256 amount) public {
+    function testShouldSupplyAmountP2PAndOnPool(uint8 marketIndex, uint96 _amount) public {
         address[] memory markets = lens.getAllMarkets();
 
-        vm.assume(marketIndex < markets.length);
+        marketIndex = uint8(marketIndex % markets.length);
 
         SupplyTest memory test;
         test.poolToken = ICToken(markets[marketIndex]);
@@ -42,13 +42,13 @@ contract TestSupply is TestSetup {
             address(test.poolToken) == morpho.cEth() ? morpho.wEth() : test.poolToken.underlying()
         );
         test.decimals = test.underlying.decimals();
+
+        uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
+
+        if (address(test.underlying) == wEth) hoax(wEth, amount);
+        deal(address(test.underlying), address(supplier1), amount);
+
         test.underlyingBalanceBefore = test.underlying.balanceOf(address(supplier1));
-
-        vm.assume(
-            amount >= 10**(test.decimals - 3) &&
-                amount <= test.underlying.balanceOf(address(supplier1))
-        );
-
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
@@ -134,25 +134,25 @@ contract TestSupply is TestSetup {
         assertApproxEqAbs(
             test.underlyingOnPoolBefore,
             test.underlyingOnPoolAfter,
-            test.underlyingOnPoolBefore / 1e3,
+            test.underlyingOnPoolBefore / 1e9 + 1e4,
             "unexpected pool underlying amount"
         );
         assertApproxEqAbs(
             test.underlyingInP2PBefore,
             test.underlyingInP2PAfter,
-            test.underlyingInP2PBefore / 1e3,
+            test.underlyingInP2PBefore / 1e9 + 1e4,
             "unexpected p2p underlying amount"
         );
         assertApproxEqAbs(
             test.totalUnderlyingBefore,
             test.totalUnderlyingAfter,
-            test.totalUnderlyingBefore / 1e3,
+            test.totalUnderlyingBefore / 1e9 + 1e4,
             "unexpected total underlying amount from avg supply rate"
         );
         assertApproxEqAbs(
             test.underlyingInP2PBefore + test.underlyingOnPoolBefore,
             test.totalUnderlyingAfter,
-            test.totalUnderlyingBefore / 1e3,
+            test.totalUnderlyingBefore / 1e9 + 1e4,
             "unexpected total underlying amount"
         );
         if (
@@ -169,7 +169,7 @@ contract TestSupply is TestSetup {
     function testShouldNotSupplyZeroAmount(uint8 marketIndex) public {
         address[] memory markets = lens.getAllMarkets();
 
-        vm.assume(marketIndex < markets.length);
+        marketIndex = uint8(marketIndex % markets.length);
 
         SupplyTest memory test;
         test.poolToken = ICToken(markets[marketIndex]);
@@ -181,7 +181,7 @@ contract TestSupply is TestSetup {
     function testShouldNotSupplyOnBehalfAddressZero(uint8 marketIndex) public {
         address[] memory markets = lens.getAllMarkets();
 
-        vm.assume(marketIndex < markets.length);
+        marketIndex = uint8(marketIndex % markets.length);
 
         SupplyTest memory test;
         test.poolToken = ICToken(markets[marketIndex]);
