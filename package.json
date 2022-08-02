@@ -7,9 +7,8 @@
     "contracts"
   ],
   "scripts": {
-    "upgrade:compound:ropsten": "NETWORK=ropsten hardhat run scripts/upgrade-compound.ts --network ropsten",
-    "upgrade:compound:rinkeby": "NETWORK=rinkeby hardhat run scripts/upgrade-compound.ts --network rinkeby",
-    "upgrade:compound:goerli": "NETWORK=goerli hardhat run scripts/upgrade-compound.ts --network goerli",
+    "upgrade:compound:ropsten": "hardhat run scripts/upgrade-compound.ts --network ropsten",
+    "upgrade:compound:goerli": "hardhat run scripts/upgrade-compound.ts --network goerli",
     "test:hardhat": "hardhat test",
     "lint": "yarn lint:sol && yarn lint:ts",
     "lint:ts": "eslint . --ext .ts",
