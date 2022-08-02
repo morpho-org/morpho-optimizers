@@ -41,7 +41,7 @@ ifneq (, $(filter ${NETWORK}, ropsten rinkeby goerli))
   FOUNDRY_ETH_RPC_URL=https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
 endif
 
-ifeq (${SMODE}, anvil)
+ifeq (${SMODE}, local)
   FOUNDRY_ETH_RPC_URL=http://localhost:8545
 endif
 
