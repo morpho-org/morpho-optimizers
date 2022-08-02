@@ -1,11 +1,6 @@
-diff -ruN .gitignore .gitignore
---- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-07-11 19:47:18.000000000 -0700
-@@ -0,0 +1,2 @@
-+*
-+!.gitignore
---- compound/MorphoGovernance.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/MorphoGovernance.sol	2022-06-28 11:29:30.000000000 -0700
+diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
+--- compound/MorphoGovernance.sol	2022-08-02 16:21:18.968279647 +0200
++++ compound/MorphoGovernance.sol	2022-08-02 17:03:14.839555830 +0200
 @@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -16,9 +11,9 @@ diff -ruN .gitignore .gitignore
          __Ownable_init();
  
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
---- compound/PositionsManager.sol	2022-06-21 09:26:03.000000000 -0700
-+++ compound/PositionsManager.sol	2022-07-13 23:31:52.000000000 -0700
-@@ -213,7 +213,7 @@
+--- compound/PositionsManager.sol	2022-08-02 16:21:18.968279647 +0200
++++ compound/PositionsManager.sol	2022-08-02 17:03:14.839555830 +0200
+@@ -212,7 +212,7 @@
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -63,3 +58,9 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          if (
              !userMembership[_poolTokenBorrowed][_borrower] ||
              !userMembership[_poolTokenCollateral][_borrower]
+diff -ruN .gitignore .gitignore
+--- .gitignore	1970-01-01 01:00:00.000000000 +0100
++++ .gitignore	2022-08-02 17:03:14.839555830 +0200
+@@ -0,0 +1,2 @@
++*
++!.gitignore
