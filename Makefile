@@ -78,7 +78,7 @@ script-%:
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
 ci:
-	@forge test -vv --gas-report --no-match-test testFuzz
+	@forge test -vv --gas-report --fuzz-seed 0
 
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
