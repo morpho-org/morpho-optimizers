@@ -12,10 +12,9 @@ certoraRun \
     certora/helpers/compound/contracts/DummyPoolTokenB.sol \
     certora/helpers/compound/contracts/SymbolicOracle.sol \
     certora/helpers/compound/contracts/SymbolicComptroller.sol \
-    --packages_path node_modules \
     --packages @morpho-labs/morpho-utils/=lib/morpho-utils/src/ \
                @rari-capital/solmate/=lib/solmate/ \
-               @openzeppelin/=node_modules/@openzeppelin \
+               @openzeppelin=node_modules/@openzeppelin \
     --link PositionsManagerHarness:comptroller=SymbolicComptroller \
     --link PositionsManagerHarness:interestRatesManager=InterestRatesManager \
     --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
