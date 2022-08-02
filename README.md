@@ -56,6 +56,32 @@ yarn test:hardhat
 
 ---
 
+## Deployment & Upgrades
+
+### Network mode (default)
+
+Run the Foundry deployment script with:
+
+```bash
+make script-Deploy PROTOCOL=compound NETWORK=goerli
+```
+
+### Local mode
+
+First start a local EVM:
+
+```bash
+make anvil NETWORK=goerli
+```
+
+Then run the Foundry deployment script in a separate shell, using `SMODE=local`:
+
+```bash
+make script-Deploy PROTOCOL=compound NETWORK=goerli SMODE=local
+```
+
+---
+
 ## Style guide 💅
 
 ### Code Formatting
