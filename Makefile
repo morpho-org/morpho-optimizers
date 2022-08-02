@@ -73,9 +73,6 @@ script-%:
 	@echo Running script $* of ${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
-create-market:
-	./scripts/create-market.sh
-
 ci:
 	@forge test -vv --gas-report --no-match-test testFuzz
 
