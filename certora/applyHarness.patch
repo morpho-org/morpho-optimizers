@@ -1,7 +1,7 @@
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
---- compound/MorphoGovernance.sol	2022-07-15 19:01:23.039759452 +0200
-+++ compound/MorphoGovernance.sol	2022-07-15 19:02:04.509309212 +0200
-@@ -125,7 +125,7 @@
+--- compound/MorphoGovernance.sol	2022-08-02 16:17:08.052222958 +0200
++++ compound/MorphoGovernance.sol	2022-08-02 16:19:47.119707031 +0200
+@@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
          address _wEth
@@ -11,8 +11,8 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
          __Ownable_init();
  
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
---- compound/PositionsManager.sol	2022-07-15 19:01:23.039759452 +0200
-+++ compound/PositionsManager.sol	2022-07-15 19:02:04.509309212 +0200
+--- compound/PositionsManager.sol	2022-08-02 16:17:08.052222958 +0200
++++ compound/PositionsManager.sol	2022-08-02 16:19:47.119707031 +0200
 @@ -212,7 +212,7 @@
          address _onBehalf,
          uint256 _amount,
@@ -21,46 +21,46 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 +    ) external override { //HARNESS : get a compiler error without this
          if (_onBehalf == address(0)) revert AddressIsZero();
          if (_amount == 0) revert AmountIsZero();
-         _updateP2PIndexes(_poolTokenAddress);
-@@ -301,7 +301,7 @@
-         address _poolTokenAddress,
+         _updateP2PIndexes(_poolToken);
+@@ -302,7 +302,7 @@
+         address _poolToken,
          uint256 _amount,
          uint256 _maxGasForMatching
 -    ) external {
 +    ) external override { // HARNESS
          if (_amount == 0) revert AmountIsZero();
-         _updateP2PIndexes(_poolTokenAddress);
+         _updateP2PIndexes(_poolToken);
  
-@@ -401,7 +401,7 @@
+@@ -400,7 +400,7 @@
          address _supplier,
          address _receiver,
          uint256 _maxGasForMatching
 -    ) external {
 +    ) external override { // HARNESS
          if (_amount == 0) revert AmountIsZero();
-         if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
  
-@@ -429,7 +429,7 @@
+@@ -424,7 +424,7 @@
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
 -    ) external {
 +    ) external override { // HARNESS
          if (_amount == 0) revert AmountIsZero();
-         if (!userMembership[_poolTokenAddress][_onBehalf]) revert UserNotMemberOfMarket();
+         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
  
-@@ -452,7 +452,7 @@
-         address _poolTokenCollateralAddress,
+@@ -444,7 +444,7 @@
+         address _poolTokenCollateral,
          address _borrower,
          uint256 _amount
 -    ) external {
 +    ) external override { // Harness
          if (
-             !userMembership[_poolTokenBorrowedAddress][_borrower] ||
-             !userMembership[_poolTokenCollateralAddress][_borrower]
+             !userMembership[_poolTokenBorrowed][_borrower] ||
+             !userMembership[_poolTokenCollateral][_borrower]
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-07-15 19:02:04.509309212 +0200
++++ .gitignore	2022-08-02 16:19:47.119707031 +0200
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
