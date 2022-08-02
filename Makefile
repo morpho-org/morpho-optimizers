@@ -1,9 +1,9 @@
 -include .env.local
 .EXPORT_ALL_VARIABLES:
 
+SMODE?=network
 PROTOCOL?=compound
 NETWORK?=eth-mainnet
-SMODE?=network
 
 FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
@@ -14,6 +14,14 @@ FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
 ifeq (${NETWORK}, eth-mainnet)
   FOUNDRY_CHAIN_ID=1
   FOUNDRY_FORK_BLOCK_NUMBER=14292587
+endif
+
+ifeq (${NETWORK}, eth-ropsten)
+  FOUNDRY_CHAIN_ID=3
+endif
+
+ifeq (${NETWORK}, eth-goerli)
+  FOUNDRY_CHAIN_ID=5
 endif
 
 ifeq (${NETWORK}, polygon-mainnet)
@@ -35,10 +43,6 @@ ifeq (${NETWORK}, avalanche-mainnet)
     FOUNDRY_FORK_BLOCK_NUMBER=15675271
   endif
 else
-endif
-
-ifneq (, $(filter ${NETWORK}, ropsten rinkeby goerli))
-  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
 endif
 
 ifeq (${SMODE}, local)

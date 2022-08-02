@@ -2,7 +2,7 @@
 set -euo pipefail # exit on error
 
 unset FOUNDRY_TEST
-export FOUNDRY_SRC=contracts/commpound/
+export FOUNDRY_SRC=contracts/compound/
 
 read -p "🚀❓ Deploy Morpho-Compound's InterestRatesManager on ${NETWORK}? " -n 1 -r
 echo
