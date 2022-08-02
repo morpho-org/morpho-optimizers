@@ -3,7 +3,7 @@
 
 PROTOCOL?=compound
 NETWORK?=eth-mainnet
-SMODE?=blockchain
+SMODE?=network
 
 FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
