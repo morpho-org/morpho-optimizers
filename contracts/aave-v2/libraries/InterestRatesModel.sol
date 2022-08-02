@@ -67,7 +67,7 @@ library InterestRatesModel {
             _lastPoolIndexes.poolBorrowIndex
         );
 
-        uint256 p2pGrowthFactor = PercentageMath.percentAvg(
+        uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
             growthFactors.poolSupplyGrowthFactor,
             growthFactors.poolBorrowGrowthFactor,
             _p2pIndexCursor
