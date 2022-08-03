@@ -78,8 +78,8 @@ library DoubleLinkedList {
     /// @param _list The list to search in.
     /// @param _id The address of the account.
     function remove(List storage _list, address _id) internal {
-        if (_list.accounts[_id].value == 0) revert AccountDoesNotExist();
         Account memory account = _list.accounts[_id];
+        if (account.value == 0) revert AccountDoesNotExist();
 
         if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
         else _list.head = account.next;
@@ -128,8 +128,9 @@ library DoubleLinkedList {
             }
             // Account is not the new head.
             else {
-                _list.accounts[_id] = Account(_list.accounts[next].prev, next, _value);
-                _list.accounts[_list.accounts[next].prev].next = _id;
+                address prev = _list.accounts[next].prev;
+                _list.accounts[_id] = Account(prev, next, _value);
+                _list.accounts[prev].next = _id;
                 _list.accounts[next].prev = _id;
             }
         }
@@ -143,8 +144,9 @@ library DoubleLinkedList {
             }
             // Account is not the new head.
             else {
-                _list.accounts[_id] = Account(_list.tail, address(0), _value);
-                _list.accounts[_list.tail].next = _id;
+                address tail = _list.tail;
+                _list.accounts[_id] = Account(tail, address(0), _value);
+                _list.accounts[tail].next = _id;
                 _list.tail = _id;
             }
         }
