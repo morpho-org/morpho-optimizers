@@ -41,7 +41,7 @@ runs:
         path: |
           cache
           out
-        key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }} # always keep compiled contracts from base branch
+        key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }}-${{ inputs.network }} # always keep compiled contracts from base branch
 
     - name: Run tests
       run: make test
