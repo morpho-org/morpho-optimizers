@@ -1248,6 +1248,11 @@ contract TestLens is TestSetup {
         }
     }
 
+    function testLiquidationRounding() public {
+        // found by the fuzzer
+        testLiquidation(0, 532498736614932373);
+    }
+
     function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
         testLiquidation(uint256(_amount), _collateralPrice);
     }
