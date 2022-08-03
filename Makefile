@@ -9,7 +9,7 @@ FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
 
 ifdef FOUNDRY_ETH_RPC_URL
-  FOUNDRY_TEST=test-foundry/live/${PROTOCOL}/
+  FOUNDRY_TEST=test-foundry/prod/${PROTOCOL}/
 endif
 
 FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
