@@ -390,7 +390,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1e6, 3e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0.9e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -551,7 +551,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1e6, 3e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 0.9e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
