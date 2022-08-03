@@ -171,7 +171,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToWithdraw;
         uint256 poolSupplyIndex;
         uint256 p2pSupplyIndex;
-        uint256 withdrawable;
         uint256 toWithdraw;
         ERC20 underlyingToken;
     }
@@ -319,18 +318,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolToken];
         uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
-        uint256 withdrawable = ICToken(_poolToken).balanceOfUnderlying(address(this)); // The balance on pool.
 
         /// Peer-to-peer borrow ///
 
         // Match peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
-            if (deltaInUnderlying > remainingToBorrow || deltaInUnderlying > withdrawable) {
-                uint256 matchedDelta = CompoundMath.min(remainingToBorrow, withdrawable);
-                toWithdraw += matchedDelta;
-                delta.p2pSupplyDelta -= matchedDelta.div(poolSupplyIndex);
-                remainingToBorrow -= matchedDelta;
+            if (deltaInUnderlying > remainingToBorrow) {
+                toWithdraw += remainingToBorrow;
+                delta.p2pSupplyDelta -= remainingToBorrow.div(poolSupplyIndex);
+                remainingToBorrow = 0;
             } else {
                 toWithdraw += deltaInUnderlying;
                 delta.p2pSupplyDelta = 0;
@@ -348,7 +345,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ) {
             (uint256 matched, ) = _matchSuppliers(
                 _poolToken,
-                CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
+                remainingToBorrow,
                 _maxGasForMatching
             ); // In underlying.
 
@@ -517,7 +514,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.underlyingToken = _getUnderlying(_poolToken);
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.withdrawable = ICToken(_poolToken).balanceOfUnderlying(address(this));
         vars.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
@@ -533,13 +529,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (onPoolSupply > 0) {
             uint256 maxToWithdrawOnPool = onPoolSupply.mul(vars.poolSupplyIndex);
 
-            if (
-                maxToWithdrawOnPool > vars.remainingToWithdraw ||
-                maxToWithdrawOnPool > vars.withdrawable
-            ) {
-                vars.toWithdraw = CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable);
-
-                vars.remainingToWithdraw -= vars.toWithdraw;
+            if (maxToWithdrawOnPool > vars.remainingToWithdraw) {
+                vars.toWithdraw = vars.remainingToWithdraw;
+                vars.remainingToWithdraw = 0;
                 supplierSupplyBalance.onPool -= vars.toWithdraw.div(vars.poolSupplyIndex);
             } else {
                 vars.toWithdraw = maxToWithdrawOnPool;
@@ -582,24 +574,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
 
-            if (
-                deltaInUnderlying > vars.remainingToWithdraw ||
-                deltaInUnderlying > vars.withdrawable - vars.toWithdraw
-            ) {
-                uint256 matchedDelta = CompoundMath.min(
-                    vars.remainingToWithdraw,
-                    vars.withdrawable - vars.toWithdraw
-                );
-
-                delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
-                delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
-                vars.toWithdraw += matchedDelta;
-                vars.remainingToWithdraw -= matchedDelta;
+            if (deltaInUnderlying > vars.remainingToWithdraw) {
+                delta.p2pSupplyDelta -= vars.remainingToWithdraw.div(vars.poolSupplyIndex);
+                delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
+                vars.toWithdraw += vars.remainingToWithdraw;
+                vars.remainingToWithdraw = 0;
             } else {
-                vars.toWithdraw += deltaInUnderlying;
-                vars.remainingToWithdraw -= deltaInUnderlying;
                 delta.p2pSupplyDelta = 0;
                 delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
+                vars.toWithdraw += deltaInUnderlying;
+                vars.remainingToWithdraw -= deltaInUnderlying;
             }
 
             emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
@@ -616,7 +600,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                 _poolToken,
-                CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
+                vars.remainingToWithdraw,
                 vars.remainingGasForMatching
             );
             if (vars.remainingGasForMatching <= gasConsumedInMatching)
