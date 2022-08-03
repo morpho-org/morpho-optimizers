@@ -52,7 +52,7 @@ runs:
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
 
     - name: Run gas report
-      run: make gas-report > ${{ inputs.protocol }}.gasreport.ansi
+      run: make gas-report > ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
@@ -63,7 +63,7 @@ runs:
     - name: Compare gas reports
       uses: Rubilmax/foundry-gas-diff@v3.8
       with:
-        report: ${{ inputs.protocol }}.gasreport.ansi
+        report: ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
         ignore: test-foundry/**/*
         title: Morpho-${{ inputs.protocol }} gas impacts (${{ inputs.network }})
       id: gas_diff
