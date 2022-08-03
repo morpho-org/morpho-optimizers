@@ -7,3 +7,6 @@ via_ir = false
 revert_strings = "default"
 names = true
 sizes = true
+
+[profile.gas-report]
+fuzz_runs = 0
