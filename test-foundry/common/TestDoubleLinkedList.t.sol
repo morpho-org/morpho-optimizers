@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@forge-std/Test.sol";
 
-import "@contracts/common/libraries/DoubleLinkedList.sol";
+import "@contracts/compound/libraries/DoubleLinkedList.sol";
 
 contract TestDoubleLinkedList is Test {
     using DoubleLinkedList for DoubleLinkedList.List;
@@ -236,5 +236,22 @@ contract TestDoubleLinkedList is Test {
             prevAccount = list.getPrev(prevAccount);
             assertEq(prevAccount, accounts[10 - i - 2]);
         }
+    }
+
+    function testShouldInsertAtTheEnd() public {
+        list.insertSorted(accounts[0], 40, 2);
+        list.insertSorted(accounts[1], 30, 2);
+        list.insertSorted(accounts[2], 10, 2);
+        list.insertSorted(accounts[3], 20, 2); // 20 inserted after 10 because NDS is reached
+
+        address first = list.getHead();
+        address second = list.getNext(first);
+        address third = list.getNext(second);
+        address fourth = list.getNext(third);
+
+        assertEq(first, accounts[0], "first");
+        assertEq(second, accounts[1], "second");
+        assertEq(third, accounts[2], "third");
+        assertEq(fourth, accounts[3], "fourth");
     }
 }
