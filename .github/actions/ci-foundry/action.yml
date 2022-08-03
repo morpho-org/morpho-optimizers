@@ -44,12 +44,21 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }} # always keep compiled contracts from base branch
 
     - name: Run tests
-      run: make ci | tee ${{ inputs.protocol }}.gasreport.ansi
+      run: make test
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
         NETWORK: ${{ inputs.network }}
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
+
+    - name: Run gas report
+      run: make gas-report > ${{ inputs.protocol }}.gasreport.ansi
+      shell: bash
+      env:
+        PROTOCOL: ${{ inputs.protocol }}
+        NETWORK: ${{ inputs.network }}
+        ALCHEMY_KEY: ${{ inputs.alchemyKey }}
+        FOUNDRY_PROFILE: gas-report
 
     - name: Compare gas reports
       uses: Rubilmax/foundry-gas-diff@v3.8
