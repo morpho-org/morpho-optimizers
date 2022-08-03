@@ -109,7 +109,7 @@ library DoubleLinkedList {
 
         while (
             numberOfIterations < _maxIterations &&
-            next != _list.tail &&
+            next != address(0) &&
             _list.accounts[next].value >= _value
         ) {
             next = _list.accounts[next].next;
@@ -119,7 +119,7 @@ library DoubleLinkedList {
         }
 
         // Account is not the new tail.
-        if (next != address(0) && _list.accounts[next].value < _value) {
+        if (numberOfIterations < _maxIterations && next != address(0)) {
             // Account is the new head.
             if (next == _list.head) {
                 _list.accounts[_id] = Account(address(0), next, _value);
