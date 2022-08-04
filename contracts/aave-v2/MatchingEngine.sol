@@ -307,27 +307,19 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolToken, address _user) internal {
-        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+        Types.SupplyBalance storage userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+        uint256 onPool = userSupplyBalance.onPool;
+        uint256 inP2P = userSupplyBalance.inP2P;
         HeapOrdering.HeapArray storage marketSupliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSupliersInP2P = suppliersInP2P[_poolToken];
 
         uint256 formerValueOnPool = marketSupliersOnPool.getValueOf(_user);
         uint256 formerValueInP2P = marketSupliersInP2P.getValueOf(_user);
 
-        marketSupliersOnPool.update(
-            _user,
-            formerValueOnPool,
-            userSupplyBalance.onPool,
-            maxSortedUsers
-        );
-        marketSupliersInP2P.update(
-            _user,
-            formerValueInP2P,
-            userSupplyBalance.inP2P,
-            maxSortedUsers
-        );
+        marketSupliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
+        marketSupliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
-        if (formerValueOnPool != userSupplyBalance.onPool && address(rewardsManager) != address(0))
+        if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
             rewardsManager.updateUserAssetAndAccruedRewards(
                 _user,
                 _poolToken,
@@ -340,29 +332,19 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+        Types.BorrowBalance storage userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+        uint256 onPool = userBorrowBalance.onPool;
+        uint256 inP2P = userBorrowBalance.inP2P;
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
 
         uint256 formerValueOnPool = marketBorrowersOnPool.getValueOf(_user);
         uint256 formerValueInP2P = marketBorrowersInP2P.getValueOf(_user);
 
-        marketBorrowersOnPool.update(
-            _user,
-            formerValueOnPool,
-            userBorrowBalance.onPool,
-            maxSortedUsers
-        );
-        marketBorrowersInP2P.update(
-            _user,
-            formerValueInP2P,
-            userBorrowBalance.inP2P,
-            maxSortedUsers
-        );
+        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
+        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
-        if (
-            formerValueOnPool != userBorrowBalance.onPool && address(rewardsManager) != address(0)
-        ) {
+        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
             address variableDebtTokenAddress = pool
             .getReserveData(market[_poolToken].underlyingToken)
             .variableDebtTokenAddress;
