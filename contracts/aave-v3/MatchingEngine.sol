@@ -88,20 +88,18 @@ abstract contract MatchingEngine is MorphoUtils {
             }
             firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][firstPoolSupplier];
             vars.toMatch = Math.min(
-                firstPoolSupplierBalance.onPool.rayMul(vars.poolIndex),
+                (newPoolSupplyBalance = firstPoolSupplierBalance.onPool).rayMul(vars.poolIndex),
                 remainingToMatch
             );
             remainingToMatch -= vars.toMatch;
 
-            newPoolSupplyBalance =
-                firstPoolSupplierBalance.onPool -
-                vars.toMatch.rayDiv(vars.poolIndex);
+            newPoolSupplyBalance -= vars.toMatch.rayDiv(vars.poolIndex);
             newP2PSupplyBalance =
                 firstPoolSupplierBalance.inP2P +
                 vars.toMatch.rayDiv(vars.p2pIndex);
 
-            supplyBalanceInOf[_poolToken][firstPoolSupplier].onPool = newPoolSupplyBalance;
-            supplyBalanceInOf[_poolToken][firstPoolSupplier].inP2P = newP2PSupplyBalance;
+            firstPoolSupplierBalance.onPool = newPoolSupplyBalance;
+            firstPoolSupplierBalance.inP2P = newP2PSupplyBalance;
             _updateSupplierInDS(_poolToken, firstPoolSupplier);
             emit SupplierPositionUpdated(
                 firstPoolSupplier,
@@ -153,7 +151,7 @@ abstract contract MatchingEngine is MorphoUtils {
             }
             firstP2PSupplierBalance = supplyBalanceInOf[_poolToken][firstP2PSupplier];
             vars.toUnmatch = Math.min(
-                firstP2PSupplierBalance.inP2P.rayMul(vars.p2pIndex),
+                (newP2PSupplyBalance = firstP2PSupplierBalance.inP2P).rayMul(vars.p2pIndex),
                 remainingToUnmatch
             );
             remainingToUnmatch -= vars.toUnmatch;
@@ -161,12 +159,10 @@ abstract contract MatchingEngine is MorphoUtils {
             newPoolSupplyBalance =
                 firstP2PSupplierBalance.onPool +
                 vars.toUnmatch.rayDiv(vars.poolIndex);
-            newP2PSupplyBalance =
-                firstP2PSupplierBalance.inP2P -
-                vars.toUnmatch.rayDiv(vars.p2pIndex);
+            newP2PSupplyBalance -= vars.toUnmatch.rayDiv(vars.p2pIndex);
 
-            supplyBalanceInOf[_poolToken][firstP2PSupplier].onPool = newPoolSupplyBalance;
-            supplyBalanceInOf[_poolToken][firstP2PSupplier].inP2P = newP2PSupplyBalance;
+            firstP2PSupplierBalance.onPool = newPoolSupplyBalance;
+            firstP2PSupplierBalance.inP2P = newP2PSupplyBalance;
             _updateSupplierInDS(_poolToken, firstP2PSupplier);
             emit SupplierPositionUpdated(
                 firstP2PSupplier,
