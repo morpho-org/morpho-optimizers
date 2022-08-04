@@ -53,11 +53,12 @@ runs:
         FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
 
     - name: Compare gas reports
-      uses: Rubilmax/foundry-gas-diff@v3.8
+      uses: Rubilmax/foundry-gas-diff@v3.9
       with:
         report: ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
         ignore: test-foundry/**/*
-        title: Morpho-${{ inputs.protocol }} gas impacts (${{ inputs.network }})
+        header: |
+          # Morpho-${{ inputs.protocol }} gas impacts (${{ inputs.network }})
       id: gas_diff
 
     - name: Add gas diff to sticky comment
