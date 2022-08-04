@@ -96,7 +96,7 @@ fuzz:
 
 gas-report:
 	@echo Creating gas report for ${PROTOCOL} on ${NETWORK}
-	@FOUNDRY_FUZZ_RUNS=0 forge test --gas-report
+	@forge test --gas-report
 
 test-common:
 	@echo Running all common tests on ${NETWORK}

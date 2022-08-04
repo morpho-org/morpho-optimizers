@@ -44,27 +44,21 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }}-${{ inputs.network }} # always keep compiled contracts from base branch
 
     - name: Run tests
-      run: make test
+      run: make gas-report | tee ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
         NETWORK: ${{ inputs.network }}
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
-
-    - name: Run gas report
-      run: make gas-report > ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
-      shell: bash
-      env:
-        PROTOCOL: ${{ inputs.protocol }}
-        NETWORK: ${{ inputs.network }}
-        ALCHEMY_KEY: ${{ inputs.alchemyKey }}
+        FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
 
     - name: Compare gas reports
-      uses: Rubilmax/foundry-gas-diff@v3.8
+      uses: Rubilmax/foundry-gas-diff@v3.9
       with:
         report: ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
         ignore: test-foundry/**/*
-        title: Morpho-${{ inputs.protocol }} gas impacts (${{ inputs.network }})
+        header: |
+          # Morpho-${{ inputs.protocol }} gas impacts (${{ inputs.network }})
       id: gas_diff
 
     - name: Add gas diff to sticky comment
