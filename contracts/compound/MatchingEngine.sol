@@ -315,29 +315,32 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolToken, address _user) internal {
-        uint256 onPool = supplyBalanceInOf[_poolToken][_user].onPool;
-        uint256 inP2P = supplyBalanceInOf[_poolToken][_user].inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolToken].getValueOf(_user);
-        uint256 formerValueInP2P = suppliersInP2P[_poolToken].getValueOf(_user);
+        Types.SupplyBalance storage userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+        uint256 onPool = userSupplyBalance.onPool;
+        uint256 inP2P = userSupplyBalance.inP2P;
+        DoubleLinkedList.List storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
+        DoubleLinkedList.List storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
+        uint256 formerValueOnPool = marketSuppliersOnPool.getValueOf(_user);
+        uint256 formerValueInP2P = marketSuppliersInP2P.getValueOf(_user);
 
         // Round pool balance to 0 if below threshold.
         if (onPool <= dustThreshold) {
-            supplyBalanceInOf[_poolToken][_user].onPool = 0;
+            userSupplyBalance.onPool = 0;
             onPool = 0;
         }
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) suppliersOnPool[_poolToken].remove(_user);
-            if (onPool > 0) suppliersOnPool[_poolToken].insertSorted(_user, onPool, maxSortedUsers);
+            if (formerValueOnPool > 0) marketSuppliersOnPool.remove(_user);
+            if (onPool > 0) marketSuppliersOnPool.insertSorted(_user, onPool, maxSortedUsers);
         }
 
         // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
-            supplyBalanceInOf[_poolToken][_user].inP2P = 0;
+            userSupplyBalance.inP2P = 0;
             inP2P = 0;
         }
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) suppliersInP2P[_poolToken].remove(_user);
-            if (inP2P > 0) suppliersInP2P[_poolToken].insertSorted(_user, inP2P, maxSortedUsers);
+            if (formerValueInP2P > 0) marketSuppliersInP2P.remove(_user);
+            if (inP2P > 0) marketSuppliersInP2P.insertSorted(_user, inP2P, maxSortedUsers);
         }
 
         if (address(rewardsManager) != address(0))
@@ -348,29 +351,32 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        uint256 onPool = borrowBalanceInOf[_poolToken][_user].onPool;
-        uint256 inP2P = borrowBalanceInOf[_poolToken][_user].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolToken].getValueOf(_user);
-        uint256 formerValueInP2P = borrowersInP2P[_poolToken].getValueOf(_user);
+        Types.BorrowBalance storage userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+        uint256 onPool = userBorrowBalance.onPool;
+        uint256 inP2P = userBorrowBalance.inP2P;
+        DoubleLinkedList.List storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
+        DoubleLinkedList.List storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
+        uint256 formerValueOnPool = marketBorrowersOnPool.getValueOf(_user);
+        uint256 formerValueInP2P = marketBorrowersInP2P.getValueOf(_user);
 
         // Round pool balance to 0 if below threshold.
         if (onPool <= dustThreshold) {
-            borrowBalanceInOf[_poolToken][_user].onPool = 0;
+            userBorrowBalance.onPool = 0;
             onPool = 0;
         }
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) borrowersOnPool[_poolToken].remove(_user);
-            if (onPool > 0) borrowersOnPool[_poolToken].insertSorted(_user, onPool, maxSortedUsers);
+            if (formerValueOnPool > 0) marketBorrowersOnPool.remove(_user);
+            if (onPool > 0) marketBorrowersOnPool.insertSorted(_user, onPool, maxSortedUsers);
         }
 
         // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
-            borrowBalanceInOf[_poolToken][_user].inP2P = 0;
+            userBorrowBalance.inP2P = 0;
             inP2P = 0;
         }
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) borrowersInP2P[_poolToken].remove(_user);
-            if (inP2P > 0) borrowersInP2P[_poolToken].insertSorted(_user, inP2P, maxSortedUsers);
+            if (formerValueInP2P > 0) marketBorrowersInP2P.remove(_user);
+            if (inP2P > 0) marketBorrowersInP2P.insertSorted(_user, inP2P, maxSortedUsers);
         }
 
         if (address(rewardsManager) != address(0))

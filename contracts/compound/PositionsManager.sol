@@ -262,11 +262,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
+        Types.SupplyBalance storage onBehalfSupplyBalance = supplyBalanceInOf[_poolToken][
+            _onBehalf
+        ];
+
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.div(p2pSupplyIndex[_poolToken]);
 
             delta.p2pSupplyAmount += toAddInP2P;
-            supplyBalanceInOf[_poolToken][_onBehalf].inP2P += toAddInP2P;
+            onBehalfSupplyBalance.inP2P += toAddInP2P;
             _repayToPool(_poolToken, underlyingToken, vars.toRepay); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -276,7 +280,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
-            supplyBalanceInOf[_poolToken][_onBehalf].onPool += vars.remainingToSupply.div(
+            onBehalfSupplyBalance.onPool += vars.remainingToSupply.div(
                 ICToken(_poolToken).exchangeRateStored() // Exchange rate has already been updated.
             ); // In scaled balance.
             _supplyToPool(_poolToken, underlyingToken, vars.remainingToSupply); // Reverts on error.
@@ -289,8 +293,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _onBehalf,
             _poolToken,
             _amount,
-            supplyBalanceInOf[_poolToken][_onBehalf].onPool,
-            supplyBalanceInOf[_poolToken][_onBehalf].inP2P
+            onBehalfSupplyBalance.onPool,
+            onBehalfSupplyBalance.inP2P
         );
     }
 
@@ -355,11 +359,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
+        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
+            msg.sender
+        ];
+
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
             deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
-            borrowBalanceInOf[_poolToken][msg.sender].inP2P += toAddInP2P;
+            borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             // If this value is equal to 0 the withdraw will revert on Compound.
@@ -370,7 +378,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         // Borrow on pool.
         if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolToken][msg.sender].onPool += remainingToBorrow.div(
+            borrowerBorrowBalance.onPool += remainingToBorrow.div(
                 ICToken(_poolToken).borrowIndex()
             ); // In cdUnit.
             _borrowFromPool(_poolToken, remainingToBorrow);
@@ -383,8 +391,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             msg.sender,
             _poolToken,
             _amount,
-            borrowBalanceInOf[_poolToken][msg.sender].onPool,
-            borrowBalanceInOf[_poolToken][msg.sender].inP2P
+            borrowerBorrowBalance.onPool,
+            borrowerBorrowBalance.inP2P
         );
     }
 
@@ -514,10 +522,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
+        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
+            _supplier
+        ];
+
         /// Pool withdraw ///
 
         // Withdraw supply on pool.
-        uint256 onPoolSupply = supplyBalanceInOf[_poolToken][_supplier].onPool;
+        uint256 onPoolSupply = supplierSupplyBalance.onPool;
         if (onPoolSupply > 0) {
             uint256 maxToWithdrawOnPool = onPoolSupply.mul(vars.poolSupplyIndex);
 
@@ -528,13 +540,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.toWithdraw = CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable);
 
                 vars.remainingToWithdraw -= vars.toWithdraw;
-                supplyBalanceInOf[_poolToken][_supplier].onPool -= vars.toWithdraw.div(
-                    vars.poolSupplyIndex
-                );
+                supplierSupplyBalance.onPool -= vars.toWithdraw.div(vars.poolSupplyIndex);
             } else {
                 vars.toWithdraw = maxToWithdrawOnPool;
                 vars.remainingToWithdraw -= maxToWithdrawOnPool;
-                supplyBalanceInOf[_poolToken][_supplier].onPool = 0;
+                supplierSupplyBalance.onPool = 0;
             }
 
             if (vars.remainingToWithdraw == 0) {
@@ -551,8 +561,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     _receiver,
                     _poolToken,
                     _amount,
-                    supplyBalanceInOf[_poolToken][_supplier].onPool,
-                    supplyBalanceInOf[_poolToken][_supplier].inP2P
+                    supplierSupplyBalance.onPool,
+                    supplierSupplyBalance.inP2P
                 );
 
                 return;
@@ -562,8 +572,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage delta = deltas[_poolToken];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-        supplyBalanceInOf[_poolToken][_supplier].inP2P -= CompoundMath.min(
-            supplyBalanceInOf[_poolToken][_supplier].inP2P,
+        supplierSupplyBalance.inP2P -= CompoundMath.min(
+            supplierSupplyBalance.inP2P,
             vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
         ); // In peer-to-peer unit
         _updateSupplierInDS(_poolToken, _supplier);
@@ -656,8 +666,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _receiver,
             _poolToken,
             _amount,
-            supplyBalanceInOf[_poolToken][_supplier].onPool,
-            supplyBalanceInOf[_poolToken][_supplier].inP2P
+            supplierSupplyBalance.onPool,
+            supplierSupplyBalance.inP2P
         );
     }
 
@@ -684,17 +694,21 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
 
+        Types.BorrowBalance storage onBehalfBorrowBalance = borrowBalanceInOf[_poolToken][
+            _onBehalf
+        ];
+
         /// Pool repay ///
 
         // Repay borrow on pool.
-        vars.borrowedOnPool = borrowBalanceInOf[_poolToken][_onBehalf].onPool;
+        vars.borrowedOnPool = onBehalfBorrowBalance.onPool;
         if (vars.borrowedOnPool > 0) {
             vars.maxToRepayOnPool = vars.borrowedOnPool.mul(vars.poolBorrowIndex);
 
             if (vars.maxToRepayOnPool > vars.remainingToRepay) {
                 vars.toRepay = vars.remainingToRepay;
 
-                borrowBalanceInOf[_poolToken][_onBehalf].onPool -= CompoundMath.min(
+                onBehalfBorrowBalance.onPool -= CompoundMath.min(
                     vars.borrowedOnPool,
                     vars.toRepay.div(vars.poolBorrowIndex)
                 ); // In cdUnit.
@@ -708,8 +722,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     _onBehalf,
                     _poolToken,
                     _amount,
-                    borrowBalanceInOf[_poolToken][_onBehalf].onPool,
-                    borrowBalanceInOf[_poolToken][_onBehalf].inP2P
+                    onBehalfBorrowBalance.onPool,
+                    onBehalfBorrowBalance.inP2P
                 );
 
                 return;
@@ -717,7 +731,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.toRepay = vars.maxToRepayOnPool;
                 vars.remainingToRepay -= vars.toRepay;
 
-                borrowBalanceInOf[_poolToken][_onBehalf].onPool = 0;
+                onBehalfBorrowBalance.onPool = 0;
             }
         }
 
@@ -725,8 +739,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolToken];
 
-        borrowBalanceInOf[_poolToken][_onBehalf].inP2P -= CompoundMath.min(
-            borrowBalanceInOf[_poolToken][_onBehalf].inP2P,
+        onBehalfBorrowBalance.inP2P -= CompoundMath.min(
+            onBehalfBorrowBalance.inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
         ); // In peer-to-peer unit.
         _updateBorrowerInDS(_poolToken, _onBehalf);
@@ -825,8 +839,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _onBehalf,
             _poolToken,
             _amount,
-            borrowBalanceInOf[_poolToken][_onBehalf].onPool,
-            borrowBalanceInOf[_poolToken][_onBehalf].inP2P
+            onBehalfBorrowBalance.onPool,
+            onBehalfBorrowBalance.inP2P
         );
     }
 
