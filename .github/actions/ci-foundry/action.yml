@@ -58,7 +58,6 @@ runs:
         PROTOCOL: ${{ inputs.protocol }}
         NETWORK: ${{ inputs.network }}
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
-        FOUNDRY_PROFILE: gas-report
 
     - name: Compare gas reports
       uses: Rubilmax/foundry-gas-diff@v3.8
