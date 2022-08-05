@@ -52,7 +52,6 @@ abstract contract RatesLens is UsersLens {
         Indexes memory indexes;
         Types.Market memory market;
         (
-            ,
             market,
             indexes.p2pSupplyIndex,
             indexes.poolSupplyIndex,
@@ -133,7 +132,6 @@ abstract contract RatesLens is UsersLens {
         Indexes memory indexes;
         Types.Market memory market;
         (
-            ,
             market,
             indexes.p2pBorrowIndex,
             indexes.poolSupplyIndex,
@@ -202,14 +200,13 @@ abstract contract RatesLens is UsersLens {
         )
     {
         (
-            address underlyingToken,
             Types.Market memory market,
             uint256 p2pSupplyIndex,
             uint256 poolSupplyIndex,
 
         ) = _getCurrentP2PSupplyIndex(_poolToken);
 
-        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
+        DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
 
@@ -258,14 +255,13 @@ abstract contract RatesLens is UsersLens {
         )
     {
         (
-            address underlyingToken,
             Types.Market memory market,
             uint256 p2pBorrowIndex,
             ,
             uint256 poolBorrowIndex
         ) = _getCurrentP2PBorrowIndex(_poolToken);
 
-        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
+        DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
 
