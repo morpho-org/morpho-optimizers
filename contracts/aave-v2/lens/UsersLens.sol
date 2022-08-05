@@ -30,10 +30,14 @@ abstract contract UsersLens is IndexesLens {
         enteredMarkets = new address[](nbCreatedMarkets);
 
         bytes32 userMarkets = morpho.userMarkets(_user);
-        for (uint256 i; i < nbCreatedMarkets; i++) {
+        for (uint256 i; i < nbCreatedMarkets; ) {
             if (_isSupplyingOrBorrowing(userMarkets, createdMarkets[i])) {
                 enteredMarkets[nbEnteredMarkets] = createdMarkets[i];
                 ++nbEnteredMarkets;
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
