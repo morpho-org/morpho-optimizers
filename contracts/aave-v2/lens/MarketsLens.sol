@@ -101,9 +101,7 @@ abstract contract MarketsLens is RatesLens {
         Types.Delta memory delta = morpho.deltas(_poolToken);
         p2pSupplyDelta = delta.p2pSupplyDelta.rayMul(poolSupplyIndex);
         p2pBorrowDelta = delta.p2pBorrowDelta.rayMul(poolBorrowIndex);
-
-        Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolToken);
-        lastUpdateTimestamp = poolIndexes.lastUpdateTimestamp;
+        lastUpdateTimestamp = morpho.poolIndexes(_poolToken).lastUpdateTimestamp;
     }
 
     /// @notice Returns market's configuration.
