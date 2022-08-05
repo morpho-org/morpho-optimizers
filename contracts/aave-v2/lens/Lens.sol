@@ -11,11 +11,13 @@ contract Lens is MarketsLens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
-    function initialize(address _morphoAddress) external initializer {
-        morpho = IMorpho(_morphoAddress);
-        addressesProvider = ILendingPoolAddressesProvider(morpho.addressesProvider());
-        pool = ILendingPool(morpho.pool());
-    }
+    /// CONSTRUCTOR ///
+
+    /// @notice Constructs the contract.
+    /// @param _morpho The address of the main Morpho contract.
+    constructor(address _morpho) LensStorage(_morpho) {}
+
+    /// EXTERNAL ///
 
     /// @notice Computes and returns the total distribution of supply through Morpho, using virtually updated indexes.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in ETH).
