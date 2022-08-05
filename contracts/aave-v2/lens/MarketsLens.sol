@@ -13,29 +13,29 @@ abstract contract MarketsLens is RatesLens {
     /// EXTERNAL ///
 
     /// @notice Checks if a market is created.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreated(address _poolTokenAddress) external view returns (bool) {
-        return morpho.market(_poolTokenAddress).isCreated;
+    function isMarketCreated(address _poolToken) external view returns (bool) {
+        return morpho.market(_poolToken).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        Types.Market memory market = morpho.market(_poolTokenAddress);
+    function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
+        Types.Market memory market = morpho.market(_poolToken);
         return market.isCreated && !market.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress)
+    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
         external
         view
         returns (bool)
     {
-        Types.Market memory market = morpho.market(_poolTokenAddress);
+        Types.Market memory market = morpho.market(_poolToken);
         return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
     }
 
@@ -47,14 +47,14 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice For a given market, returns the average supply/borrow rates and amounts of underlying asset supplied and borrowed through Morpho, on the underlying pool and matched peer-to-peer.
     /// @dev The returned values are not updated.
-    /// @param _poolTokenAddress The address of the market of which to get main data.
+    /// @param _poolToken The address of the market of which to get main data.
     /// @return avgSupplyRatePerYear The average supply rate experienced on the given market.
     /// @return avgBorrowRatePerYear The average borrow rate experienced on the given market.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
-    function getMainMarketData(address _poolTokenAddress)
+    function getMainMarketData(address _poolToken)
         external
         view
         returns (
@@ -67,15 +67,15 @@ abstract contract MarketsLens is RatesLens {
         )
     {
         (avgSupplyRatePerYear, p2pSupplyAmount, poolSupplyAmount) = getAverageSupplyRatePerYear(
-            _poolTokenAddress
+            _poolToken
         );
         (avgBorrowRatePerYear, p2pBorrowAmount, poolBorrowAmount) = getAverageBorrowRatePerYear(
-            _poolTokenAddress
+            _poolToken
         );
     }
 
     /// @notice Returns non-updated indexes, the block at which they were last updated and the total deltas of a given market.
-    /// @param _poolTokenAddress The address of the market of which to get advanced data.
+    /// @param _poolToken The address of the market of which to get advanced data.
     /// @return p2pSupplyIndex The peer-to-peer supply index of the given market (in ray).
     /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in ray).
     /// @return poolSupplyIndex The pool supply index of the given market (in ray).
@@ -83,7 +83,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return lastUpdateTimestamp The block number at which pool indexes were last updated.
     /// @return p2pSupplyDelta The total supply delta (in underlying).
     /// @return p2pBorrowDelta The total borrow delta (in underlying).
-    function getAdvancedMarketData(address _poolTokenAddress)
+    function getAdvancedMarketData(address _poolToken)
         external
         view
         returns (
@@ -96,15 +96,13 @@ abstract contract MarketsLens is RatesLens {
             uint256 p2pBorrowDelta
         )
     {
-        (p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = getIndexes(
-            _poolTokenAddress
-        );
+        (p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = getIndexes(_poolToken);
 
-        Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
+        Types.Delta memory delta = morpho.deltas(_poolToken);
         p2pSupplyDelta = delta.p2pSupplyDelta.rayMul(poolSupplyIndex);
         p2pBorrowDelta = delta.p2pBorrowDelta.rayMul(poolBorrowIndex);
 
-        Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
+        Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolToken);
         lastUpdateTimestamp = poolIndexes.lastUpdateTimestamp;
     }
 
@@ -116,7 +114,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor The reserve factor applied to this market.
     /// @return p2pIndexCursor The p2p index cursor applied to this market.
-    function getMarketConfiguration(address _poolTokenAddress)
+    function getMarketConfiguration(address _poolToken)
         external
         view
         returns (
@@ -129,9 +127,9 @@ abstract contract MarketsLens is RatesLens {
             uint16 p2pIndexCursor
         )
     {
-        underlying = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
 
-        Types.Market memory market = morpho.market(_poolTokenAddress);
+        Types.Market memory market = morpho.market(_poolToken);
         isCreated = market.isCreated;
         isP2PDisabled = market.isP2PDisabled;
         isPaused = market.isPaused;
@@ -143,37 +141,37 @@ abstract contract MarketsLens is RatesLens {
     /// PUBLIC ///
 
     /// @notice Computes and returns the total distribution of supply for a given market.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
-    function getTotalMarketSupply(address _poolTokenAddress)
+    function getTotalMarketSupply(address _poolToken)
         public
         view
         returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
     {
-        (, p2pSupplyAmount, poolSupplyAmount) = _getTotalMarketSupply(_poolTokenAddress);
+        (, p2pSupplyAmount, poolSupplyAmount) = _getTotalMarketSupply(_poolToken);
     }
 
     /// @notice Computes and returns the total distribution of borrows for a given market.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
-    function getTotalMarketBorrow(address _poolTokenAddress)
+    function getTotalMarketBorrow(address _poolToken)
         public
         view
         returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
     {
-        (, p2pBorrowAmount, poolBorrowAmount) = _getTotalMarketBorrow(_poolTokenAddress);
+        (, p2pBorrowAmount, poolBorrowAmount) = _getTotalMarketBorrow(_poolToken);
     }
 
     /// INTERNAL ///
 
     /// @notice Computes and returns the total distribution of supply for a given market.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return underlyingToken The address of the underlying ERC20 token of the given market.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
-    function _getTotalMarketSupply(address _poolTokenAddress)
+    function _getTotalMarketSupply(address _poolToken)
         public
         view
         returns (
@@ -185,22 +183,22 @@ abstract contract MarketsLens is RatesLens {
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
         (underlyingToken, , p2pSupplyIndex, poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
-            _poolTokenAddress
+            _poolToken
         );
 
         (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
-            _poolTokenAddress,
+            _poolToken,
             p2pSupplyIndex,
             poolSupplyIndex
         );
     }
 
     /// @notice Computes and returns the total distribution of borrows for a given market.
-    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _poolToken The address of the market to check.
     /// @return underlyingToken The address of the underlying ERC20 token of the given market.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
-    function _getTotalMarketBorrow(address _poolTokenAddress)
+    function _getTotalMarketBorrow(address _poolToken)
         public
         view
         returns (
@@ -212,7 +210,7 @@ abstract contract MarketsLens is RatesLens {
         uint256 p2pBorrowIndex;
         uint256 poolBorrowIndex;
         (underlyingToken, , p2pBorrowIndex, , poolBorrowIndex) = _getCurrentP2PBorrowIndex(
-            _poolTokenAddress
+            _poolToken
         );
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
