@@ -59,12 +59,12 @@ abstract contract RatesLens is UsersLens {
         ) = _getCurrentP2PSupplyIndex(_poolToken);
 
         if (_amount > 0) {
-            Types.Delta memory delta = morpho.deltas(_poolToken);
-            if (delta.p2pBorrowDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex),
-                    _amount
-                );
+            uint256 deltaInUnderlying = morpho.deltas(_poolToken).p2pBorrowDelta.rayMul(
+                indexes.poolBorrowIndex
+            );
+
+            if (deltaInUnderlying > 0) {
+                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
 
                 supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
                 _amount -= matchedDelta;
@@ -139,12 +139,12 @@ abstract contract RatesLens is UsersLens {
         ) = _getCurrentP2PBorrowIndex(_poolToken);
 
         if (_amount > 0) {
-            Types.Delta memory delta = morpho.deltas(_poolToken);
-            if (delta.p2pSupplyDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex),
-                    _amount
-                );
+            uint256 deltaInUnderlying = morpho.deltas(_poolToken).p2pSupplyDelta.rayMul(
+                indexes.poolSupplyIndex
+            );
+
+            if (deltaInUnderlying > 0) {
+                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
 
                 borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
                 _amount -= matchedDelta;
