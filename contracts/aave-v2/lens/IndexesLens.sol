@@ -73,18 +73,15 @@ abstract contract IndexesLens is LensStorage {
             uint256 poolBorrowIndex
         )
     {
-        underlyingToken = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
-        poolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
-        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
-
         Types.Delta memory delta = morpho.deltas(_poolToken);
         Types.Market memory market = morpho.market(_poolToken);
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolToken);
+        underlyingToken = market.underlyingToken;
 
         InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
         .computeGrowthFactors(
-            poolSupplyIndex,
-            poolBorrowIndex,
+            poolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken),
+            poolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken),
             lastPoolIndexes,
             market.p2pIndexCursor,
             market.reserveFactor
@@ -128,17 +125,14 @@ abstract contract IndexesLens is LensStorage {
             uint256 poolBorrowIndex
         )
     {
+        market = morpho.market(_poolToken);
         Types.Delta memory delta = morpho.deltas(_poolToken);
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolToken);
 
-        market = morpho.market(_poolToken);
-        poolSupplyIndex = pool.getReserveNormalizedIncome(market.underlyingToken);
-        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(market.underlyingToken);
-
         InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
         .computeGrowthFactors(
-            poolSupplyIndex,
-            poolBorrowIndex,
+            poolSupplyIndex = pool.getReserveNormalizedIncome(market.underlyingToken),
+            poolBorrowIndex = pool.getReserveNormalizedVariableDebt(market.underlyingToken),
             lastPoolIndexes,
             market.p2pIndexCursor,
             market.reserveFactor
@@ -172,17 +166,14 @@ abstract contract IndexesLens is LensStorage {
             uint256 poolBorrowIndex
         )
     {
+        market = morpho.market(_poolToken);
         Types.Delta memory delta = morpho.deltas(_poolToken);
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolToken);
 
-        market = morpho.market(_poolToken);
-        poolSupplyIndex = pool.getReserveNormalizedIncome(market.underlyingToken);
-        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(market.underlyingToken);
-
         InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
         .computeGrowthFactors(
-            poolSupplyIndex,
-            poolBorrowIndex,
+            poolSupplyIndex = pool.getReserveNormalizedIncome(market.underlyingToken),
+            poolBorrowIndex = pool.getReserveNormalizedVariableDebt(market.underlyingToken),
             lastPoolIndexes,
             market.p2pIndexCursor,
             market.reserveFactor
