@@ -141,7 +141,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             }
         }
 
-        Types.SupplyBalance storage onBehalfSupplyBalance = supplyBalanceInOf[_poolToken][
+        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
             _onBehalf
         ];
 
@@ -149,7 +149,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
 
             delta.p2pSupplyAmount += toAddInP2P;
-            onBehalfSupplyBalance.inP2P += toAddInP2P;
+            supplierSupplyBalance.inP2P += toAddInP2P;
             _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -159,7 +159,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
-            onBehalfSupplyBalance.onPool += vars.remainingToSupply.rayDiv(
+            supplierSupplyBalance.onPool += vars.remainingToSupply.rayDiv(
                 poolIndexes[_poolToken].poolSupplyIndex
             ); // In scaled balance.
             _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
@@ -172,8 +172,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             _onBehalf,
             _poolToken,
             _amount,
-            onBehalfSupplyBalance.onPool,
-            onBehalfSupplyBalance.inP2P
+            supplierSupplyBalance.onPool,
+            supplierSupplyBalance.inP2P
         );
     }
 
