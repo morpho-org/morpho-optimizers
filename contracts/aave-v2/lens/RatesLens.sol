@@ -62,8 +62,10 @@ abstract contract RatesLens is UsersLens {
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             if (delta.p2pBorrowDelta > 0) {
-                uint256 deltaInUnderlying = delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex);
-                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
+                uint256 matchedDelta = Math.min(
+                    delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex),
+                    _amount
+                );
 
                 supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
                 _amount -= matchedDelta;
@@ -78,10 +80,10 @@ abstract contract RatesLens is UsersLens {
             ).onPool;
 
             if (firstPoolBorrowerBalance > 0) {
-                uint256 borrowerBalanceInUnderlying = firstPoolBorrowerBalance.rayMul(
-                    indexes.poolBorrowIndex
+                uint256 matchedP2P = Math.min(
+                    firstPoolBorrowerBalance.rayMul(indexes.poolBorrowIndex),
+                    _amount
                 );
-                uint256 matchedP2P = Math.min(borrowerBalanceInUnderlying, _amount);
 
                 supplyBalance.inP2P += matchedP2P.rayDiv(indexes.p2pSupplyIndex);
                 _amount -= matchedP2P;
@@ -141,8 +143,10 @@ abstract contract RatesLens is UsersLens {
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             if (delta.p2pSupplyDelta > 0) {
-                uint256 deltaInUnderlying = delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex);
-                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
+                uint256 matchedDelta = Math.min(
+                    delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex),
+                    _amount
+                );
 
                 borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
                 _amount -= matchedDelta;
@@ -157,10 +161,10 @@ abstract contract RatesLens is UsersLens {
             ).onPool;
 
             if (firstPoolSupplierBalance > 0) {
-                uint256 supplierBalanceInUnderlying = firstPoolSupplierBalance.rayMul(
-                    indexes.poolSupplyIndex
+                uint256 matchedP2P = Math.min(
+                    firstPoolSupplierBalance.rayMul(indexes.poolSupplyIndex),
+                    _amount
                 );
-                uint256 matchedP2P = Math.min(supplierBalanceInUnderlying, _amount);
 
                 borrowBalance.inP2P += matchedP2P.rayDiv(indexes.p2pBorrowIndex);
                 _amount -= matchedP2P;
