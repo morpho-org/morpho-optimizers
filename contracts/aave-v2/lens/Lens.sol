@@ -35,13 +35,13 @@ contract Lens is MarketsLens {
 
         uint256 nbMarkets = markets.length;
         for (uint256 i; i < nbMarkets; ) {
-            address _poolTokenAddress = markets[i];
+            address _poolToken = markets[i];
 
             (
                 address underlyingToken,
                 uint256 marketP2PSupplyAmount,
                 uint256 marketPoolSupplyAmount
-            ) = _getTotalMarketSupply(_poolTokenAddress);
+            ) = _getTotalMarketSupply(_poolToken);
 
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingToken);
             (, , , uint256 reserveDecimals, ) = pool
@@ -78,13 +78,13 @@ contract Lens is MarketsLens {
 
         uint256 nbMarkets = markets.length;
         for (uint256 i; i < nbMarkets; ) {
-            address _poolTokenAddress = markets[i];
+            address _poolToken = markets[i];
 
             (
                 address underlyingToken,
                 uint256 marketP2PBorrowAmount,
                 uint256 marketPoolBorrowAmount
-            ) = _getTotalMarketBorrow(_poolTokenAddress);
+            ) = _getTotalMarketBorrow(_poolToken);
 
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingToken);
             (, , , uint256 reserveDecimals, ) = pool
