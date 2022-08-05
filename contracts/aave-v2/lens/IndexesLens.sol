@@ -18,7 +18,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 currentP2PSupplyIndex)
     {
-        (, , currentP2PSupplyIndex, , ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (, currentP2PSupplyIndex, , ) = _getCurrentP2PSupplyIndex(_poolToken);
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
@@ -29,7 +29,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 currentP2PBorrowIndex)
     {
-        (, , currentP2PBorrowIndex, , ) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, currentP2PBorrowIndex, , ) = _getCurrentP2PBorrowIndex(_poolToken);
     }
 
     /// @notice Returns the updated peer-to-peer and pool indexes.
@@ -114,7 +114,6 @@ abstract contract IndexesLens is LensStorage {
 
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolToken The address of the market.
-    /// @return underlyingToken The address of the underlying ERC20 token of the given market.
     /// @return market The market from which to compute the peer-to-peer supply index.
     /// @return currentP2PSupplyIndex The updated peer-to-peer supply index.
     /// @return poolSupplyIndex The updated pool supply index.
@@ -123,7 +122,6 @@ abstract contract IndexesLens is LensStorage {
         internal
         view
         returns (
-            address underlyingToken,
             Types.Market memory market,
             uint256 currentP2PSupplyIndex,
             uint256 poolSupplyIndex,
@@ -134,9 +132,8 @@ abstract contract IndexesLens is LensStorage {
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolToken);
 
         market = morpho.market(_poolToken);
-        underlyingToken = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
-        poolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
-        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+        poolSupplyIndex = pool.getReserveNormalizedIncome(market.underlyingToken);
+        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(market.underlyingToken);
 
         InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
         .computeGrowthFactors(
@@ -161,7 +158,6 @@ abstract contract IndexesLens is LensStorage {
 
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolToken The address of the market.
-    /// @return underlyingToken The address of the underlying ERC20 token of the given market.
     /// @return market The market from which to compute the peer-to-peer borrow index.
     /// @return currentP2PBorrowIndex The updated peer-to-peer borrow index.
     /// @return poolSupplyIndex The updated pool supply index.
@@ -170,7 +166,6 @@ abstract contract IndexesLens is LensStorage {
         internal
         view
         returns (
-            address underlyingToken,
             Types.Market memory market,
             uint256 currentP2PBorrowIndex,
             uint256 poolSupplyIndex,
@@ -181,9 +176,8 @@ abstract contract IndexesLens is LensStorage {
         Types.PoolIndexes memory lastPoolIndexes = morpho.poolIndexes(_poolToken);
 
         market = morpho.market(_poolToken);
-        underlyingToken = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
-        poolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
-        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+        poolSupplyIndex = pool.getReserveNormalizedIncome(market.underlyingToken);
+        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(market.underlyingToken);
 
         InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
         .computeGrowthFactors(
