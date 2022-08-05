@@ -122,14 +122,14 @@ library DoubleLinkedList {
         if (numberOfIterations < _maxIterations && next != address(0)) {
             // Account is the new head.
             if (next == _list.head) {
-                _list.accounts[_id] = Account(address(0), next, _value);
+                _list.accounts[_id] = Account({prev: address(0), next: next, value: _value});
                 _list.head = _id;
                 _list.accounts[next].prev = _id;
             }
             // Account is not the new head.
             else {
                 address prev = _list.accounts[next].prev;
-                _list.accounts[_id] = Account(prev, next, _value);
+                _list.accounts[_id] = Account({prev: prev, next: next, value: _value});
                 _list.accounts[prev].next = _id;
                 _list.accounts[next].prev = _id;
             }
@@ -138,14 +138,14 @@ library DoubleLinkedList {
         else {
             // Account is the new head.
             if (_list.head == address(0)) {
-                _list.accounts[_id] = Account(address(0), address(0), _value);
+                _list.accounts[_id] = Account({prev: address(0), next: address(0), value: _value});
                 _list.head = _id;
                 _list.tail = _id;
             }
             // Account is not the new head.
             else {
                 address tail = _list.tail;
-                _list.accounts[_id] = Account(tail, address(0), _value);
+                _list.accounts[_id] = Account({prev: tail, next: address(0), value: _value});
                 _list.accounts[tail].next = _id;
                 _list.tail = _id;
             }
