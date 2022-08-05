@@ -850,6 +850,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolToken The address of the pool token.
     /// @param _amount The amount of token (in underlying).
     function _withdrawFromPool(address _poolToken, uint256 _amount) internal {
+        // Withdraw only what is possible. The remaining dust is taken from the contract balance.
+        _amount = CompoundMath.min(ICToken(_poolToken).balanceOfUnderlying(address(this)), _amount);
         if (ICToken(_poolToken).redeemUnderlying(_amount) != 0) revert RedeemOnCompoundFailed();
         if (_poolToken == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
