@@ -133,10 +133,4 @@ contract User {
     function setTreasuryVault(address _newTreasuryVault) external {
         morpho.setTreasuryVault(_newTreasuryVault);
     }
-
-    function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
-        external
-    {
-        rewardsManager.setAaveIncentivesController(_aaveIncentivesController);
-    }
 }

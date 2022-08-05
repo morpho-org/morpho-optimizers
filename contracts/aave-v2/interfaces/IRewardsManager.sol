@@ -6,20 +6,21 @@ import "./aave/IAaveIncentivesController.sol";
 interface IRewardsManager {
     function initialize(address _morpho) external;
 
-    function aaveIncentivesController() external view returns (IAaveIncentivesController);
-
-    function setAaveIncentivesController(address) external;
-
     function getUserIndex(address, address) external returns (uint256);
 
     function getUserUnclaimedRewards(address[] calldata, address) external view returns (uint256);
 
+    function claimRewards(
+        IAaveIncentivesController _aaveIncentivesController,
+        address[] calldata,
+        address
+    ) external returns (uint256);
+
     function updateUserAssetAndAccruedRewards(
+        IAaveIncentivesController _aaveIncentivesController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalBalance
     ) external;
-
-    function claimRewards(address[] calldata, address) external returns (uint256);
 }
