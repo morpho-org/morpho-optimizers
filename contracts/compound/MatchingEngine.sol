@@ -75,15 +75,16 @@ abstract contract MatchingEngine is MorphoUtils {
         vars.poolIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
         vars.p2pIndex = p2pSupplyIndex[_poolToken];
         address firstPoolSupplier;
-        Types.SupplyBalance storage firstPoolSupplierBalance;
-
         vars.gasLeftAtTheBeginning = gasleft();
+
         while (
             matched < _amount &&
             (firstPoolSupplier = suppliersOnPool[_poolToken].getHead()) != address(0) &&
             vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
-            firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][firstPoolSupplier];
+            Types.SupplyBalance storage firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][
+                firstPoolSupplier
+            ];
             vars.inUnderlying = firstPoolSupplierBalance.onPool.mul(vars.poolIndex);
 
             uint256 newPoolSupplyBalance;
@@ -138,16 +139,17 @@ abstract contract MatchingEngine is MorphoUtils {
         vars.poolIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
         vars.p2pIndex = p2pSupplyIndex[_poolToken];
         address firstP2PSupplier;
-        Types.SupplyBalance storage firstP2PSupplierBalance;
         uint256 remainingToUnmatch = _amount;
-
         vars.gasLeftAtTheBeginning = gasleft();
+
         while (
             remainingToUnmatch > 0 &&
             (firstP2PSupplier = suppliersInP2P[_poolToken].getHead()) != address(0) &&
             vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
-            firstP2PSupplierBalance = supplyBalanceInOf[_poolToken][firstP2PSupplier];
+            Types.SupplyBalance storage firstP2PSupplierBalance = supplyBalanceInOf[_poolToken][
+                firstP2PSupplier
+            ];
             vars.inUnderlying = firstP2PSupplierBalance.inP2P.mul(vars.p2pIndex);
 
             uint256 newPoolSupplyBalance;
@@ -202,15 +204,16 @@ abstract contract MatchingEngine is MorphoUtils {
         vars.poolIndex = ICToken(_poolToken).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolToken];
         address firstPoolBorrower;
-        Types.BorrowBalance storage firstPoolBorrowerBalance;
-
         vars.gasLeftAtTheBeginning = gasleft();
+
         while (
             matched < _amount &&
             (firstPoolBorrower = borrowersOnPool[_poolToken].getHead()) != address(0) &&
             vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
-            firstPoolBorrowerBalance = borrowBalanceInOf[_poolToken][firstPoolBorrower];
+            Types.BorrowBalance storage firstPoolBorrowerBalance = borrowBalanceInOf[_poolToken][
+                firstPoolBorrower
+            ];
             vars.inUnderlying = firstPoolBorrowerBalance.onPool.mul(vars.poolIndex);
 
             uint256 poolBorrowBalance;
@@ -263,16 +266,17 @@ abstract contract MatchingEngine is MorphoUtils {
         vars.poolIndex = ICToken(_poolToken).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolToken];
         address firstP2PBorrower;
-        Types.BorrowBalance storage firstP2PBorrowerBalance;
         uint256 remainingToUnmatch = _amount;
-
         vars.gasLeftAtTheBeginning = gasleft();
+
         while (
             remainingToUnmatch > 0 &&
             (firstP2PBorrower = borrowersInP2P[_poolToken].getHead()) != address(0) &&
             vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
-            firstP2PBorrowerBalance = borrowBalanceInOf[_poolToken][firstP2PBorrower];
+            Types.BorrowBalance storage firstP2PBorrowerBalance = borrowBalanceInOf[_poolToken][
+                firstP2PBorrower
+            ];
             vars.inUnderlying = firstP2PBorrowerBalance.inP2P.mul(vars.p2pIndex);
 
             uint256 poolBorrowBalance;
