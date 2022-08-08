@@ -141,11 +141,15 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             }
         }
 
+        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
+            _onBehalf
+        ];
+
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
 
             delta.p2pSupplyAmount += toAddInP2P;
-            supplyBalanceInOf[_poolToken][_onBehalf].inP2P += toAddInP2P;
+            supplierSupplyBalance.inP2P += toAddInP2P;
             _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -155,7 +159,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
-            supplyBalanceInOf[_poolToken][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
+            supplierSupplyBalance.onPool += vars.remainingToSupply.rayDiv(
                 poolIndexes[_poolToken].poolSupplyIndex
             ); // In scaled balance.
             _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
@@ -168,8 +172,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             _onBehalf,
             _poolToken,
             _amount,
-            supplyBalanceInOf[_poolToken][_onBehalf].onPool,
-            supplyBalanceInOf[_poolToken][_onBehalf].inP2P
+            supplierSupplyBalance.onPool,
+            supplierSupplyBalance.inP2P
         );
     }
 
@@ -237,11 +241,15 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             }
         }
 
+        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
+            msg.sender
+        ];
+
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
             deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
-            borrowBalanceInOf[_poolToken][msg.sender].inP2P += toAddInP2P;
+            borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _withdrawFromPool(underlyingToken, _poolToken, toWithdraw); // Reverts on error.
@@ -251,7 +259,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         // Borrow on pool.
         if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolToken][msg.sender].onPool += remainingToBorrow.rayDiv(
+            borrowerBorrowBalance.onPool += remainingToBorrow.rayDiv(
                 poolIndexes[_poolToken].poolBorrowIndex
             ); // In adUnit.
             _borrowFromPool(underlyingToken, remainingToBorrow);
@@ -264,8 +272,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             msg.sender,
             _poolToken,
             _amount,
-            borrowBalanceInOf[_poolToken][msg.sender].onPool,
-            borrowBalanceInOf[_poolToken][msg.sender].inP2P
+            borrowerBorrowBalance.onPool,
+            borrowerBorrowBalance.inP2P
         );
     }
 
