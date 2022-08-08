@@ -28,15 +28,10 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
-    IAaveIncentivesController public override aaveIncentivesController;
-    ILendingPool public pool;
     IMorpho public morpho;
+    ILendingPool public pool;
 
     /// EVENTS ///
-
-    /// @notice Emitted the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
 
     /// @notice Emitted when rewards of an asset are accrued on behalf of a user.
     /// @param _asset The address of the incentivized asset.
@@ -82,49 +77,45 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         __Ownable_init();
 
         morpho = IMorpho(_morpho);
-        aaveIncentivesController = IMorpho(_morpho).aaveIncentivesController();
         pool = ILendingPool(morpho.pool());
     }
 
     /// EXTERNAL ///
 
-    /// @notice Sets the `aaveIncentivesController`.
-    /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController)
-        external
-        override
-        onlyOwner
-    {
-        aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
-        emit AaveIncentivesControllerSet(_aaveIncentivesController);
-    }
-
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The unclaimed rewards claimed by the user.
-    function claimRewards(address[] calldata _assets, address _user)
-        external
-        override
-        onlyMorpho
-        returns (uint256 unclaimedRewards)
-    {
-        unclaimedRewards = _accrueUserUnclaimedRewards(_assets, _user);
+    function claimRewards(
+        IAaveIncentivesController _aaveIncentivesController,
+        address[] calldata _assets,
+        address _user
+    ) external override onlyMorpho returns (uint256 unclaimedRewards) {
+        unclaimedRewards = _accrueUserUnclaimedRewards(_aaveIncentivesController, _assets, _user);
         userUnclaimedRewards[_user] = 0;
     }
 
     /// @notice Updates the unclaimed rewards of an user.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _userBalance The user balance of tokens in the distribution.
     /// @param _totalBalance The total balance of tokens in the distribution.
     function updateUserAssetAndAccruedRewards(
+        IAaveIncentivesController _aaveIncentivesController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalBalance
     ) external onlyMorpho {
-        userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _userBalance, _totalBalance);
+        userUnclaimedRewards[_user] += _updateUserAsset(
+            _aaveIncentivesController,
+            _user,
+            _asset,
+            _userBalance,
+            _totalBalance
+        );
     }
 
     /// @notice Returns the index of the `_user` for a given `_asset`.
@@ -172,13 +163,15 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// INTERNAL ///
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
-    function _accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
-        internal
-        returns (uint256 unclaimedRewards)
-    {
+    function _accrueUserUnclaimedRewards(
+        IAaveIncentivesController _aaveIncentivesController,
+        address[] calldata _assets,
+        address _user
+    ) internal returns (uint256 unclaimedRewards) {
         unclaimedRewards = userUnclaimedRewards[_user];
         uint256 assetsLength = _assets.length;
 
@@ -196,7 +189,13 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
 
-            unclaimedRewards += _updateUserAsset(_user, asset, userBalance, totalBalance);
+            unclaimedRewards += _updateUserAsset(
+                _aaveIncentivesController,
+                _user,
+                asset,
+                userBalance,
+                totalBalance
+            );
 
             unchecked {
                 ++i;
@@ -207,13 +206,15 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Updates asset's data.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalBalance The total balance of tokens in the distribution.
-    function _updateAsset(address _asset, uint256 _totalBalance)
-        internal
-        returns (uint256 oldIndex, uint256 newIndex)
-    {
-        (oldIndex, newIndex) = _getAssetIndex(_asset, _totalBalance);
+    function _updateAsset(
+        IAaveIncentivesController _aaveIncentivesController,
+        address _asset,
+        uint256 _totalBalance
+    ) internal returns (uint256 oldIndex, uint256 newIndex) {
+        (oldIndex, newIndex) = _getAssetIndex(_aaveIncentivesController, _asset, _totalBalance);
         if (oldIndex != newIndex) {
             localAssetData[_asset].lastUpdateTimestamp = block.timestamp;
             localAssetData[_asset].lastIndex = newIndex;
@@ -221,19 +222,21 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Updates the state of a user in a distribution.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _userBalance The user balance of tokens in the distribution.
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return accruedRewards The accrued rewards for the user until the moment for this asset.
     function _updateUserAsset(
+        IAaveIncentivesController _aaveIncentivesController,
         address _user,
         address _asset,
         uint256 _userBalance,
         uint256 _totalBalance
     ) internal returns (uint256 accruedRewards) {
         uint256 formerUserIndex = localAssetData[_asset].userIndex[_user];
-        (, uint256 newIndex) = _updateAsset(_asset, _totalBalance);
+        (, uint256 newIndex) = _updateAsset(_aaveIncentivesController, _asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
             if (_userBalance != 0) {}
@@ -258,25 +261,31 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 _totalBalance
     ) internal view returns (uint256 accruedRewards) {
         uint256 formerUserIndex = localAssetData[_asset].userIndex[_user];
-        (, uint256 newIndex) = _getAssetIndex(_asset, _totalBalance);
+        (, uint256 newIndex) = _getAssetIndex(
+            morpho.aaveIncentivesController(),
+            _asset,
+            _totalBalance
+        );
 
         if (formerUserIndex != newIndex && _userBalance != 0)
             accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
     }
 
     /// @dev Computes and returns the next value of a specific distribution index.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _currentIndex The current index of the distribution.
     /// @param _emissionPerSecond The total rewards distributed per second per asset unit, on the distribution.
     /// @param _lastUpdateTimestamp The last moment this distribution was updated.
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return The new index.
     function _computeIndex(
+        IAaveIncentivesController _aaveIncentivesController,
         uint256 _currentIndex,
         uint256 _emissionPerSecond,
         uint256 _lastUpdateTimestamp,
         uint256 _totalBalance
     ) internal view returns (uint256) {
-        uint256 distributionEnd = aaveIncentivesController.DISTRIBUTION_END();
+        uint256 distributionEnd = _aaveIncentivesController.DISTRIBUTION_END();
         uint256 currentTimestamp = block.timestamp;
 
         if (
@@ -305,13 +314,14 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     /// @dev Returns the next reward index.
+    /// @param _aaveIncentivesController The incentives controller used to query rewards.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return oldIndex The old distribution index.
     /// @return newIndex The new distribution index.
-    function _getAssetIndex(address _asset, uint256 _totalBalance)
-        internal
-        view
-        virtual
-        returns (uint256 oldIndex, uint256 newIndex);
+    function _getAssetIndex(
+        IAaveIncentivesController _aaveIncentivesController,
+        address _asset,
+        uint256 _totalBalance
+    ) internal view virtual returns (uint256 oldIndex, uint256 newIndex);
 }

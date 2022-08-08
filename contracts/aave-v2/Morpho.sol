@@ -189,7 +189,7 @@ contract Morpho is MorphoGovernance {
         returns (uint256 claimedAmount)
     {
         if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        claimedAmount = rewardsManager.claimRewards(_assets, msg.sender);
+        claimedAmount = rewardsManager.claimRewards(aaveIncentivesController, _assets, msg.sender);
 
         if (claimedAmount > 0) {
             if (_tradeForMorphoToken) {

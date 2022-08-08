@@ -55,7 +55,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Emitted when reward tokens are traded for MORPHO tokens.
     /// @param receiver The address of the receiver.
     /// @param rewardAmount The amount of reward token traded.
-    /// @param morphoAmount The amount of MORPHO sent.
+    /// @param morphoAmount The amount of MORPHO transferred.
     event RewardTokensTraded(address indexed receiver, uint256 rewardAmount, uint256 morphoAmount);
 
     /// ERRORS ///
@@ -129,7 +129,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Trades reward tokens for MORPHO tokens and sends them to the receiver.
     /// @dev The amount of rewards to trade for MORPHO tokens is supposed to have been transferred to this contract before calling the function.
     /// @param _receiver The address of the receiver.
-    /// @param _amount The amount to transfer to the receiver.
+    /// @param _amount The amount claimed, to trade for MORPHO tokens.
     function tradeRewardTokensForMorphoTokens(address _receiver, uint256 _amount) external {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
