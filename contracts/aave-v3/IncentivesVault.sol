@@ -64,6 +64,9 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Thrown when the vault is paused.
     error VaultIsPaused();
 
+    /// @notice Thrown when the input is above the max basis points value (100%).
+    error ExceedsMaxBasisPoints();
+
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the IncentivesVault contract.
@@ -102,6 +105,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Sets the reward bonus.
     /// @param _newBonus The new reward bonus.
     function setBonus(uint256 _newBonus) external onlyOwner {
+        if (_newBonus > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+
         bonus = _newBonus;
         emit BonusSet(_newBonus);
     }
