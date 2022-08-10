@@ -471,32 +471,29 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         if (currentTimestamp == _localRewardData.lastUpdateTimestamp)
             return (_localRewardData.index, _localRewardData.index);
-        else {
-            (
-                uint256 rewardIndex,
-                uint256 emissionPerSecond,
-                uint256 lastUpdateTimestamp,
-                uint256 distributionEnd
-            ) = morpho.rewardsController().getRewardsData(_asset, _reward);
 
-            if (
-                emissionPerSecond == 0 ||
-                _totalSupply == 0 ||
-                lastUpdateTimestamp == currentTimestamp ||
-                lastUpdateTimestamp >= distributionEnd
-            ) return (_localRewardData.index, rewardIndex);
+        (
+            uint256 rewardIndex,
+            uint256 emissionPerSecond,
+            uint256 lastUpdateTimestamp,
+            uint256 distributionEnd
+        ) = morpho.rewardsController().getRewardsData(_asset, _reward);
 
-            currentTimestamp = currentTimestamp > distributionEnd
-                ? distributionEnd
-                : currentTimestamp;
-            uint256 totalEmitted = emissionPerSecond *
-                (currentTimestamp - lastUpdateTimestamp) *
-                _assetUnit;
-            assembly {
-                totalEmitted := div(totalEmitted, _totalSupply)
-            }
-            return (_localRewardData.index, (totalEmitted + rewardIndex));
+        if (
+            emissionPerSecond == 0 ||
+            _totalSupply == 0 ||
+            lastUpdateTimestamp == currentTimestamp ||
+            lastUpdateTimestamp >= distributionEnd
+        ) return (_localRewardData.index, rewardIndex);
+
+        currentTimestamp = currentTimestamp > distributionEnd ? distributionEnd : currentTimestamp;
+        uint256 totalEmitted = emissionPerSecond *
+            (currentTimestamp - lastUpdateTimestamp) *
+            _assetUnit;
+        assembly {
+            totalEmitted := div(totalEmitted, _totalSupply)
         }
+        return (_localRewardData.index, (totalEmitted + rewardIndex));
     }
 
     /// @dev Returns user balances and total supply of all the assets specified by the assets parameter.
