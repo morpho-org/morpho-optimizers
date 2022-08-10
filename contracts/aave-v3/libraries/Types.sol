@@ -81,7 +81,7 @@ library Types {
         uint256 poolTokensLength;
         bytes32 userMarkets;
         bytes32 borrowMask;
-        address underlyingAddress;
+        address underlyingToken;
         uint256 underlyingPrice;
     }
 }
