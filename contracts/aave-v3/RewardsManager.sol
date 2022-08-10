@@ -23,8 +23,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     struct UserData {
-        uint128 index; // The user's index for a specific (asset, reward) couple.
-        uint128 accrued; // The user's accrued rewards for a specific (asset, reward) couple in (in reward token decimals).
+        uint128 index; // The user's index for a specific (asset, reward) pair.
+        uint128 accrued; // The user's accrued rewards for a specific (asset, reward) pair (in reward token decimals).
     }
 
     struct RewardData {

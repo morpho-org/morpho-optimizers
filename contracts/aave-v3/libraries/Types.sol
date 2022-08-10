@@ -61,14 +61,14 @@ library Types {
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct PoolIndexes {
-        uint32 lastUpdateTimestamp; // The last time the peer-to-peer indexes were updated.
+        uint32 lastUpdateTimestamp; // The last time the (pool and peer-to-peer) indexes were updated.
         uint112 poolSupplyIndex; // Last pool supply index (in ray).
         uint112 poolBorrowIndex; // Last pool borrow index (in ray).
     }
 
     struct Market {
         address underlyingToken; // The underlying address of the market.
-        uint16 reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10 000). The default value is 0.
+        uint16 reserveFactor; // Proportion of the additional interest earned compared to the pool while using Morpho. It is sent to the DAO for each market, in basis point (100% = 10 000). The default value is 0.
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
         bool isCreated; // Whether or not this market is created.
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
