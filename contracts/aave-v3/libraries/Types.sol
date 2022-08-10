@@ -43,7 +43,7 @@ library Types {
     }
 
     struct AssetLiquidityData {
-        uint256 reserveDecimals; // The number of decimals of the underlying token.
+        uint256 decimals; // The number of decimals of the underlying token.
         uint256 tokenUnit; // The token unit considering its decimals.
         uint256 liquidationThreshold; // The liquidation threshold applied on this token (in basis point).
         uint256 ltv; // The LTV applied on this token (in basis point).

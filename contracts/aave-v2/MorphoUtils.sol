@@ -285,16 +285,12 @@ abstract contract MorphoUtils is MorphoStorage {
 
                 if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
-                (
-                    assetData.ltv,
-                    assetData.liquidationThreshold,
-                    ,
-                    assetData.reserveDecimals,
-
-                ) = pool.getConfiguration(vars.underlyingAddress).getParamsMemory();
+                (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
+                .getConfiguration(vars.underlyingAddress)
+                .getParamsMemory();
 
                 unchecked {
-                    assetData.tokenUnit = 10**assetData.reserveDecimals;
+                    assetData.tokenUnit = 10**assetData.decimals;
                 }
 
                 if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {

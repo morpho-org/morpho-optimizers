@@ -43,15 +43,15 @@ contract TestLens is TestSetup {
             oracle
         );
 
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
         .getConfiguration(dai)
         .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
-        uint256 tokenUnit = 10**reserveDecimals;
+        uint256 tokenUnit = 10**decimals;
 
         assertEq(assetData.liquidationThreshold, liquidationThreshold);
         assertEq(assetData.ltv, ltv);
-        assertEq(assetData.reserveDecimals, reserveDecimals);
+        assertEq(assetData.decimals, decimals);
         assertEq(assetData.underlyingPrice, underlyingPrice);
         assertEq(assetData.tokenUnit, tokenUnit);
         assertEq(assetData.collateral, 0);
@@ -70,11 +70,11 @@ contract TestLens is TestSetup {
             oracle
         );
 
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
         .getConfiguration(dai)
         .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
-        uint256 tokenUnit = 10**reserveDecimals;
+        uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
 
         assertEq(assetData.ltv, ltv, "ltv");
@@ -99,18 +99,18 @@ contract TestLens is TestSetup {
             oracle
         );
 
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
         .getConfiguration(dai)
         .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
-        uint256 tokenUnit = 10**reserveDecimals;
+        uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
         uint256 debt = (toBorrow * underlyingPrice) / tokenUnit;
 
         assertEq(assetData.liquidationThreshold, liquidationThreshold, "liquidationThreshold");
         assertEq(assetData.ltv, ltv, "ltv");
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
-        assertEq(assetData.reserveDecimals, reserveDecimals, "reserveDecimals");
+        assertEq(assetData.decimals, decimals, "decimals");
         assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
         assertApproxEqAbs(assetData.collateral, collateral, 2, "collateral");
         assertEq(assetData.debt, debt, "debt");
@@ -137,18 +137,13 @@ contract TestLens is TestSetup {
         );
 
         Types.AssetLiquidityData memory expectedDataUsdc;
-        uint256 reserveDecimalsUsdc;
+        uint256 decimalsUsdc;
 
-        (
-            expectedDataUsdc.ltv,
-            expectedDataUsdc.liquidationThreshold,
-            ,
-            reserveDecimalsUsdc,
-            ,
-
-        ) = pool.getConfiguration(usdc).getParams();
+        (expectedDataUsdc.ltv, expectedDataUsdc.liquidationThreshold, , decimalsUsdc, , ) = pool
+        .getConfiguration(usdc)
+        .getParams();
         expectedDataUsdc.underlyingPrice = oracle.getAssetPrice(usdc);
-        expectedDataUsdc.tokenUnit = 10**reserveDecimalsUsdc;
+        expectedDataUsdc.tokenUnit = 10**decimalsUsdc;
         expectedDataUsdc.debt =
             (toBorrow * expectedDataUsdc.underlyingPrice) /
             expectedDataUsdc.tokenUnit;
@@ -169,13 +164,13 @@ contract TestLens is TestSetup {
         assertEq(assetDataUsdc.debt, expectedDataUsdc.debt, "debtValueUsdc");
 
         Types.AssetLiquidityData memory expectedDataDai;
-        uint256 reserveDecimalsDai;
+        uint256 decimalsDai;
 
-        (expectedDataDai.ltv, expectedDataDai.liquidationThreshold, , reserveDecimalsDai, , ) = pool
+        (expectedDataDai.ltv, expectedDataDai.liquidationThreshold, , decimalsDai, , ) = pool
         .getConfiguration(dai)
         .getParams();
         expectedDataDai.underlyingPrice = oracle.getAssetPrice(dai);
-        expectedDataDai.tokenUnit = 10**reserveDecimalsDai;
+        expectedDataDai.tokenUnit = 10**decimalsDai;
         expectedDataDai.collateral =
             (amount * expectedDataDai.underlyingPrice) /
             expectedDataDai.tokenUnit;
@@ -306,16 +301,16 @@ contract TestLens is TestSetup {
         Types.LiquidityData memory states = lens.getUserBalanceStates(address(borrower1));
 
         // USDC data
-        (, , , uint256 reserveDecimalsUsdc, , ) = pool.getConfiguration(usdc).getParams();
+        (, , , uint256 decimalsUsdc, , ) = pool.getConfiguration(usdc).getParams();
         uint256 underlyingPriceUsdc = oracle.getAssetPrice(usdc);
-        uint256 tokenUnitUsdc = 10**reserveDecimalsUsdc;
+        uint256 tokenUnitUsdc = 10**decimalsUsdc;
 
         // DAI data
-        (uint256 ltvDai, uint256 liquidationThresholdDai, , uint256 reserveDecimalsDai, , ) = pool
+        (uint256 ltvDai, uint256 liquidationThresholdDai, , uint256 decimalsDai, , ) = pool
         .getConfiguration(dai)
         .getParams();
         uint256 underlyingPriceDai = oracle.getAssetPrice(dai);
-        uint256 tokenUnitDai = 10**reserveDecimalsDai;
+        uint256 tokenUnitDai = 10**decimalsDai;
 
         expectedStates.collateral = (amount * underlyingPriceDai) / tokenUnitDai;
         expectedStates.debt = (toBorrow * underlyingPriceUsdc) / tokenUnitUsdc;
@@ -357,11 +352,11 @@ contract TestLens is TestSetup {
         Types.LiquidityData memory states = lens.getUserBalanceStates(address(borrower1));
 
         // USDC data
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
         .getConfiguration(usdc)
         .getParams();
         uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
-            10**reserveDecimals;
+            10**decimals;
         expectedStates.collateral += collateralValueToAdd;
         expectedStates.liquidationThreshold += collateralValueToAdd.percentMul(
             liquidationThreshold
@@ -369,8 +364,8 @@ contract TestLens is TestSetup {
         expectedStates.maxDebt += collateralValueToAdd.percentMul(ltv);
 
         // DAI data
-        (ltv, liquidationThreshold, , reserveDecimals, , ) = pool.getConfiguration(dai).getParams();
-        collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**reserveDecimals;
+        (ltv, liquidationThreshold, , decimals, , ) = pool.getConfiguration(dai).getParams();
+        collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**decimals;
         expectedStates.collateral += collateralValueToAdd;
         expectedStates.liquidationThreshold += collateralValueToAdd.percentMul(
             liquidationThreshold
@@ -378,14 +373,12 @@ contract TestLens is TestSetup {
         expectedStates.maxDebt += collateralValueToAdd.percentMul(ltv);
 
         // WBTC data
-        (, , , reserveDecimals, , ) = pool.getConfiguration(wbtc).getParams();
-        expectedStates.debt += (toBorrowWbtc * oracle.getAssetPrice(wbtc)) / 10**reserveDecimals;
+        (, , , decimals, , ) = pool.getConfiguration(wbtc).getParams();
+        expectedStates.debt += (toBorrowWbtc * oracle.getAssetPrice(wbtc)) / 10**decimals;
 
         // USDT data
-        (, , , reserveDecimals, , ) = pool.getConfiguration(usdt).getParams();
-        expectedStates.debt +=
-            (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
-            10**reserveDecimals;
+        (, , , decimals, , ) = pool.getConfiguration(usdt).getParams();
+        expectedStates.debt += (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) / 10**decimals;
 
         uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
         uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
@@ -420,7 +413,7 @@ contract TestLens is TestSetup {
         borrower1.borrow(aUsdt, toBorrow);
         borrower1.borrow(aUsdc, toBorrow);
 
-        uint256 reserveDecimals;
+        uint256 decimals;
         uint256 ltv;
         uint256 liquidationThreshold;
 
@@ -428,29 +421,27 @@ contract TestLens is TestSetup {
         Types.LiquidityData memory states = lens.getUserBalanceStates(address(borrower1));
 
         // USDT data
-        (ltv, liquidationThreshold, , reserveDecimals, , ) = pool
-        .getConfiguration(usdt)
-        .getParams();
+        (ltv, liquidationThreshold, , decimals, , ) = pool.getConfiguration(usdt).getParams();
         uint256 collateralValueUsdt = (to6Decimals(amount) * oracle.getAssetPrice(usdt)) /
-            10**reserveDecimals;
+            10**decimals;
         expectedStates.collateral += collateralValueUsdt;
         expectedStates.liquidationThreshold += collateralValueUsdt.percentMul(liquidationThreshold);
         expectedStates.maxDebt += collateralValueUsdt.percentMul(ltv);
 
         // DAI data
-        (ltv, liquidationThreshold, , reserveDecimals, , ) = pool.getConfiguration(dai).getParams();
-        uint256 collateralValueDai = (amount * oracle.getAssetPrice(dai)) / 10**reserveDecimals;
+        (ltv, liquidationThreshold, , decimals, , ) = pool.getConfiguration(dai).getParams();
+        uint256 collateralValueDai = (amount * oracle.getAssetPrice(dai)) / 10**decimals;
         expectedStates.collateral += collateralValueDai;
         expectedStates.liquidationThreshold += collateralValueDai.percentMul(liquidationThreshold);
         expectedStates.maxDebt += collateralValueDai.percentMul(ltv);
 
         // USDC data
-        (, , , reserveDecimals, , ) = pool.getConfiguration(usdc).getParams();
-        expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdc)) / 10**reserveDecimals;
+        (, , , decimals, , ) = pool.getConfiguration(usdc).getParams();
+        expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdc)) / 10**decimals;
 
         // USDT data
-        (, , , reserveDecimals, , ) = pool.getConfiguration(usdt).getParams();
-        expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdt)) / 10**reserveDecimals;
+        (, , , decimals, , ) = pool.getConfiguration(usdt).getParams();
+        expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdt)) / 10**decimals;
 
         uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
         uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(

@@ -285,21 +285,16 @@ abstract contract MorphoUtils is MorphoStorage {
 
                 if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
-                (
-                    assetData.ltv,
-                    assetData.liquidationThreshold,
-                    ,
-                    assetData.reserveDecimals,
-                    ,
-
-                ) = pool.getConfiguration(vars.underlyingAddress).getParams();
+                (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
+                .getConfiguration(vars.underlyingAddress)
+                .getParams();
 
                 // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
                 // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
                 if (assetData.ltv == 0) assetData.liquidationThreshold = 0;
 
                 unchecked {
-                    assetData.tokenUnit = 10**assetData.reserveDecimals;
+                    assetData.tokenUnit = 10**assetData.decimals;
                 }
 
                 if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
