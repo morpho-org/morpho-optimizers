@@ -36,10 +36,10 @@ library Types {
     }
 
     struct Delta {
-        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in aToken). (in underlying decimals)
-        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in adUnit). (in underlying decimals)
-        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit). (in underlying decimals)
-        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit). (in underlying decimals)
+        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in aToken).
+        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in adUnit).
+        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit).
+        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit).
     }
 
     struct AssetLiquidityData {
