@@ -498,13 +498,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             currentTimestamp = currentTimestamp > distributionEnd
                 ? distributionEnd
                 : currentTimestamp;
-            uint256 firstTerm = emissionPerSecond *
+            uint256 totalEmitted = emissionPerSecond *
                 (currentTimestamp - lastUpdateTimestamp) *
                 _assetUnit;
             assembly {
-                firstTerm := div(firstTerm, _totalSupply)
+                totalEmitted := div(totalEmitted, _totalSupply)
             }
-            return (_localRewardData.index, (firstTerm + rewardIndex));
+            return (_localRewardData.index, (totalEmitted + rewardIndex));
         }
     }
 
