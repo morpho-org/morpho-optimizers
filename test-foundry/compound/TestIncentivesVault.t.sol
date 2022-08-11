@@ -46,6 +46,12 @@ contract TestIncentivesVault is Test, Config {
         hevm.label(morpho, "morpho");
     }
 
+    function testShouldNotSetBonusAboveMaxBasisPoints() public {
+        uint256 moreThanMaxBasisPoints = incentivesVault.MAX_BASIS_POINTS() + 1;
+        hevm.expectRevert(abi.encodeWithSelector(IncentivesVault.ExceedsMaxBasisPoints.selector));
+        incentivesVault.setBonus(moreThanMaxBasisPoints);
+    }
+
     function testOnlyOwnerShouldSetBonus() public {
         uint256 bonusToSet = 1;
 
