@@ -55,42 +55,42 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     function updateIndexes(address _poolToken) external {
         Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolToken];
 
-        if (block.timestamp > marketPoolIndexes.lastUpdateTimestamp) {
-            Types.Market storage market = market[_poolToken];
+        if (block.timestamp == marketPoolIndexes.lastUpdateTimestamp) return;
 
-            address underlyingToken = market.underlyingToken;
-            uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
-            uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+        Types.Market storage market = market[_poolToken];
 
-            Params memory params = Params(
-                p2pSupplyIndex[_poolToken],
-                p2pBorrowIndex[_poolToken],
-                newPoolSupplyIndex,
-                newPoolBorrowIndex,
-                marketPoolIndexes.poolSupplyIndex,
-                marketPoolIndexes.poolBorrowIndex,
-                market.reserveFactor,
-                market.p2pIndexCursor,
-                deltas[_poolToken]
-            );
+        address underlyingToken = market.underlyingToken;
+        uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+        uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
-            (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
+        Params memory params = Params(
+            p2pSupplyIndex[_poolToken],
+            p2pBorrowIndex[_poolToken],
+            newPoolSupplyIndex,
+            newPoolBorrowIndex,
+            marketPoolIndexes.poolSupplyIndex,
+            marketPoolIndexes.poolBorrowIndex,
+            market.reserveFactor,
+            market.p2pIndexCursor,
+            deltas[_poolToken]
+        );
 
-            p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
-            p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
 
-            marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
-            marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
+        p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
+        p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
 
-            emit P2PIndexesUpdated(
-                _poolToken,
-                newP2PSupplyIndex,
-                newP2PBorrowIndex,
-                newPoolSupplyIndex,
-                newPoolBorrowIndex
-            );
-        }
+        marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
+        marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
+        marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
+
+        emit P2PIndexesUpdated(
+            _poolToken,
+            newP2PSupplyIndex,
+            newP2PBorrowIndex,
+            newPoolSupplyIndex,
+            newPoolBorrowIndex
+        );
     }
 
     /// INTERNAL ///
