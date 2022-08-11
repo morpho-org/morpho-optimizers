@@ -234,7 +234,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
             toWithdraw += matched;
             remainingToBorrow -= matched;
-            deltas[_poolToken].p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
+            delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
         }
 
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
@@ -244,7 +244,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
-            deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
+            delta.p2pBorrowAmount += toAddInP2P;
             borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
