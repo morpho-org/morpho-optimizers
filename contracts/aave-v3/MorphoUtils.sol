@@ -277,77 +277,68 @@ abstract contract MorphoUtils is MorphoStorage {
         vars.poolTokensLength = marketsCreated.length;
         vars.userMarkets = userMarkets[_user];
 
-        for (uint256 i; i < vars.poolTokensLength; ) {
+        for (uint256 i; i < vars.poolTokensLength; ++i) {
             vars.poolToken = marketsCreated[i];
             vars.borrowMask = borrowMask[vars.poolToken];
 
-            if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
-                vars.underlyingToken = market[vars.poolToken].underlyingToken;
-                vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingToken);
+            if (!_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) continue;
 
-                if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
+            vars.underlyingToken = market[vars.poolToken].underlyingToken;
+            vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingToken);
 
-                (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
-                .getConfiguration(vars.underlyingToken)
-                .getParams();
+            if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
-                // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
-                // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
-                if (assetData.ltv == 0) assetData.liquidationThreshold = 0;
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
+            .getConfiguration(vars.underlyingToken)
+            .getParams();
 
-                unchecked {
-                    assetData.tokenUnit = 10**assetData.decimals;
-                }
-
-                if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                    values.debt += _debtValue(
-                        vars.poolToken,
-                        _user,
-                        vars.underlyingPrice,
-                        assetData.tokenUnit
-                    );
-                }
-
-                // Cache current asset collateral value.
-                uint256 assetCollateralValue;
-                if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
-                    assetCollateralValue = _collateralValue(
-                        vars.poolToken,
-                        _user,
-                        vars.underlyingPrice,
-                        assetData.tokenUnit
-                    );
-                    values.collateral += assetCollateralValue;
-                    // Calculate LTV for borrow.
-                    values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
-                }
-
-                // Update debt variable for borrowed token.
-                if (_poolToken == vars.poolToken && _amountBorrowed > 0)
-                    values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(
-                        assetData.tokenUnit
-                    );
-
-                // Update LT variable for withdraw.
-                if (assetCollateralValue > 0)
-                    values.liquidationThreshold += assetCollateralValue.percentMul(
-                        assetData.liquidationThreshold
-                    );
-
-                // Subtract withdrawn amount from liquidation threshold and collateral.
-                if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
-                    uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) /
-                        assetData.tokenUnit;
-                    values.collateral -= withdrawn;
-                    values.liquidationThreshold -= withdrawn.percentMul(
-                        assetData.liquidationThreshold
-                    );
-                    values.maxDebt -= withdrawn.percentMul(assetData.ltv);
-                }
-            }
+            // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
+            // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
+            if (assetData.ltv == 0) assetData.liquidationThreshold = 0;
 
             unchecked {
-                ++i;
+                assetData.tokenUnit = 10**assetData.decimals;
+            }
+
+            if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
+                values.debt += _debtValue(
+                    vars.poolToken,
+                    _user,
+                    vars.underlyingPrice,
+                    assetData.tokenUnit
+                );
+            }
+
+            // Cache current asset collateral value.
+            uint256 assetCollateralValue;
+            if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
+                assetCollateralValue = _collateralValue(
+                    vars.poolToken,
+                    _user,
+                    vars.underlyingPrice,
+                    assetData.tokenUnit
+                );
+                values.collateral += assetCollateralValue;
+                // Calculate LTV for borrow.
+                values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
+            }
+
+            // Update debt variable for borrowed token.
+            if (_poolToken == vars.poolToken && _amountBorrowed > 0)
+                values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(assetData.tokenUnit);
+
+            // Update LT variable for withdraw.
+            if (assetCollateralValue > 0)
+                values.liquidationThreshold += assetCollateralValue.percentMul(
+                    assetData.liquidationThreshold
+                );
+
+            // Subtract withdrawn amount from liquidation threshold and collateral.
+            if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
+                uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) / assetData.tokenUnit;
+                values.collateral -= withdrawn;
+                values.liquidationThreshold -= withdrawn.percentMul(assetData.liquidationThreshold);
+                values.maxDebt -= withdrawn.percentMul(assetData.ltv);
             }
         }
     }
