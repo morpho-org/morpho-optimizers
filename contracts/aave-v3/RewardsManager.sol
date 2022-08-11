@@ -46,7 +46,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _asset The address of the incentivized asset.
     /// @param _reward The address of the reward token.
     /// @param _user The address of the user that rewards are accrued on behalf of.
-    /// @param _assetIndex The index of the distributed asset (same as the user's index for this asset when the event is logged).
+    /// @param _assetIndex The reward index for the asset (same as the user's index for this asset when the event is logged).
     /// @param _rewardsAccrued The amount of rewards accrued.
     event Accrued(
         address indexed _asset,
