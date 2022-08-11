@@ -355,10 +355,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching = 0;
             else vars.remainingGasForMatching -= gasConsumedInMatching;
 
-            if (matched > 0) {
-                vars.remainingToWithdraw -= matched;
-                vars.toWithdraw += matched;
-            }
+            vars.remainingToWithdraw -= matched;
+            vars.toWithdraw += matched;
         }
 
         if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
@@ -529,10 +527,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching = 0;
             else vars.remainingGasForMatching -= gasConsumedInMatching;
 
-            if (matched > 0) {
-                vars.remainingToRepay -= matched;
-                vars.toRepay += matched;
-            }
+            vars.remainingToRepay -= matched;
+            vars.toRepay += matched;
         }
 
         _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
