@@ -138,10 +138,9 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
 
-        uint256 rewardsListLength = _rewardsList.length;
         uint256 amountOut;
 
-        for (uint256 i; i < rewardsListLength; ) {
+        for (uint256 i; i < _rewardsList.length; ) {
             address reward = _rewardsList[i];
             uint256 claimedAmount = _claimedAmounts[i];
 

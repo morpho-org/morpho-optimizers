@@ -103,16 +103,14 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _user
     ) external onlyMorpho returns (address[] memory rewardsList, uint256[] memory claimedAmounts) {
         rewardsList = _rewardsController.getRewardsList();
-        uint256 rewardsListLength = rewardsList.length;
-        uint256 assetsLength = _assets.length;
-        claimedAmounts = new uint256[](rewardsListLength);
+        claimedAmounts = new uint256[](rewardsList.length);
 
         _updateDataMultiple(_rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
-        for (uint256 i; i < assetsLength; ) {
+        for (uint256 i; i < _assets.length; ) {
             address asset = _assets[i];
 
-            for (uint256 j; j < rewardsListLength; ) {
+            for (uint256 j; j < rewardsList.length; ) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
@@ -359,8 +357,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _user,
         UserAssetBalance[] memory _userAssetBalances
     ) internal {
-        uint256 userAssetBalancesLength = _userAssetBalances.length;
-        for (uint256 i; i < userAssetBalancesLength; ) {
+        for (uint256 i; i < _userAssetBalances.length; ) {
             _updateData(
                 _rewardsController,
                 _user,
