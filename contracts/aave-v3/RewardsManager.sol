@@ -46,15 +46,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @param _asset The address of the incentivized asset.
     /// @param _reward The address of the reward token.
     /// @param _user The address of the user that rewards are accrued on behalf of.
-    /// @param _assetIndex The index of the asset distribution.
-    /// @param _userIndex The index of the asset distribution on behalf of the user.
+    /// @param _assetIndex The reward index for the asset (same as the user's index for this asset when the event is logged).
     /// @param _rewardsAccrued The amount of rewards accrued.
     event Accrued(
         address indexed _asset,
         address indexed _reward,
         address indexed _user,
         uint256 _assetIndex,
-        uint256 _userIndex,
         uint256 _rewardsAccrued
     );
 
@@ -348,14 +346,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 );
 
                 if (rewardDataUpdated || userDataUpdated)
-                    emit Accrued(
-                        _asset,
-                        reward,
-                        _user,
-                        newAssetIndex,
-                        newAssetIndex,
-                        rewardsAccrued
-                    );
+                    emit Accrued(_asset, reward, _user, newAssetIndex, rewardsAccrued);
             }
         }
     }
@@ -498,13 +489,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             currentTimestamp = currentTimestamp > distributionEnd
                 ? distributionEnd
                 : currentTimestamp;
-            uint256 firstTerm = emissionPerSecond *
+            uint256 totalEmitted = emissionPerSecond *
                 (currentTimestamp - lastUpdateTimestamp) *
                 _assetUnit;
             assembly {
-                firstTerm := div(firstTerm, _totalSupply)
+                totalEmitted := div(totalEmitted, _totalSupply)
             }
-            return (_localRewardData.index, (firstTerm + rewardIndex));
+            return (_localRewardData.index, (totalEmitted + rewardIndex));
         }
     }
 

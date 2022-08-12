@@ -151,11 +151,11 @@ contract Lens {
         address underlyingToken = morpho.market(_poolToken).underlyingToken;
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In base currency in wad.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
         .getConfiguration(underlyingToken)
         .getParams();
 
-        assetData.tokenUnit = 10**assetData.reserveDecimals;
+        assetData.tokenUnit = 10**assetData.decimals;
         assetData.debt =
             (_getUserBorrowBalanceInOf(_poolToken, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;
