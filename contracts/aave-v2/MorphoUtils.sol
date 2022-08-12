@@ -87,6 +87,8 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
+    /// @dev Beware that this function does not give the next account susceptible to get matched,
+    ///      nor the next account with highest liquidity. Use it only to go through every account.
     /// @param _poolToken The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.
@@ -275,76 +277,64 @@ abstract contract MorphoUtils is MorphoStorage {
         vars.poolTokensLength = marketsCreated.length;
         vars.userMarkets = userMarkets[_user];
 
-        for (uint256 i; i < vars.poolTokensLength; ) {
+        for (uint256 i; i < vars.poolTokensLength; ++i) {
             vars.poolToken = marketsCreated[i];
             vars.borrowMask = borrowMask[vars.poolToken];
 
-            if (_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) {
-                vars.underlyingAddress = market[vars.poolToken].underlyingToken;
-                vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingAddress);
+            if (!_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) continue;
 
-                if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
+            vars.underlyingToken = market[vars.poolToken].underlyingToken;
+            vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingToken);
 
-                (
-                    assetData.ltv,
-                    assetData.liquidationThreshold,
-                    ,
-                    assetData.reserveDecimals,
+            if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
-                ) = pool.getConfiguration(vars.underlyingAddress).getParamsMemory();
-
-                unchecked {
-                    assetData.tokenUnit = 10**assetData.reserveDecimals;
-                }
-
-                if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                    values.debt += _debtValue(
-                        vars.poolToken,
-                        _user,
-                        vars.underlyingPrice,
-                        assetData.tokenUnit
-                    );
-                }
-
-                // Cache current asset collateral value.
-                uint256 assetCollateralValue;
-                if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
-                    assetCollateralValue = _collateralValue(
-                        vars.poolToken,
-                        _user,
-                        vars.underlyingPrice,
-                        assetData.tokenUnit
-                    );
-                    values.collateral += assetCollateralValue;
-                    // Calculate LTV for borrow.
-                    values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
-                }
-
-                // Update debt variable for borrowed token.
-                if (_poolToken == vars.poolToken && _amountBorrowed > 0)
-                    values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(
-                        assetData.tokenUnit
-                    );
-
-                // Update LT variable for withdraw.
-                if (assetCollateralValue > 0)
-                    values.liquidationThreshold += assetCollateralValue.percentMul(
-                        assetData.liquidationThreshold
-                    );
-
-                // Subtract withdrawn amount from liquidation threshold and collateral.
-                if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
-                    values.collateral -=
-                        (_amountWithdrawn * vars.underlyingPrice) /
-                        assetData.tokenUnit;
-                    values.liquidationThreshold -= ((_amountWithdrawn * vars.underlyingPrice) /
-                        assetData.tokenUnit)
-                    .percentMul(assetData.liquidationThreshold);
-                }
-            }
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
+            .getConfiguration(vars.underlyingToken)
+            .getParamsMemory();
 
             unchecked {
-                ++i;
+                assetData.tokenUnit = 10**assetData.decimals;
+            }
+
+            if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
+                values.debt += _debtValue(
+                    vars.poolToken,
+                    _user,
+                    vars.underlyingPrice,
+                    assetData.tokenUnit
+                );
+            }
+
+            // Cache current asset collateral value.
+            uint256 assetCollateralValue;
+            if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
+                assetCollateralValue = _collateralValue(
+                    vars.poolToken,
+                    _user,
+                    vars.underlyingPrice,
+                    assetData.tokenUnit
+                );
+                values.collateral += assetCollateralValue;
+                // Calculate LTV for borrow.
+                values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
+            }
+
+            // Update debt variable for borrowed token.
+            if (_poolToken == vars.poolToken && _amountBorrowed > 0)
+                values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(assetData.tokenUnit);
+
+            // Update LT variable for withdraw.
+            if (assetCollateralValue > 0)
+                values.liquidationThreshold += assetCollateralValue.percentMul(
+                    assetData.liquidationThreshold
+                );
+
+            // Subtract withdrawn amount from liquidation threshold and collateral.
+            if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
+                uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) / assetData.tokenUnit;
+                values.collateral -= withdrawn;
+                values.liquidationThreshold -= withdrawn.percentMul(assetData.liquidationThreshold);
+                values.maxDebt -= withdrawn.percentMul(assetData.ltv);
             }
         }
     }

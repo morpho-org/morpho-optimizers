@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail # exit on error
-export $(xargs < .env.local)
 
+unset FOUNDRY_TEST
+export FOUNDRY_SRC=contracts/compound/
 
 read -p "🚀❓ Deploy Morpho-Compound's InterestRatesManager on ${NETWORK}? " -n 1 -r
 echo
@@ -11,7 +12,6 @@ then
 	echo "Deploying Morpho-Compound's InterestRatesManager on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts contracts/compound \
         --optimize contracts/compound/InterestRatesManager.sol:InterestRatesManager \
         --verify
 
@@ -28,7 +28,6 @@ then
 	echo "Deploying Morpho-Compound's PositionsManager on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts contracts/compound \
         --optimize contracts/compound/PositionsManager.sol:PositionsManager \
         --verify
 
@@ -45,7 +44,6 @@ then
 	echo "Deploying Morpho-Compound's RewardsManager Implementation on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts contracts/compound \
         --optimize contracts/compound/RewardsManager.sol:RewardsManager \
         --verify
 
@@ -62,7 +60,6 @@ then
 	echo "Deploying Morpho-Compound's Implementation on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts contracts/compound \
         --optimize contracts/compound/Morpho.sol:Morpho \
         --verify
 
@@ -79,13 +76,14 @@ then
 	echo "Deploying Morpho-Compound's Lens Implementation on $NETWORK..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts contracts/compound \
-        --optimize contracts/compound/Lens.sol:Lens \
+        --optimize contracts/compound/lens/Lens.sol:Lens \
         --verify
 
     echo "🎉 Lens Implementation deployed!"
 fi
 
+
+export FOUNDRY_SRC=node_modules/@openzeppelin/contracts/proxy/transparent/
 
 echo "---"
 read -p "🚀❓ Deploy Morpho-Compound's ProxyAdmin on ${NETWORK}? " -n 1 -r
@@ -96,7 +94,6 @@ then
 	echo "Deploying Morpho-Compound's ProxyAdmin on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts node_modules/@openzeppelin/contracts/proxy \
         --optimize node_modules/@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin \
         --verify
 
@@ -116,7 +113,6 @@ then
 	echo "Deploying Morpho-Compound's Proxy on ${NETWORK} for Implementation at ${MORPHO_IMPL_ADDRESS}, owned by ${MORPHO_PROXY_ADMIN_ADDRESS}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts node_modules/@openzeppelin/contracts/proxy \
         --optimize node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy \
         --verify \
         --constructor-args "${MORPHO_IMPL_ADDRESS}" "${MORPHO_PROXY_ADMIN_ADDRESS}" ""
@@ -137,7 +133,6 @@ then
 	echo "Deploying Morpho-Compound's RewardsManager Proxy on ${NETWORK} for Implementation at ${MORPHO_REWARDS_MANAGER_IMPL_ADDRESS}, owned by ${MORPHO_PROXY_ADMIN_ADDRESS}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts node_modules/@openzeppelin/contracts/proxy \
         --optimize node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy \
         --verify \
         --constructor-args "${MORPHO_REWARDS_MANAGER_IMPL_ADDRESS}" "${MORPHO_PROXY_ADMIN_ADDRESS}" ""
@@ -158,7 +153,6 @@ then
 	echo "Deploying Morpho-Compound's Lens Proxy on ${NETWORK} for Implementation at ${MORPHO_LENS_IMPL_ADDRESS}, owned by ${MORPHO_PROXY_ADMIN_ADDRESS}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --contracts node_modules/@openzeppelin/contracts/proxy \
         --optimize node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy \
         --verify \
         --constructor-args "${MORPHO_LENS_IMPL_ADDRESS}" "${MORPHO_PROXY_ADMIN_ADDRESS}" ""

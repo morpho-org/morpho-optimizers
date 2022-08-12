@@ -21,7 +21,7 @@ contract Morpho is MorphoGovernance {
     /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
     event RewardsClaimed(
         address indexed _user,
-        address _reward,
+        address indexed _reward,
         uint256 _amountClaimed,
         bool indexed _traded
     );

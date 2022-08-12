@@ -56,6 +56,32 @@ yarn test:hardhat
 
 ---
 
+## Deployment & Upgrades
+
+### Network mode (default)
+
+Run the Foundry deployment script with:
+
+```bash
+make script-Deploy PROTOCOL=compound NETWORK=goerli
+```
+
+### Local mode
+
+First start a local EVM:
+
+```bash
+make anvil NETWORK=goerli
+```
+
+Then run the Foundry deployment script in a separate shell, using `SMODE=local`:
+
+```bash
+make script-Deploy PROTOCOL=compound NETWORK=goerli SMODE=local
+```
+
+---
+
 ## Style guide 💅
 
 ### Code Formatting
@@ -114,13 +140,11 @@ By default, PR are rebased with `dev` before merging to keep a clean historic of
 
 ## Deploying a contract on a network 🚀
 
-You can run the following command to deploy Morpho's contracts for Aave on Polygon:
+You can run the following command to deploy Morpho-Aave's contracts on Mumbai by using foundry:
 
 ```bash
-yarn deploy:aave:polygon
+make script-DeployMorphoAaveV2 PROTOCOL=aave-v2 NETWORK=polygon-mumbai
 ```
-
-For the other commands, check the [package.json](./package.json) file.
 
 ## Publishing and verifying a contract on Etherscan 📡
 

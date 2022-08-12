@@ -151,11 +151,11 @@ contract Lens {
         address underlyingToken = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
         .getConfiguration(underlyingToken)
         .getParamsMemory();
 
-        assetData.tokenUnit = 10**assetData.reserveDecimals;
+        assetData.tokenUnit = 10**assetData.decimals;
         assetData.debt =
             (_getUserBorrowBalanceInOf(_poolToken, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;

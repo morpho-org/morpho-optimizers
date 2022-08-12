@@ -6,7 +6,7 @@ import "./IOracle.sol";
 interface IIncentivesVault {
     function setOracle(IOracle _newOracle) external;
 
-    function setMorphoDao(address _newMorphoDao) external;
+    function setIncentivesTreasuryVault(address _newIncentivesTreasuryVault) external;
 
     function setBonus(uint256 _newBonus) external;
 
