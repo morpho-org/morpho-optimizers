@@ -17,7 +17,7 @@ contract TestIncentivesVault is Test, Config {
 
     Vm public hevm = Vm(HEVM_ADDRESS);
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address public morphoDao = address(1);
+    address public incentivesTreasuryVault = address(1);
     address public morpho = address(3);
     IncentivesVault public incentivesVault;
     MorphoToken public morphoToken;
@@ -31,7 +31,7 @@ contract TestIncentivesVault is Test, Config {
             IComptroller(comptrollerAddress),
             IMorpho(address(morpho)),
             morphoToken,
-            morphoDao,
+            incentivesTreasuryVault,
             dumbOracle
         );
         ERC20(morphoToken).transfer(
@@ -63,13 +63,13 @@ contract TestIncentivesVault is Test, Config {
         assertEq(incentivesVault.bonus(), bonusToSet);
     }
 
-    function testOnlyOwnerShouldSetMorphoDao() public {
+    function testOnlyOwnerShouldSetIncentivesTreasuryVault() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        incentivesVault.setMorphoDao(morphoDao);
+        incentivesVault.setIncentivesTreasuryVault(incentivesTreasuryVault);
 
-        incentivesVault.setMorphoDao(morphoDao);
-        assertEq(incentivesVault.morphoDao(), morphoDao);
+        incentivesVault.setIncentivesTreasuryVault(incentivesTreasuryVault);
+        assertEq(incentivesVault.incentivesTreasuryVault(), incentivesTreasuryVault);
     }
 
     function testOnlyOwnerShouldSetOracle() public {
@@ -101,7 +101,7 @@ contract TestIncentivesVault is Test, Config {
         incentivesVault.transferTokensToDao(address(morphoToken), 1);
 
         incentivesVault.transferTokensToDao(address(morphoToken), 1);
-        assertEq(ERC20(morphoToken).balanceOf(morphoDao), 1);
+        assertEq(ERC20(morphoToken).balanceOf(incentivesTreasuryVault), 1);
     }
 
     function testFailWhenContractNotActive() public {
@@ -112,7 +112,7 @@ contract TestIncentivesVault is Test, Config {
     }
 
     function testOnlyMorphoShouldTriggerCompConvertFunction() public {
-        incentivesVault.setMorphoDao(address(1));
+        incentivesVault.setIncentivesTreasuryVault(address(1));
         uint256 amount = 100;
         deal(COMP, address(morpho), amount);
 
@@ -127,7 +127,7 @@ contract TestIncentivesVault is Test, Config {
     }
 
     function testShouldGiveTheRightAmountOfRewards() public {
-        incentivesVault.setMorphoDao(address(1));
+        incentivesVault.setIncentivesTreasuryVault(address(1));
         uint256 toApprove = 1_000 ether;
         deal(COMP, address(morpho), toApprove);
 

@@ -23,8 +23,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     }
 
     struct UserData {
-        uint128 index; // The user's index for a specific (asset, reward) couple.
-        uint128 accrued; // The user's accrued rewards for a specific (asset, reward) couple in (in reward token decimals).
+        uint128 index; // The user's index for a specific (asset, reward) pair.
+        uint128 accrued; // The user's accrued rewards for a specific (asset, reward) pair (in reward token decimals).
     }
 
     struct RewardData {
@@ -103,16 +103,14 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _user
     ) external onlyMorpho returns (address[] memory rewardsList, uint256[] memory claimedAmounts) {
         rewardsList = _rewardsController.getRewardsList();
-        uint256 rewardsListLength = rewardsList.length;
-        uint256 assetsLength = _assets.length;
-        claimedAmounts = new uint256[](rewardsListLength);
+        claimedAmounts = new uint256[](rewardsList.length);
 
         _updateDataMultiple(_rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
-        for (uint256 i; i < assetsLength; ) {
+        for (uint256 i; i < _assets.length; ) {
             address asset = _assets[i];
 
-            for (uint256 j; j < rewardsListLength; ) {
+            for (uint256 j; j < rewardsList.length; ) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
@@ -359,8 +357,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _user,
         UserAssetBalance[] memory _userAssetBalances
     ) internal {
-        uint256 userAssetBalancesLength = _userAssetBalances.length;
-        for (uint256 i; i < userAssetBalancesLength; ) {
+        for (uint256 i; i < _userAssetBalances.length; ) {
             _updateData(
                 _rewardsController,
                 _user,
@@ -471,32 +468,29 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         if (currentTimestamp == _localRewardData.lastUpdateTimestamp)
             return (_localRewardData.index, _localRewardData.index);
-        else {
-            (
-                uint256 rewardIndex,
-                uint256 emissionPerSecond,
-                uint256 lastUpdateTimestamp,
-                uint256 distributionEnd
-            ) = morpho.rewardsController().getRewardsData(_asset, _reward);
 
-            if (
-                emissionPerSecond == 0 ||
-                _totalSupply == 0 ||
-                lastUpdateTimestamp == currentTimestamp ||
-                lastUpdateTimestamp >= distributionEnd
-            ) return (_localRewardData.index, rewardIndex);
+        (
+            uint256 rewardIndex,
+            uint256 emissionPerSecond,
+            uint256 lastUpdateTimestamp,
+            uint256 distributionEnd
+        ) = morpho.rewardsController().getRewardsData(_asset, _reward);
 
-            currentTimestamp = currentTimestamp > distributionEnd
-                ? distributionEnd
-                : currentTimestamp;
-            uint256 totalEmitted = emissionPerSecond *
-                (currentTimestamp - lastUpdateTimestamp) *
-                _assetUnit;
-            assembly {
-                totalEmitted := div(totalEmitted, _totalSupply)
-            }
-            return (_localRewardData.index, (totalEmitted + rewardIndex));
+        if (
+            emissionPerSecond == 0 ||
+            _totalSupply == 0 ||
+            lastUpdateTimestamp == currentTimestamp ||
+            lastUpdateTimestamp >= distributionEnd
+        ) return (_localRewardData.index, rewardIndex);
+
+        currentTimestamp = currentTimestamp > distributionEnd ? distributionEnd : currentTimestamp;
+        uint256 totalEmitted = emissionPerSecond *
+            (currentTimestamp - lastUpdateTimestamp) *
+            _assetUnit;
+        assembly {
+            totalEmitted := div(totalEmitted, _totalSupply)
         }
+        return (_localRewardData.index, (totalEmitted + rewardIndex));
     }
 
     /// @dev Returns user balances and total supply of all the assets specified by the assets parameter.

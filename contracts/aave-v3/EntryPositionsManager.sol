@@ -134,11 +134,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            if (matched > 0) {
-                vars.toRepay += matched;
-                vars.remainingToSupply -= matched;
-                delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
-            }
+            vars.toRepay += matched;
+            vars.remainingToSupply -= matched;
+            delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
         }
 
         Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
@@ -234,11 +232,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            if (matched > 0) {
-                toWithdraw += matched;
-                remainingToBorrow -= matched;
-                deltas[_poolToken].p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
-            }
+            toWithdraw += matched;
+            remainingToBorrow -= matched;
+            delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
         }
 
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
@@ -248,7 +244,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
-            deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
+            delta.p2pBorrowAmount += toAddInP2P;
             borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
