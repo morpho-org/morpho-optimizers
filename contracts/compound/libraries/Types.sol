@@ -58,7 +58,7 @@ library Types {
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct LastPoolIndexes {
-        uint32 lastUpdateBlockNumber; // The last time the (pool and peer-to-peer) indexes were updated..
+        uint32 lastUpdateBlockNumber; // The last time the local pool and peer-to-peer indexes were updated.
         uint112 lastSupplyPoolIndex; // Last pool supply index.
         uint112 lastBorrowPoolIndex; // Last pool borrow index.
     }
