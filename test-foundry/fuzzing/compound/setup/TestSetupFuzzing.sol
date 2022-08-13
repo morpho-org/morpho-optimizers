@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/compound/ICompound.sol";
-import "@contracts/compound/interfaces/ICompRewardsLens.sol";
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -11,12 +10,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/IncentivesVault.sol";
 import "@contracts/compound/RewardsManager.sol";
-import "@contracts/compound/CompRewardsLens.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
 import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/Lens.sol";
+import "@contracts/compound/lens/Lens.sol";
 
 import "../../../common/helpers/MorphoToken.sol";
 import "../../../common/helpers/Chains.sol";
@@ -24,9 +22,9 @@ import "../../../compound/helpers/SimplePriceOracle.sol";
 import "../../../compound/helpers/DumbOracle.sol";
 import {User} from "../../../compound/helpers/User.sol";
 import {Utils} from "../../../compound/setup/Utils.sol";
-import "@forge-std/stdlib.sol";
 import "@forge-std/console.sol";
 import "@config/Config.sol";
+import "@forge-std/Vm.sol";
 
 interface IAdminComptroller {
     function _setPriceOracle(SimplePriceOracle newOracle) external returns (uint256);
@@ -34,7 +32,7 @@ interface IAdminComptroller {
     function admin() external view returns (address);
 }
 
-contract TestSetupFuzzing is Config, Utils, stdCheats {
+contract TestSetupFuzzing is Config, Utils {
     using CompoundMath for uint256;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -63,16 +61,19 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     ];
 
     ProxyAdmin public proxyAdmin;
+    TransparentUpgradeableProxy public lensProxy;
     TransparentUpgradeableProxy public morphoProxy;
+
+    Lens internal lensImplV1;
     Morpho internal morphoImplV1;
+    IRewardsManager internal rewardsManagerImplV1;
+
+    Lens internal lens;
     Morpho internal morpho;
     InterestRatesManager internal interestRatesManager;
     TransparentUpgradeableProxy internal rewardsManagerProxy;
-    IRewardsManager internal rewardsManagerImplV1;
     IRewardsManager internal rewardsManager;
-    ICompRewardsLens internal compRewardsLens;
     IPositionsManager internal positionsManager;
-    Lens internal lens;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -138,7 +139,10 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         // make sure the wEth contract has enough ETH to unwrap any amount
         hevm.deal(wEth, type(uint128).max);
 
-        lens = new Lens(address(morpho));
+        lensImplV1 = new Lens();
+        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
+        lens = Lens(address(lensProxy));
+        lens.initialize(address(morpho));
 
         /// Create markets ///
 
@@ -186,7 +190,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         rewardsManager.initialize(address(morpho));
 
         morpho.setRewardsManager(rewardsManager);
-        compRewardsLens = new CompRewardsLens(address(morpho));
 
         // Tip the Morpho contract to ensure that there are no dust errors on withdraw
         deal(aave, address(morpho), 10**ERC20(aave).decimals());
