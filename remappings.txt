@@ -1,6 +1,6 @@
 @forge-std/=lib/forge-std/src/
-@morpho-labs/morpho-utils/=lib/morpho-utils/src/
-@morpho-labs/data-structures/=lib/data-structures/
+@morpho-dao/morpho-utils/=lib/morpho-utils/src/
+@morpho-dao/morpho-data-structures/=lib/morpho-data-structures/contracts/
 @rari-capital/solmate/=lib/solmate/
 
 @aave/core-v3/=lib/aave-v3-core/

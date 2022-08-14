@@ -8,10 +8,10 @@ import "./interfaces/IMorpho.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-labs/data-structures/contracts/HeapOrdering.sol";
-import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
-import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
-import "@morpho-labs/morpho-utils/math/Math.sol";
+import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
+import "@morpho-dao/morpho-utils/math/Math.sol";
 
 /// @title Lens.
 /// @author Morpho Labs.
