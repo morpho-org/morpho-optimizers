@@ -30,7 +30,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     {
         uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.rayDiv(_params.lastPoolSupplyIndex);
         uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(_params.lastPoolBorrowIndex);
-        uint256 p2pGrowthFactor = (poolSupplyGrowthFactor.percentMul(PercentageMath.MAX_BASIS_POINTS - _params.p2pIndexCursor) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor));
+        uint256 p2pGrowthFactor = (poolSupplyGrowthFactor.percentMul(PercentageMath.PERCENTAGE_FACTOR - _params.p2pIndexCursor) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor));
         uint256 p2pSupplyGrowthFactor = p2pGrowthFactor - _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
         uint256 p2pBorrowGrowthFactor = p2pGrowthFactor + _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
         uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0

@@ -257,7 +257,7 @@ abstract contract UsersLens is IndexesLens {
         ) = _getIndexes(_poolToken);
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
         .getConfiguration(underlyingToken)
         .getParamsMemory();
 
@@ -274,7 +274,7 @@ abstract contract UsersLens is IndexesLens {
             poolBorrowIndex
         );
 
-        assetData.tokenUnit = 10**assetData.reserveDecimals;
+        assetData.tokenUnit = 10**assetData.decimals;
         assetData.debt = (totalDebtBalance * assetData.underlyingPrice).divUp(assetData.tokenUnit);
         assetData.collateral =
             (totalCollateralBalance * assetData.underlyingPrice) /
