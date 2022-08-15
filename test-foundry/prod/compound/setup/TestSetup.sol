@@ -16,14 +16,7 @@ import "@forge-std/Test.sol";
 import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Test {
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
-    uint256 public constant INITIAL_BALANCE = 1_000_000;
-
-    // DumbOracle public dumbOracle;
     // MorphoToken public morphoToken;
-    ICompoundOracle public oracle;
-
-    User public treasuryVault;
 
     User public supplier1;
     User public supplier2;
@@ -46,13 +39,6 @@ contract TestSetup is Config, Test {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        // Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-        //     supply: 3e6,
-        //     borrow: 3e6,
-        //     withdraw: 3e6,
-        //     repay: 3e6
-        // });
-
         // vm.prank(address(proxyAdmin));
         // lensImplV1 = Lens(lensProxy.implementation());
         // morphoImplV1 = Morpho(payable(morphoProxy.implementation()));
@@ -67,17 +53,8 @@ contract TestSetup is Config, Test {
 
         rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
 
-        // treasuryVault = new User(morpho);
-
-        // oracle = ICompoundOracle(comptroller.oracle());
-        // morpho.setTreasuryVault(address(treasuryVault));
-
-        // ///  Create Morpho token, deploy Incentives Vault and activate COMP rewards ///
-
         // morphoToken = new MorphoToken(address(this));
-        // dumbOracle = new DumbOracle();
         // morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
-        // morpho.setIncentivesVault(incentivesVault);
     }
 
     function initUsers() internal {
@@ -113,10 +90,8 @@ contract TestSetup is Config, Test {
         vm.label(address(rewardsManager), "RewardsManager");
         // vm.label(address(morphoToken), "MorphoToken");
         vm.label(address(comptroller), "Comptroller");
-        vm.label(address(oracle), "CompoundOracle");
-        // vm.label(address(dumbOracle), "DumbOracle");
+        vm.label(comptroller.oracle(), "CompoundOracle");
         vm.label(address(incentivesVault), "IncentivesVault");
-        vm.label(address(treasuryVault), "TreasuryVault");
         vm.label(address(lens), "Lens");
     }
 

@@ -83,7 +83,8 @@ contract TestBorrow is TestSetup {
             amount,
             10**(test.borrowedDecimals - 6),
             Math.min(
-                test.borrowCap > 0 ? test.borrowCap : type(uint256).max,
+                (test.borrowCap > 0 ? test.borrowCap - 1 : type(uint256).max) -
+                    test.borrowedPoolToken.totalBorrows(),
                 address(test.borrowed) == wEth
                     ? address(test.borrowedPoolToken).balance
                     : test.borrowed.balanceOf(address(test.borrowedPoolToken))
