@@ -298,10 +298,10 @@ abstract contract RatesLens is UsersLens {
     /// @notice Computes and returns peer-to-peer and pool rates for a specific market.
     /// @dev Note: prefer using getAverageSupplyRatePerBlock & getAverageBorrowRatePerBlock to get the experienced supply/borrow rate instead of this.
     /// @param _poolToken The market address.
-    /// @return p2pSupplyRate The market's peer-to-peer supply rate per year (in wad).
-    /// @return p2pBorrowRate The market's peer-to-peer borrow rate per year (in wad).
-    /// @return poolSupplyRate The market's pool supply rate per year (in wad).
-    /// @return poolBorrowRate The market's pool borrow rate per year (in wad).
+    /// @return p2pSupplyRate The market's peer-to-peer supply rate per year (in ray).
+    /// @return p2pBorrowRate The market's peer-to-peer borrow rate per year (in ray).
+    /// @return poolSupplyRate The market's pool supply rate per year (in ray).
+    /// @return poolBorrowRate The market's pool borrow rate per year (in ray).
     function getRatesPerYear(address _poolToken)
         public
         view

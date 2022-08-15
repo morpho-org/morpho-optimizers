@@ -11,8 +11,6 @@ library InterestRatesModel {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
-
     /// ERRORS ///
 
     // Thrown when percentage is above 100%.
@@ -133,7 +131,7 @@ library InterestRatesModel {
 
     /// @notice Computes and returns the peer-to-peer supply rate per year of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pSupplyRate The peer-to-peer supply rate per year (in wad).
+    /// @return p2pSupplyRate The peer-to-peer supply rate per year (in ray).
     function computeP2PSupplyRatePerYear(P2PRateComputeParams memory _params)
         internal
         pure
@@ -141,8 +139,7 @@ library InterestRatesModel {
     {
         p2pSupplyRate =
             _params.p2pRate -
-            ((_params.p2pRate - _params.poolRate) * _params.reserveFactor) /
-            MAX_BASIS_POINTS;
+            (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = Math.min(
@@ -160,7 +157,7 @@ library InterestRatesModel {
 
     /// @notice Computes and returns the peer-to-peer borrow rate per year of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pBorrowRate The peer-to-peer borrow rate per year (in wad).
+    /// @return p2pBorrowRate The peer-to-peer borrow rate per year (in ray).
     function computeP2PBorrowRatePerYear(P2PRateComputeParams memory _params)
         internal
         pure
@@ -168,8 +165,7 @@ library InterestRatesModel {
     {
         p2pBorrowRate =
             _params.p2pRate +
-            ((_params.poolRate - _params.p2pRate) * _params.reserveFactor) /
-            MAX_BASIS_POINTS;
+            (_params.poolRate - _params.p2pRate).percentMul(_params.reserveFactor);
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = Math.min(
