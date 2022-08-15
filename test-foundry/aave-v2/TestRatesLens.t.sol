@@ -381,7 +381,7 @@ contract TestRatesLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance"); // compound rounding error at supply
+        assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
         assertEq(totalBalance, expectedBalanceInP2P, "unexpected total balance");
     }
@@ -605,7 +605,7 @@ contract TestRatesLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance"); // compound rounding errors
+        assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance");
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
         assertApproxEqAbs(totalBalance, expectedBalanceInP2P, 1, "unexpected total balance");
     }
@@ -707,12 +707,6 @@ contract TestRatesLens is TestSetup {
 
         supplier1.withdraw(aDai, type(uint256).max);
 
-        uint256 daiBorrowdelta; // should be (amount / 2) but compound rounding leads to a slightly different amount which we need to compute
-        {
-            (, uint256 p2pBorrowDelta, , ) = morpho.deltas(aDai);
-            daiBorrowdelta = p2pBorrowDelta.rayMul(pool.getReserveNormalizedVariableDebt(dai));
-        }
-
         (
             uint256 supplyRatePerYear,
             uint256 balanceOnPool,
@@ -727,10 +721,10 @@ contract TestRatesLens is TestSetup {
         uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
 
-        uint256 expectedBalanceOnPool = (amount - daiBorrowdelta).rayDiv(poolSupplyIndex).rayMul(
+        uint256 expectedBalanceOnPool = (amount / 2).rayDiv(poolSupplyIndex).rayMul(
             poolSupplyIndex
         );
-        uint256 expectedBalanceInP2P = daiBorrowdelta.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
+        uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
 
         assertGt(supplyRatePerYear, 0, "zero supply rate per block");
         assertApproxEqAbs(
@@ -739,8 +733,8 @@ contract TestRatesLens is TestSetup {
             1,
             "unexpected supply rate per block"
         );
-        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
-        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
+        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
         assertEq(
             totalBalance,
             expectedBalanceOnPool + expectedBalanceInP2P,
@@ -765,12 +759,6 @@ contract TestRatesLens is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
-        uint256 daiSupplydelta; // should be (amount / 2) but compound rounding leads to a slightly different amount which we need to compute
-        {
-            (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
-            daiSupplydelta = p2pSupplyDelta.rayMul(pool.getReserveNormalizedIncome(dai));
-        }
-
         (
             uint256 borrowRatePerYear,
             uint256 balanceOnPool,
@@ -785,10 +773,10 @@ contract TestRatesLens is TestSetup {
         uint256 poolBorrowIndex = pool.getReserveNormalizedVariableDebt(dai);
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
 
-        uint256 expectedBalanceOnPool = (amount - daiSupplydelta).rayDiv(poolBorrowIndex).rayMul(
+        uint256 expectedBalanceOnPool = (amount / 2).rayDiv(poolBorrowIndex).rayMul(
             poolBorrowIndex
         );
-        uint256 expectedBalanceInP2P = daiSupplydelta.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
+        uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
 
         assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
         assertApproxEqAbs(
@@ -797,8 +785,8 @@ contract TestRatesLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
-        assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
+        assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
+        assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
         assertEq(
             totalBalance,
             expectedBalanceOnPool + expectedBalanceInP2P,
