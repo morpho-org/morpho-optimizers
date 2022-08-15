@@ -218,7 +218,7 @@ abstract contract RatesLens is UsersLens {
         // do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
         uint256 p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: InterestRatesModel.percentAvg(
+                p2pRate: PercentageMath.percentAvg(
                     poolSupplyRate,
                     poolBorrowRate,
                     market.p2pIndexCursor
@@ -274,7 +274,7 @@ abstract contract RatesLens is UsersLens {
         // do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
         uint256 p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: InterestRatesModel.percentAvg(
+                p2pRate: PercentageMath.percentAvg(
                     poolSupplyRate,
                     poolBorrowRate,
                     market.p2pIndexCursor
@@ -331,7 +331,7 @@ abstract contract RatesLens is UsersLens {
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
         Types.Market memory market = morpho.market(_poolTokenAddress);
-        uint256 p2pRate = InterestRatesModel.percentAvg(
+        uint256 p2pRate = PercentageMath.percentAvg(
             poolSupplyRate,
             poolBorrowRate,
             market.p2pIndexCursor
