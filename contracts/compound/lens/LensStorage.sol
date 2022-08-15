@@ -5,7 +5,9 @@ import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
 
 import "../libraries/CompoundMath.sol";
+import "../libraries/InterestRatesModel.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LensStorage.

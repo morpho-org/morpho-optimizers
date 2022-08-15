@@ -10,6 +10,7 @@ import "../libraries/aave/ReserveConfiguration.sol";
 import "../libraries/aave/PercentageMath.sol";
 import "../libraries/aave/WadRayMath.sol";
 import "../libraries/aave/DataTypes.sol";
+import "../libraries/InterestRatesModel.sol";
 import "../libraries/Math.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
