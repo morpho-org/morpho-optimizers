@@ -10,8 +10,6 @@ contract TestSupply is TestSetup {
         ERC20 underlying;
         ICToken poolToken;
         uint256 decimals;
-        uint256 underlyingBalanceBefore;
-        uint256 underlyingBalanceAfter;
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
         uint256 p2pSupplyIndex;
@@ -43,19 +41,17 @@ contract TestSupply is TestSetup {
         );
         test.decimals = test.underlying.decimals();
 
+        test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
+        test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
+
         uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
 
         if (address(test.underlying) == wEth) hoax(wEth, amount);
         deal(address(test.underlying), address(supplier1), amount);
 
-        test.underlyingBalanceBefore = test.underlying.balanceOf(address(supplier1));
-        test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
-        test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
-
         supplier1.approve(address(test.underlying), amount);
         supplier1.supply(address(test.poolToken), amount);
 
-        test.underlyingBalanceAfter = test.underlying.balanceOf(address(supplier1));
         test.p2pSupplyIndex = morpho.p2pSupplyIndex(address(test.poolToken));
         test.poolSupplyIndex = test.poolToken.exchangeRateCurrent();
         test.supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
@@ -80,9 +76,9 @@ contract TestSupply is TestSetup {
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
 
         assertEq(
-            test.underlyingBalanceBefore - test.underlyingBalanceAfter,
-            amount,
-            "unexpected underlying balance change"
+            test.underlying.balanceOf(address(supplier1)),
+            0,
+            "unexpected underlying balance after"
         );
         assertLe(
             test.underlyingOnPoolBefore + test.underlyingInP2PBefore,

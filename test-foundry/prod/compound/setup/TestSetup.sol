@@ -7,7 +7,7 @@ import "@contracts/compound/interfaces/IMorpho.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/libraries/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-labs/morpho-utils/math/Math.sol";
+import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
 import "@config/Config.sol";
@@ -87,7 +87,6 @@ contract TestSetup is Config, Test {
                 address(suppliers[i]),
                 string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
             );
-            fillUserBalances(suppliers[i]);
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
@@ -99,19 +98,11 @@ contract TestSetup is Config, Test {
                 address(borrowers[i]),
                 string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
             );
-            fillUserBalances(borrowers[i]);
         }
 
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
-    }
-
-    function fillUserBalances(User _user) internal {
-        deal(dai, address(_user), INITIAL_BALANCE * 1e18);
-        deal(wEth, address(_user), INITIAL_BALANCE * 1e18);
-        deal(usdt, address(_user), INITIAL_BALANCE * 1e6);
-        deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
     function setContractsLabels() internal {

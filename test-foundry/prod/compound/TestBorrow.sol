@@ -13,6 +13,8 @@ contract TestBorrow is TestSetup {
         ERC20 borrowed;
         ICToken borrowedPoolToken;
         uint256 borrowedDecimals;
+        uint256 borrowCap;
+        uint256 collateralFactor;
         uint256 collateralPrice;
         uint256 borrowedPrice;
         uint256 borrowedBalanceBefore;
@@ -30,10 +32,10 @@ contract TestBorrow is TestSetup {
         uint256 unclaimedRewardsAfter;
         uint256 borrowedOnPoolBefore;
         uint256 borrowedInP2PBefore;
-        uint256 totalUnderlyingBefore;
+        uint256 totalBorrowedBefore;
         uint256 borrowedOnPoolAfter;
         uint256 borrowedInP2PAfter;
-        uint256 totalUnderlyingAfter;
+        uint256 totalBorrowedAfter;
     }
 
     function testShouldBorrowAmountP2PAndFromPool(uint8 marketIndex, uint256 amount) public {
@@ -56,27 +58,36 @@ contract TestBorrow is TestSetup {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         test.collateralPrice = oracle.getUnderlyingPrice(address(test.collateralPoolToken));
         test.borrowedPrice = oracle.getUnderlyingPrice(address(test.borrowedPoolToken));
-        test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
 
-        uint256 collateralBalance = test.collateral.balanceOf(address(borrower1));
-
-        amount = bound(
-            amount,
-            10**(test.borrowedDecimals - 3),
-            Math.min(
-                morpho.comptroller().borrowCaps(address(test.borrowedPoolToken)),
-                Math.min(
-                    collateralBalance.mul(test.collateralPrice).div(test.borrowedPrice),
-                    test.borrowedBalanceBefore
-                )
-            )
+        (, test.collateralFactor, ) = morpho.comptroller().markets(
+            address(test.collateralPoolToken)
         );
+        test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
 
+        test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
         test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
 
-        borrower1.approve(address(test.collateral), type(uint256).max);
-        borrower1.supply(address(test.collateralPoolToken), collateralBalance);
+        amount = bound(
+            amount,
+            10**(test.borrowedDecimals - 6),
+            Math.min(
+                test.borrowCap > 0 ? test.borrowCap : type(uint256).max,
+                address(test.borrowed) == wEth
+                    ? address(test.borrowedPoolToken).balance
+                    : test.borrowed.balanceOf(address(test.borrowedPoolToken))
+            )
+        );
+
+        uint256 collateralAmount = amount.mul(test.borrowedPrice).div(test.collateralPrice).div(
+            test.collateralFactor
+        ) + 1e12; // Inflate collateral amount to compensate for compound rounding errors.
+        if (address(test.collateral) == wEth) hoax(wEth, collateralAmount);
+        deal(address(test.collateral), address(borrower1), collateralAmount);
+
+        borrower1.approve(address(test.collateral), collateralAmount);
+        borrower1.supply(address(test.collateralPoolToken), collateralAmount);
+        lens.getCurrentSupplyBalanceInOf(address(test.collateralPoolToken), address(borrower1)); // for logging
         borrower1.borrow(address(test.borrowedPoolToken), amount);
 
         test.borrowedBalanceAfter = test.borrowed.balanceOf(address(borrower1));
@@ -104,12 +115,17 @@ contract TestBorrow is TestSetup {
 
         test.borrowedInP2PBefore = test.balanceInP2P.mul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.mul(test.poolBorrowIndex);
-        test.totalUnderlyingBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
+        test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
 
         assertEq(
-            test.borrowedBalanceAfter - test.borrowedBalanceBefore,
-            amount,
-            "unexpected underlying balance change"
+            test.collateral.balanceOf(address(borrower1)),
+            address(test.collateral) == address(test.borrowed) ? amount : 0,
+            "unexpected collateral balance after"
+        );
+        assertEq(
+            test.borrowedBalanceAfter,
+            test.borrowedBalanceBefore + amount,
+            "unexpected borrowed balance change"
         );
         assertLe(
             test.borrowedOnPoolBefore + test.borrowedInP2PBefore,
@@ -146,13 +162,11 @@ contract TestBorrow is TestSetup {
             borrowedPoolTokens,
             address(borrower1)
         );
-        (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalUnderlyingAfter) = lens
+        (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         for (uint256 i; i < 1_000; ++i) {
-            test.totalUnderlyingBefore = test.totalUnderlyingBefore.mul(
-                1e18 + test.borrowRatePerBlock
-            );
+            test.totalBorrowedBefore = test.totalBorrowedBefore.mul(1e18 + test.borrowRatePerBlock);
             test.borrowedOnPoolBefore = test.borrowedOnPoolBefore.mul(
                 1e18 + test.poolBorrowRatePerBlock
             );
@@ -164,26 +178,26 @@ contract TestBorrow is TestSetup {
         assertApproxEqAbs(
             test.borrowedOnPoolBefore,
             test.borrowedOnPoolAfter,
-            test.borrowedOnPoolBefore / 1e3,
-            "unexpected pool underlying amount"
+            test.borrowedOnPoolBefore / 1e3 + 1,
+            "unexpected pool borrowed amount"
         );
         assertApproxEqAbs(
             test.borrowedInP2PBefore,
             test.borrowedInP2PAfter,
-            test.borrowedInP2PBefore / 1e3,
-            "unexpected p2p underlying amount"
+            test.borrowedInP2PBefore / 1e3 + 1,
+            "unexpected p2p borrowed amount"
         );
         assertApproxEqAbs(
-            test.totalUnderlyingBefore,
-            test.totalUnderlyingAfter,
-            test.totalUnderlyingBefore / 1e3,
-            "unexpected total underlying amount from avg borrow rate"
+            test.totalBorrowedBefore,
+            test.totalBorrowedAfter,
+            test.totalBorrowedBefore / 1e3 + 1,
+            "unexpected total borrowed amount from avg borrow rate"
         );
         assertApproxEqAbs(
             test.borrowedInP2PBefore + test.borrowedOnPoolBefore,
-            test.totalUnderlyingAfter,
-            test.totalUnderlyingBefore / 1e3,
-            "unexpected total underlying amount"
+            test.totalBorrowedAfter,
+            test.totalBorrowedBefore / 1e3 + 1,
+            "unexpected total borrowed amount"
         );
         if (
             test.borrowedOnPoolAfter > 0 &&
