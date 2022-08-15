@@ -1080,7 +1080,7 @@ contract TestLens is TestSetup {
         uint256 amount = _amount + 1e14;
         uint256 collateralPrice = uint256(_collateralPrice) + 1;
 
-        // this is necessary to avoid compound reverting redeem because amount in USD is near zero
+        // this is necessary to avoid Morpho's health factor lower than liquidation threshold
         supplier2.approve(usdc, 100e6);
         supplier2.supply(aUsdc, 100e6);
 
@@ -1151,26 +1151,6 @@ contract TestLens is TestSetup {
 
     function testFuzzLiquidationAboveIncentiveThreshold(uint64 _amount) public {
         testLiquidation(uint256(_amount), 0.55 ether);
-    }
-
-    // /**
-    //  * @dev Because of rounding errors, a liquidatable position worth less than 1e-5 USD cannot get liquidated in practice
-    //  * Explanation with amount = 1e13 (1e-5 USDC borrowed):
-    //  * 0. Before changing the collateralPrice, position is not liquidatable:
-    //  * - debt = 9e-6 USD (compound rounding error, should be 1e-5 USD)
-    //  * - collateral = 2e-5 USD (+ some dust because of rounding errors, should be 2e-5 USD)
-    //  * 1. collateralPrice is set to 0.501 ether, position is under the [1 / liquidationIncentive] threshold:
-    //  * - debt = 9e-6 USD (compound rounding error, should be 1e-5 USD => position should be above the [1 / liquidationIncentive] threshold)
-    //  * - collateral = 1.001e-5 USD
-    //  * 2. Liquidation happens, position is now above the [1 / liquidationIncentive] threshold:
-    //  * - toRepay = 4e-6 USD (debt * closeFactor = 4.5e-6 truncated to 4e-6)
-    //  * - debt = 6e-6 (because of p2p units rounding errors: 9e-6 - 4e-6 ~= 6e-6)
-    //  * 3. After several liquidations, the position is still considered liquidatable but no collateral can be liquidated:
-    //  * - debt = 1e-6 USD
-    //  * - collateral = 1e-6 USD (+ some dust)
-    //  */
-    function testNoRepayLiquidation() public {
-        testLiquidation(0, 0.5 ether);
     }
 
     struct Amounts {
