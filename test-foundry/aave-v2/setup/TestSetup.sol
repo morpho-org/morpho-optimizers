@@ -42,7 +42,6 @@ import "@forge-std/console.sol";
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
