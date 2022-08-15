@@ -8,6 +8,7 @@ import "./RatesLens.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol markets.
 abstract contract MarketsLens is RatesLens {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
     /// EXTERNAL ///
@@ -112,6 +113,10 @@ abstract contract MarketsLens is RatesLens {
     /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor The reserve factor applied to this market.
     /// @return p2pIndexCursor The p2p index cursor applied to this market.
+    /// @return loanToValue The ltv of the given market, set by AAVE.
+    /// @return liquidationThreshold The liquidation threshold of the given market, set by AAVE.
+    /// @return liquidationBonus The liquidation bonus of the given market, set by AAVE.
+    /// @return decimals The number of decimals of the underlying token.
     function getMarketConfiguration(address _poolToken)
         external
         view
@@ -122,7 +127,11 @@ abstract contract MarketsLens is RatesLens {
             bool isPaused,
             bool isPartiallyPaused,
             uint16 reserveFactor,
-            uint16 p2pIndexCursor
+            uint16 p2pIndexCursor,
+            uint256 loanToValue,
+            uint256 liquidationThreshold,
+            uint256 liquidationBonus,
+            uint256 decimals
         )
     {
         underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
@@ -134,6 +143,10 @@ abstract contract MarketsLens is RatesLens {
         isPartiallyPaused = market.isPartiallyPaused;
         reserveFactor = market.reserveFactor;
         p2pIndexCursor = market.p2pIndexCursor;
+
+        (loanToValue, liquidationThreshold, liquidationBonus, decimals, ) = pool
+        .getConfiguration(underlying)
+        .getParamsMemory();
     }
 
     /// PUBLIC ///
