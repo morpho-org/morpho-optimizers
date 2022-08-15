@@ -7,46 +7,47 @@ NETWORK?=eth-mainnet
 
 FOUNDRY_SRC=contracts/${PROTOCOL}/
 FOUNDRY_TEST=test-foundry/${PROTOCOL}/
+FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
+
+FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
 
 ifdef FOUNDRY_ETH_RPC_URL
   FOUNDRY_TEST=test-foundry/prod/${PROTOCOL}/
-endif
+else
+  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
-FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
-FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
-
-ifeq (${NETWORK}, eth-mainnet)
-  FOUNDRY_CHAIN_ID=1
-  FOUNDRY_FORK_BLOCK_NUMBER?=14292587
-endif
-
-ifeq (${NETWORK}, eth-ropsten)
-  FOUNDRY_CHAIN_ID=3
-endif
-
-ifeq (${NETWORK}, eth-goerli)
-  FOUNDRY_CHAIN_ID=5
-endif
-
-ifeq (${NETWORK}, polygon-mainnet)
-  ifeq (${PROTOCOL}, aave-v3)
-    FOUNDRY_FORK_BLOCK_NUMBER?=29116728
-    FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
+  ifeq (${NETWORK}, eth-mainnet)
+    FOUNDRY_CHAIN_ID=1
+    FOUNDRY_FORK_BLOCK_NUMBER?=14292587
   endif
 
-  FOUNDRY_CHAIN_ID=137
-  FOUNDRY_FORK_BLOCK_NUMBER?=22116728
-endif
-
-ifeq (${NETWORK}, avalanche-mainnet)
-  ifeq (${PROTOCOL}, aave-v3)
-    FOUNDRY_FORK_BLOCK_NUMBER?=15675271
+  ifeq (${NETWORK}, eth-ropsten)
+    FOUNDRY_CHAIN_ID=3
   endif
 
-  FOUNDRY_CHAIN_ID=43114
-  FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-  FOUNDRY_FORK_BLOCK_NUMBER?=12675271
+  ifeq (${NETWORK}, eth-goerli)
+    FOUNDRY_CHAIN_ID=5
+  endif
+
+  ifeq (${NETWORK}, polygon-mainnet)
+    ifeq (${PROTOCOL}, aave-v3)
+      FOUNDRY_FORK_BLOCK_NUMBER?=29116728
+      FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
+    endif
+  
+    FOUNDRY_CHAIN_ID=137
+    FOUNDRY_FORK_BLOCK_NUMBER?=22116728
+  endif
+
+  ifeq (${NETWORK}, avalanche-mainnet)
+    ifeq (${PROTOCOL}, aave-v3)
+      FOUNDRY_FORK_BLOCK_NUMBER?=15675271
+    endif
+
+    FOUNDRY_CHAIN_ID=43114
+    FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+    FOUNDRY_FORK_BLOCK_NUMBER?=12675271
+  endif
 endif
 
 ifeq (${SMODE}, local)
