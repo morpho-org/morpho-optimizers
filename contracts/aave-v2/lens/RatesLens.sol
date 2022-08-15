@@ -56,7 +56,7 @@ abstract contract RatesLens is UsersLens {
             indexes.p2pSupplyIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
-        ) = _getCurrentP2PSupplyIndex(_poolToken);
+        ) = _getSupplyIndexes(_poolToken);
 
         if (_amount > 0) {
             uint256 deltaInUnderlying = morpho.deltas(_poolToken).p2pBorrowDelta.rayMul(
@@ -136,7 +136,7 @@ abstract contract RatesLens is UsersLens {
             indexes.p2pBorrowIndex,
             indexes.poolSupplyIndex,
             indexes.poolBorrowIndex
-        ) = _getCurrentP2PBorrowIndex(_poolToken);
+        ) = _getBorrowIndexes(_poolToken);
 
         if (_amount > 0) {
             uint256 deltaInUnderlying = morpho.deltas(_poolToken).p2pSupplyDelta.rayMul(
@@ -204,7 +204,7 @@ abstract contract RatesLens is UsersLens {
             uint256 p2pSupplyIndex,
             uint256 poolSupplyIndex,
 
-        ) = _getCurrentP2PSupplyIndex(_poolToken);
+        ) = _getSupplyIndexes(_poolToken);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
@@ -259,7 +259,7 @@ abstract contract RatesLens is UsersLens {
             uint256 p2pBorrowIndex,
             ,
             uint256 poolBorrowIndex
-        ) = _getCurrentP2PBorrowIndex(_poolToken);
+        ) = _getBorrowIndexes(_poolToken);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;

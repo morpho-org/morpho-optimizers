@@ -356,7 +356,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 p2pSupplyIndex,
             uint256 poolSupplyIndex,
 
-        ) = _getCurrentP2PSupplyIndex(_poolToken);
+        ) = _getSupplyIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (balanceOnPool, balanceInP2P, totalBalance) = _getSupplyBalanceInOf(
@@ -389,7 +389,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 p2pBorrowIndex,
             ,
             uint256 poolBorrowIndex
-        ) = _getCurrentP2PBorrowIndex(_poolToken);
+        ) = _getBorrowIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (balanceOnPool, balanceInP2P, totalBalance) = _getBorrowBalanceInOf(

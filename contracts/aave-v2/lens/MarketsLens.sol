@@ -196,7 +196,7 @@ abstract contract MarketsLens is RatesLens {
             uint256 p2pSupplyIndex,
             uint256 poolSupplyIndex,
 
-        ) = _getCurrentP2PSupplyIndex(_poolToken);
+        ) = _getSupplyIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
@@ -225,7 +225,7 @@ abstract contract MarketsLens is RatesLens {
             uint256 p2pBorrowIndex,
             ,
             uint256 poolBorrowIndex
-        ) = _getCurrentP2PBorrowIndex(_poolToken);
+        ) = _getBorrowIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);

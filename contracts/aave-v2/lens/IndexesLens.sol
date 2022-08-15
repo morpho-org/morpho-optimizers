@@ -18,7 +18,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 currentP2PSupplyIndex)
     {
-        (, currentP2PSupplyIndex, , ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (, currentP2PSupplyIndex, , ) = _getSupplyIndexes(_poolToken);
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
@@ -29,7 +29,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 currentP2PBorrowIndex)
     {
-        (, currentP2PBorrowIndex, , ) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, currentP2PBorrowIndex, , ) = _getBorrowIndexes(_poolToken);
     }
 
     /// @notice Returns the updated peer-to-peer and pool indexes.
@@ -115,7 +115,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return currentP2PSupplyIndex The updated peer-to-peer supply index.
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
-    function _getCurrentP2PSupplyIndex(address _poolToken)
+    function _getSupplyIndexes(address _poolToken)
         internal
         view
         returns (
@@ -156,7 +156,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return currentP2PBorrowIndex The updated peer-to-peer borrow index.
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
-    function _getCurrentP2PBorrowIndex(address _poolToken)
+    function _getBorrowIndexes(address _poolToken)
         internal
         view
         returns (
