@@ -38,16 +38,32 @@ contract TestBorrow is TestSetup {
         uint256 totalBorrowedAfter;
     }
 
-    function testShouldBorrowAmountP2PAndFromPool(uint8 marketIndex, uint256 amount) public {
+    function testShouldBorrowAmountP2PAndFromPool(
+        uint8 collateralMarketIndex,
+        uint8 borrowMarketIndex,
+        uint256 amount
+    ) public {
         address[] memory markets = lens.getAllMarkets();
 
-        marketIndex = uint8(marketIndex % markets.length);
+        borrowMarketIndex = uint8(borrowMarketIndex % markets.length);
+        collateralMarketIndex = uint8(collateralMarketIndex % markets.length);
 
         BorrowTest memory test;
-        test.collateral = ERC20(wEth);
-        test.collateralPoolToken = ICToken(cEth);
+        test.collateralPoolToken = ICToken(markets[collateralMarketIndex]);
+        test.borrowedPoolToken = ICToken(markets[borrowMarketIndex]);
+
+        (, test.collateralFactor, ) = morpho.comptroller().markets(
+            address(test.collateralPoolToken)
+        );
+        vm.assume(test.collateralFactor > 0);
+        test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
+
+        test.collateral = ERC20(
+            address(test.collateralPoolToken) == morpho.cEth()
+                ? morpho.wEth()
+                : test.collateralPoolToken.underlying()
+        );
         test.collateralDecimals = test.collateral.decimals();
-        test.borrowedPoolToken = ICToken(markets[marketIndex]);
         test.borrowed = ERC20(
             address(test.borrowedPoolToken) == morpho.cEth()
                 ? morpho.wEth()
@@ -58,11 +74,6 @@ contract TestBorrow is TestSetup {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         test.collateralPrice = oracle.getUnderlyingPrice(address(test.collateralPoolToken));
         test.borrowedPrice = oracle.getUnderlyingPrice(address(test.borrowedPoolToken));
-
-        (, test.collateralFactor, ) = morpho.comptroller().markets(
-            address(test.collateralPoolToken)
-        );
-        test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
 
         test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
         test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
