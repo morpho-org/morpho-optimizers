@@ -112,7 +112,7 @@ contract TestRepay is TestSetup {
 
     // There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity. First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
     function testRepay2_2() public {
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -276,7 +276,7 @@ contract TestRepay is TestSetup {
 
     // The borrower is matched to 2 x NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`. Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
     function testRepay2_4() public {
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -382,8 +382,8 @@ contract TestRepay is TestSetup {
     function testDeltaRepay() public {
         // Allows only 10 unmatch borrowers
         if (block.chainid == Chains.POLYGON_MAINNET)
-            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
-        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
+            _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
+        else _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -549,7 +549,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepayAll() public {
         // Allows only 10 unmatch suppliers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 2.4e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 2.4e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
