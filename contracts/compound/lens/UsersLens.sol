@@ -128,7 +128,7 @@ abstract contract UsersLens is IndexesLens {
     /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
     /// @param _user The user of whom to get the health factor.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return the health factor of the given user (in wad).
+    /// @return The health factor of the given user (in wad).
     function getUserHealthFactor(address _user, address[] calldata _updatedMarkets)
         external
         view
