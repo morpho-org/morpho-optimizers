@@ -210,7 +210,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
 
-        // do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
+        // Do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
         uint256 p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
                 p2pRate: PercentageMath.weightedAvg(
@@ -265,7 +265,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
 
-        // do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
+        // Do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
         uint256 p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
                 p2pRate: PercentageMath.weightedAvg(

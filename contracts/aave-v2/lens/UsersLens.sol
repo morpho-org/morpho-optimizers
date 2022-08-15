@@ -168,7 +168,7 @@ abstract contract UsersLens is IndexesLens {
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
-    /// @return the liquidity data of the user.
+    /// @return The liquidity data of the user.
     function getUserBalanceStates(address _user) public view returns (Types.LiquidityData memory) {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
@@ -277,7 +277,7 @@ abstract contract UsersLens is IndexesLens {
 
     /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
     /// @param _user The user of whom to get the health factor.
-    /// @return the health factor of the given user (in wad).
+    /// @return The health factor of the given user (in wad).
     function getUserHealthFactor(address _user) public view returns (uint256) {
         return getUserHypotheticalHealthFactor(_user, address(0), 0, 0);
     }
