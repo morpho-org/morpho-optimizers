@@ -100,7 +100,7 @@ contract TestSetup is Config, Utils {
             comptroller,
             IMorpho(address(morpho)),
             morphoToken,
-            morphoDao,
+            address(treasuryVault),
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);

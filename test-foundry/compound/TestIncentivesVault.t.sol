@@ -24,6 +24,8 @@ contract TestIncentivesVault is TestSetup {
     }
 
     function testOnlyOwnerShouldSetIncentivesTreasuryVault() public {
+        address incentivesTreasuryVault = address(1);
+
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
         incentivesVault.setIncentivesTreasuryVault(incentivesTreasuryVault);
@@ -61,7 +63,7 @@ contract TestIncentivesVault is TestSetup {
         incentivesVault.transferTokensToDao(address(morphoToken), 1);
 
         incentivesVault.transferTokensToDao(address(morphoToken), 1);
-        assertEq(ERC20(morphoToken).balanceOf(incentivesTreasuryVault), 1);
+        assertEq(ERC20(morphoToken).balanceOf(address(treasuryVault)), 1);
     }
 
     function testFailWhenContractNotActive() public {
