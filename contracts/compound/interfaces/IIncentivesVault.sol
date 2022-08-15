@@ -8,7 +8,9 @@ interface IIncentivesVault {
 
     function bonus() external view returns (uint256);
 
-    function morphoDao() external view returns (address);
+    function MAX_BASIS_POINTS() external view returns (uint256);
+
+    function incentivesTreasuryVault() external view returns (address);
 
     function oracle() external view returns (IOracle);
 
