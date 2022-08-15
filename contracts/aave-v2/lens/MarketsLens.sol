@@ -40,8 +40,8 @@ abstract contract MarketsLens is RatesLens {
     }
 
     /// @notice Returns all created markets.
-    /// @return The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory) {
+    /// @return marketsCreated The list of market addresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated) {
         return morpho.getMarketsCreated();
     }
 
@@ -50,10 +50,10 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolTokenAddress The address of the market of which to get main data.
     /// @return avgSupplyRatePerYear The average supply rate experienced on the given market.
     /// @return avgBorrowRatePerYear The average borrow rate experienced on the given market.
-    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, including the supply delta (in underlying).
-    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, including the borrow delta (in underlying).
-    /// @return poolSupplyAmount The total supplied amount on the underlying pool, without the supply delta (in underlying).
-    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, without the borrow delta (in underlying).
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function getMainMarketData(address _poolTokenAddress)
         external
         view
@@ -140,5 +140,51 @@ abstract contract MarketsLens is RatesLens {
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
         reserveFactor = marketParams.reserveFactor;
         p2pIndexCursor = marketParams.p2pIndexCursor;
+    }
+
+    /// PUBLIC ///
+
+    /// @notice Computes and returns the total distribution of supply for a given market.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
+    /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
+    function getTotalMarketSupply(address _poolTokenAddress)
+        public
+        view
+        returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount)
+    {
+        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(
+            _poolTokenAddress
+        );
+
+        (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
+            _poolTokenAddress,
+            p2pSupplyIndex,
+            poolSupplyIndex
+        );
+    }
+
+    /// @notice Computes and returns the total distribution of borrows for a given market.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
+    /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
+    function getTotalMarketBorrow(address _poolTokenAddress)
+        public
+        view
+        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount)
+    {
+        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(
+            _poolTokenAddress
+        );
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+        );
+
+        (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
+            reserve,
+            p2pBorrowIndex,
+            poolBorrowIndex
+        );
     }
 }

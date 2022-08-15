@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "../libraries/aave/PercentageMath.sol";
-import "../libraries/aave/WadRayMath.sol";
-import "../libraries/Math.sol";
+import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
+import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-labs/morpho-utils/math/Math.sol";
+
 import "./Types.sol";
 
 library InterestRatesModel {
@@ -12,12 +13,18 @@ library InterestRatesModel {
 
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
 
+    /// ERRORS ///
+
+    // Thrown when percentage is above 100%.
+    error PercentageTooHigh();
+
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
-        uint256 p2pGrowthFactor; // Morpho peer-to-peer's median index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in ray).
+        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in ray).
+        uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in ray).
+        uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in ray).
     }
 
     struct P2PIndexComputeParams {
@@ -27,7 +34,6 @@ library InterestRatesModel {
         uint256 lastP2PIndex; // Morpho's last stored peer-to-peer index.
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
-        uint256 reserveFactor; // The reserve factor of the given market (in bps).
     }
 
     struct P2PRateComputeParams {
@@ -45,12 +51,14 @@ library InterestRatesModel {
     /// @param _newPoolBorrowIndex The pool's last current borrow index.
     /// @param _lastPoolIndexes The pool's last stored indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
+    /// @param _reserveFactor The reserve factor of the given market.
     /// @return growthFactors_ The pool's indexes growth factor (in wad).
     function computeGrowthFactors(
         uint256 _newPoolSupplyIndex,
         uint256 _newPoolBorrowIndex,
         Types.PoolIndexes memory _lastPoolIndexes,
-        uint256 _p2pIndexCursor
+        uint256 _p2pIndexCursor,
+        uint256 _reserveFactor
     ) internal pure returns (GrowthFactors memory growthFactors_) {
         growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.rayDiv(
             _lastPoolIndexes.poolSupplyIndex
@@ -58,9 +66,30 @@ library InterestRatesModel {
         growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.rayDiv(
             _lastPoolIndexes.poolBorrowIndex
         );
-        growthFactors_.p2pGrowthFactor = (growthFactors_.poolSupplyGrowthFactor.percentMul(
-            MAX_BASIS_POINTS - _p2pIndexCursor
-        ) + growthFactors_.poolBorrowGrowthFactor.percentMul(_p2pIndexCursor));
+
+        if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {
+            uint256 p2pGrowthFactor = percentAvg(
+                growthFactors_.poolBorrowGrowthFactor,
+                growthFactors_.poolSupplyGrowthFactor,
+                _p2pIndexCursor
+            );
+
+            growthFactors_.p2pSupplyGrowthFactor =
+                p2pGrowthFactor -
+                (p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor).percentMul(
+                    _reserveFactor
+                );
+            growthFactors_.p2pBorrowGrowthFactor =
+                p2pGrowthFactor +
+                (growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor).percentMul(
+                    _reserveFactor
+                );
+        } else {
+            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
+            // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.
+            growthFactors_.p2pSupplyGrowthFactor = growthFactors_.poolBorrowGrowthFactor;
+            growthFactors_.p2pBorrowGrowthFactor = growthFactors_.poolBorrowGrowthFactor;
+        }
     }
 
     /// @notice Computes and returns the new peer-to-peer supply index of a market given its parameters.
@@ -71,11 +100,8 @@ library InterestRatesModel {
         pure
         returns (uint256 newP2PSupplyIndex_)
     {
-        uint256 p2pSupplyGrowthFactor = _params.p2pGrowthFactor -
-            (_params.reserveFactor.percentMul(_params.p2pGrowthFactor - _params.poolGrowthFactor));
-
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PSupplyIndex_ = _params.lastP2PIndex.rayMul(p2pSupplyGrowthFactor);
+            newP2PSupplyIndex_ = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.wadToRay().rayMul(_params.lastPoolIndex).rayDiv(
@@ -85,7 +111,7 @@ library InterestRatesModel {
             ); // In ray.
 
             newP2PSupplyIndex_ = _params.lastP2PIndex.rayMul(
-                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(_params.p2pGrowthFactor) +
                     shareOfTheDelta.rayMul(_params.poolGrowthFactor)
             );
         }
@@ -99,11 +125,8 @@ library InterestRatesModel {
         pure
         returns (uint256 newP2PBorrowIndex_)
     {
-        uint256 p2pBorrowGrowthFactor = _params.p2pGrowthFactor +
-            (_params.reserveFactor.percentMul(_params.poolGrowthFactor - _params.p2pGrowthFactor));
-
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PBorrowIndex_ = _params.lastP2PIndex.rayMul(p2pBorrowGrowthFactor);
+            newP2PBorrowIndex_ = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.wadToRay().rayMul(_params.lastPoolIndex).rayDiv(
@@ -113,7 +136,7 @@ library InterestRatesModel {
             ); // In ray.
 
             newP2PBorrowIndex_ = _params.lastP2PIndex.rayMul(
-                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(_params.p2pGrowthFactor) +
                     shareOfTheDelta.rayMul(_params.poolGrowthFactor)
             );
         }
@@ -121,13 +144,13 @@ library InterestRatesModel {
 
     /// @notice Computes and returns the peer-to-peer supply rate per year of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pSupplyRate_ The peer-to-peer supply rate per year.
+    /// @return p2pSupplyRate The peer-to-peer supply rate per year.
     function computeP2PSupplyRatePerYear(P2PRateComputeParams memory _params)
         internal
         pure
-        returns (uint256 p2pSupplyRate_)
+        returns (uint256 p2pSupplyRate)
     {
-        p2pSupplyRate_ =
+        p2pSupplyRate =
             _params.p2pRate -
             ((_params.p2pRate - _params.poolRate) * _params.reserveFactor) /
             MAX_BASIS_POINTS;
@@ -140,21 +163,21 @@ library InterestRatesModel {
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
-            p2pSupplyRate_ =
-                p2pSupplyRate_.rayMul(WadRayMath.RAY - shareOfTheDelta) +
+            p2pSupplyRate =
+                p2pSupplyRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
                 _params.poolRate.rayMul(shareOfTheDelta);
         }
     }
 
     /// @notice Computes and returns the peer-to-peer borrow rate per year of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return p2pBorrowRate_ The peer-to-peer borrow rate per year.
+    /// @return p2pBorrowRate The peer-to-peer borrow rate per year.
     function computeP2PBorrowRatePerYear(P2PRateComputeParams memory _params)
         internal
         pure
-        returns (uint256 p2pBorrowRate_)
+        returns (uint256 p2pBorrowRate)
     {
-        p2pBorrowRate_ =
+        p2pBorrowRate =
             _params.p2pRate +
             ((_params.poolRate - _params.p2pRate) * _params.reserveFactor) /
             MAX_BASIS_POINTS;
@@ -167,9 +190,25 @@ library InterestRatesModel {
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
-            p2pBorrowRate_ =
-                p2pBorrowRate_.rayMul(WadRayMath.RAY - shareOfTheDelta) +
+            p2pBorrowRate =
+                p2pBorrowRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
                 _params.poolRate.rayMul(shareOfTheDelta);
         }
+    }
+
+    /// @notice Executes a percent average, given an interval [x, y] and a percent p: x * (1 - p) + y * p
+    /// @param x The value the start of the interval (included).
+    /// @param y The value the end of the interval (included).
+    /// @param percentage The percentage of the interval to be calculated.
+    /// @return the average of x and y, weighted by percentage.
+    function percentAvg(
+        uint256 x,
+        uint256 y,
+        uint256 percentage
+    ) internal pure returns (uint256) {
+        if (percentage > PercentageMath.PERCENTAGE_FACTOR) revert PercentageTooHigh();
+
+        return
+            x.percentMul(PercentageMath.PERCENTAGE_FACTOR - percentage) + y.percentMul(percentage);
     }
 }
