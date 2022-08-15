@@ -67,7 +67,7 @@ library InterestRatesModel {
             _lastPoolIndexes.poolBorrowIndex
         );
 
-        uint256 p2pGrowthFactor = percentAvg(
+        uint256 p2pGrowthFactor = PercentageMath.percentAvg(
             growthFactors.poolSupplyGrowthFactor,
             growthFactors.poolBorrowGrowthFactor,
             _p2pIndexCursor
@@ -183,21 +183,5 @@ library InterestRatesModel {
                 p2pBorrowRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
                 _params.poolRate.rayMul(shareOfTheDelta);
         }
-    }
-
-    /// @notice Executes a percent average, given an interval [x, y] and a percent p: x * (1 - p) + y * p
-    /// @param x The value the start of the interval (included).
-    /// @param y The value the end of the interval (included).
-    /// @param percentage The percentage of the interval to be calculated.
-    /// @return the average of x and y, weighted by percentage.
-    function percentAvg(
-        uint256 x,
-        uint256 y,
-        uint256 percentage
-    ) internal pure returns (uint256) {
-        if (percentage > PercentageMath.PERCENTAGE_FACTOR) revert PercentageTooHigh();
-
-        return
-            x.percentMul(PercentageMath.PERCENTAGE_FACTOR - percentage) + y.percentMul(percentage);
     }
 }
