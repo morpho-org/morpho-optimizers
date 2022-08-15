@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import {ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+
 import "./IndexesLens.sol";
 
 /// @title UsersLens.
@@ -59,20 +61,27 @@ abstract contract UsersLens is IndexesLens {
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        Types.LiquidityData memory data = getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
+        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
+            _user,
+            address(0),
+            0,
+            0
+        );
         Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
             _user,
             _poolToken,
             oracle
         );
-        uint256 healthFactor = data.debt > 0
-            ? data.liquidationThreshold.wadDiv(data.debt)
+        uint256 healthFactor = liquidityData.debt > 0
+            ? liquidityData.liquidationThreshold.wadDiv(liquidityData.debt)
             : type(uint256).max;
 
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
-        borrowable = ((data.maxDebt - data.debt) * assetData.tokenUnit) / assetData.underlyingPrice;
+        borrowable =
+            ((liquidityData.maxDebt - liquidityData.debt) * assetData.tokenUnit) /
+            assetData.underlyingPrice;
         withdrawable = (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice;
 
         if (assetData.ltv != 0)
@@ -105,9 +114,6 @@ abstract contract UsersLens is IndexesLens {
         (, , uint256 liquidationBonus, uint256 collateralReserveDecimals, ) = pool
         .getConfiguration(collateralToken)
         .getParamsMemory();
-        (, , , uint256 borrowedReserveDecimals, ) = pool
-        .getConfiguration(borrowedToken)
-        .getParamsMemory();
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 borrowedPrice = oracle.getAssetPrice(borrowedToken);
@@ -115,7 +121,7 @@ abstract contract UsersLens is IndexesLens {
 
         return
             Math.min(
-                ((totalCollateralBalance * collateralPrice * 10**borrowedReserveDecimals) /
+                ((totalCollateralBalance * collateralPrice * 10**ERC20(borrowedToken).decimals()) /
                     (borrowedPrice * 10**collateralReserveDecimals))
                     .percentDiv(liquidationBonus),
                 totalBorrowBalance.percentMul(DEFAULT_LIQUIDATION_CLOSE_FACTOR)
