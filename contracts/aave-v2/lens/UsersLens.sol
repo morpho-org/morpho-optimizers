@@ -59,47 +59,20 @@ abstract contract UsersLens is IndexesLens {
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
-        Types.LiquidityData memory data;
-        Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory createdMarkets = morpho.getMarketsCreated();
-        bytes32 userMarkets = morpho.userMarkets(_user);
 
-        uint256 nbCreatedMarkets = createdMarkets.length;
-        for (uint256 i; i < nbCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
-
-            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(userMarkets, poolToken)) {
-                assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
-
-                data.collateralValue += assetData.collateralValue;
-                data.debtValue += assetData.debtValue;
-                data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-                data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
-                );
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
-
-        data.collateralValue += assetData.collateralValue;
-        data.debtValue += assetData.debtValue;
-        data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-        data.liquidationThresholdValue += assetData.collateralValue.percentMul(
-            assetData.liquidationThreshold
+        Types.LiquidityData memory data = getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
+        Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            _user,
+            _poolTokenAddress,
+            oracle
         );
-
-        data.healthFactor = data.debtValue == 0
-            ? type(uint256).max
-            : data.liquidationThresholdValue.wadDiv(data.debtValue);
+        uint256 healthFactor = data.debtValue > 0
+            ? data.liquidationThresholdValue.wadDiv(data.debtValue)
+            : type(uint256).max;
 
         // Not possible to withdraw nor borrow.
-        if (data.healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
+        if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
         if (data.debtValue == 0)
             withdrawable =
@@ -321,10 +294,6 @@ abstract contract UsersLens is IndexesLens {
                 ++i;
             }
         }
-
-        liquidityData.healthFactor = liquidityData.debtValue == 0
-            ? type(uint256).max
-            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
