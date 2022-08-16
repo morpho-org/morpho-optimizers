@@ -112,4 +112,18 @@ contract TestWithdraw is TestSetup {
             supplier1.withdraw(address(test.poolToken), 0);
         }
     }
+
+    function testShouldNotWithdrawFromUnenteredMarket(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            WithdrawTest memory test;
+            test.poolToken = ICToken(activeMarkets[marketIndex]);
+
+            vm.expectRevert(PositionsManager.UserNotMemberOfMarket.selector);
+            supplier1.withdraw(address(test.poolToken), _amount);
+        }
+    }
 }
