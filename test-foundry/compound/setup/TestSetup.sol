@@ -78,13 +78,6 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
-
         comptroller = IComptroller(comptrollerAddress);
         interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
@@ -102,7 +95,7 @@ contract TestSetup is Config, Utils {
             positionsManager,
             interestRatesManager,
             comptroller,
-            defaultMaxGasForMatching,
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6}),
             1,
             20,
             cEth,

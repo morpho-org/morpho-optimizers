@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../interfaces/compound/ICompound.sol";
-import "../interfaces/IMorpho.sol";
-
-import "../libraries/CompoundMath.sol";
-
 import "./IndexesLens.sol";
 
 /// @title UsersLens.
@@ -73,19 +68,14 @@ abstract contract UsersLens is IndexesLens {
         // Not possible to withdraw nor borrow.
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
-            assetData.underlyingPrice
-        );
-
+        borrowable = (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice);
         withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
         if (assetData.collateralFactor != 0) {
             withdrawable = CompoundMath.min(
                 withdrawable,
-                differenceInUnderlying.div(assetData.collateralFactor)
+                borrowable.div(assetData.collateralFactor)
             );
         }
-
-        borrowable = differenceInUnderlying;
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
@@ -138,7 +128,7 @@ abstract contract UsersLens is IndexesLens {
     /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
     /// @param _user The user of whom to get the health factor.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return the health factor of the given user (in wad).
+    /// @return The health factor of the given user (in wad).
     function getUserHealthFactor(address _user, address[] calldata _updatedMarkets)
         external
         view
@@ -221,8 +211,10 @@ abstract contract UsersLens is IndexesLens {
     {
         (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
 
-        balanceOnPool = morpho.supplyBalanceInOf(_poolToken, _user).onPool.mul(poolSupplyIndex);
-        balanceInP2P = morpho.supplyBalanceInOf(_poolToken, _user).inP2P.mul(p2pSupplyIndex);
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
+
+        balanceOnPool = supplyBalance.onPool.mul(poolSupplyIndex);
+        balanceInP2P = supplyBalance.inP2P.mul(p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -244,8 +236,10 @@ abstract contract UsersLens is IndexesLens {
     {
         (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
 
-        balanceOnPool = morpho.borrowBalanceInOf(_poolToken, _user).onPool.mul(poolBorrowIndex);
-        balanceInP2P = morpho.borrowBalanceInOf(_poolToken, _user).inP2P.mul(p2pBorrowIndex);
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
+
+        balanceOnPool = borrowBalance.onPool.mul(poolBorrowIndex);
+        balanceInP2P = borrowBalance.inP2P.mul(p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
