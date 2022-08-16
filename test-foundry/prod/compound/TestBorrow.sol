@@ -17,6 +17,8 @@ contract TestBorrow is TestSetup {
         uint256 collateralFactor;
         uint256 collateralPrice;
         uint256 borrowedPrice;
+        uint256 borrowedAmount;
+        uint256 collateralAmount;
         uint256 borrowedBalanceBefore;
         uint256 borrowedBalanceAfter;
         uint256 morphoBalanceOnPoolBefore;
@@ -38,24 +40,35 @@ contract TestBorrow is TestSetup {
         uint256 totalBorrowedAfter;
     }
 
-    function testShouldBorrowAmountP2PAndFromPool(
-        uint8 collateralMarketIndex,
-        uint8 borrowMarketIndex,
-        uint256 amount
-    ) public {
-        address[] memory markets = lens.getAllMarkets();
+    function _boundBorrowedAmount(BorrowTest memory test, uint96 _amount)
+        internal
+        returns (uint256)
+    {
+        return
+            bound(
+                _amount,
+                10**(test.borrowedDecimals - 6),
+                Math.min(
+                    (test.borrowCap > 0 ? test.borrowCap - 1 : type(uint256).max) -
+                        test.borrowedPoolToken.totalBorrows(),
+                    address(test.borrowed) == wEth
+                        ? address(test.borrowedPoolToken).balance
+                        : test.borrowed.balanceOf(address(test.borrowedPoolToken))
+                )
+            );
+    }
 
-        borrowMarketIndex = uint8(borrowMarketIndex % markets.length);
-        collateralMarketIndex = uint8(collateralMarketIndex % markets.length);
-
-        BorrowTest memory test;
-        test.collateralPoolToken = ICToken(markets[collateralMarketIndex]);
-        test.borrowedPoolToken = ICToken(markets[borrowMarketIndex]);
+    function _setUpBorrowTest(
+        address _borrowedPoolToken,
+        address _collateralPoolToken,
+        uint96 _amount
+    ) internal returns (BorrowTest memory test) {
+        test.borrowedPoolToken = ICToken(_borrowedPoolToken);
+        test.collateralPoolToken = ICToken(_collateralPoolToken);
 
         (, test.collateralFactor, ) = morpho.comptroller().markets(
             address(test.collateralPoolToken)
         );
-        vm.assume(test.collateralFactor > 0);
         test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
 
         test.collateral = ERC20(
@@ -79,27 +92,31 @@ contract TestBorrow is TestSetup {
         test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
 
-        amount = bound(
-            amount,
-            10**(test.borrowedDecimals - 6),
-            Math.min(
-                (test.borrowCap > 0 ? test.borrowCap - 1 : type(uint256).max) -
-                    test.borrowedPoolToken.totalBorrows(),
-                address(test.borrowed) == wEth
-                    ? address(test.borrowedPoolToken).balance
-                    : test.borrowed.balanceOf(address(test.borrowedPoolToken))
-            )
+        test.borrowedAmount = _boundBorrowedAmount(test, _amount);
+    }
+
+    function _testShouldBorrowMarketP2PAndFromPool(
+        address _borrowedPoolToken,
+        address _collateralPoolToken,
+        uint96 _amount
+    ) internal {
+        BorrowTest memory test = _setUpBorrowTest(
+            _borrowedPoolToken,
+            _collateralPoolToken,
+            _amount
         );
 
-        uint256 collateralAmount = amount.mul(test.borrowedPrice).div(test.collateralFactor).div(
-            test.collateralPrice
-        ) + 1e12; // Inflate collateral amount to compensate for compound rounding errors.
-        if (address(test.collateral) == wEth) hoax(wEth, collateralAmount);
-        deal(address(test.collateral), address(borrower1), collateralAmount);
+        test.collateralAmount =
+            test.borrowedAmount.mul(test.borrowedPrice).div(test.collateralFactor).div(
+                test.collateralPrice
+            ) +
+            1e12; // Inflate collateral amount to compensate for compound rounding errors.
+        if (address(test.collateral) == wEth) hoax(wEth, test.collateralAmount);
+        deal(address(test.collateral), address(borrower1), test.collateralAmount);
 
-        borrower1.approve(address(test.collateral), collateralAmount);
-        borrower1.supply(address(test.collateralPoolToken), collateralAmount);
-        borrower1.borrow(address(test.borrowedPoolToken), amount);
+        borrower1.approve(address(test.collateral), test.collateralAmount);
+        borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
+        borrower1.borrow(address(test.borrowedPoolToken), test.borrowedAmount);
 
         test.borrowedBalanceAfter = test.borrowed.balanceOf(address(borrower1));
         test.p2pBorrowIndex = morpho.p2pBorrowIndex(address(test.borrowedPoolToken));
@@ -130,26 +147,26 @@ contract TestBorrow is TestSetup {
 
         assertEq(
             test.collateral.balanceOf(address(borrower1)),
-            address(test.collateral) == address(test.borrowed) ? amount : 0,
+            address(test.collateral) == address(test.borrowed) ? test.borrowedAmount : 0,
             "unexpected collateral balance after"
         );
         assertEq(
             test.borrowedBalanceAfter,
-            test.borrowedBalanceBefore + amount,
+            test.borrowedBalanceBefore + test.borrowedAmount,
             "unexpected borrowed balance change"
         );
         assertLe(
             test.borrowedOnPoolBefore + test.borrowedInP2PBefore,
-            amount,
+            test.borrowedAmount,
             "greater borrowed amount than expected"
         );
         assertGe(
             test.borrowedOnPoolBefore + test.borrowedInP2PBefore + 10**(test.borrowedDecimals / 2),
-            amount,
+            test.borrowedAmount,
             "unexpected borrowed amount"
         );
         if (morpho.p2pDisabled(address(test.borrowedPoolToken)))
-            assertEq(test.borrowedInP2PBefore, 0, "unexpected underlying balance p2p");
+            assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
         assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
 
         // assertEq( // TODO: check borrow delta
@@ -221,85 +238,69 @@ contract TestBorrow is TestSetup {
             );
     }
 
-    function testShouldNotBorrowZeroAmount(uint8 marketIndex) public {
-        address[] memory markets = lens.getAllMarkets();
+    function testShouldBorrowAmountP2PAndFromPool(
+        uint8 _borrowMarketIndex,
+        uint8 _collateralMarketIndex,
+        uint96 _amount
+    ) public {
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
+        address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
 
-        vm.assume(marketIndex < markets.length);
+        _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
+        _collateralMarketIndex = uint8(_collateralMarketIndex % activeCollateralMarkets.length);
 
-        BorrowTest memory test;
-        test.borrowedPoolToken = ICToken(markets[marketIndex]);
+        _testShouldBorrowMarketP2PAndFromPool(
+            activeMarkets[_borrowMarketIndex],
+            activeCollateralMarkets[_collateralMarketIndex],
+            _amount
+        );
+    }
 
-        vm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        borrower1.borrow(address(test.borrowedPoolToken), 0);
+    function testShouldNotBorrowZeroAmount() public {
+        address[] memory markets = getAllFullyActiveMarkets();
+
+        for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
+            BorrowTest memory test;
+            test.borrowedPoolToken = ICToken(markets[marketIndex]);
+
+            vm.expectRevert(PositionsManager.AmountIsZero.selector);
+            borrower1.borrow(address(test.borrowedPoolToken), 0);
+        }
     }
 
     function testShouldNotBorrowWithoutEnoughCollateral(
-        uint8 collateralMarketIndex,
-        uint8 borrowMarketIndex,
-        uint256 amount
+        uint8 _borrowMarketIndex,
+        uint8 _collateralMarketIndex,
+        uint96 _amount
     ) public {
-        address[] memory markets = lens.getAllMarkets();
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
+        address[] memory activeCollateralMarkets = getAllFullyActiveMarkets();
 
-        borrowMarketIndex = uint8(borrowMarketIndex % markets.length);
-        collateralMarketIndex = uint8(collateralMarketIndex % markets.length);
+        _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
+        _collateralMarketIndex = uint8(_collateralMarketIndex % activeCollateralMarkets.length);
 
-        BorrowTest memory test;
-        test.collateralPoolToken = ICToken(markets[collateralMarketIndex]);
-        test.borrowedPoolToken = ICToken(markets[borrowMarketIndex]);
-
-        (, test.collateralFactor, ) = morpho.comptroller().markets(
-            address(test.collateralPoolToken)
-        );
-        test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
-
-        test.collateral = ERC20(
-            address(test.collateralPoolToken) == morpho.cEth()
-                ? morpho.wEth()
-                : test.collateralPoolToken.underlying()
-        );
-        test.collateralDecimals = test.collateral.decimals();
-        test.borrowed = ERC20(
-            address(test.borrowedPoolToken) == morpho.cEth()
-                ? morpho.wEth()
-                : test.borrowedPoolToken.underlying()
-        );
-        test.borrowedDecimals = test.borrowed.decimals();
-
-        ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
-        test.collateralPrice = oracle.getUnderlyingPrice(address(test.collateralPoolToken));
-        test.borrowedPrice = oracle.getUnderlyingPrice(address(test.borrowedPoolToken));
-
-        test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
-        test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
-        test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
-
-        amount = bound(
-            amount,
-            10**(test.borrowedDecimals - 6),
-            Math.min(
-                (test.borrowCap > 0 ? test.borrowCap - 1 : type(uint256).max) -
-                    test.borrowedPoolToken.totalBorrows(),
-                address(test.borrowed) == wEth
-                    ? address(test.borrowedPoolToken).balance
-                    : test.borrowed.balanceOf(address(test.borrowedPoolToken))
-            )
+        BorrowTest memory test = _setUpBorrowTest(
+            activeMarkets[_borrowMarketIndex],
+            activeCollateralMarkets[_collateralMarketIndex],
+            _amount
         );
 
         if (test.collateralFactor > 0) {
-            uint256 collateralAmount = amount
+            test.collateralAmount = test
+            .borrowedAmount
             .mul(test.borrowedPrice)
             .div(test.collateralFactor)
             .div(test.collateralPrice); // Not enough collateral because of compound rounding errors.
-            if (address(test.collateral) == wEth) hoax(wEth, collateralAmount);
-            deal(address(test.collateral), address(borrower1), collateralAmount);
+            if (address(test.collateral) == wEth) hoax(wEth, test.collateralAmount);
+            deal(address(test.collateral), address(borrower1), test.collateralAmount);
 
-            if (collateralAmount > 0) {
-                borrower1.approve(address(test.collateral), collateralAmount);
-                borrower1.supply(address(test.collateralPoolToken), collateralAmount);
+            if (test.collateralAmount > 0) {
+                borrower1.approve(address(test.collateral), test.collateralAmount);
+                borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
             }
         }
 
         vm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
-        borrower1.borrow(address(test.borrowedPoolToken), amount);
+        borrower1.borrow(address(test.borrowedPoolToken), test.borrowedAmount);
     }
 }
