@@ -106,7 +106,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             repay: 3e6
         });
 
-        comptroller = IComptroller(comptrollerAddress);
         interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
