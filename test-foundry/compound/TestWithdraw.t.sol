@@ -733,4 +733,19 @@ contract TestWithdraw is TestSetup {
 
         supplier1.withdraw(cUsdc, type(uint256).max);
     }
+
+    function testShouldBeAbleToWithdrawAfterDelayWhenPartiallyMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount / 2);
+
+        hevm.roll(block.number + 100);
+
+        supplier1.withdraw(cDai, type(uint256).max);
+    }
 }
