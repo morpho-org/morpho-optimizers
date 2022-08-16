@@ -28,5 +28,5 @@ methods {
 
     // ICEther functions :TODO implement in the symbolic contract
     mint()                                      returns (uint256)       => NONDET // DISPATCHER(true)
-    repayBorrow()                               returns (uint256)       => NONDET // DISPATCHER(true)
+    repayBorrow()                               returns (uint256)       => DISPATCHER(true)
 }

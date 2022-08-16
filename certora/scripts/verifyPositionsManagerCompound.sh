@@ -12,6 +12,7 @@ certoraRun \
     certora/helpers/compound/contracts/DummyPoolTokenB.sol \
     certora/helpers/compound/contracts/SymbolicOracle.sol \
     certora/helpers/compound/contracts/SymbolicComptroller.sol \
+    certora/helpers/DummyWeth.sol \
     --packages @morpho-labs/morpho-utils/=lib/morpho-utils/src/ \
                @rari-capital/solmate/=lib/solmate/ \
                @openzeppelin=node_modules/@openzeppelin \
@@ -21,6 +22,7 @@ certoraRun \
     --solc solc \
     --loop_iter 2 \
     --optimistic_loop \
+    --settings -t=60 \
     --cache morpho \
     --staging \
     --send_only \

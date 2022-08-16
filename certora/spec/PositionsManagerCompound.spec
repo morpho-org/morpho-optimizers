@@ -12,6 +12,7 @@ using DummyPoolTokenB as tokenB
 using DummyPoolTokenImpl as poolToken // for summarization
 using SymbolicOracle as oracle
 using SymbolicComptroller as comptroller
+using DummyWeth as Weth
 
 methods {
     supplyLogic(address, address, address, uint256, uint256)
@@ -20,12 +21,8 @@ methods {
     withdrawLogic(address, uint256, address, address, uint256)
     repayLogic(address, address, address, uint256, uint256)
 
-    // summarized these IWETH functions as NONDET until a better solution is made
-    deposit() => NONDET
-    withdraw(uint256) => NONDET
-
     // rewards manager functions
-    accrueUserSupplyUnclaimedRewards(address, address, uint256) => NONDET // inline the function
+    accrueUserSupplyUnclaimedRewards(address, address, uint256) => NONDET
     accrueUserBorrowUnclaimedRewards(address, address, uint256) => NONDET
 
     delegatecall(bytes) => NONDET; // we can't handle this right now, need a workaround
@@ -42,6 +39,10 @@ methods {
     _matchBorrowers(address, uint256, uint256)   returns (uint256, uint256) => NONDET 
     _unmatchBorrowers(address, uint256, uint256) returns (uint256)          => NONDET
     _unmatchSuppliers(address, uint256, uint256) returns (uint256)          => NONDET
+
+    // IWETH functions, if this isn't working properly we can munge and link the DummyWeth contract
+    withdraw(uint256) => DISPATCHER(true) 
+    despoit() => DISPATCHER(true)
 }
 
 // multiplication and division are very tough for the solver. Since you use the mul and div function, we can try to summarize it
