@@ -42,10 +42,10 @@ contract Config {
     address constant cUsdt = 0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9;
     address constant cWbtc2 = 0xccF4429DB6322D5C611ee964527D42E5d685DD6a;
     address constant cEth = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+    address constant cComp = 0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4;
     address constant cBat = 0x6C8c6b02E7b2BE14d4fA6022Dfd6d75921D90E4E;
     address constant cTusd = 0x12392F67bdf24faE0AF363c24aC620a2f67DAd86;
     address constant cUni = 0x35A18000230DA775CAc24873d00Ff85BccdeD550;
-    address constant cComp = 0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4;
     address constant cZrx = 0xB3319f5D18Bc0D84dD1b4825Dcde5d5f7266d407;
     address constant cLink = 0xFAce851a4921ce59e912d19329929CE6da6EB0c7;
     address constant cMkr = 0x95b4eF2869eBD94BEb4eEE400a99824BF5DC325b;

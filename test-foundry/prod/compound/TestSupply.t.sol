@@ -29,13 +29,9 @@ contract TestSupply is TestSetup {
         uint256 totalUnderlyingAfter;
     }
 
-    function testShouldSupplyAmountP2PAndOnPool(uint8 marketIndex, uint96 _amount) public {
-        address[] memory markets = lens.getAllMarkets();
-
-        marketIndex = uint8(marketIndex % markets.length);
-
+    function _testShouldSupplyMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
         SupplyTest memory test;
-        test.poolToken = ICToken(markets[marketIndex]);
+        test.poolToken = ICToken(_poolToken);
         test.underlying = ERC20(
             address(test.poolToken) == morpho.cEth() ? morpho.wEth() : test.poolToken.underlying()
         );
@@ -91,7 +87,7 @@ contract TestSupply is TestSetup {
             "unexpected supplied amount"
         );
         if (morpho.p2pDisabled(address(test.poolToken)))
-            assertEq(test.underlyingInP2PBefore, 0, "unexpected underlying balance p2p");
+            assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
         assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
 
         assertEq( // TODO: check supply delta
@@ -162,27 +158,43 @@ contract TestSupply is TestSetup {
             );
     }
 
-    function testShouldNotSupplyZeroAmount(uint8 marketIndex) public {
-        address[] memory markets = lens.getAllMarkets();
+    function testShouldSupplyAllMarketsP2PAndOnPool(uint8 _marketIndex, uint96 _amount) public {
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
 
-        marketIndex = uint8(marketIndex % markets.length);
+        _marketIndex = uint8(_marketIndex % activeMarkets.length);
 
-        SupplyTest memory test;
-        test.poolToken = ICToken(markets[marketIndex]);
-
-        vm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        supplier1.supply(address(test.poolToken), 0);
+        _testShouldSupplyMarketP2PAndOnPool(activeMarkets[_marketIndex], _amount);
     }
 
-    function testShouldNotSupplyOnBehalfAddressZero(uint8 marketIndex) public {
-        address[] memory markets = lens.getAllMarkets();
+    function testShouldNotSupplyZeroAmount() public {
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
 
-        marketIndex = uint8(marketIndex % markets.length);
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            SupplyTest memory test;
+            test.poolToken = ICToken(activeMarkets[marketIndex]);
 
-        SupplyTest memory test;
-        test.poolToken = ICToken(markets[marketIndex]);
+            vm.expectRevert(PositionsManager.AmountIsZero.selector);
+            supplier1.supply(address(test.poolToken), 0);
+        }
+    }
 
-        vm.expectRevert(abi.encodeWithSignature("AddressIsZero()"));
-        supplier1.supply(address(test.poolToken), address(0), 1 ether);
+    function testShouldNotSupplyOnBehalfAddressZero(uint96 _amount) public {
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            SupplyTest memory test;
+            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            test.underlying = ERC20(
+                address(test.poolToken) == morpho.cEth()
+                    ? morpho.wEth()
+                    : test.poolToken.underlying()
+            );
+            test.decimals = test.underlying.decimals();
+
+            uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
+
+            vm.expectRevert(PositionsManager.AddressIsZero.selector);
+            supplier1.supply(address(test.poolToken), address(0), amount);
+        }
     }
 }

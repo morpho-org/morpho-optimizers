@@ -93,6 +93,128 @@ contract TestSetup is Config, Test {
         vm.label(comptroller.oracle(), "CompoundOracle");
         vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
+
+        vm.label(address(aave), "AAVE");
+        vm.label(address(dai), "DAI");
+        vm.label(address(usdc), "USDC");
+        vm.label(address(usdt), "USDT");
+        vm.label(address(wbtc), "WBTC");
+        vm.label(address(wEth), "WETH");
+        vm.label(address(comp), "COMP");
+        vm.label(address(bat), "BAT");
+        vm.label(address(tusd), "TUSD");
+        vm.label(address(uni), "UNI");
+        vm.label(address(zrx), "ZRX");
+        vm.label(address(link), "LINK");
+        vm.label(address(mkr), "MKR");
+        vm.label(address(fei), "FEI");
+        vm.label(address(yfi), "YFI");
+        vm.label(address(usdp), "USDP");
+        vm.label(address(sushi), "SUSHI");
+
+        vm.label(address(cAave), "cAAVE");
+        vm.label(address(cDai), "cDAI");
+        vm.label(address(cUsdc), "cUSDC");
+        vm.label(address(cUsdt), "cUSDT");
+        vm.label(address(cWbtc), "cWBTC");
+        vm.label(address(cEth), "cWETH");
+        vm.label(address(cComp), "cCOMP");
+        vm.label(address(cBat), "cBAT");
+        vm.label(address(cTusd), "cTUSD");
+        vm.label(address(cUni), "cUNI");
+        vm.label(address(cZrx), "cZRX");
+        vm.label(address(cLink), "cLINK");
+        vm.label(address(cMkr), "cMKR");
+        vm.label(address(cFei), "cFEI");
+        vm.label(address(cYfi), "cYFI");
+        vm.label(address(cUsdp), "cUSDP");
+        vm.label(address(cSushi), "cSUSHI");
+    }
+
+    function getAllFullyActiveMarkets() public view returns (address[] memory activeMarkets) {
+        address[] memory createdMarkets = morpho.getAllMarkets();
+        uint256 nbCreatedMarkets = createdMarkets.length;
+
+        uint256 nbActiveMarkets;
+        activeMarkets = new address[](nbCreatedMarkets);
+
+        for (uint256 i; i < nbCreatedMarkets; ) {
+            address poolToken = createdMarkets[i];
+
+            (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
+            if (!isPaused && !isPartiallyPaused) {
+                activeMarkets[nbActiveMarkets] = poolToken;
+                ++nbActiveMarkets;
+            } else console.log("Skipping paused (or partially paused) market:", poolToken);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Resize the array for return
+        assembly {
+            mstore(activeMarkets, nbActiveMarkets)
+        }
+    }
+
+    function getAllUnpausedMarkets() public view returns (address[] memory unpausedMarkets) {
+        address[] memory createdMarkets = morpho.getAllMarkets();
+        uint256 nbCreatedMarkets = createdMarkets.length;
+
+        uint256 nbActiveMarkets;
+        unpausedMarkets = new address[](nbCreatedMarkets);
+
+        for (uint256 i; i < nbCreatedMarkets; ) {
+            address poolToken = createdMarkets[i];
+
+            (, bool isPaused, ) = morpho.marketStatus(poolToken);
+            if (!isPaused) {
+                unpausedMarkets[nbActiveMarkets] = poolToken;
+                ++nbActiveMarkets;
+            } else console.log("Skipping paused market:", poolToken);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Resize the array for return
+        assembly {
+            mstore(unpausedMarkets, nbActiveMarkets)
+        }
+    }
+
+    function getAllFullyActiveCollateralMarkets()
+        public
+        view
+        returns (address[] memory activeCollateralMarkets)
+    {
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
+        uint256 nbActiveMarkets = activeMarkets.length;
+
+        uint256 nbActiveCollateralMarkets;
+        activeCollateralMarkets = new address[](nbActiveMarkets);
+
+        for (uint256 i; i < nbActiveMarkets; ) {
+            address poolToken = activeMarkets[i];
+
+            (, uint256 collateralFactor, ) = morpho.comptroller().markets(poolToken);
+            (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
+            if (collateralFactor > 0 && !isPaused && !isPartiallyPaused) {
+                activeCollateralMarkets[nbActiveCollateralMarkets] = poolToken;
+                ++nbActiveCollateralMarkets;
+            } else console.log("Skipping paused (or partially paused) market:", poolToken);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Resize the array for return
+        assembly {
+            mstore(activeCollateralMarkets, nbActiveCollateralMarkets)
+        }
     }
 
     function to6Decimals(uint256 value) internal pure returns (uint256) {
