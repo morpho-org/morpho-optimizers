@@ -217,11 +217,34 @@ contract TestSetup is Config, Test {
         }
     }
 
-    function to6Decimals(uint256 value) internal pure returns (uint256) {
-        return value / 1e12;
+    function _boundBorrowedAmount(
+        uint96 _amount,
+        address _poolToken,
+        address _underlying,
+        uint256 _decimals
+    ) internal returns (uint256) {
+        uint256 borrowCap = morpho.comptroller().borrowCaps(_poolToken);
+
+        return
+            bound(
+                _amount,
+                10**(_decimals - 6),
+                Math.min(
+                    (borrowCap > 0 ? borrowCap - 1 : type(uint256).max) -
+                        ICToken(_poolToken).totalBorrows(),
+                    _underlying == wEth
+                        ? _poolToken.balance
+                        : ERC20(_underlying).balanceOf(_poolToken)
+                )
+            );
     }
 
-    function to8Decimals(uint256 value) internal pure returns (uint256) {
-        return value / 1e10;
+    function _getUnderlying(address _poolToken)
+        internal
+        view
+        returns (ERC20 underlying, uint256 decimals)
+    {
+        underlying = ERC20(_poolToken == cEth ? wEth : ICToken(_poolToken).underlying());
+        decimals = underlying.decimals();
     }
 }

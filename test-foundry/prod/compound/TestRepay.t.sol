@@ -40,24 +40,6 @@ contract TestRepay is TestSetup {
         uint256 totalBorrowedAfter;
     }
 
-    function _boundBorrowedAmount(RepayTest memory test, uint96 _amount)
-        internal
-        returns (uint256)
-    {
-        return
-            bound(
-                _amount,
-                10**(test.borrowedDecimals - 6),
-                Math.min(
-                    (test.borrowCap > 0 ? test.borrowCap - 1 : type(uint256).max) -
-                        test.borrowedPoolToken.totalBorrows(),
-                    address(test.borrowed) == wEth
-                        ? address(test.borrowedPoolToken).balance
-                        : test.borrowed.balanceOf(address(test.borrowedPoolToken))
-                )
-            );
-    }
-
     function _setUpRepayTest(
         address _borrowedPoolToken,
         address _collateralPoolToken,
@@ -71,18 +53,8 @@ contract TestRepay is TestSetup {
         );
         test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
 
-        test.collateral = ERC20(
-            address(test.collateralPoolToken) == morpho.cEth()
-                ? morpho.wEth()
-                : test.collateralPoolToken.underlying()
-        );
-        test.collateralDecimals = test.collateral.decimals();
-        test.borrowed = ERC20(
-            address(test.borrowedPoolToken) == morpho.cEth()
-                ? morpho.wEth()
-                : test.borrowedPoolToken.underlying()
-        );
-        test.borrowedDecimals = test.borrowed.decimals();
+        (test.collateral, test.collateralDecimals) = _getUnderlying(_collateralPoolToken);
+        (test.borrowed, test.borrowedDecimals) = _getUnderlying(_borrowedPoolToken);
 
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         test.collateralPrice = oracle.getUnderlyingPrice(address(test.collateralPoolToken));
@@ -92,7 +64,12 @@ contract TestRepay is TestSetup {
         test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
 
-        test.borrowedAmount = _boundBorrowedAmount(test, _amount);
+        test.borrowedAmount = _boundBorrowedAmount(
+            _amount,
+            _borrowedPoolToken,
+            address(test.borrowed),
+            test.borrowedDecimals
+        );
     }
 
     function _testShouldRepayMarketP2PAndFromPool(
@@ -207,7 +184,7 @@ contract TestRepay is TestSetup {
             test.borrowedPoolToken = ICToken(markets[marketIndex]);
 
             vm.expectRevert(PositionsManager.AmountIsZero.selector);
-            borrower1.borrow(address(test.borrowedPoolToken), 0);
+            borrower1.repay(address(test.borrowedPoolToken), 0);
         }
     }
 }
