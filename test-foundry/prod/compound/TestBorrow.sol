@@ -91,15 +91,14 @@ contract TestBorrow is TestSetup {
             )
         );
 
-        uint256 collateralAmount = amount.mul(test.borrowedPrice).div(test.collateralPrice).div(
-            test.collateralFactor
+        uint256 collateralAmount = amount.mul(test.borrowedPrice).div(test.collateralFactor).div(
+            test.collateralPrice
         ) + 1e12; // Inflate collateral amount to compensate for compound rounding errors.
         if (address(test.collateral) == wEth) hoax(wEth, collateralAmount);
         deal(address(test.collateral), address(borrower1), collateralAmount);
 
         borrower1.approve(address(test.collateral), collateralAmount);
         borrower1.supply(address(test.collateralPoolToken), collateralAmount);
-        lens.getCurrentSupplyBalanceInOf(address(test.collateralPoolToken), address(borrower1)); // for logging
         borrower1.borrow(address(test.borrowedPoolToken), amount);
 
         test.borrowedBalanceAfter = test.borrowed.balanceOf(address(borrower1));
@@ -234,21 +233,73 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(address(test.borrowedPoolToken), 0);
     }
 
-    // function testShouldNotBorrowWithoutEnoughCollateral(
-    //     uint8 collateralIndex,
-    //     uint8 borrowedIndex,
-    //     uint128 collateralAmount,
-    //     uint128 borrowedAmount
-    // ) public {
-    //     address[] memory markets = lens.getAllMarkets();
+    function testShouldNotBorrowWithoutEnoughCollateral(
+        uint8 collateralMarketIndex,
+        uint8 borrowMarketIndex,
+        uint256 amount
+    ) public {
+        address[] memory markets = lens.getAllMarkets();
 
-    //     vm.assume(collateralIndex < markets.length);
-    //     vm.assume(borrowedIndex < markets.length);
+        borrowMarketIndex = uint8(borrowMarketIndex % markets.length);
+        collateralMarketIndex = uint8(collateralMarketIndex % markets.length);
 
-    //     BorrowTest memory test;
-    //     test.borrowedPoolToken = ICToken(markets[marketIndex]);
+        BorrowTest memory test;
+        test.collateralPoolToken = ICToken(markets[collateralMarketIndex]);
+        test.borrowedPoolToken = ICToken(markets[borrowMarketIndex]);
 
-    //     vm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-    //     borrower1.borrow(address(test.borrowedPoolToken), 0);
-    // }
+        (, test.collateralFactor, ) = morpho.comptroller().markets(
+            address(test.collateralPoolToken)
+        );
+        test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
+
+        test.collateral = ERC20(
+            address(test.collateralPoolToken) == morpho.cEth()
+                ? morpho.wEth()
+                : test.collateralPoolToken.underlying()
+        );
+        test.collateralDecimals = test.collateral.decimals();
+        test.borrowed = ERC20(
+            address(test.borrowedPoolToken) == morpho.cEth()
+                ? morpho.wEth()
+                : test.borrowedPoolToken.underlying()
+        );
+        test.borrowedDecimals = test.borrowed.decimals();
+
+        ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
+        test.collateralPrice = oracle.getUnderlyingPrice(address(test.collateralPoolToken));
+        test.borrowedPrice = oracle.getUnderlyingPrice(address(test.borrowedPoolToken));
+
+        test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
+        test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
+        test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
+
+        amount = bound(
+            amount,
+            10**(test.borrowedDecimals - 6),
+            Math.min(
+                (test.borrowCap > 0 ? test.borrowCap - 1 : type(uint256).max) -
+                    test.borrowedPoolToken.totalBorrows(),
+                address(test.borrowed) == wEth
+                    ? address(test.borrowedPoolToken).balance
+                    : test.borrowed.balanceOf(address(test.borrowedPoolToken))
+            )
+        );
+
+        if (test.collateralFactor > 0) {
+            uint256 collateralAmount = amount
+            .mul(test.borrowedPrice)
+            .div(test.collateralFactor)
+            .div(test.collateralPrice); // Not enough collateral because of compound rounding errors.
+            if (address(test.collateral) == wEth) hoax(wEth, collateralAmount);
+            deal(address(test.collateral), address(borrower1), collateralAmount);
+
+            if (collateralAmount > 0) {
+                borrower1.approve(address(test.collateral), collateralAmount);
+                borrower1.supply(address(test.collateralPoolToken), collateralAmount);
+            }
+        }
+
+        vm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(address(test.borrowedPoolToken), amount);
+    }
 }
