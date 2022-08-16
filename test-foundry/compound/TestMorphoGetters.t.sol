@@ -136,8 +136,9 @@ contract TestMorphoGetters is TestSetup {
     }
 
     function testGetAllMarkets() public {
+        address[] memory marketsCreated = morpho.getAllMarkets();
         for (uint256 i; i < pools.length; i++) {
-            assertEq(morpho.marketsCreated(i), pools[i]);
+            assertEq(marketsCreated[i], pools[i]);
         }
     }
 }

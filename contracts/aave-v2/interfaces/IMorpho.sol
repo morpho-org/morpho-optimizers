@@ -31,7 +31,6 @@ interface IMorpho {
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
     function deltas(address) external view returns (Types.Delta memory);
-    function marketsCreated(uint256) external view returns (address);
     function market(address) external view returns (Types.Market memory);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
