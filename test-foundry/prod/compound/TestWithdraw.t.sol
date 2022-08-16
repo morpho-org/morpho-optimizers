@@ -27,10 +27,7 @@ contract TestWithdraw is TestSetup {
     function _testShouldWithdrawMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
         WithdrawTest memory test;
         test.poolToken = ICToken(_poolToken);
-        test.underlying = ERC20(
-            address(test.poolToken) == morpho.cEth() ? morpho.wEth() : test.poolToken.underlying()
-        );
-        test.decimals = test.underlying.decimals();
+        (test.underlying, test.decimals) = _getUnderlying(_poolToken);
 
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));

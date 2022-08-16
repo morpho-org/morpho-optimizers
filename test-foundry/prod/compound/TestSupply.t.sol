@@ -32,10 +32,7 @@ contract TestSupply is TestSetup {
     function _testShouldSupplyMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
         SupplyTest memory test;
         test.poolToken = ICToken(_poolToken);
-        test.underlying = ERC20(
-            address(test.poolToken) == morpho.cEth() ? morpho.wEth() : test.poolToken.underlying()
-        );
-        test.decimals = test.underlying.decimals();
+        (test.underlying, test.decimals) = _getUnderlying(_poolToken);
 
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
@@ -184,12 +181,7 @@ contract TestSupply is TestSetup {
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             SupplyTest memory test;
             test.poolToken = ICToken(activeMarkets[marketIndex]);
-            test.underlying = ERC20(
-                address(test.poolToken) == morpho.cEth()
-                    ? morpho.wEth()
-                    : test.poolToken.underlying()
-            );
-            test.decimals = test.underlying.decimals();
+            (test.underlying, test.decimals) = _getUnderlying(activeMarkets[marketIndex]);
 
             uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
 
