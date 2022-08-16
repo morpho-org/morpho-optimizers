@@ -1,6 +1,19 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@contracts/compound/interfaces/compound/ICompound.sol";
+
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
+
+import {RewardsManager} from "@contracts/compound/RewardsManager.sol";
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
+import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
+import {Lens} from "@contracts/compound/lens/Lens.sol";
+import {Morpho} from "@contracts/compound/Morpho.sol";
+
 contract Config {
     address constant aave = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
     address constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -38,5 +51,25 @@ contract Config {
     address constant cUsdp = 0x041171993284df560249B57358F931D9eB7b925D;
     address constant cSushi = 0x4B0181102A0112A2ef11AbEE5563bb4a3176c9d7;
 
-    address constant comptrollerAddress = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public morphoDao = 0xcBa28b38103307Ec8dA98377ffF9816C164f9AFa;
+    IComptroller public comptroller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+
+    ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
+    TransparentUpgradeableProxy public lensProxy =
+        TransparentUpgradeableProxy(payable(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67));
+    TransparentUpgradeableProxy public morphoProxy =
+        TransparentUpgradeableProxy(payable(0x8888882f8f843896699869179fB6E4f7e3B58888));
+    TransparentUpgradeableProxy public rewardsManagerProxy =
+        TransparentUpgradeableProxy(payable(0x78681e63b6f3ad81ecD64AECC404d765b529C80d));
+
+    Lens public lensImplV1;
+    Morpho public morphoImplV1;
+    RewardsManager public rewardsManagerImplV1;
+
+    Lens public lens;
+    Morpho public morpho;
+    RewardsManager public rewardsManager;
+    IncentivesVault public incentivesVault;
+    PositionsManager public positionsManager;
+    InterestRatesManager public interestRatesManager;
 }
