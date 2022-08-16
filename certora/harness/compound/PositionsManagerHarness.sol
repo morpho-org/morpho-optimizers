@@ -57,7 +57,7 @@ contract PositionsManagerHarness is PositionsManager {
             _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower)
         );
 
-        noMatchingSafeWithdrawLogic(
+        _noMatchingSafeWithdrawLogic(
             _poolTokenCollateral,
             vars.amountToSeize,
             _borrower,
