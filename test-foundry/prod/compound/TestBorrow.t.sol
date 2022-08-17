@@ -170,38 +170,38 @@ contract TestBorrow is TestSetup {
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
-        for (uint256 i; i < 1_000; ++i) {
-            test.totalBorrowedBefore = test.totalBorrowedBefore.mul(1e18 + test.borrowRatePerBlock);
-            test.borrowedOnPoolBefore = test.borrowedOnPoolBefore.mul(
-                1e18 + test.poolBorrowRatePerBlock
-            );
-            test.borrowedInP2PBefore = test.borrowedInP2PBefore.mul(
-                1e18 + test.p2pBorrowRatePerBlock
-            );
-        }
+        uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.mul(
+            1e18 + test.poolBorrowRatePerBlock * 1_000
+        );
+        uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.mul(
+            1e18 + test.p2pBorrowRatePerBlock * 1_000
+        );
+        uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.mul(
+            1e18 + test.borrowRatePerBlock * 1_000
+        );
 
         assertApproxEqAbs(
-            test.borrowedOnPoolBefore,
             test.borrowedOnPoolAfter,
-            test.borrowedOnPoolBefore / 1e3 + 1,
+            expectedBorrowedOnPoolAfter,
+            test.borrowedOnPoolAfter / 1e6 + 1,
             "unexpected pool borrowed amount"
         );
         assertApproxEqAbs(
-            test.borrowedInP2PBefore,
             test.borrowedInP2PAfter,
-            test.borrowedInP2PBefore / 1e3 + 1,
+            expectedBorrowedInP2PAfter,
+            test.borrowedInP2PAfter / 1e6 + 1,
             "unexpected p2p borrowed amount"
         );
         assertApproxEqAbs(
-            test.totalBorrowedBefore,
             test.totalBorrowedAfter,
-            test.totalBorrowedBefore / 1e3 + 1,
+            expectedTotalBorrowedAfter,
+            test.totalBorrowedAfter / 1e6 + 1,
             "unexpected total borrowed amount from avg borrow rate"
         );
         assertApproxEqAbs(
-            test.borrowedInP2PBefore + test.borrowedOnPoolBefore,
             test.totalBorrowedAfter,
-            test.totalBorrowedBefore / 1e3 + 1,
+            expectedBorrowedOnPoolAfter + expectedBorrowedInP2PAfter,
+            test.totalBorrowedAfter / 1e6 + 1,
             "unexpected total borrowed amount"
         );
         if (
