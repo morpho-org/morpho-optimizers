@@ -16,6 +16,8 @@ import "@forge-std/Test.sol";
 import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Test {
+    using CompoundMath for uint256;
+
     // MorphoToken public morphoToken;
 
     User public supplier1;
@@ -246,5 +248,23 @@ contract TestSetup is Config, Test {
     {
         underlying = ERC20(_poolToken == cEth ? wEth : ICToken(_poolToken).underlying());
         decimals = underlying.decimals();
+    }
+
+    function _getMinimumCollateralAmount(
+        uint256 _borrowedAmount,
+        uint256 _borrowedPrice,
+        uint256 _collateralPrice,
+        uint256 _collateralFactor
+    ) internal pure returns (uint256) {
+        return _borrowedAmount.mul(_borrowedPrice).div(_collateralFactor).div(_collateralPrice);
+    }
+
+    function _tip(
+        address _underlying,
+        address _user,
+        uint256 _amount
+    ) internal {
+        if (_underlying == wEth) hoax(wEth, _amount);
+        deal(_underlying, _user, _amount);
     }
 }

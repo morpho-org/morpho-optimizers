@@ -80,12 +80,14 @@ contract TestRepay is TestSetup {
         RepayTest memory test = _setUpRepayTest(_borrowedPoolToken, _collateralPoolToken, _amount);
 
         test.collateralAmount =
-            test.borrowedAmount.mul(test.borrowedPrice).div(test.collateralFactor).div(
-                test.collateralPrice
+            _getMinimumCollateralAmount(
+                test.borrowedAmount,
+                test.borrowedPrice,
+                test.collateralPrice,
+                test.collateralFactor
             ) +
             1e12; // Inflate collateral amount to compensate for compound rounding errors.
-        if (address(test.collateral) == wEth) hoax(wEth, test.collateralAmount);
-        deal(address(test.collateral), address(borrower1), test.collateralAmount);
+        _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
         borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
