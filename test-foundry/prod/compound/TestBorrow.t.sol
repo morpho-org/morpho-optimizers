@@ -82,12 +82,14 @@ contract TestBorrow is TestSetup {
         );
 
         test.collateralAmount =
-            test.borrowedAmount.mul(test.borrowedPrice).div(test.collateralFactor).div(
-                test.collateralPrice
+            _getMinimumCollateralAmount(
+                test.borrowedAmount,
+                test.borrowedPrice,
+                test.collateralPrice,
+                test.collateralFactor
             ) +
             1e12; // Inflate collateral amount to compensate for compound rounding errors.
-        if (address(test.collateral) == wEth) hoax(wEth, test.collateralAmount);
-        deal(address(test.collateral), address(borrower1), test.collateralAmount);
+        _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
         borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
@@ -261,13 +263,13 @@ contract TestBorrow is TestSetup {
         );
 
         if (test.collateralFactor > 0) {
-            test.collateralAmount = test
-            .borrowedAmount
-            .mul(test.borrowedPrice)
-            .div(test.collateralFactor)
-            .div(test.collateralPrice); // Not enough collateral because of compound rounding errors.
-            if (address(test.collateral) == wEth) hoax(wEth, test.collateralAmount);
-            deal(address(test.collateral), address(borrower1), test.collateralAmount);
+            test.collateralAmount = _getMinimumCollateralAmount(
+                test.borrowedAmount,
+                test.borrowedPrice,
+                test.collateralPrice,
+                test.collateralFactor
+            ); // Not enough collateral because of compound rounding errors.
+            _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
             if (test.collateralAmount > 0) {
                 borrower1.approve(address(test.collateral), test.collateralAmount);

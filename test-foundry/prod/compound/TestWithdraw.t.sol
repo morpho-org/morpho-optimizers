@@ -34,8 +34,7 @@ contract TestWithdraw is TestSetup {
 
         uint256 amount = bound(_amount, 10**(test.decimals - 4), type(uint96).max);
 
-        if (address(test.underlying) == wEth) hoax(wEth, amount);
-        deal(address(test.underlying), address(supplier1), amount);
+        _tip(address(test.underlying), address(supplier1), amount);
 
         supplier1.approve(address(test.underlying), amount);
         supplier1.supply(address(test.poolToken), amount);
