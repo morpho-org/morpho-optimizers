@@ -1,0 +1,1045 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "borrow",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxGasForMatching",
+        "type": "uint256"
+      }
+    ],
+    "name": "borrow",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "borrowBalanceInOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "inP2P",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "onPool",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Types.BorrowBalance",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "cEth",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_cTokenAddresses",
+        "type": "address[]"
+      },
+      {
+        "internalType": "bool",
+        "name": "_tradeForMorphoToken",
+        "type": "bool"
+      }
+    ],
+    "name": "claimRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "claimedAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_poolTokens",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_amounts",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "claimToTreasury",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "comptroller",
+    "outputs": [
+      {
+        "internalType": "contract IComptroller",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "reserveFactor",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "p2pIndexCursor",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct Types.MarketParameters",
+        "name": "_params",
+        "type": "tuple"
+      }
+    ],
+    "name": "createMarket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "defaultMaxGasForMatching",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "supply",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "borrow",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "withdraw",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "repay",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Types.MaxGasForMatching",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "deltas",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "p2pSupplyDelta",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "p2pBorrowDelta",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "p2pSupplyAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "p2pBorrowAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Types.Delta",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "dustThreshold",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "enteredMarkets",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllMarkets",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "marketsCreated_",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      }
+    ],
+    "name": "getEnteredMarkets",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "enteredMarkets_",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "enum Types.PositionType",
+        "name": "_positionType",
+        "type": "uint8"
+      }
+    ],
+    "name": "getHead",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "head",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "enum Types.PositionType",
+        "name": "_positionType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      }
+    ],
+    "name": "getNext",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "next",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "incentiveVault",
+    "outputs": [
+      {
+        "internalType": "contract IIncentivesVault",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "interestRatesManager",
+    "outputs": [
+      {
+        "internalType": "contract IInterestRatesManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isClaimRewardsPaused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "lastPoolIndexes",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "lastUpdateBlockNumber",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint112",
+            "name": "lastSupplyPoolIndex",
+            "type": "uint112"
+          },
+          {
+            "internalType": "uint112",
+            "name": "lastBorrowPoolIndex",
+            "type": "uint112"
+          }
+        ],
+        "internalType": "struct Types.LastPoolIndexes",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolTokenBorrowed",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_poolTokenCollateral",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_borrower",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "liquidate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "marketParameters",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "reserveFactor",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "p2pIndexCursor",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct Types.MarketParameters",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "marketStatus",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "isCreated",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isPaused",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isPartiallyPaused",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Types.MarketStatus",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "maxSortedUsers",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "p2pBorrowIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "p2pDisabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "p2pSupplyIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "positionsManager",
+    "outputs": [
+      {
+        "internalType": "contract IPositionsManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_onBehalf",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "repay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rewardsManager",
+    "outputs": [
+      {
+        "internalType": "contract IRewardsManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "supply",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "borrow",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "withdraw",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "repay",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Types.MaxGasForMatching",
+        "name": "_maxGasForMatching",
+        "type": "tuple"
+      }
+    ],
+    "name": "setDefaultMaxGasForMatching",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_dustThreshold",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDustThreshold",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newIncentivesVault",
+        "type": "address"
+      }
+    ],
+    "name": "setIncentivesVault",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IInterestRatesManager",
+        "name": "_interestRatesManager",
+        "type": "address"
+      }
+    ],
+    "name": "setInterestRatesManager",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_newMaxSortedUsers",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxSortedUsers",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_p2pDisabled",
+        "type": "bool"
+      }
+    ],
+    "name": "setP2PDisabled",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_p2pIndexCursor",
+        "type": "uint16"
+      }
+    ],
+    "name": "setP2PIndexCursor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_newStatus",
+        "type": "bool"
+      }
+    ],
+    "name": "setPartialPauseStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      }
+    ],
+    "name": "setPartialPauseStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_newStatus",
+        "type": "bool"
+      }
+    ],
+    "name": "setPauseStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      }
+    ],
+    "name": "setPauseStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "_newStatus",
+        "type": "bool"
+      }
+    ],
+    "name": "setPauseStatusForAllMarkets",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_newReserveFactor",
+        "type": "uint256"
+      }
+    ],
+    "name": "setReserveFactor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_rewardsManagerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setRewardsManager",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_treasuryVault",
+        "type": "address"
+      }
+    ],
+    "name": "setTreasuryVault",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_onBehalf",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "supply",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_onBehalf",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxGasForMatching",
+        "type": "uint256"
+      }
+    ],
+    "name": "supply",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "supplyBalanceInOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "inP2P",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "onPool",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Types.SupplyBalance",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "treasuryVault",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      }
+    ],
+    "name": "updateP2PIndexes",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "wEth",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxGasForMatching",
+        "type": "uint256"
+      }
+    ],
+    "name": "borrowLogic",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_supplier",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_onBehalf",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxGasForMatching",
+        "type": "uint256"
+      }
+    ],
+    "name": "supplyLogic",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

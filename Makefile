@@ -77,6 +77,13 @@ script-%:
 	@echo Running script $* of ${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
+abis:
+	@echo Compiling contracts of ${PROTOCOL} on ${NETWORK} and generating JSON ABIs
+	@forge build --force --extra-output-files abi
+	@rm -rf abis/${PROTOCOL}/${NETWORK}
+	@mkdir -p abis/${PROTOCOL}/${NETWORK}
+	@cp out/**/I[A-Z]*.abi.json abis/${PROTOCOL}/${NETWORK}
+
 test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv | tee trace.ansi
@@ -120,4 +127,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry
+.PHONY: test config test-common foundry abis

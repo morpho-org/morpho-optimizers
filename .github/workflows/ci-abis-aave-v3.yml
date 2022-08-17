@@ -1,0 +1,45 @@
+name: Foundry tests (Morpho-Aave V3)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    paths:
+      - "lib/**"
+      - "contracts/common/**"
+      - "contracts/aave-v3/**"
+      - "*.lock"
+      - "Makefile"
+      - "foundry.toml"
+      - "remappings.txt"
+      - ".github/actions/ci-abis/*"
+      - ".github/workflows/ci-abis-aave-v3.yml"
+
+jobs:
+  # morpho-aave-v3-polygon-mainnet:
+  #   name: polygon-mainnet
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+
+  #     - uses: ./.github/actions/ci-abis
+  #       with:
+  #         protocol: aave-v3
+  #         network: polygon-mainnet
+
+  morpho-aave-v3-avalanche-mainnet:
+    name: avalanche-mainnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/ci-abis
+        with:
+          protocol: aave-v3
+          network: avalanche-mainnet

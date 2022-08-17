@@ -1,0 +1,96 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolTokenBorrowed",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_poolTokenCollateral",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_borrower",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "liquidateLogic",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_repayer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_onBehalf",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxGasForMatching",
+        "type": "uint256"
+      }
+    ],
+    "name": "repayLogic",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_poolToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_supplier",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxGasForMatching",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawLogic",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -1,0 +1,32 @@
+name: Foundry tests (Morpho-Compound)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    paths:
+      - "lib/**"
+      - "contracts/common/**"
+      - "contracts/compound/**"
+      - "*.lock"
+      - "Makefile"
+      - "foundry.toml"
+      - "remappings.txt"
+      - ".github/actions/ci-abis/*"
+      - ".github/workflows/ci-abis-compound.yml"
+
+jobs:
+  morpho-compound-eth-mainnet:
+    name: eth-mainnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/ci-abis
+        with:
+          protocol: compound
+          network: eth-mainnet

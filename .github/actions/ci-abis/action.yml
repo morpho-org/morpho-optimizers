@@ -1,0 +1,43 @@
+name: Check ABIs
+description: Generates ABIs of contracts under abis/
+
+inputs:
+  protocol:
+    description: The protocol against which to run the forge test suite.
+    required: true
+  network:
+    description: The network against which to run the forge test suite.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: yarn
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      shell: bash
+
+    - name: Install Foundry
+      uses: onbjerg/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Generate abis
+      run: make abis
+      shell: bash
+      env:
+        PROTOCOL: ${{ inputs.protocol }}
+        NETWORK: ${{ inputs.network }}
+
+    - name: Compare the expected and actual abis/ directories
+      run: |
+        if [ "$(git diff --ignore-space-at-eol abis/${{ inputs.protocol }}/${{ inputs.network }} | wc -l)" -gt "0" ]; then
+          echo "Detected uncommitted changes after build.  See status below:"
+          git diff
+          exit 1
+        fi
+      shell: bash
