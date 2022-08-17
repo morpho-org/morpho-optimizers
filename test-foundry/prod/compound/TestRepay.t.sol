@@ -143,21 +143,36 @@ contract TestRepay is TestSetup {
             "unexpected borrowed balance before repay"
         );
 
-        borrower1.approve(address(test.borrowed), test.totalBorrowedBefore);
-        borrower1.repay(address(test.borrowedPoolToken), test.totalBorrowedBefore);
+        (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
+        .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
+
+        assertGe(
+            test.totalBorrowedAfter,
+            test.totalBorrowedBefore,
+            "unexpected borrowed amount before repay"
+        );
+
+        _tip(
+            address(test.borrowed),
+            address(borrower1),
+            test.totalBorrowedAfter - test.totalBorrowedBefore
+        );
+        borrower1.approve(address(test.borrowed), type(uint256).max);
+        borrower1.repay(address(test.borrowedPoolToken), type(uint256).max);
+
+        assertApproxEqAbs(
+            test.borrowed.balanceOf(address(borrower1)),
+            0,
+            10**(test.borrowedDecimals / 2),
+            "unexpected borrowed balance after repay"
+        );
 
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
-        assertEq(
-            test.borrowed.balanceOf(address(borrower1)),
-            test.borrowedAmount - test.totalBorrowedBefore,
-            "unexpected borrowed balance after repay"
-        );
-
-        assertEq(test.borrowedOnPoolAfter, 0, "unexpected pool borrowed balance");
-        assertEq(test.borrowedInP2PAfter, 0, "unexpected p2p borrowed balance");
-        assertEq(test.totalBorrowedAfter, 0, "unexpected total borrowed supplied");
+        assertEq(test.borrowedOnPoolAfter, 0, "unexpected pool borrowed amount after repay");
+        assertEq(test.borrowedInP2PAfter, 0, "unexpected p2p borrowed amount after repay");
+        assertEq(test.totalBorrowedAfter, 0, "unexpected total borrowed after repay");
     }
 
     function testShouldRepayAmountP2PAndFromPool(

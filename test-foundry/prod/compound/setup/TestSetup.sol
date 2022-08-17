@@ -17,6 +17,7 @@ import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Test {
     using CompoundMath for uint256;
+    using SafeTransferLib for ERC20;
 
     // MorphoToken public morphoToken;
 
@@ -82,6 +83,24 @@ contract TestSetup is Config, Test {
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
+
+        deal(aave, address(this), type(uint256).max);
+        deal(dai, address(this), type(uint256).max);
+        deal(usdc, address(this), type(uint256).max);
+        deal(usdt, address(this), type(uint256).max);
+        deal(wbtc, address(this), type(uint256).max);
+        deal(wEth, address(this), type(uint256).max);
+        deal(comp, address(this), type(uint256).max);
+        deal(bat, address(this), type(uint256).max);
+        deal(tusd, address(this), type(uint256).max);
+        deal(uni, address(this), type(uint256).max);
+        deal(zrx, address(this), type(uint256).max);
+        deal(link, address(this), type(uint256).max);
+        deal(mkr, address(this), type(uint256).max);
+        deal(fei, address(this), type(uint256).max);
+        deal(yfi, address(this), type(uint256).max);
+        deal(usdp, address(this), type(uint256).max);
+        deal(sushi, address(this), type(uint256).max);
     }
 
     function setContractsLabels() internal {
@@ -259,12 +278,17 @@ contract TestSetup is Config, Test {
         return _borrowedAmount.mul(_borrowedPrice).div(_collateralFactor).div(_collateralPrice);
     }
 
+    /// @dev Allows to add ERC20 tokens to the current balance of a given user (instead of resetting it via `deal`).
+    /// @dev Also avoids to mess with snapshots of snapshotted ERC20 (e.g. AAVE).
     function _tip(
         address _underlying,
         address _user,
         uint256 _amount
     ) internal {
-        if (_underlying == wEth) hoax(wEth, _amount);
-        deal(_underlying, _user, _amount);
+        if (_amount == 0) return;
+
+        if (_underlying == wEth) deal(wEth, wEth.balance + _amount); // Refill wrapped Ether.
+
+        ERC20(_underlying).safeTransfer(_user, _amount);
     }
 }
