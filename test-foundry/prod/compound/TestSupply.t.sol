@@ -107,39 +107,37 @@ contract TestSupply is TestSetup {
         (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
-        for (uint256 i; i < 1_000; ++i) {
-            test.totalUnderlyingBefore = test.totalUnderlyingBefore.mul(
-                1e18 + test.supplyRatePerBlock
-            );
-            test.underlyingOnPoolBefore = test.underlyingOnPoolBefore.mul(
-                1e18 + test.poolSupplyRatePerBlock
-            );
-            test.underlyingInP2PBefore = test.underlyingInP2PBefore.mul(
-                1e18 + test.p2pSupplyRatePerBlock
-            );
-        }
+        uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.mul(
+            1e18 + test.poolSupplyRatePerBlock * 1_000
+        );
+        uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.mul(
+            1e18 + test.p2pSupplyRatePerBlock * 1_000
+        );
+        uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.mul(
+            1e18 + test.supplyRatePerBlock * 1_000
+        );
 
         assertApproxEqAbs(
-            test.underlyingOnPoolBefore,
             test.underlyingOnPoolAfter,
-            test.underlyingOnPoolBefore / 1e9 + 1e4,
+            expectedUnderlyingOnPoolAfter,
+            test.underlyingOnPoolAfter / 1e9 + 1e4,
             "unexpected pool underlying amount"
         );
         assertApproxEqAbs(
-            test.underlyingInP2PBefore,
             test.underlyingInP2PAfter,
-            test.underlyingInP2PBefore / 1e9 + 1e4,
+            expectedUnderlyingInP2PAfter,
+            test.underlyingInP2PAfter / 1e9 + 1e4,
             "unexpected p2p underlying amount"
         );
         assertApproxEqAbs(
-            test.totalUnderlyingBefore,
             test.totalUnderlyingAfter,
-            test.totalUnderlyingBefore / 1e9 + 1e4,
+            expectedTotalUnderlyingAfter,
+            test.totalUnderlyingAfter / 1e9 + 1e4,
             "unexpected total underlying amount from avg supply rate"
         );
         assertApproxEqAbs(
-            test.underlyingInP2PBefore + test.underlyingOnPoolBefore,
             test.totalUnderlyingAfter,
+            expectedUnderlyingOnPoolAfter + expectedUnderlyingInP2PAfter,
             test.totalUnderlyingBefore / 1e9 + 1e4,
             "unexpected total underlying amount"
         );
