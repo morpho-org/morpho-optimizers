@@ -27,7 +27,28 @@ contract Morpho is MorphoGovernance {
 
     /// EXTERNAL ///
 
-    /// @notice Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens to a specific market.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to supply.
+    function supply(address _poolToken, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
+    {
+        address(entryPositionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                entryPositionsManager.supplyLogic.selector,
+                _poolToken,
+                msg.sender,
+                msg.sender,
+                _amount,
+                defaultMaxGasForMatching.supply
+            )
+        );
+    }
+
+    /// @notice Supplies underlying tokens to a specific market, on behalf of a given user.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
@@ -49,7 +70,8 @@ contract Morpho is MorphoGovernance {
         );
     }
 
-    /// @notice Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens to a specific market, on behalf of a given user,
+    ///         specifying a gas threshold at which to cut the matching engine.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
@@ -73,7 +95,7 @@ contract Morpho is MorphoGovernance {
         );
     }
 
-    /// @notice Borrows underlying tokens in a specific market.
+    /// @notice Borrows underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     function borrow(address _poolToken, uint256 _amount)
@@ -91,7 +113,7 @@ contract Morpho is MorphoGovernance {
         );
     }
 
-    /// @notice Borrows underlying tokens in a specific market.
+    /// @notice Borrows underlying tokens from a specific market, specifying a maximum amount of gas used by the matching engine (not strict).
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
@@ -130,7 +152,28 @@ contract Morpho is MorphoGovernance {
         );
     }
 
-    /// @notice Repays debt of the user.
+    /// @notice Repays the debt of the sender, up to the amount provided.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to repay from borrow.
+    function repay(address _poolToken, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPaused(_poolToken)
+    {
+        address(exitPositionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                exitPositionsManager.repayLogic.selector,
+                _poolToken,
+                msg.sender,
+                msg.sender,
+                _amount,
+                defaultMaxGasForMatching.repay
+            )
+        );
+    }
+
+    /// @notice Repays debt of a given user, up to the amount provided.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
