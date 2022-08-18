@@ -95,20 +95,12 @@ interface ILens {
     function getTotalMarketSupply(address _poolToken)
         external
         view
-        returns (
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount,
-            uint256 supplyDeltaAmount
-        );
+        returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount);
 
     function getTotalMarketBorrow(address _poolToken)
         external
         view
-        returns (
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount,
-            uint256 borrowDeltaAmount
-        );
+        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount);
 
     /// INDEXES ///
 
@@ -217,13 +209,31 @@ interface ILens {
         view
         returns (uint256);
 
-    function getNextUserSupplyRatePerYear(address _poolToken, address _user)
+    function getNextUserSupplyRatePerYear(
+        address _poolToken,
+        address _user,
+        uint256 _amount
+    )
         external
         view
-        returns (uint256);
+        returns (
+            uint256 nextSupplyRatePerBlock,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        );
 
-    function getNextUserBorrowRatePerYear(address _poolToken, address _user)
+    function getNextUserBorrowRatePerYear(
+        address _poolToken,
+        address _user,
+        uint256 _amount
+    )
         external
         view
-        returns (uint256);
+        returns (
+            uint256 nextBorrowRatePerBlock,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        );
 }

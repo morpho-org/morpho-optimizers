@@ -93,20 +93,12 @@ interface ILens {
     function getTotalMarketSupply(address _poolToken)
         external
         view
-        returns (
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount,
-            uint256 supplyDeltaAmount
-        );
+        returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount);
 
     function getTotalMarketBorrow(address _poolToken)
         external
         view
-        returns (
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount,
-            uint256 borrowDeltaAmount
-        );
+        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount);
 
     /// INDEXES ///
 
@@ -135,6 +127,11 @@ interface ILens {
         external
         view
         returns (address[] memory enteredMarkets);
+
+    function getUserHealthFactor(address _user, address[] calldata _updatedMarkets)
+        external
+        view
+        returns (uint256);
 
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         external
@@ -182,11 +179,6 @@ interface ILens {
         ICompoundOracle _oracle
     ) external view returns (Types.AssetLiquidityData memory assetData);
 
-    function getUserHealthFactor(address _user, address[] calldata _updatedMarkets)
-        external
-        view
-        returns (uint256);
-
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
         external
         view
@@ -225,15 +217,33 @@ interface ILens {
         view
         returns (uint256);
 
-    function getNextUserSupplyRatePerBlock(address _poolToken, address _user)
+    function getNextUserSupplyRatePerBlock(
+        address _poolToken,
+        address _user,
+        uint256 _amount
+    )
         external
         view
-        returns (uint256);
+        returns (
+            uint256 nextSupplyRatePerBlock,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        );
 
-    function getNextUserBorrowRatePerBlock(address _poolToken, address _user)
+    function getNextUserBorrowRatePerBlock(
+        address _poolToken,
+        address _user,
+        uint256 _amount
+    )
         external
         view
-        returns (uint256);
+        returns (
+            uint256 nextBorrowRatePerBlock,
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        );
 
     /// REWARDS ///
 
