@@ -10,7 +10,7 @@ contract Config {
     address constant cRep = 0x1d70B01A2C3e3B2e56FcdcEfe50d5c5d70109a5D;
     address constant cSai = 0x5D4373F8C1AF21C391aD7eC755762D8dD3CCA809;
     address constant cUsdc = 0xCEC4a43eBB02f9B80916F1c718338169d6d5C1F0;
-    address constant cWbtc = 0x6CE27497A64fFFb5517AA4aeE908b1E7EB63B9fF;
+    address constant cWbtc2 = 0x6CE27497A64fFFb5517AA4aeE908b1E7EB63B9fF;
     address constant cZrx = 0xA253295eC2157B8b69C44b2cb35360016DAa25b1;
 
     address constant wEth = 0xb7e94Cce902E34e618A23Cb82432B95d03096146;
