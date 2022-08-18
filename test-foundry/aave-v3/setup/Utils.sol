@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
-import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 
 import "@forge-std/Test.sol";
 
