@@ -144,8 +144,8 @@ interface ILens {
         external
         view
         returns (
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         );
 
@@ -153,8 +153,8 @@ interface ILens {
         external
         view
         returns (
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         );
 
