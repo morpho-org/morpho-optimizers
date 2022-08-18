@@ -748,4 +748,25 @@ contract TestWithdraw is TestSetup {
 
         supplier1.withdraw(cDai, type(uint256).max);
     }
+
+    function testShouldPerformBreakingWithdrawWhenBorrowCapReached() public {
+        deal(aave, address(borrower1), 1_000_000 ether);
+        borrower1.compoundSupply(cAave, 1_000_000 ether);
+        borrower1.compoundBorrow(
+            cAave,
+            morpho.comptroller().borrowCaps(cAave) - ICToken(cAave).totalBorrows() - 1e12
+        );
+
+        deal(aave, address(supplier1), 110 ether);
+        supplier1.approve(aave, 110 ether);
+        supplier1.supply(cAave, 110 ether);
+
+        deal(dai, address(borrower2), 100_000 ether);
+        borrower2.approve(dai, 100_000 ether);
+        borrower2.supply(cDai, 100_000 ether);
+        borrower2.borrow(cAave, 100 ether);
+
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(cAave, type(uint256).max);
+    }
 }

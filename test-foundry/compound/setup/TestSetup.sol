@@ -115,6 +115,7 @@ contract TestSetup is Config, Utils {
         createMarket(cUsdt);
         createMarket(cBat);
         createMarket(cEth);
+        createMarket(cAave);
 
         hevm.roll(block.number + 1);
 
