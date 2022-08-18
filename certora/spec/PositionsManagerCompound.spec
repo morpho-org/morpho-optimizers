@@ -40,9 +40,10 @@ methods {
     _unmatchBorrowers(address, uint256, uint256) returns (uint256)          => NONDET
     _unmatchSuppliers(address, uint256, uint256) returns (uint256)          => NONDET
 
-    // IWETH functions, if this isn't working properly we can munge and link the DummyWeth contract
-    withdraw(uint256) => DISPATCHER(true) 
-    despoit() => DISPATCHER(true)
+    // IWETH functions, set to NONDET at the moment but we can change that to the dummy implementation
+    withdraw(uint256) => NONDET
+    deposit(uint256) => NONDET
+    deposit() => NONDET
 }
 
 // multiplication and division are very tough for the solver. Since you use the mul and div function, we can try to summarize it

@@ -64,11 +64,12 @@ contract DummyWeth {
     }
 
     // WETH
-    function deposit() external payable {
+    // IWETH seems to declare this as having no parameters, however when it is called the parameter "value" is referenced by name
+    function deposit(uint256 value) external payable {
         // assume succeeds
     }
 
-    function withdraw(uint256) external {
+    function withdraw(uint256 value) external {
         // assume succeeds
     }
 }
