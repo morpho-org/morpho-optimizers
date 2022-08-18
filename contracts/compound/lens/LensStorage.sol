@@ -7,6 +7,7 @@ import "../interfaces/IMorpho.sol";
 import "../libraries/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -17,7 +18,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 abstract contract LensStorage is Initializable {
     /// STORAGE ///
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
     IMorpho public morpho;

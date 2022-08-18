@@ -7,7 +7,7 @@ contract TestIncentivesVault is TestSetup {
     using SafeTransferLib for ERC20;
 
     function testShouldNotSetBonusAboveMaxBasisPoints() public {
-        uint256 moreThanMaxBasisPoints = incentivesVault.MAX_BASIS_POINTS() + 1;
+        uint256 moreThanMaxBasisPoints = PercentageMath.PERCENTAGE_FACTOR + 1;
         hevm.expectRevert(abi.encodeWithSelector(IncentivesVault.ExceedsMaxBasisPoints.selector));
         incentivesVault.setBonus(moreThanMaxBasisPoints);
     }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "./CompoundMath.sol";
 import "./Types.sol";
 
 library InterestRatesModel {
     using CompoundMath for uint256;
+    using PercentageMath for uint256;
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
     /// STRUCTS ///
@@ -69,18 +70,21 @@ library InterestRatesModel {
         );
 
         if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {
-            uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-                growthFactors_.poolSupplyGrowthFactor +
-                _p2pIndexCursor *
-                growthFactors_.poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+            uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
+                growthFactors_.poolSupplyGrowthFactor,
+                growthFactors_.poolBorrowGrowthFactor,
+                _p2pIndexCursor
+            );
             growthFactors_.p2pSupplyGrowthFactor =
                 p2pGrowthFactor -
-                (_reserveFactor * (p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor)) /
-                MAX_BASIS_POINTS;
+                (p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor).percentMul(
+                    _reserveFactor
+                );
             growthFactors_.p2pBorrowGrowthFactor =
                 p2pGrowthFactor +
-                (_reserveFactor * (growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor)) /
-                MAX_BASIS_POINTS;
+                (growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor).percentMul(
+                    _reserveFactor
+                );
         } else {
             // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
             // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.
@@ -149,11 +153,7 @@ library InterestRatesModel {
         uint256 _poolBorrowRate,
         uint256 _p2pIndexCursor
     ) internal pure returns (uint256) {
-        return
-            ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-                _poolSupplyRate +
-                _p2pIndexCursor *
-                _poolBorrowRate) / MAX_BASIS_POINTS;
+        return PercentageMath.weightedAvg(_poolSupplyRate, _poolBorrowRate, _p2pIndexCursor);
     }
 
     /// @notice Computes and returns the peer-to-peer supply rate per block of a market given its parameters.
@@ -166,8 +166,7 @@ library InterestRatesModel {
     {
         p2pSupplyRate =
             _params.p2pRate -
-            ((_params.p2pRate - _params.poolRate) * _params.reserveFactor) /
-            MAX_BASIS_POINTS;
+            (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = CompoundMath.min(
@@ -193,8 +192,7 @@ library InterestRatesModel {
     {
         p2pBorrowRate =
             _params.p2pRate +
-            ((_params.poolRate - _params.p2pRate) * _params.reserveFactor) /
-            MAX_BASIS_POINTS;
+            (_params.poolRate - _params.p2pRate).percentMul(_params.reserveFactor);
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = CompoundMath.min(

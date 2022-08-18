@@ -5,6 +5,7 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IMorpho.sol";
 
+import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -15,10 +16,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice Contract handling Morpho incentives.
 contract IncentivesVault is IIncentivesVault, Ownable {
     using SafeTransferLib for ERC20;
+    using PercentageMath for uint256;
 
     /// STORAGE ///
-
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
 
     IMorpho public immutable morpho; // The address of the main Morpho contract.
     ERC20 public immutable rewardToken; // The reward token.
@@ -69,6 +69,13 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Thrown when the input is above the max basis points value (100%).
     error ExceedsMaxBasisPoints();
 
+    /// MODIFIERS ///
+
+    modifier validBps(uint256 _bps) {
+        if (_bps > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
+        _;
+    }
+
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the IncentivesVault contract.
@@ -109,9 +116,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     /// @notice Sets the reward bonus.
     /// @param _newBonus The new reward bonus.
-    function setBonus(uint256 _newBonus) external onlyOwner {
-        if (_newBonus > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
-
+    function setBonus(uint256 _newBonus) external onlyOwner validBps(_newBonus) {
         bonus = _newBonus;
         emit BonusSet(_newBonus);
     }
@@ -140,8 +145,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         if (isPaused) revert VaultIsPaused();
 
         // Add a bonus on MORPHO rewards.
-        uint256 amountOut = (oracle.consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
-            MAX_BASIS_POINTS;
+        uint256 amountOut = oracle.consult(_amount).percentAdd(bonus);
         morphoToken.safeTransfer(_receiver, amountOut);
 
         emit RewardTokensTraded(_receiver, _amount, amountOut);

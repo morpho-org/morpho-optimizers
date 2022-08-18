@@ -101,6 +101,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
 
+    /// MODIFIERS ///
+
+    modifier validBps(uint256 _bps) {
+        if (_bps > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
+        _;
+    }
+
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
@@ -207,9 +214,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setReserveFactor(address _poolToken, uint16 _newReserveFactor)
         external
         onlyOwner
+        validBps(_newReserveFactor)
         isMarketCreated(_poolToken)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
         _updateP2PIndexes(_poolToken);
 
         marketParameters[_poolToken].reserveFactor = _newReserveFactor;
@@ -222,9 +229,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor)
         external
         onlyOwner
+        validBps(_p2pIndexCursor)
         isMarketCreated(_poolToken)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
         _updateP2PIndexes(_poolToken);
 
         marketParameters[_poolToken].p2pIndexCursor = _p2pIndexCursor;
@@ -309,12 +316,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     function createMarket(address _poolToken, Types.MarketParameters calldata _marketParams)
         external
         onlyOwner
+        validBps(_marketParams.reserveFactor)
+        validBps(_marketParams.p2pIndexCursor)
     {
-        if (
-            _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
-            _marketParams.reserveFactor > MAX_BASIS_POINTS
-        ) revert ExceedsMaxBasisPoints();
-
         if (marketStatus[_poolToken].isCreated) revert MarketAlreadyCreated();
         marketStatus[_poolToken].isCreated = true;
 

@@ -41,7 +41,6 @@ contract Lens {
     /// STORAGE ///
 
     uint256 public constant SECONDS_PER_YEAR = 365 days;
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant RAY = 1e27;
     IMorpho public immutable morpho;
@@ -576,9 +575,11 @@ contract Lens {
         poolSupplyGrowthFactor_ = _poolSupplyIndex.rayDiv(_lastPoolSupplyIndex);
         poolBorrowGrowthFactor_ = _poolBorrowIndex.rayDiv(_lastPoolBorrowIndex);
 
-        uint256 p2pGrowthFactor = poolSupplyGrowthFactor_.percentMul(
-            (MAX_BASIS_POINTS - _p2pIndexCursor)
-        ) + poolBorrowGrowthFactor_.percentMul(_p2pIndexCursor);
+        uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
+            poolSupplyGrowthFactor_,
+            poolBorrowGrowthFactor_,
+            _p2pIndexCursor
+        );
 
         p2pSupplyGrowthFactor_ =
             p2pGrowthFactor -

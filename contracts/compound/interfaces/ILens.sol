@@ -8,8 +8,6 @@ import "./IMorpho.sol";
 interface ILens {
     /// STORAGE ///
 
-    function MAX_BASIS_POINTS() external view returns (uint256);
-
     function WAD() external view returns (uint256);
 
     function morpho() external view returns (IMorpho);

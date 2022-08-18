@@ -302,10 +302,11 @@ abstract contract RatesLens is UsersLens {
         poolBorrowRate = cToken.borrowRatePerBlock();
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
-        uint256 p2pRate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
-            poolSupplyRate +
-            marketParams.p2pIndexCursor *
-            poolBorrowRate) / MAX_BASIS_POINTS;
+        uint256 p2pRate = PercentageMath.weightedAvg(
+            poolSupplyRate,
+            poolBorrowRate,
+            marketParams.p2pIndexCursor
+        );
 
         Types.Delta memory delta = morpho.deltas(_poolToken);
         (
