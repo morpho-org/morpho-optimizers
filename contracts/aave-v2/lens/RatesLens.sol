@@ -368,8 +368,8 @@ abstract contract RatesLens is UsersLens {
         returns (uint256)
     {
         (
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
 
@@ -386,8 +386,8 @@ abstract contract RatesLens is UsersLens {
         returns (uint256)
     {
         (
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
 

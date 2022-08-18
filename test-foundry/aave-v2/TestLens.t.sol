@@ -270,7 +270,7 @@ contract TestLens is TestSetup {
 
         UserBalance memory userSupplyBalance;
 
-        (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
+        (userSupplyBalance.inP2P, userSupplyBalance.onPool, userSupplyBalance.totalBalance) = lens
         .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
@@ -295,7 +295,7 @@ contract TestLens is TestSetup {
 
         UserBalance memory userBorrowBalance;
 
-        (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
+        (userBorrowBalance.inP2P, userBorrowBalance.onPool, userBorrowBalance.totalBalance) = lens
         .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
@@ -336,7 +336,7 @@ contract TestLens is TestSetup {
         // borrower 1 supply balance (not matched)
         UserBalance memory userSupplyBalance;
 
-        (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
+        (userSupplyBalance.inP2P, userSupplyBalance.onPool, userSupplyBalance.totalBalance) = lens
         .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
@@ -360,7 +360,7 @@ contract TestLens is TestSetup {
         // borrower 1 borrow balance (partially matched)
         UserBalance memory userBorrowBalance;
 
-        (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
+        (userBorrowBalance.inP2P, userBorrowBalance.onPool, userBorrowBalance.totalBalance) = lens
         .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
@@ -387,8 +387,8 @@ contract TestLens is TestSetup {
         UserBalance memory matchedSupplierSupplyBalance;
 
         (
-            matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.inP2P,
+            matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.totalBalance
         ) = lens.getCurrentSupplyBalanceInOf(aUsdc, address(supplier1));
 

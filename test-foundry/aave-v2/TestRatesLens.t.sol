@@ -213,8 +213,8 @@ contract TestRatesLens is TestSetup {
             address(supplier1)
         );
         (
-            uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
+            uint256 expectedBalanceOnPool,
             uint256 expectedTotalBalance
         ) = lens.getCurrentSupplyBalanceInOf(aDai, address(supplier1));
 
@@ -246,8 +246,8 @@ contract TestRatesLens is TestSetup {
             address(borrower1)
         );
         (
-            uint256 expectedBalanceOnPool,
             uint256 expectedBalanceInP2P,
+            uint256 expectedBalanceOnPool,
             uint256 expectedTotalBalance
         ) = lens.getCurrentBorrowBalanceInOf(aDai, address(borrower1));
 
