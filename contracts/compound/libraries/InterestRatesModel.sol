@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import "./CompoundMath.sol";
 import "./Types.sol";
 
 library InterestRatesModel {
@@ -104,7 +105,7 @@ library InterestRatesModel {
         if (_params.p2pSupplyAmount == 0 || _params.p2pSupplyDelta == 0) {
             newP2PSupplyIndex_ = _params.lastP2PSupplyIndex.mul(_params.p2pSupplyGrowthFactor);
         } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
+            uint256 shareOfTheDelta = Math.min(
                 (_params.p2pSupplyDelta.mul(_params.lastPoolSupplyIndex)).div(
                     (_params.p2pSupplyAmount).mul(_params.lastP2PSupplyIndex)
                 ),
@@ -129,7 +130,7 @@ library InterestRatesModel {
         if (_params.p2pBorrowAmount == 0 || _params.p2pBorrowDelta == 0) {
             newP2PBorrowIndex_ = _params.lastP2PBorrowIndex.mul(_params.p2pBorrowGrowthFactor);
         } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
+            uint256 shareOfTheDelta = Math.min(
                 (_params.p2pBorrowDelta.mul(_params.lastPoolBorrowIndex)).div(
                     (_params.p2pBorrowAmount).mul(_params.lastP2PBorrowIndex)
                 ),
@@ -169,7 +170,7 @@ library InterestRatesModel {
             (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
-            uint256 shareOfTheDelta = CompoundMath.min(
+            uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.mul(_params.poolIndex).div(
                     _params.p2pAmount.mul(_params.p2pIndex)
                 ),
@@ -195,7 +196,7 @@ library InterestRatesModel {
             (_params.poolRate - _params.p2pRate).percentMul(_params.reserveFactor);
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
-            uint256 shareOfTheDelta = CompoundMath.min(
+            uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.mul(_params.poolIndex).div(
                     _params.p2pAmount.mul(_params.p2pIndex)
                 ),

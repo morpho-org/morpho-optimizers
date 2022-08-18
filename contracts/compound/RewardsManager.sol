@@ -4,7 +4,8 @@ pragma solidity 0.8.13;
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
-import "./libraries/CompoundMath.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
+import {SafeCastLib} from "@rari-capital/solmate/src/utils/SafeCastLib.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -13,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice This contract is used to manage the COMP rewards from the Compound protocol.
 contract RewardsManager is IRewardsManager, Initializable {
+    using SafeCastLib for uint256;
     using CompoundMath for uint256;
 
     /// STORAGE ///
@@ -224,7 +226,7 @@ contract RewardsManager is IRewardsManager, Initializable {
 
             localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
                 index: newCompSupplyIndex,
-                block: CompoundMath.safe32(block.number)
+                block: block.number.safeCastTo32()
             });
         }
     }
@@ -258,7 +260,7 @@ contract RewardsManager is IRewardsManager, Initializable {
 
             localCompBorrowState[_cTokenAddress] = IComptroller.CompMarketState({
                 index: newCompBorrowIndex,
-                block: CompoundMath.safe32(block.number)
+                block: block.number.safeCastTo32()
             });
         }
     }

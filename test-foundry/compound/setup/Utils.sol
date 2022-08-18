@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/libraries/CompoundMath.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 
 import "@forge-std/Test.sol";
 

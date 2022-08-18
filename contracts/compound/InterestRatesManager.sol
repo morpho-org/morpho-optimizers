@@ -3,7 +3,8 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IInterestRatesManager.sol";
 
-import "./libraries/CompoundMath.sol";
+import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 import "./MorphoStorage.sol";
@@ -14,6 +15,7 @@ import "./MorphoStorage.sol";
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
+    using Math for uint256;
     using CompoundMath for uint256;
     using PercentageMath for uint256;
 
@@ -135,7 +137,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         if (_params.delta.p2pSupplyAmount == 0 || _params.delta.p2pSupplyDelta == 0) {
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.mul(p2pSupplyGrowthFactor);
         } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
+            uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pSupplyDelta.mul(_params.lastPoolSupplyIndex)).div(
                     (_params.delta.p2pSupplyAmount).mul(_params.lastP2PSupplyIndex)
                 ),
@@ -153,7 +155,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         if (_params.delta.p2pBorrowAmount == 0 || _params.delta.p2pBorrowDelta == 0) {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.mul(p2pBorrowGrowthFactor);
         } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
+            uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pBorrowDelta.mul(_params.lastPoolBorrowIndex)).div(
                     (_params.delta.p2pBorrowAmount).mul(_params.lastP2PBorrowIndex)
                 ),

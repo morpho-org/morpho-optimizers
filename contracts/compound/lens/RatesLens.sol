@@ -58,7 +58,7 @@ abstract contract RatesLens is UsersLens {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             if (delta.p2pBorrowDelta > 0) {
                 uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(indexes.poolBorrowIndex);
-                uint256 matchedDelta = CompoundMath.min(deltaInUnderlying, _amount);
+                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
 
                 supplyBalance.inP2P += matchedDelta.div(indexes.p2pSupplyIndex);
                 _amount -= matchedDelta;
@@ -76,7 +76,7 @@ abstract contract RatesLens is UsersLens {
                 uint256 borrowerBalanceInUnderlying = firstPoolBorrowerBalance.mul(
                     indexes.poolBorrowIndex
                 );
-                uint256 matchedP2P = CompoundMath.min(borrowerBalanceInUnderlying, _amount);
+                uint256 matchedP2P = Math.min(borrowerBalanceInUnderlying, _amount);
 
                 supplyBalance.inP2P += matchedP2P.div(indexes.p2pSupplyIndex);
                 _amount -= matchedP2P;
@@ -134,7 +134,7 @@ abstract contract RatesLens is UsersLens {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             if (delta.p2pSupplyDelta > 0) {
                 uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(indexes.poolSupplyIndex);
-                uint256 matchedDelta = CompoundMath.min(deltaInUnderlying, _amount);
+                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
 
                 borrowBalance.inP2P += matchedDelta.div(indexes.p2pBorrowIndex);
                 _amount -= matchedDelta;
@@ -152,7 +152,7 @@ abstract contract RatesLens is UsersLens {
                 uint256 supplierBalanceInUnderlying = firstPoolSupplierBalance.mul(
                     indexes.poolSupplyIndex
                 );
-                uint256 matchedP2P = CompoundMath.min(supplierBalanceInUnderlying, _amount);
+                uint256 matchedP2P = Math.min(supplierBalanceInUnderlying, _amount);
 
                 borrowBalance.inP2P += matchedP2P.div(indexes.p2pBorrowIndex);
                 _amount -= matchedP2P;

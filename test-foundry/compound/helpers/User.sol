@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
 import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/InterestRatesManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 
 contract User {
     using SafeTransferLib for ERC20;

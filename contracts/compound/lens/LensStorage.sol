@@ -4,10 +4,10 @@ pragma solidity 0.8.13;
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
 
-import "../libraries/CompoundMath.sol";
-import "../libraries/InterestRatesModel.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import {InterestRatesModel} from "../libraries/InterestRatesModel.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 

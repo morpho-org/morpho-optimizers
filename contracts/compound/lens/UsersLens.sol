@@ -71,10 +71,7 @@ abstract contract UsersLens is IndexesLens {
         borrowable = (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice);
         withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
         if (assetData.collateralFactor != 0) {
-            withdrawable = CompoundMath.min(
-                withdrawable,
-                borrowable.div(assetData.collateralFactor)
-            );
+            withdrawable = Math.min(withdrawable, borrowable.div(assetData.collateralFactor));
         }
     }
 
