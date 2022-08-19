@@ -670,6 +670,7 @@ contract TestLens is TestSetup {
     function testGetMarketConfiguration() public {
         (
             address underlying,
+            uint256 underlyingDecimals,
             bool isCreated,
             bool p2pDisabled,
             bool isPaused,

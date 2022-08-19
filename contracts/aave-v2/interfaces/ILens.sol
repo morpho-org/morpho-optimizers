@@ -89,7 +89,11 @@ interface ILens {
             bool isPaused,
             bool isPartiallyPaused,
             uint16 reserveFactor,
-            uint16 p2pIndexCursor
+            uint16 p2pIndexCursor,
+            uint256 loanToValue,
+            uint256 liquidationThreshold,
+            uint256 liquidationBonus,
+            uint256 decimals
         );
 
     function getTotalMarketSupply(address _poolToken)

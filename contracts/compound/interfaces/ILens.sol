@@ -81,6 +81,7 @@ interface ILens {
         view
         returns (
             address underlying,
+            uint256 underlyingDecimals,
             bool isCreated,
             bool p2pDisabled,
             bool isPaused,

@@ -3,6 +3,8 @@ pragma solidity 0.8.13;
 
 import "./RatesLens.sol";
 
+import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
+
 /// @title MarketsLens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
@@ -111,6 +113,7 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Returns market's configuration.
     /// @return underlying The underlying token address.
+    /// @return underlyingDecimals The number of decimals of the underlying token.
     /// @return isCreated Whether the market is created or not.
     /// @return p2pDisabled Whether user are put in peer-to-peer or not.
     /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
@@ -123,6 +126,7 @@ abstract contract MarketsLens is RatesLens {
         view
         returns (
             address underlying,
+            uint256 underlyingDecimals,
             bool isCreated,
             bool p2pDisabled,
             bool isPaused,
@@ -133,6 +137,7 @@ abstract contract MarketsLens is RatesLens {
         )
     {
         underlying = _poolToken == morpho.cEth() ? morpho.wEth() : ICToken(_poolToken).underlying();
+        underlyingDecimals = ERC20(underlying).decimals();
 
         Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolToken);
         isCreated = marketStatus.isCreated;

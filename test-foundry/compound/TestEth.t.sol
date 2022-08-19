@@ -302,8 +302,10 @@ contract TestEth is TestSetup {
     }
 
     function testShouldGetEthMarketConfiguration() public {
-        (address underlying, , , , , , , ) = lens.getMarketConfiguration(cEth);
+        (address underlying, uint256 underlyingDecimals, , , , , , , ) = lens
+        .getMarketConfiguration(cEth);
 
         assertEq(underlying, wEth);
+        assertEq(underlyingDecimals, 18);
     }
 }
