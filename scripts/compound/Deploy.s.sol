@@ -35,7 +35,7 @@ contract Deploy is Script, Config {
         vm.label(cDai, "cDAI");
         vm.label(cEth, "cETH");
         vm.label(cUsdc, "cUSDC");
-        vm.label(cWbtc, "cWBTC");
+        vm.label(cWbtc2, "cWBTC");
         vm.label(cBat, "cBAT");
         vm.label(wEth, "WETH");
 
@@ -95,7 +95,7 @@ contract Deploy is Script, Config {
         morpho.createMarket(cDai, defaultMarketParameters);
         morpho.createMarket(cUsdc, defaultMarketParameters);
         morpho.createMarket(cEth, defaultMarketParameters);
-        morpho.createMarket(cWbtc, defaultMarketParameters);
+        morpho.createMarket(cWbtc2, defaultMarketParameters);
         morpho.createMarket(cBat, defaultMarketParameters);
 
         vm.stopBroadcast();

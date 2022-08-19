@@ -20,7 +20,7 @@ contract Config {
     address constant cDai = 0xbc689667C13FB2a04f09272753760E38a95B998C;
     address constant cUsdc = 0x2973e69b20563bcc66dC63Bde153072c33eF37fe;
     address constant cUsdt = 0xF6958Cf3127e62d3EB26c79F4f45d3F3b2CcdeD4;
-    address constant cWbtc = 0x541c9cB0E97b77F142684cc33E8AC9aC17B1990F;
+    address constant cWbtc2 = 0x541c9cB0E97b77F142684cc33E8AC9aC17B1990F;
     address constant cBat = 0xaF50a5A6Af87418DAC1F28F9797CeB3bfB62750A;
     address constant cUni = 0x65280b21167BBD059221488B7cBE759F9fB18bB5;
     address constant cComp = 0x70014768996439F71C041179Ffddce973a83EEf2;

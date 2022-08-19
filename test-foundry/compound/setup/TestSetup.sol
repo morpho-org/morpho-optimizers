@@ -111,7 +111,7 @@ contract TestSetup is Config, Utils {
 
         createMarket(cDai);
         createMarket(cUsdc);
-        createMarket(cWbtc);
+        createMarket(cWbtc2);
         createMarket(cUsdt);
         createMarket(cBat);
         createMarket(cEth);
