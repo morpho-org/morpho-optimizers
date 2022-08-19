@@ -98,16 +98,19 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         isMarketCreatedAndNotPaused(_poolToken)
     {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                IPositionsManager.withdrawLogic.selector,
-                _poolToken,
-                _amount,
-                msg.sender,
-                msg.sender,
-                defaultMaxGasForMatching.withdraw
-            )
-        );
+        _withdraw(_poolToken, _amount, msg.sender, defaultMaxGasForMatching.withdraw);
+    }
+
+    /// @notice Withdraws underlying tokens from a specific market.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
+    /// @param _receiver The address to send withdrawn tokens to.
+    function withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolToken) {
+        _withdraw(_poolToken, _amount, _receiver, defaultMaxGasForMatching.withdraw);
     }
 
     /// @notice Repays the debt of the sender, up to the amount provided.
@@ -221,6 +224,24 @@ contract Morpho is MorphoGovernance {
                 IPositionsManager.borrowLogic.selector,
                 _poolToken,
                 _amount,
+                _maxGasForMatching
+            )
+        );
+    }
+
+    function _withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver,
+        uint256 _maxGasForMatching
+    ) internal {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.withdrawLogic.selector,
+                _poolToken,
+                _amount,
+                msg.sender,
+                _receiver,
                 _maxGasForMatching
             )
         );
