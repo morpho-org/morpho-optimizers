@@ -8,8 +8,6 @@ import "./IMorpho.sol";
 interface ILens {
     /// STORAGE ///
 
-    function WAD() external view returns (uint256);
-
     function morpho() external view returns (IMorpho);
 
     function comptroller() external view returns (IComptroller);

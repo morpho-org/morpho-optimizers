@@ -18,8 +18,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 abstract contract LensStorage is Initializable {
     /// STORAGE ///
 
-    uint256 public constant WAD = 1e18;
-
     IMorpho public morpho;
     IComptroller public comptroller;
     IRewardsManager public rewardsManager;

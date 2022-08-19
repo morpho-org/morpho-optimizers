@@ -13,8 +13,6 @@ interface ILens {
 
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
 
-    function RAY() external view returns (uint256);
-
     function morpho() external view returns (IMorpho);
 
     function addressesProvider() external view returns (ILendingPoolAddressesProvider);
