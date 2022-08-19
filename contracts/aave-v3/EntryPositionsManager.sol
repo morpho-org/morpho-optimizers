@@ -38,12 +38,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     /// @notice Emitted when a borrow happens.
     /// @param _borrower The address of the borrower.
+    /// @param _receiver The address of receiver of the funds.
     /// @param _poolToken The address of the market where assets are borrowed.
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in peer-to-peer after update
     event Borrowed(
         address indexed _borrower,
+        address indexed _receiver,
         address indexed _poolToken,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -188,10 +190,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @dev Implements borrow logic.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
+    /// @param _receiver The address of the receiver of the funds.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function borrowLogic(
         address _poolToken,
         uint256 _amount,
+        address _receiver,
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
@@ -272,10 +276,11 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         }
 
         _updateBorrowerInDS(_poolToken, msg.sender);
-        underlyingToken.safeTransfer(msg.sender, _amount);
+        underlyingToken.safeTransfer(_receiver, _amount);
 
         emit Borrowed(
             msg.sender,
+            _receiver,
             _poolToken,
             _amount,
             borrowerBorrowBalance.onPool,
