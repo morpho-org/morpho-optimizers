@@ -30,8 +30,8 @@ abstract contract RatesLens is UsersLens {
     /// @param _user The address of the user on behalf of whom to supply.
     /// @param _amount The amount to supply.
     /// @return nextSupplyRatePerYear An approximation of the next supply rate per year experienced after having supplied (in wad).
-    /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return balanceInP2P The total balance matched peer-to-peer after having supplied (in underlying).
+    /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return totalBalance The total balance supplied through Morpho (in underlying).
     function getNextUserSupplyRatePerYear(
         address _poolToken,
@@ -42,8 +42,8 @@ abstract contract RatesLens is UsersLens {
         view
         returns (
             uint256 nextSupplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         )
     {
@@ -110,8 +110,8 @@ abstract contract RatesLens is UsersLens {
     /// @param _user The address of the user on behalf of whom to borrow.
     /// @param _amount The amount to borrow.
     /// @return nextBorrowRatePerYear An approximation of the next borrow rate per year experienced after having supplied (in wad).
-    /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return balanceInP2P The total balance matched peer-to-peer after having supplied (in underlying).
+    /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return totalBalance The total balance supplied through Morpho (in underlying).
     function getNextUserBorrowRatePerYear(
         address _poolToken,
@@ -122,8 +122,8 @@ abstract contract RatesLens is UsersLens {
         view
         returns (
             uint256 nextBorrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         )
     {
