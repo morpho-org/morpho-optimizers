@@ -137,7 +137,7 @@ contract TestSetup is Config, Test {
         vm.label(address(cDai), "cDAI");
         vm.label(address(cUsdc), "cUSDC");
         vm.label(address(cUsdt), "cUSDT");
-        vm.label(address(cWbtc), "cWBTC");
+        vm.label(address(cWbtc2), "cWBTC");
         vm.label(address(cEth), "cWETH");
         vm.label(address(cComp), "cCOMP");
         vm.label(address(cBat), "cBAT");

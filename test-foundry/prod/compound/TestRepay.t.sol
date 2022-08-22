@@ -86,7 +86,7 @@ contract TestRepay is TestSetup {
                 test.collateralPrice,
                 test.collateralFactor
             ) +
-            1e12; // Inflate collateral amount to compensate for compound rounding errors.
+            10**(test.collateralDecimals - 5); // Inflate collateral amount to compensate for compound rounding errors.
         _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
