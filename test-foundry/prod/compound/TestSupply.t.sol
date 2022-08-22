@@ -11,9 +11,13 @@ contract TestSupply is TestSetup {
         ICToken poolToken;
         uint256 decimals;
         uint256 morphoBalanceOnPoolBefore;
+        uint256 morphoBorrowOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
+        uint256 poolBorrowIndex;
+        bool p2pDisabled;
+        uint256 p2pBorrowDelta;
         uint256 supplyRatePerBlock;
         uint256 p2pSupplyRatePerBlock;
         uint256 poolSupplyRatePerBlock;
@@ -34,7 +38,10 @@ contract TestSupply is TestSetup {
         test.poolToken = ICToken(_poolToken);
         (test.underlying, test.decimals) = _getUnderlying(_poolToken);
 
+        (, test.p2pBorrowDelta, , ) = morpho.deltas(address(test.poolToken));
+        test.p2pDisabled = morpho.p2pDisabled(address(test.poolToken));
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
+        test.morphoBorrowOnPoolBefore = test.poolToken.borrowBalanceCurrent(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
         uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
@@ -46,6 +53,7 @@ contract TestSupply is TestSetup {
 
         test.p2pSupplyIndex = morpho.p2pSupplyIndex(address(test.poolToken));
         test.poolSupplyIndex = test.poolToken.exchangeRateCurrent();
+        test.poolBorrowIndex = test.poolToken.borrowIndex();
         test.supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             address(test.poolToken),
             address(supplier1)
@@ -82,18 +90,32 @@ contract TestSupply is TestSetup {
             amount,
             "unexpected supplied amount"
         );
-        if (morpho.p2pDisabled(address(test.poolToken)))
-            assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
+        if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "expected no match");
         assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
 
-        assertEq( // TODO: check supply delta
+        assertApproxEqAbs(
+            test.poolToken.borrowBalanceCurrent(address(morpho)) + test.underlyingInP2PBefore,
+            test.morphoBorrowOnPoolBefore,
+            10**(test.decimals / 2),
+            "unexpected morpho borrow balance"
+        );
+
+        if (test.p2pBorrowDelta <= amount.div(test.poolBorrowIndex))
+            assertGe(
+                test.underlyingInP2PBefore,
+                test.p2pBorrowDelta.mul(test.poolBorrowIndex),
+                "expected p2p borrow delta minimum match"
+            );
+        else assertEq(test.balanceInP2P, amount, "expected full match");
+
+        assertEq(
             test.underlying.balanceOf(address(morpho)),
             test.morphoUnderlyingBalanceBefore,
             "unexpected morpho underlying balance"
         );
         assertEq(
-            test.poolToken.balanceOf(address(morpho)) - test.morphoBalanceOnPoolBefore,
-            test.balanceOnPool,
+            test.poolToken.balanceOf(address(morpho)),
+            test.morphoBalanceOnPoolBefore + test.balanceOnPool,
             "unexpected morpho underlying balance on pool"
         );
 
