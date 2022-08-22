@@ -168,8 +168,8 @@ contract TestRatesLens is TestSetup {
     function testNextSupplyRateShouldEqual0WhenNoSupply() public {
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), 0);
 
@@ -182,8 +182,8 @@ contract TestRatesLens is TestSetup {
     function testNextBorrowRateShouldEqual0WhenNoBorrow() public {
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), 0);
 
@@ -203,8 +203,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), 0);
 
@@ -236,8 +236,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), 0);
 
@@ -263,8 +263,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
@@ -297,8 +297,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(supplier1), amount);
 
@@ -328,8 +328,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
@@ -362,8 +362,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
@@ -395,8 +395,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
@@ -436,8 +436,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
@@ -483,8 +483,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
@@ -523,8 +523,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
@@ -554,8 +554,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount / 2);
 
@@ -588,8 +588,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount / 2);
 
@@ -628,8 +628,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
@@ -669,8 +669,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
@@ -709,8 +709,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 supplyRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), amount);
 
@@ -761,8 +761,8 @@ contract TestRatesLens is TestSetup {
 
         (
             uint256 borrowRatePerYear,
-            uint256 balanceOnPool,
             uint256 balanceInP2P,
+            uint256 balanceOnPool,
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), amount);
 
