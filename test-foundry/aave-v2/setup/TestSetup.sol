@@ -2,16 +2,11 @@
 pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
 import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
 import "@contracts/aave-v2/interfaces/IMorpho.sol";
-
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -26,7 +21,6 @@ import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
-import {Lens} from "@contracts/aave-v2/lens/Lens.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -44,31 +38,8 @@ contract TestSetup is Config, Utils {
 
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
-    ProxyAdmin public proxyAdmin;
-    TransparentUpgradeableProxy internal lensProxy;
-    TransparentUpgradeableProxy public morphoProxy;
-    TransparentUpgradeableProxy internal rewardsManagerProxy;
-
-    Lens internal lensImplV1;
-    Morpho public morphoImplV1;
-    IRewardsManager internal rewardsManagerImplV1;
-
-    Lens public lens;
-    Morpho public morpho;
-    IEntryPositionsManager public entryPositionsManager;
-    IExitPositionsManager public exitPositionsManager;
-    IInterestRatesManager public interestRatesManager;
-    IncentivesVault public incentivesVault;
-    IRewardsManager internal rewardsManager;
-
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
-
     DumbOracle internal dumbOracle;
     MorphoToken public morphoToken;
-    ILendingPoolAddressesProvider public poolAddressesProvider;
-    IPriceOracleGetter public oracle;
-    ILendingPool public pool;
 
     User public treasuryVault;
 
@@ -95,8 +66,6 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        poolAddressesProvider = ILendingPoolAddressesProvider(poolAddressesProviderAddress);
-        pool = ILendingPool(poolAddressesProvider.getLendingPool());
         interestRatesManager = new InterestRatesManager();
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();
@@ -116,14 +85,14 @@ contract TestSetup is Config, Utils {
             entryPositionsManager,
             exitPositionsManager,
             interestRatesManager,
-            ILendingPoolAddressesProvider(poolAddressesProviderAddress),
+            poolAddressesProvider,
             Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6}),
             20
         );
 
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
-        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
         if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
             rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
@@ -156,14 +125,13 @@ contract TestSetup is Config, Utils {
         incentivesVault = new IncentivesVault(
             IMorpho(address(morpho)),
             morphoToken,
-            ERC20(IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN()),
-            address(1),
+            ERC20(REWARD_TOKEN),
+            address(treasuryVault),
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
         morpho.setIncentivesVault(incentivesVault);
 
-        oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
         morpho.setRewardsManager(rewardsManager);
 
         lensImplV1 = new Lens(address(morpho));
@@ -222,7 +190,7 @@ contract TestSetup is Config, Utils {
         hevm.label(address(morpho), "Morpho");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
+        hevm.label(address(aaveIncentivesController), "AaveIncentivesController");
         hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
         hevm.label(address(pool), "Pool");
         hevm.label(address(oracle), "AaveOracle");
