@@ -106,7 +106,13 @@ contract TestSupply is TestSetup {
                 test.p2pBorrowDelta.mul(test.poolBorrowIndex),
                 "expected p2p borrow delta minimum match"
             );
-        else assertEq(test.balanceInP2P, amount, "expected full match");
+        else
+            assertApproxEqAbs(
+                test.underlyingInP2PBefore,
+                amount,
+                10**(test.decimals / 2),
+                "expected full match"
+            );
 
         assertEq(
             test.underlying.balanceOf(address(morpho)),
