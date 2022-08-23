@@ -22,9 +22,10 @@ certoraRun \
     --solc solc \
     --loop_iter 2 \
     --optimistic_loop \
-    --settings -t=60 \
+    --settings -t=60\
     --cache morpho \
     --staging \
+    --msg "PositionsManager For Compound: $1" \
     --send_only \
 
     # --method 'repayLogic(address, address, address, uint256, uint256)' \

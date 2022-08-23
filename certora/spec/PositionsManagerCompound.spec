@@ -29,8 +29,8 @@ methods {
 
     // whenever the tool encounters mul or div, it will return an arbitrary value that follows the axioms 
     // within the corresponding ghost
-    mul(uint256 x, uint256 y) => _mul(x, y)
-    div(uint256 x, uint256 y) => _div(x, y)
+    mul(uint256 x, uint256 y) => NONDET // _mul(x, y)
+    div(uint256 x, uint256 y) => NONDET // _div(x, y)
 
     // matching engine functions
     // currently these are summarized to NONDET, so any possible values will be returned
