@@ -20,9 +20,13 @@ contract TestBorrow is TestSetup {
         uint256 collateralAmount;
         uint256 borrowedBalanceBefore;
         uint256 borrowedBalanceAfter;
-        uint256 morphoBalanceOnPoolBefore;
+        uint256 morphoBorrowedOnPoolBefore;
+        uint256 morphoBorrowedBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
+        bool p2pDisabled;
+        uint256 p2pSupplyDelta;
         uint256 p2pBorrowIndex;
+        uint256 poolSupplyIndex;
         uint256 poolBorrowIndex;
         uint256 borrowRatePerBlock;
         uint256 p2pBorrowRatePerBlock;
@@ -58,8 +62,15 @@ contract TestBorrow is TestSetup {
         test.collateralPrice = oracle.getUnderlyingPrice(address(test.collateralPoolToken));
         test.borrowedPrice = oracle.getUnderlyingPrice(address(test.borrowedPoolToken));
 
+        (test.p2pSupplyDelta, , , ) = morpho.deltas(address(test.borrowedPoolToken));
+        test.p2pDisabled = morpho.p2pDisabled(address(test.borrowedPoolToken));
         test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
-        test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
+        test.morphoBorrowedOnPoolBefore = test.borrowedPoolToken.borrowBalanceCurrent(
+            address(morpho)
+        );
+        test.morphoBorrowedBalanceOnPoolBefore = test.borrowedPoolToken.balanceOfUnderlying(
+            address(morpho)
+        );
         test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
 
         test.borrowedAmount = _boundBorrowedAmount(
@@ -97,6 +108,7 @@ contract TestBorrow is TestSetup {
 
         test.borrowedBalanceAfter = test.borrowed.balanceOf(address(borrower1));
         test.p2pBorrowIndex = morpho.p2pBorrowIndex(address(test.borrowedPoolToken));
+        test.poolSupplyIndex = test.borrowedPoolToken.exchangeRateCurrent();
         test.poolBorrowIndex = test.borrowedPoolToken.borrowIndex();
         test.borrowRatePerBlock = lens.getCurrentUserBorrowRatePerBlock(
             address(test.borrowedPoolToken),
@@ -146,16 +158,31 @@ contract TestBorrow is TestSetup {
             assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
         assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
 
-        // assertEq( // TODO: check borrow delta
-        //     test.borrowed.balanceOf(address(morpho)),
-        //     test.morphoUnderlyingBalanceBefore,
-        //     "unexpected morpho underlying balance"
-        // );
-        // assertEq(
-        //     test.morphoBalanceOnPoolBefore - test.borrowedPoolToken.balanceOf(address(morpho)),
-        //     test.balanceOnPool,
-        //     "unexpected morpho underlying balance on pool"
-        // );
+        if (test.p2pSupplyDelta <= test.borrowedAmount.div(test.poolSupplyIndex))
+            assertGe(
+                test.borrowedInP2PBefore,
+                test.p2pSupplyDelta.mul(test.poolSupplyIndex),
+                "expected p2p supply delta minimum match"
+            );
+        else
+            assertApproxEqAbs(
+                test.borrowedInP2PBefore,
+                test.borrowedAmount,
+                1,
+                "expected full match"
+            );
+
+        assertEq(
+            test.borrowed.balanceOf(address(morpho)),
+            test.morphoUnderlyingBalanceBefore,
+            "unexpected morpho underlying balance"
+        );
+        assertApproxEqAbs(
+            test.borrowedPoolToken.borrowBalanceCurrent(address(morpho)),
+            test.morphoBorrowedOnPoolBefore + test.balanceOnPool.mul(test.poolBorrowIndex),
+            10,
+            "unexpected morpho borrowed balance on pool"
+        );
 
         vm.roll(block.number + 500);
 

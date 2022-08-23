@@ -120,17 +120,6 @@ contract TestRepay is TestSetup {
         test.borrowedOnPoolBefore = test.balanceOnPool.mul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
 
-        // assertEq( // TODO: check borrow delta
-        //     test.borrowed.balanceOf(address(morpho)),
-        //     test.morphoUnderlyingBalanceBefore,
-        //     "unexpected morpho underlying balance"
-        // );
-        // assertEq(
-        //     test.morphoBalanceOnPoolBefore - test.borrowedPoolToken.balanceOf(address(morpho)),
-        //     test.balanceOnPool,
-        //     "unexpected morpho underlying balance on pool"
-        // );
-
         vm.roll(block.number + 5_000);
 
         morpho.updateP2PIndexes(address(test.borrowedPoolToken));
