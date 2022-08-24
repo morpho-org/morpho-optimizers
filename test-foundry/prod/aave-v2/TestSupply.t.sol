@@ -25,7 +25,6 @@ contract TestSupply is TestSetup {
         uint256 balanceInP2P;
         uint256 balanceOnPool;
         uint256 unclaimedRewardsBefore;
-        uint256 unclaimedRewardsAfter;
         uint256 underlyingOnPoolBefore;
         uint256 underlyingInP2PBefore;
         uint256 totalUnderlyingBefore;
@@ -186,18 +185,12 @@ contract TestSupply is TestSetup {
             address(rewardsManager) != address(0) &&
             test.underlyingOnPoolAfter > 0 &&
             block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
-        ) {
-            test.unclaimedRewardsAfter = rewardsManager.getUserUnclaimedRewards(
-                poolTokens,
-                address(supplier1)
-            );
-
+        )
             assertGt(
-                test.unclaimedRewardsAfter,
+                rewardsManager.getUserUnclaimedRewards(poolTokens, address(supplier1)),
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );
-        }
     }
 
     function testShouldSupplyAllMarketsP2PAndOnPool(uint8 _marketIndex, uint96 _amount) public {

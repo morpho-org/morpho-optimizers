@@ -24,7 +24,6 @@ contract TestSupply is TestSetup {
         uint256 balanceInP2P;
         uint256 balanceOnPool;
         uint256 unclaimedRewardsBefore;
-        uint256 unclaimedRewardsAfter;
         uint256 underlyingOnPoolBefore;
         uint256 underlyingInP2PBefore;
         uint256 totalUnderlyingBefore;
@@ -67,10 +66,6 @@ contract TestSupply is TestSetup {
             address(supplier1)
         );
 
-        address[] memory poolTokens = new address[](1);
-        poolTokens[0] = address(test.poolToken);
-        test.unclaimedRewardsBefore = lens.getUserUnclaimedRewards(poolTokens, address(supplier1));
-
         test.underlyingInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
         test.underlyingOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
@@ -87,7 +82,17 @@ contract TestSupply is TestSetup {
             "unexpected supplied amount"
         );
         if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "expected no match");
-        assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+
+        address[] memory poolTokens = new address[](1);
+        poolTokens[0] = address(test.poolToken);
+        if (address(rewardsManager) != address(0)) {
+            test.unclaimedRewardsBefore = lens.getUserUnclaimedRewards(
+                poolTokens,
+                address(supplier1)
+            );
+
+            assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+        }
 
         assertApproxEqAbs(
             test.poolToken.borrowBalanceCurrent(address(morpho)) + test.underlyingInP2PBefore,
@@ -127,7 +132,6 @@ contract TestSupply is TestSetup {
 
         vm.roll(block.number + 500);
 
-        test.unclaimedRewardsAfter = lens.getUserUnclaimedRewards(poolTokens, address(supplier1));
         (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
@@ -166,11 +170,12 @@ contract TestSupply is TestSetup {
             "unexpected total underlying amount"
         );
         if (
+            address(rewardsManager) != address(0) &&
             test.underlyingOnPoolAfter > 0 &&
             morpho.comptroller().compSupplySpeeds(address(test.poolToken)) > 0
         )
             assertGt(
-                test.unclaimedRewardsAfter,
+                lens.getUserUnclaimedRewards(poolTokens, address(supplier1)),
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );

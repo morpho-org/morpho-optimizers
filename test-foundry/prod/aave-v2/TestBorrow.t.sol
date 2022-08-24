@@ -35,7 +35,6 @@ contract TestBorrow is TestSetup {
         uint256 balanceInP2P;
         uint256 balanceOnPool;
         uint256 unclaimedRewardsBefore;
-        uint256 unclaimedRewardsAfter;
         uint256 borrowedOnPoolBefore;
         uint256 borrowedInP2PBefore;
         uint256 totalBorrowedBefore;
@@ -102,7 +101,7 @@ contract TestBorrow is TestSetup {
                 test.collateralPrice,
                 test.collateralLtv
             ) +
-            10**(test.collateralDecimals - 5); // Inflate collateral amount to compensate for compound rounding errors.
+            10**(test.collateralDecimals - 4); // Inflate collateral amount to compensate for compound rounding errors.
         _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
@@ -127,13 +126,6 @@ contract TestBorrow is TestSetup {
             address(borrower1)
         );
 
-        address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
-        test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-            borrowedPoolTokens,
-            address(borrower1)
-        );
-
         test.borrowedInP2PBefore = test.balanceInP2P.rayMul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.rayMul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
@@ -155,7 +147,17 @@ contract TestBorrow is TestSetup {
             "unexpected borrowed amount"
         );
         if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
-        assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+
+        address[] memory borrowedPoolTokens = new address[](1);
+        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
+        if (address(rewardsManager) != address(0)) {
+            test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
+                borrowedPoolTokens,
+                address(borrower1)
+            );
+
+            assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+        }
 
         if (test.p2pSupplyDelta <= test.borrowedAmount.rayDiv(test.poolSupplyIndex))
             assertGe(
@@ -191,53 +193,50 @@ contract TestBorrow is TestSetup {
         vm.roll(block.number + 500);
         vm.warp(block.timestamp + 60 * 60 * 24);
 
-        test.unclaimedRewardsAfter = rewardsManager.getUserUnclaimedRewards(
-            borrowedPoolTokens,
-            address(borrower1)
-        );
         (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
-        uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.wadMul(
+        uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.rayMul(
             1e27 + (test.poolBorrowRatePerYear * 60 * 60 * 48) / 365 days
         );
-        uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.wadMul(
+        uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.rayMul(
             1e27 + (test.p2pBorrowRatePerYear * 60 * 60 * 48) / 365 days
         );
-        uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.wadMul(
+        uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.rayMul(
             1e27 + (test.borrowRatePerYear * 60 * 60 * 48) / 365 days
         );
 
         assertApproxEqAbs(
             test.borrowedOnPoolAfter,
             expectedBorrowedOnPoolAfter,
-            test.borrowedOnPoolAfter / 1e6 + 1,
+            test.borrowedOnPoolAfter / 1e6 + 1e4,
             "unexpected pool borrowed amount"
         );
         assertApproxEqAbs(
             test.borrowedInP2PAfter,
             expectedBorrowedInP2PAfter,
-            test.borrowedInP2PAfter / 1e6 + 1,
+            test.borrowedInP2PAfter / 1e6 + 1e4,
             "unexpected p2p borrowed amount"
         );
         assertApproxEqAbs(
             test.totalBorrowedAfter,
             expectedTotalBorrowedAfter,
-            test.totalBorrowedAfter / 1e6 + 1,
+            test.totalBorrowedAfter / 1e6 + 1e4,
             "unexpected total borrowed amount from avg borrow rate"
         );
         assertApproxEqAbs(
             test.totalBorrowedAfter,
             expectedBorrowedOnPoolAfter + expectedBorrowedInP2PAfter,
-            test.totalBorrowedAfter / 1e6 + 1,
+            test.totalBorrowedAfter / 1e6 + 1e4,
             "unexpected total borrowed amount"
         );
         if (
+            address(rewardsManager) != address(0) &&
             test.borrowedOnPoolAfter > 0 &&
             block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
         )
             assertGt(
-                test.unclaimedRewardsAfter,
+                rewardsManager.getUserUnclaimedRewards(borrowedPoolTokens, address(borrower1)),
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );

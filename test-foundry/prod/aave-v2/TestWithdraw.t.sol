@@ -53,10 +53,12 @@ contract TestWithdraw is TestSetup {
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
 
         vm.roll(block.number + 10_000);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         morpho.updateIndexes(address(test.poolToken));
 
         vm.roll(block.number + 10_000);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         assertEq(
             test.underlying.balanceOf(address(supplier1)),

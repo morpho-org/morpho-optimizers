@@ -33,7 +33,6 @@ contract TestBorrow is TestSetup {
         uint256 balanceInP2P;
         uint256 balanceOnPool;
         uint256 unclaimedRewardsBefore;
-        uint256 unclaimedRewardsAfter;
         uint256 borrowedOnPoolBefore;
         uint256 borrowedInP2PBefore;
         uint256 totalBorrowedBefore;
@@ -119,13 +118,6 @@ contract TestBorrow is TestSetup {
             address(borrower1)
         );
 
-        address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
-        test.unclaimedRewardsBefore = lens.getUserUnclaimedRewards(
-            borrowedPoolTokens,
-            address(borrower1)
-        );
-
         test.borrowedInP2PBefore = test.balanceInP2P.mul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.mul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
@@ -151,7 +143,17 @@ contract TestBorrow is TestSetup {
             "unexpected borrowed amount"
         );
         if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
-        assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+
+        address[] memory borrowedPoolTokens = new address[](1);
+        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
+        if (address(rewardsManager) != address(0)) {
+            test.unclaimedRewardsBefore = lens.getUserUnclaimedRewards(
+                borrowedPoolTokens,
+                address(borrower1)
+            );
+
+            assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+        }
 
         if (test.p2pSupplyDelta <= test.borrowedAmount.div(test.poolSupplyIndex))
             assertGe(
@@ -185,10 +187,6 @@ contract TestBorrow is TestSetup {
 
         vm.roll(block.number + 500);
 
-        test.unclaimedRewardsAfter = lens.getUserUnclaimedRewards(
-            borrowedPoolTokens,
-            address(borrower1)
-        );
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
@@ -227,11 +225,12 @@ contract TestBorrow is TestSetup {
             "unexpected total borrowed amount"
         );
         if (
+            address(rewardsManager) != address(0) &&
             test.borrowedOnPoolAfter > 0 &&
             morpho.comptroller().compBorrowSpeeds(address(test.borrowedPoolToken)) > 0
         )
             assertGt(
-                test.unclaimedRewardsAfter,
+                lens.getUserUnclaimedRewards(borrowedPoolTokens, address(borrower1)),
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );
