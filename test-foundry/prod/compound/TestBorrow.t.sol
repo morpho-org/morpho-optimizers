@@ -290,9 +290,9 @@ contract TestBorrow is TestSetup {
                 test.collateralPrice,
                 test.collateralFactor
             ); // Not enough collateral because of compound rounding errors.
-            _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
             if (test.collateralAmount > 0) {
+                _tip(address(test.collateral), address(borrower1), test.collateralAmount);
                 borrower1.approve(address(test.collateral), test.collateralAmount);
                 borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
             }

@@ -30,8 +30,6 @@ contract TestRepay is TestSetup {
         uint256 poolBorrowRatePerYear;
         uint256 balanceInP2P;
         uint256 balanceOnPool;
-        uint256 unclaimedRewardsBefore;
-        uint256 unclaimedRewardsAfter;
         uint256 borrowedOnPoolBefore;
         uint256 borrowedInP2PBefore;
         uint256 totalBorrowedBefore;
@@ -51,7 +49,6 @@ contract TestRepay is TestSetup {
         // test.borrowCap = morpho.comptroller().borrowCaps(address(test.borrowedPoolToken));
 
         test.collateral = ERC20(test.collateralPoolToken.UNDERLYING_ASSET_ADDRESS());
-        test.collateralDecimals = test.collateral.decimals();
         test.borrowed = ERC20(test.borrowedPoolToken.UNDERLYING_ASSET_ADDRESS());
         test.borrowedVariablePoolToken = IVariableDebtToken(
             pool.getReserveData(address(test.borrowed)).variableDebtTokenAddress
@@ -61,7 +58,7 @@ contract TestRepay is TestSetup {
         test.collateralPrice = oracle.getAssetPrice(address(test.collateral));
         test.borrowedPrice = oracle.getAssetPrice(address(test.borrowed));
 
-        (test.collateralLtv, , , , ) = morpho
+        (test.collateralLtv, , , test.collateralDecimals, ) = morpho
         .pool()
         .getConfiguration(address(test.collateral))
         .getParamsMemory();
@@ -88,10 +85,12 @@ contract TestRepay is TestSetup {
             _getMinimumCollateralAmount(
                 test.borrowedAmount,
                 test.borrowedPrice,
+                test.borrowedDecimals,
                 test.collateralPrice,
+                test.collateralDecimals,
                 test.collateralLtv
             ) +
-            10**(test.collateralDecimals - 5); // Inflate collateral amount to compensate for compound rounding errors.
+            10**(test.collateralDecimals - 4);
         _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
@@ -114,22 +113,17 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
-        test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-            borrowedPoolTokens,
-            address(borrower1)
-        );
-
         test.borrowedInP2PBefore = test.balanceInP2P.rayMul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.rayMul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
 
         vm.roll(block.number + 5_000);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         morpho.updateIndexes(address(test.borrowedPoolToken));
 
         vm.roll(block.number + 5_000);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         assertEq(
             test.borrowed.balanceOf(address(borrower1)),
@@ -149,7 +143,7 @@ contract TestRepay is TestSetup {
         _tip(
             address(test.borrowed),
             address(borrower1),
-            test.totalBorrowedAfter - test.totalBorrowedBefore
+            test.totalBorrowedAfter - test.borrowed.balanceOf(address(borrower1))
         );
         borrower1.approve(address(test.borrowed), type(uint256).max);
         borrower1.repay(address(test.borrowedPoolToken), type(uint256).max);

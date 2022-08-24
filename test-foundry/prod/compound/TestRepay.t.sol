@@ -107,13 +107,6 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
-        test.unclaimedRewardsBefore = lens.getUserUnclaimedRewards(
-            borrowedPoolTokens,
-            address(borrower1)
-        );
-
         test.borrowedInP2PBefore = test.balanceInP2P.mul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.mul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;

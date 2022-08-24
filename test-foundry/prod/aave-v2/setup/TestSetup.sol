@@ -253,13 +253,17 @@ contract TestSetup is Config, Test {
     function _getMinimumCollateralAmount(
         uint256 _borrowedAmount,
         uint256 _borrowedPrice,
+        uint256 _borrowedDecimals,
         uint256 _collateralPrice,
+        uint256 _collateralDecimals,
         uint256 _collateralLtv
     ) internal pure returns (uint256) {
         return
-            _borrowedAmount.wadMul(_borrowedPrice).percentDiv(_collateralLtv).wadDiv(
-                _collateralPrice
-            );
+            (
+                ((_borrowedAmount * _borrowedPrice * 10**_collateralDecimals) /
+                    (_collateralPrice * 10**_borrowedDecimals))
+            )
+                .percentDiv(_collateralLtv);
     }
 
     /// @dev Allows to add ERC20 tokens to the current balance of a given user (instead of resetting it via `deal`).

@@ -52,7 +52,6 @@ contract TestBorrow is TestSetup {
         test.collateralPoolToken = IAToken(_collateralPoolToken);
 
         test.collateral = ERC20(test.collateralPoolToken.UNDERLYING_ASSET_ADDRESS());
-        test.collateralDecimals = test.collateral.decimals();
         test.borrowed = ERC20(test.borrowedPoolToken.UNDERLYING_ASSET_ADDRESS());
         test.borrowedVariablePoolToken = IVariableDebtToken(
             pool.getReserveData(address(test.borrowed)).variableDebtTokenAddress
@@ -62,7 +61,7 @@ contract TestBorrow is TestSetup {
         test.collateralPrice = oracle.getAssetPrice(address(test.collateral));
         test.borrowedPrice = oracle.getAssetPrice(address(test.borrowed));
 
-        (test.collateralLtv, , , , ) = morpho
+        (test.collateralLtv, , , test.collateralDecimals, ) = morpho
         .pool()
         .getConfiguration(address(test.collateral))
         .getParamsMemory();
@@ -98,10 +97,12 @@ contract TestBorrow is TestSetup {
             _getMinimumCollateralAmount(
                 test.borrowedAmount,
                 test.borrowedPrice,
+                test.borrowedDecimals,
                 test.collateralPrice,
+                test.collateralDecimals,
                 test.collateralLtv
             ) +
-            10**(test.collateralDecimals - 4); // Inflate collateral amount to compensate for compound rounding errors.
+            10**(test.collateralDecimals - 4);
         _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
@@ -209,25 +210,25 @@ contract TestBorrow is TestSetup {
         assertApproxEqAbs(
             test.borrowedOnPoolAfter,
             expectedBorrowedOnPoolAfter,
-            test.borrowedOnPoolAfter / 1e6 + 1e4,
+            test.borrowedOnPoolAfter / 1e3 + 1,
             "unexpected pool borrowed amount"
         );
         assertApproxEqAbs(
             test.borrowedInP2PAfter,
             expectedBorrowedInP2PAfter,
-            test.borrowedInP2PAfter / 1e6 + 1e4,
+            test.borrowedInP2PAfter / 1e3 + 1,
             "unexpected p2p borrowed amount"
         );
         assertApproxEqAbs(
             test.totalBorrowedAfter,
             expectedTotalBorrowedAfter,
-            test.totalBorrowedAfter / 1e6 + 1e4,
+            test.totalBorrowedAfter / 1e3 + 1,
             "unexpected total borrowed amount from avg borrow rate"
         );
         assertApproxEqAbs(
             test.totalBorrowedAfter,
             expectedBorrowedOnPoolAfter + expectedBorrowedInP2PAfter,
-            test.totalBorrowedAfter / 1e6 + 1e4,
+            test.totalBorrowedAfter / 1e3 + 1,
             "unexpected total borrowed amount"
         );
         if (
@@ -293,12 +294,17 @@ contract TestBorrow is TestSetup {
             test.collateralAmount = _getMinimumCollateralAmount(
                 test.borrowedAmount,
                 test.borrowedPrice,
+                test.borrowedDecimals,
                 test.collateralPrice,
+                test.collateralDecimals,
                 test.collateralLtv
-            ); // Not enough collateral because of compound rounding errors.
-            _tip(address(test.collateral), address(borrower1), test.collateralAmount);
+            );
+            test.collateralAmount -= test.collateralAmount < 10**(test.collateralDecimals - 5)
+                ? test.collateralAmount
+                : 10**(test.collateralDecimals - 5);
 
             if (test.collateralAmount > 0) {
+                _tip(address(test.collateral), address(borrower1), test.collateralAmount);
                 borrower1.approve(address(test.collateral), test.collateralAmount);
                 borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
             }
