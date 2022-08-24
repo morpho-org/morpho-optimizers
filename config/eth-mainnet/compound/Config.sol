@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@contracts/compound/interfaces/compound/ICompound.sol";
+import {IIncentivesVault} from "@contracts/compound/interfaces/IIncentivesVault.sol";
+import {IPositionsManager} from "@contracts/compound/interfaces/IPositionsManager.sol";
+import {IInterestRatesManager} from "@contracts/compound/interfaces/IInterestRatesManager.sol";
+
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
+
+import {RewardsManager} from "@contracts/compound/RewardsManager.sol";
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
+import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
+import {Lens} from "@contracts/compound/lens/Lens.sol";
+import {Morpho} from "@contracts/compound/Morpho.sol";
+
 contract Config {
     address constant aave = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
     address constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -26,10 +42,10 @@ contract Config {
     address constant cUsdt = 0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9;
     address constant cWbtc2 = 0xccF4429DB6322D5C611ee964527D42E5d685DD6a;
     address constant cEth = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+    address constant cComp = 0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4;
     address constant cBat = 0x6C8c6b02E7b2BE14d4fA6022Dfd6d75921D90E4E;
     address constant cTusd = 0x12392F67bdf24faE0AF363c24aC620a2f67DAd86;
     address constant cUni = 0x35A18000230DA775CAc24873d00Ff85BccdeD550;
-    address constant cComp = 0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4;
     address constant cZrx = 0xB3319f5D18Bc0D84dD1b4825Dcde5d5f7266d407;
     address constant cLink = 0xFAce851a4921ce59e912d19329929CE6da6EB0c7;
     address constant cMkr = 0x95b4eF2869eBD94BEb4eEE400a99824BF5DC325b;
@@ -38,5 +54,25 @@ contract Config {
     address constant cUsdp = 0x041171993284df560249B57358F931D9eB7b925D;
     address constant cSushi = 0x4B0181102A0112A2ef11AbEE5563bb4a3176c9d7;
 
-    address constant comptrollerAddress = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public morphoDao = 0xcBa28b38103307Ec8dA98377ffF9816C164f9AFa;
+    IComptroller public comptroller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+
+    ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
+
+    TransparentUpgradeableProxy public lensProxy =
+        TransparentUpgradeableProxy(payable(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67));
+    TransparentUpgradeableProxy public morphoProxy =
+        TransparentUpgradeableProxy(payable(0x8888882f8f843896699869179fB6E4f7e3B58888));
+    TransparentUpgradeableProxy public rewardsManagerProxy;
+
+    Lens public lensImplV1;
+    Morpho public morphoImplV1;
+    RewardsManager public rewardsManagerImplV1;
+
+    Lens public lens;
+    Morpho public morpho;
+    RewardsManager public rewardsManager;
+    IIncentivesVault public incentivesVault;
+    IPositionsManager public positionsManager;
+    IInterestRatesManager public interestRatesManager;
 }
