@@ -47,7 +47,8 @@ contract Config is BaseConfig {
 
     ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
 
-    TransparentUpgradeableProxy public lensProxy;
+    TransparentUpgradeableProxy public lensProxy =
+        TransparentUpgradeableProxy(payable(0x8706256509684E9cD93B7F19254775CE9324c226));
     TransparentUpgradeableProxy public morphoProxy =
         TransparentUpgradeableProxy(payable(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0));
     TransparentUpgradeableProxy public rewardsManagerProxy;

@@ -141,12 +141,12 @@ contract TestBorrow is TestSetup {
             "unexpected borrowed balance change"
         );
         assertLe(
-            test.borrowedOnPoolBefore + test.borrowedInP2PBefore,
+            test.totalBorrowedBefore,
             test.borrowedAmount,
             "greater borrowed amount than expected"
         );
         assertGe(
-            test.borrowedOnPoolBefore + test.borrowedInP2PBefore + 10**(test.borrowedDecimals / 2),
+            test.totalBorrowedBefore + 10**(test.borrowedDecimals / 2),
             test.borrowedAmount,
             "unexpected borrowed amount"
         );

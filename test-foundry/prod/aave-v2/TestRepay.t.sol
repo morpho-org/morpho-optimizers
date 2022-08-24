@@ -137,7 +137,7 @@ contract TestRepay is TestSetup {
             "unexpected borrowed balance before repay"
         );
 
-        (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
+        (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         assertGe(
@@ -161,7 +161,7 @@ contract TestRepay is TestSetup {
             "unexpected borrowed balance after repay"
         );
 
-        (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
+        (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         assertEq(test.borrowedOnPoolAfter, 0, "unexpected pool borrowed amount after repay");

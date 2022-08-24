@@ -148,14 +148,10 @@ contract TestBorrow is TestSetup {
             test.borrowedBalanceBefore + test.borrowedAmount,
             "unexpected borrowed balance change"
         );
-        assertLe(
-            test.borrowedOnPoolBefore + test.borrowedInP2PBefore,
+        assertApproxEqAbs(
+            test.totalBorrowedBefore,
             test.borrowedAmount,
-            "greater borrowed amount than expected"
-        );
-        assertGe(
-            test.borrowedOnPoolBefore + test.borrowedInP2PBefore + 10**(test.borrowedDecimals / 2),
-            test.borrowedAmount,
+            1,
             "unexpected borrowed amount"
         );
         if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
@@ -188,26 +184,28 @@ contract TestBorrow is TestSetup {
         );
 
         vm.roll(block.number + 500);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         morpho.updateIndexes(address(test.borrowedPoolToken));
 
         vm.roll(block.number + 500);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         test.unclaimedRewardsAfter = rewardsManager.getUserUnclaimedRewards(
             borrowedPoolTokens,
             address(borrower1)
         );
-        (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
+        (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.wadMul(
-            1e18 + test.poolBorrowRatePerYear * 1_000
+            1e27 + (test.poolBorrowRatePerYear * 60 * 60 * 48) / 365 days
         );
         uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.wadMul(
-            1e18 + test.p2pBorrowRatePerYear * 1_000
+            1e27 + (test.p2pBorrowRatePerYear * 60 * 60 * 48) / 365 days
         );
         uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.wadMul(
-            1e18 + test.borrowRatePerYear * 1_000
+            1e27 + (test.borrowRatePerYear * 60 * 60 * 48) / 365 days
         );
 
         assertApproxEqAbs(

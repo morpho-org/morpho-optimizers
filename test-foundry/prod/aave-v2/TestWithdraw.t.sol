@@ -66,7 +66,7 @@ contract TestWithdraw is TestSetup {
 
         supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore);
 
-        (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
+        (test.underlyingInP2PAfter, test.underlyingOnPoolAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
         assertEq(
@@ -79,8 +79,8 @@ contract TestWithdraw is TestSetup {
             supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore); // Withdraw accrued interests.
 
             (
-                test.underlyingOnPoolAfter,
                 test.underlyingInP2PAfter,
+                test.underlyingOnPoolAfter,
                 test.totalUnderlyingAfter
             ) = lens.getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
         }

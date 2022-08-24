@@ -80,13 +80,9 @@ contract TestSupply is TestSetup {
             0,
             "unexpected underlying balance after"
         );
-        assertLe(
-            test.underlyingOnPoolBefore + test.underlyingInP2PBefore,
-            amount,
-            "greater supplied amount than expected"
-        );
+        assertLe(test.totalUnderlyingBefore, amount, "greater supplied amount than expected");
         assertGe(
-            test.underlyingOnPoolBefore + test.underlyingInP2PBefore + 10**(test.decimals / 2),
+            test.totalUnderlyingBefore + 10**(test.decimals / 2),
             amount,
             "unexpected supplied amount"
         );

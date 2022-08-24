@@ -45,7 +45,7 @@ contract TestSupply is TestSetup {
 
         (, test.p2pBorrowDelta, , ) = morpho.deltas(address(test.poolToken));
         (, , , , , , test.p2pDisabled) = morpho.market(address(test.poolToken));
-        test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
+        test.morphoBalanceOnPoolBefore = test.poolToken.scaledBalanceOf(address(morpho));
         test.morphoBorrowOnPoolBefore = test
         .variablePoolToken
         .scaledBalanceOf(address(morpho))
@@ -76,13 +76,6 @@ contract TestSupply is TestSetup {
             address(supplier1)
         );
 
-        address[] memory poolTokens = new address[](1);
-        poolTokens[0] = address(test.poolToken);
-        test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-            poolTokens,
-            address(supplier1)
-        );
-
         test.underlyingInP2PBefore = test.balanceInP2P.wadMul(test.p2pSupplyIndex);
         test.underlyingOnPoolBefore = test.balanceOnPool.rayMul(test.poolSupplyIndex);
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
@@ -92,18 +85,24 @@ contract TestSupply is TestSetup {
             0,
             "unexpected underlying balance after"
         );
-        assertLe(
-            test.underlyingOnPoolBefore + test.underlyingInP2PBefore,
+        assertApproxEqAbs(
+            test.totalUnderlyingBefore,
             amount,
-            "greater supplied amount than expected"
-        );
-        assertGe(
-            test.underlyingOnPoolBefore + test.underlyingInP2PBefore + 10**(test.decimals / 2),
-            amount,
-            "unexpected supplied amount"
+            1,
+            "unexpected total supplied amount"
         );
         if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "expected no match");
-        assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+
+        address[] memory poolTokens = new address[](1);
+        poolTokens[0] = address(test.poolToken);
+        if (address(rewardsManager) != address(0)) {
+            test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
+                poolTokens,
+                address(supplier1)
+            );
+
+            assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
+        }
 
         assertApproxEqAbs(
             test.variablePoolToken.scaledBalanceOf(address(morpho)).rayMul(test.poolSupplyIndex) +
@@ -133,32 +132,30 @@ contract TestSupply is TestSetup {
             "unexpected morpho underlying balance"
         );
         assertEq(
-            test.poolToken.balanceOf(address(morpho)),
+            test.poolToken.scaledBalanceOf(address(morpho)),
             test.morphoBalanceOnPoolBefore + test.balanceOnPool,
             "unexpected morpho underlying balance on pool"
         );
 
         vm.roll(block.number + 500);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
         morpho.updateIndexes(address(test.poolToken));
 
         vm.roll(block.number + 500);
+        vm.warp(block.timestamp + 60 * 60 * 24);
 
-        test.unclaimedRewardsAfter = rewardsManager.getUserUnclaimedRewards(
-            poolTokens,
-            address(supplier1)
-        );
-        (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
+        (test.underlyingInP2PAfter, test.underlyingOnPoolAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
-        uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.wadMul(
-            1e18 + test.poolSupplyRatePerYear * 1_000
+        uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.rayMul(
+            1e27 + (test.poolSupplyRatePerYear * 60 * 60 * 48) / 365 days
         );
-        uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.wadMul(
-            1e18 + test.p2pSupplyRatePerYear * 1_000
+        uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.rayMul(
+            1e27 + (test.p2pSupplyRatePerYear * 60 * 60 * 48) / 365 days
         );
-        uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.wadMul(
-            1e18 + test.supplyRatePerYear * 1_000
+        uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.rayMul(
+            1e27 + (test.supplyRatePerYear * 60 * 60 * 48) / 365 days
         );
 
         assertApproxEqAbs(
@@ -186,14 +183,21 @@ contract TestSupply is TestSetup {
             "unexpected total underlying amount"
         );
         if (
+            address(rewardsManager) != address(0) &&
             test.underlyingOnPoolAfter > 0 &&
             block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
-        )
+        ) {
+            test.unclaimedRewardsAfter = rewardsManager.getUserUnclaimedRewards(
+                poolTokens,
+                address(supplier1)
+            );
+
             assertGt(
                 test.unclaimedRewardsAfter,
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );
+        }
     }
 
     function testShouldSupplyAllMarketsP2PAndOnPool(uint8 _marketIndex, uint96 _amount) public {
