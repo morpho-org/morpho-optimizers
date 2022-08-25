@@ -52,7 +52,7 @@ contract User {
     }
 
     function supply(address _poolToken, uint256 _amount) external {
-        morpho.supply(_poolToken, address(this), _amount);
+        morpho.supply(_poolToken, _amount);
     }
 
     function supply(
@@ -80,7 +80,7 @@ contract User {
     }
 
     function repay(address _poolToken, uint256 _amount) external {
-        morpho.repay(_poolToken, address(this), _amount);
+        morpho.repay(_poolToken, _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
