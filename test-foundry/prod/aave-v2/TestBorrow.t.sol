@@ -102,7 +102,9 @@ contract TestBorrow is TestSetup {
                 test.collateralDecimals,
                 test.collateralLtv
             ) +
-            10**(test.collateralDecimals - 4);
+            10**(test.collateralDecimals + 1);
+        if (address(test.collateral) == stEth)
+            vm.assume(test.collateral.balanceOf(address(this)) >= test.collateralAmount); // stEth storage cannot be manipulated so `_tip` is limited
         _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
@@ -248,7 +250,7 @@ contract TestBorrow is TestSetup {
         uint8 _collateralMarketIndex,
         uint96 _amount
     ) public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
+        address[] memory activeMarkets = getAllBorrowingEnabledMarkets();
         address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
 
         _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
@@ -278,8 +280,8 @@ contract TestBorrow is TestSetup {
         uint8 _collateralMarketIndex,
         uint96 _amount
     ) public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-        address[] memory activeCollateralMarkets = getAllFullyActiveMarkets();
+        address[] memory activeMarkets = getAllBorrowingEnabledMarkets();
+        address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
 
         _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
         _collateralMarketIndex = uint8(_collateralMarketIndex % activeCollateralMarkets.length);

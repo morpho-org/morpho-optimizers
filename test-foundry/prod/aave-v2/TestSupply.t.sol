@@ -51,7 +51,11 @@ contract TestSupply is TestSetup {
         .rayMul(pool.getReserveNormalizedIncome(address(test.underlying)));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
+        uint256 amount = bound(
+            _amount,
+            10**(test.decimals - 6),
+            test.underlying.balanceOf(address(this))
+        );
 
         _tip(address(test.underlying), address(supplier1), amount);
 
@@ -130,9 +134,10 @@ contract TestSupply is TestSetup {
             test.morphoUnderlyingBalanceBefore,
             "unexpected morpho underlying balance"
         );
-        assertEq(
+        assertApproxEqAbs(
             test.poolToken.scaledBalanceOf(address(morpho)),
             test.morphoBalanceOnPoolBefore + test.balanceOnPool,
+            10,
             "unexpected morpho underlying balance on pool"
         );
 

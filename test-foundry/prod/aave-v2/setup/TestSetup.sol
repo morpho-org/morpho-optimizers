@@ -34,6 +34,7 @@ contract TestSetup is Config, Test {
     using WadRayMath for uint256;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using stdStorage for StdStorage;
 
     User public supplier1;
     User public supplier2;
@@ -113,6 +114,19 @@ contract TestSetup is Config, Test {
         deal(yfi, address(this), type(uint256).max);
         deal(usdp, address(this), type(uint256).max);
         deal(sushi, address(this), type(uint256).max);
+        deal(crv, address(this), type(uint256).max);
+
+        deal(address(this), type(uint256).max);
+        (bool deposited, ) = payable(stEth).call{value: 100_000 ether}("");
+        require(deposited, "ETH not deposited into stEth");
+
+        uint256 balance = ERC20(stEth).balanceOf(stEthWhale);
+        vm.prank(stEthWhale);
+        ERC20(stEth).transfer(address(this), balance);
+
+        balance = ERC20(stEth).balanceOf(stEthWhale2);
+        vm.prank(stEthWhale2);
+        ERC20(stEth).transfer(address(this), balance);
     }
 
     function setContractsLabels() internal {
@@ -145,6 +159,8 @@ contract TestSetup is Config, Test {
         vm.label(address(yfi), "YFI");
         vm.label(address(usdp), "USDP");
         vm.label(address(sushi), "SUSHI");
+        vm.label(address(crv), "CRV");
+        vm.label(address(stEth), "stETH");
 
         vm.label(address(aAave), "aAAVE");
         vm.label(address(aDai), "aDAI");
@@ -208,6 +224,40 @@ contract TestSetup is Config, Test {
         }
     }
 
+    function getAllBorrowingEnabledMarkets()
+        public
+        view
+        returns (address[] memory borrowingEnabledMarkets)
+    {
+        address[] memory activeMarkets = getAllFullyActiveMarkets();
+        uint256 nbActiveMarkets = activeMarkets.length;
+
+        uint256 nbBorrowingEnabledMarkets;
+        borrowingEnabledMarkets = new address[](nbActiveMarkets);
+
+        for (uint256 i; i < nbActiveMarkets; ) {
+            address poolToken = activeMarkets[i];
+
+            if (
+                pool
+                    .getConfiguration(IAToken(poolToken).UNDERLYING_ASSET_ADDRESS())
+                    .getBorrowingEnabled()
+            ) {
+                borrowingEnabledMarkets[nbBorrowingEnabledMarkets] = poolToken;
+                ++nbBorrowingEnabledMarkets;
+            } else console.log("Skipping borrowing disabled market:", poolToken);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Resize the array for return
+        assembly {
+            mstore(borrowingEnabledMarkets, nbBorrowingEnabledMarkets)
+        }
+    }
+
     function getAllFullyActiveCollateralMarkets()
         public
         view
@@ -258,12 +308,11 @@ contract TestSetup is Config, Test {
         uint256 _collateralDecimals,
         uint256 _collateralLtv
     ) internal pure returns (uint256) {
-        return
-            (
-                ((_borrowedAmount * _borrowedPrice * 10**_collateralDecimals) /
-                    (_collateralPrice * 10**_borrowedDecimals))
-            )
-                .percentDiv(_collateralLtv);
+        return (
+            ((_borrowedAmount * _borrowedPrice * 10**_collateralDecimals).percentDiv(
+                _collateralLtv
+            ) / (_collateralPrice * 10**_borrowedDecimals))
+        );
     }
 
     /// @dev Allows to add ERC20 tokens to the current balance of a given user (instead of resetting it via `deal`).

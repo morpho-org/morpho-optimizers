@@ -272,7 +272,7 @@ contract TestBorrow is TestSetup {
         uint96 _amount
     ) public {
         address[] memory activeMarkets = getAllFullyActiveMarkets();
-        address[] memory activeCollateralMarkets = getAllFullyActiveMarkets();
+        address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
 
         _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
         _collateralMarketIndex = uint8(_collateralMarketIndex % activeCollateralMarkets.length);

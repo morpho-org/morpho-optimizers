@@ -33,7 +33,11 @@ contract TestWithdraw is TestSetup {
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(test.decimals - 4), type(uint96).max);
+        uint256 amount = bound(
+            _amount,
+            10**(test.decimals - 4),
+            test.underlying.balanceOf(address(this))
+        );
 
         _tip(address(test.underlying), address(supplier1), amount);
 
@@ -71,9 +75,10 @@ contract TestWithdraw is TestSetup {
         (test.underlyingInP2PAfter, test.underlyingOnPoolAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
-        assertEq(
+        assertApproxEqAbs(
             test.underlying.balanceOf(address(supplier1)),
             test.totalUnderlyingBefore,
+            10,
             "unexpected underlying balance after withdraw"
         );
 

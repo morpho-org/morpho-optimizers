@@ -90,7 +90,7 @@ contract TestRepay is TestSetup {
                 test.collateralDecimals,
                 test.collateralLtv
             ) +
-            10**(test.collateralDecimals - 4);
+            10**(test.collateralDecimals + 1);
         _tip(address(test.collateral), address(borrower1), test.collateralAmount);
 
         borrower1.approve(address(test.collateral), test.collateralAmount);
@@ -168,7 +168,7 @@ contract TestRepay is TestSetup {
         uint8 _collateralMarketIndex,
         uint96 _amount
     ) public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
+        address[] memory activeMarkets = getAllBorrowingEnabledMarkets();
         address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
 
         _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
