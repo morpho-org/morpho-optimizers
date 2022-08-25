@@ -122,6 +122,14 @@ contract User {
         morpho.withdraw(_poolToken, _amount);
     }
 
+    function withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver
+    ) external {
+        morpho.withdraw(_poolToken, _amount, _receiver);
+    }
+
     function repay(address _poolToken, uint256 _amount) external {
         morpho.repay(_poolToken, _amount);
     }
