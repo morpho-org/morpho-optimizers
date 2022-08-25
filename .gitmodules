@@ -16,4 +16,3 @@
 [submodule "lib/morpho-utils"]
 	path = lib/morpho-utils
 	url = https://github.com/morpho-dao/morpho-utils
-	branch = perf/percentage-math-1
