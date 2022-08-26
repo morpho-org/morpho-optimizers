@@ -266,7 +266,7 @@ contract TestLens is TestSetup {
         assertEq(borrowableDaiAfter, borrowableDaiBefore / 2, "cannot borrow half DAI");
 
         vm.expectRevert(ExitPositionsManager.UnauthorisedWithdraw.selector);
-        borrower1.withdraw(aAave, withdrawableAaveAfter + 1e4);
+        borrower1.withdraw(aAave, withdrawableAaveAfter + 1e8);
     }
 
     function testUserBalanceWithoutMatching() public {
