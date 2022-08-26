@@ -1,175 +1,158 @@
-# Morpho Protocol V1 🦋
+# Morpho Core Protocol V1
 
 [![Test](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml/badge.svg)](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml)
 
-This repository contains the core smart contracts for the Morpho Protocol V1 🦋.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
+  <img alt="" src="https://i.imgur.com/ZiL1Lr2.png">
+</picture>
 
----
+## What is Morpho?
 
-## Testing with [Foundry](https://github.com/foundry-rs/foundry) 🔨
+Morpho is a lending pool optimizer: it improves the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
 
-Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
+- Morpho's rates stay between the supply rate and the borrow rate of the pool, reducing the interests paid by the borrowers while increasing the interests earned by the suppliers. It means that you are getting boosted peer-to-peer rates or, in the worst case scenario, the APY of the pool.
+- Morpho also preserves the same experience, the same liquidity and the same parameters (collateral factors, oracles, …) as the underlying pool.
 
-For testing, make sure `yarn` and `foundry` are installed and install dependencies (node_modules, git submodules) with:
+TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave directly.
 
-```bash
-make install
+## Contracts overview
+
+In this repository.
+
+The Morpho protocol is designed at its core with a set of contracts acting as a proxy and communicating with upgradeable pieces of logic via calls (to implementation contracts) and delegate calls (to delegation contracts). Here is a brief overview of the Morpho protocol's contracts interactions:
+
+![image](https://user-images.githubusercontent.com/44097430/170581601-307fbaae-2a27-4065-a9d1-f43172e4a30e.png)
+
+The protocol's storage, located at Morpho's main proxy contract, is defined in the `MorphoStorage` (For example for Morpho-Compound: [`MorphoStorage`](./contracts/compound/MorphoStorage.sol)) contract and is used by every delegation contract. Having this overview in mind, Morpho contracts typically fall under the following 4 main categories:
+
+- Core features (supply, borrow, withdraw, repay, liquidate)
+- Underlying logic (peer-to-peer matching, positions management)
+- Peripheral contracts (lending/borrowing incentives, underlying protocol rewards management)
+- Miscellaneous (maths, solidity calls, types)
+
+## Documentation
+
+- [White Paper](https://whitepaper.morpho.xyz)
+- [Morpho Documentation](https://docs.morpho.xyz)
+- Yellow Paper (coming soon)
+
+## Bug bounty
+
+A bug bounty is open on Immunefi. The rewards and scope are defined [here](https://immunefi.com/bounty/morpho/).
+You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) if you find something worrying.
+
+## Deployment Addresses
+
+### Morpho-Compound Mainnet
+
+- Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
+- Morpho Implementation: [0xf29cc0319679b54bd25a8666fc0830b023c6a272](https://etherscan.io/address/0xf29cc0319679b54bd25a8666fc0830b023c6a272)
+- PositionsManager: [0x082bf6702e718483c85423bd279088c215a21302](https://etherscan.io/address/0x082bf6702e718483c85423bd279088c215a21302)
+- InterestRatesManager: [0x2f2d51f4d68a96859d4f69672cbeefd854bd8289](https://etherscan.io/address/0x2f2d51f4d68a96859d4f69672cbeefd854bd8289)
+- RewardsManager Proxy: [0x78681e63b6f3ad81ecd64aecc404d765b529c80d](https://etherscan.io/address/0x78681e63b6f3ad81ecd64aecc404d765b529c80d)
+- RewardsManager Implementation: [0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7](https://etherscan.io/address/0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7)
+- Lens: [0xe8cfa2edbdc110689120724c4828232e473be1b2](https://etherscan.io/address/0xe8cfa2edbdc110689120724c4828232e473be1b2)
+- CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
+
+### Morpho-Aave-V2 Mainnet
+
+- Morpho Proxy: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
+- Morpho Implementation: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
+- EntryPositionsManager: [0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4](https://etherscan.io/address/0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4)
+- ExitPositionsManager: [0xf6998f72b92b81c8f683d30ed8678d348fe9754b](https://etherscan.io/address/0xf6998f72b92b81c8f683d30ed8678d348fe9754b)
+- InterestRatesManager: [0x6176bd8ca7cee64519d6737c51731d33ee7a1d8c](https://etherscan.io/address/0x6176bd8ca7cee64519d6737c51731d33ee7a1d8c)
+- Lens: [0x8706256509684e9cd93b7f19254775ce9324c226](https://etherscan.io/address/0x8706256509684e9cd93b7f19254775ce9324c226)
+
+### Common Mainnet
+
+- ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
+
+## Licensing
+
+The code is under the GNU General Public License v3.0 license, see [`LICENSE`](https://github.com/morphodao/morpho-core-v1/blob/main/LICENSE).
+
+## Setup & Testing
+
+First, you must install dependencies with:
+
+```
+yarn
 ```
 
-Alternatively, if you only want to set up
+To conduct test or deploy contracts you must create an environment file named `.env.local` and fill the environment variables.
 
-Refer to the `env.example` for the required environment variable.
-
-To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
-
-To run every test of a specific protocol (e.g. for Morpho-Compound):
-
-```bash
-make test PROTOCOL=compound
+```
+cp .env.example .env.local
 ```
 
-or to run only a specific set of tests of a specific protocol (e.g. for Morpho-Aave V2):
+For the RPC endpoint you can choose your preferred one (do not forget to update the `Makefile` or `hardhat.config.js` accordingly).
+`DEPLOYER_PRIVATE_KEY` is only required to deploy contracts.
 
-```bash
-make c-TestBorrow PROTOCOL=aave-v2
+### Testing with Foundry
+
+Tests are run against a fork of the Ethereum mainnet, which allows us to interact directly with Compound.
+
+You must install [Foundry](https://github.com/gakonst/foundry). Run the command below to get `foundryup`, the Foundry toolchain installer:
+
+```
+curl -L https://foundry.paradigm.xyz | bash
 ```
 
-or to run an individual test of a specific protocol (e.g. for Morpho-Aave V3):
+If you do not want to use the redirect, feel free to manually download the foundryup installation script from [here](https://github.com/gakonst/foundry).
 
-```bash
-make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
+Then in a new terminal session or after reloading your PATH, run it to get the latest forge version:
+
+```
+foundryup
 ```
 
-For the other commands, check the [Makefile](./Makefile).
+Finally, update git submodules:
 
----
-
-## Testing with Hardhat
-
-Only tests for the [RewardsDistributor](./contracts/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
-
-Just run:
-
-```bash
-yarn test:hardhat
+```
+git submodule init
+git submodule update
 ```
 
----
+To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice.
 
-## Deployment & Upgrades
+To run every tests:
 
-### Network mode (default)
-
-Run the Foundry deployment script with:
-
-```bash
-make script-Deploy PROTOCOL=compound NETWORK=goerli
+```
+make test-compound
 ```
 
-### Local mode
+or to run only the desired test contract:
 
-First start a local EVM:
-
-```bash
-make anvil NETWORK=goerli
+```
+make c-{TestContractName}
+make c-TestBorrow
+make c-TestGovernance
+...
 ```
 
-Then run the Foundry deployment script in a separate shell, using `SMODE=local`:
+or to run individual tests:
 
-```bash
-make script-Deploy PROTOCOL=compound NETWORK=goerli SMODE=local
+```
+make s-{testFunctionName}
+make s-testSupply1
+make s-testSupply2
+...
 ```
 
----
+For the other commands, check the `Makefile`.
 
-## Style guide 💅
+### Testing with hardhat
 
-### Code Formatting
+Some hardhat tests are also present on this repository (testing of the [`IncentivesVault`](./contracts/common/rewards-distribution/RewardsDistributor.sol) contract).
+You just need to run:
 
-We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
-We recommend developers using VS Code to set their local config as below:
-
-```json
-{
-  "editor.formatOnSave": true,
-  "solidity.formatter": "prettier",
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
-}
+```
+yarn test
 ```
 
-In doing so the code will be formatted on each save.
+For the other commands, check the `package.json` file.
 
-We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
+## Questions & Feedback
 
-### Code Style
-
-We follow the Solidity style guide from the [Solidity Documentation](https://docs.soliditylang.org/en/latest/style-guide.html) and the [NatSpec format](https://docs.soliditylang.org/en/latest/natspec-format.html) using this pattern `///`.
-Comments should begin with a capital letter and end with a period. You can check the current code to have an overview of what is expected.
-
----
-
-## Contributing 💪
-
-In this section, you will find some guidelines to read before contributing to the project.
-
-### Creating issues and PRs
-
-Guidelines for creating issues and PRs:
-
-- Issues must be created and labelled with relevant labels (type of issues, high/medium/low priority, etc.).
-- Nothing should be pushed directly to the `main` branch.
-- Pull requests must be created before and branch names must follow this pattern: `feat/<feature-name>`, `test/<test-name>` or `fix/<fix-name>`. `docs`, `ci` can also be used. The goal is to have clear branches names and make easier their management.
-- PRs must be labelled with the relevant labels.
-- Issues must be linked to PRs so that once the PR is merged related issues are closed at the same time.
-- Reviewers must be added to the PR.
-- For commits, install the gitmoji VS Code extension and use the appropriate emoji for each commit. It should match this pattern: `<emoji> (<branch-name>) <commit-message>`. For a real world example: `✨ (feat/new-feature) Add new feature`.
-
-### Before merging a PR
-
-Before merging a PR:
-
-- PR must have been reviewed by reviewers. The must deliver a complete report on the smart contracts (see the section below).
-- Comments and requested changes must have been resolved.
-- PR must have been approved by every reviewers.
-- CI must pass.
-
-For smart contract reviews, a complete report must have been done, not just a reading of the changes in the code. This is very important as a simple change on one line of code can bring dramatic consequences on a smart contracts (bad copy/paste have already lead to hacks).
-For the guidelines on "How to review contracts and write a report?", you can follow this [link](https://morpho-labs.notion.site/How-to-do-a-Smart-Contract-Review-81d1dc692259463993cc7d81544767d1).
-
-By default, PR are rebased with `dev` before merging to keep a clean historic of commits and the branch is deleted. The same process is done from `dev` to `main`.
-
-## Deploying a contract on a network 🚀
-
-You can run the following command to deploy Morpho-Aave's contracts on Mumbai by using foundry:
-
-```bash
-make script-DeployMorphoAaveV2 PROTOCOL=aave-v2 NETWORK=polygon-mumbai
-```
-
-## Publishing and verifying a contract on Etherscan 📡
-
-An etherscan API key is required to verify the contract and placed into your `.env.local` file.
-The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
-
-```bash
-npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>
-npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js --contract contracts/Example.sol:ExampleContract <contract-address>
-```
-
-The second is necessary if contracts with different names share the same ABI.
-
-## Verification on Tenderly 📡
-
-In your `env.local` file, put your tenderly private key. Then you can deploy and directly verify contracts on your tenderly dashboard.
-
-## External resources & documentation 📚
-
-- [General documentation](https://morpho-labs.gitbook.io/morpho-documentation/)
-- [Developer documentation](https://morpho-labs.gitbook.io/technical-documentation/)
-- [Whitepaper](https://whitepaper.morpho.best)
-- [Foundry](https://github.com/gakonst/foundry)
-- [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
-
-## Questions & Feedback 💬
-
-For any question you can send an email to [merlin@mopho.best](mailto:merlin@morpho.best) 😊
+For any question or feedback you can send an email to [merlin@morpho.xyz](mailto:merlin@morpho.xyz).
