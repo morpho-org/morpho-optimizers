@@ -128,7 +128,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pGrowthFactor +
                 _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
         } else {
-            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone have done a flashloan on Aave:
+            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone has done a flashloan on Aave:
             // the peer-to-peer growth factors are set to the pool borrow growth factor.
             p2pSupplyGrowthFactor = poolBorrowGrowthFactor;
             p2pBorrowGrowthFactor = poolBorrowGrowthFactor;
