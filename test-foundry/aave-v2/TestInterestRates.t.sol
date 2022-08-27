@@ -31,8 +31,6 @@ contract TestInterestRates is InterestRatesManager, Test {
         uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.rayDiv(_params.lastPoolSupplyIndex);
         uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(_params.lastPoolBorrowIndex);
         uint256 p2pGrowthFactor = (poolSupplyGrowthFactor.percentMul(PercentageMath.PERCENTAGE_FACTOR - _params.p2pIndexCursor) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor));
-        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor - _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
-        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor + _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
         uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
             ? (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                 _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex))
@@ -41,16 +39,28 @@ contract TestInterestRates is InterestRatesManager, Test {
             ? (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex)).rayDiv(
                 _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex))
             : 0;
-        p2pSupplyIndex_ =
-            _params.lastP2PSupplyIndex.rayMul(
-                (RAY - shareOfTheSupplyDelta).rayMul(p2pSupplyGrowthFactor) +
-                shareOfTheSupplyDelta.rayMul(poolSupplyGrowthFactor)
-            );
-        p2pBorrowIndex_ =
-            _params.lastP2PBorrowIndex.rayMul(
-                (RAY - shareOfTheBorrowDelta).rayMul(p2pBorrowGrowthFactor) +
-                shareOfTheBorrowDelta.rayMul(poolBorrowGrowthFactor)
-            );
+        if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
+            uint256 p2pSupplyGrowthFactor = p2pGrowthFactor - _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
+            uint256 p2pBorrowGrowthFactor = p2pGrowthFactor + _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
+            p2pSupplyIndex_ =
+                _params.lastP2PSupplyIndex.rayMul(
+                    (RAY - shareOfTheSupplyDelta).rayMul(p2pSupplyGrowthFactor) +
+                    shareOfTheSupplyDelta.rayMul(poolSupplyGrowthFactor)
+                );
+            p2pBorrowIndex_ =
+                _params.lastP2PBorrowIndex.rayMul(
+                    (RAY - shareOfTheBorrowDelta).rayMul(p2pBorrowGrowthFactor) +
+                    shareOfTheBorrowDelta.rayMul(poolBorrowGrowthFactor)
+                );
+        } else {
+            p2pSupplyIndex_ =
+                _params.lastP2PSupplyIndex.rayMul(
+                    (RAY - shareOfTheSupplyDelta).rayMul(poolBorrowGrowthFactor) + 
+                    shareOfTheSupplyDelta.rayMul(poolSupplyGrowthFactor)
+                );
+            p2pBorrowIndex_ = 
+                _params.lastP2PBorrowIndex.rayMul(poolBorrowGrowthFactor); 
+        }
     }
 
     function testIndexComputation() public {
@@ -116,6 +126,25 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
             poolBorrowIndexTest,
+            lastPoolSupplyIndexTest,
+            lastPoolBorrowIndexTest,
+            reserveFactor50PerCentTest,
+            p2pIndexCursorTest,
+            Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
+        );
+
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
+    }
+
+    function testIndexComputationEdgeCase() public {
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+            p2pSupplyIndexTest,
+            p2pBorrowIndexTest,
+            poolBorrowIndexTest,
+            poolSupplyIndexTest,
             lastPoolSupplyIndexTest,
             lastPoolBorrowIndexTest,
             reserveFactor50PerCentTest,
