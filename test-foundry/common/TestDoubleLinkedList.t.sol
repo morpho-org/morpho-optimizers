@@ -14,7 +14,7 @@ contract TestDoubleLinkedList is Test {
     address[] public accounts;
     address public ADDR_ZERO = address(0);
 
-    DoubleLinkedList.List public list;
+    DoubleLinkedList.List internal list;
 
     function setUp() public {
         accounts = new address[](NDS);

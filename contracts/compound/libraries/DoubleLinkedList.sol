@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-/// @title Double Linked List.
-/// @author Morpho Labs.
-/// @custom:contact security@morpho.xyz
-/// @notice Modified double linked list with capped sorting insertion.
 library DoubleLinkedList {
     /// STRUCTS ///
 
@@ -16,8 +12,6 @@ library DoubleLinkedList {
 
     struct List {
         mapping(address => Account) accounts;
-        address head;
-        address tail;
     }
 
     /// ERRORS ///
@@ -48,14 +42,14 @@ library DoubleLinkedList {
     /// @param _list The list to get the head.
     /// @return The address of the head.
     function getHead(List storage _list) internal view returns (address) {
-        return _list.head;
+        return _list.accounts[address(0)].next;
     }
 
     /// @notice Returns the address at the tail of the `_list`.
     /// @param _list The list to get the tail.
     /// @return The address of the tail.
     function getTail(List storage _list) internal view returns (address) {
-        return _list.tail;
+        return _list.accounts[address(0)].prev;
     }
 
     /// @notice Returns the next id address from the current `_id`.
@@ -78,13 +72,13 @@ library DoubleLinkedList {
     /// @param _list The list to search in.
     /// @param _id The address of the account.
     function remove(List storage _list, address _id) internal {
+        if (_list.accounts[_id].value == 0) revert AccountDoesNotExist();
         Account memory account = _list.accounts[_id];
-        if (account.value == 0) revert AccountDoesNotExist();
 
         if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
-        else _list.head = account.next;
+        else _list.accounts[address(0)].next = account.next;
         if (account.next != address(0)) _list.accounts[account.next].prev = account.prev;
-        else _list.tail = account.prev;
+        else _list.accounts[address(0)].prev = account.prev;
 
         delete _list.accounts[_id];
     }
@@ -105,50 +99,20 @@ library DoubleLinkedList {
         if (_list.accounts[_id].value != 0) revert AccountAlreadyInserted();
 
         uint256 numberOfIterations;
-        address next = _list.head; // If not added at the end of the list `_id` will be inserted before `next`.
+        address next = _list.accounts[address(0)].next; // `_id` will be inserted before `next`.
 
-        while (
-            numberOfIterations < _maxIterations &&
-            next != address(0) &&
-            _list.accounts[next].value >= _value
-        ) {
+        while (next != address(0) && _list.accounts[next].value >= _value) {
             next = _list.accounts[next].next;
             unchecked {
                 ++numberOfIterations;
             }
         }
+        if (numberOfIterations == _maxIterations) {
+            next = address(0);
+        }
 
-        // Account is not the new tail.
-        if (numberOfIterations < _maxIterations && next != address(0)) {
-            // Account is the new head.
-            if (next == _list.head) {
-                _list.accounts[_id] = Account({prev: address(0), next: next, value: _value});
-                _list.head = _id;
-                _list.accounts[next].prev = _id;
-            }
-            // Account is not the new head.
-            else {
-                address prev = _list.accounts[next].prev;
-                _list.accounts[_id] = Account({prev: prev, next: next, value: _value});
-                _list.accounts[prev].next = _id;
-                _list.accounts[next].prev = _id;
-            }
-        }
-        // Account is the new tail.
-        else {
-            // Account is the new head.
-            if (_list.head == address(0)) {
-                _list.accounts[_id] = Account({prev: address(0), next: address(0), value: _value});
-                _list.head = _id;
-                _list.tail = _id;
-            }
-            // Account is not the new head.
-            else {
-                address tail = _list.tail;
-                _list.accounts[_id] = Account({prev: tail, next: address(0), value: _value});
-                _list.accounts[tail].next = _id;
-                _list.tail = _id;
-            }
-        }
+        _list.accounts[_id] = Account(_list.accounts[next].prev, next, _value);
+        _list.accounts[_list.accounts[next].prev].next = _id;
+        _list.accounts[next].prev = _id;
     }
 }
