@@ -14,7 +14,7 @@ Morpho is a lending pool optimizer: it improves the capital efficiency of positi
 - Morpho's rates stay between the supply rate and the borrow rate of the pool, reducing the interests paid by the borrowers while increasing the interests earned by the suppliers. It means that you are getting boosted peer-to-peer rates or, in the worst case scenario, the APY of the pool.
 - Morpho also preserves the same experience, the same liquidity and the same parameters (collateral factors, oracles, …) as the underlying pool.
 
-TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave directly.
+TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave.
 
 ## Contracts overview
 
@@ -44,7 +44,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 
 ## Deployment Addresses
 
-### Morpho-Compound Mainnet
+### Morpho-Compound Ethereum
 
 - Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
 - Morpho Implementation: [0xf29cc0319679b54bd25a8666fc0830b023c6a272](https://etherscan.io/address/0xf29cc0319679b54bd25a8666fc0830b023c6a272)
@@ -55,7 +55,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 - Lens: [0xe8cfa2edbdc110689120724c4828232e473be1b2](https://etherscan.io/address/0xe8cfa2edbdc110689120724c4828232e473be1b2)
 - CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
 
-### Morpho-Aave-V2 Mainnet
+### Morpho-Aave-V2 Ethereum
 
 - Morpho Proxy: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
 - Morpho Implementation: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
@@ -64,7 +64,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 - InterestRatesManager: [0x6176bd8ca7cee64519d6737c51731d33ee7a1d8c](https://etherscan.io/address/0x6176bd8ca7cee64519d6737c51731d33ee7a1d8c)
 - Lens: [0x8706256509684e9cd93b7f19254775ce9324c226](https://etherscan.io/address/0x8706256509684e9cd93b7f19254775ce9324c226)
 
-### Common Mainnet
+### Common Ethereum
 
 - ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
 
