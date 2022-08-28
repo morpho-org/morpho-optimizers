@@ -7,6 +7,8 @@
   <img alt="" src="https://i.imgur.com/ZiL1Lr2.png">
 </picture>
 
+---
+
 ## What is Morpho?
 
 Morpho is a lending pool optimizer: it improves the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
@@ -15,6 +17,8 @@ Morpho is a lending pool optimizer: it improves the capital efficiency of positi
 - Morpho also preserves the same experience, the same liquidity and the same parameters (collateral factors, oracles, …) as the underlying pool.
 
 TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave.
+
+---
 
 ## Contracts overview
 
@@ -31,16 +35,22 @@ The protocol's storage, located at Morpho's main proxy contract, is defined in t
 - Peripheral contracts (lending/borrowing incentives, underlying protocol rewards management)
 - Miscellaneous (maths, solidity calls, types)
 
+---
+
 ## Documentation
 
 - [White Paper](https://whitepaper.morpho.xyz)
 - [Morpho Documentation](https://docs.morpho.xyz)
 - Yellow Paper (coming soon)
 
+---
+
 ## Bug bounty
 
 A bug bounty is open on Immunefi. The rewards and scope are defined [here](https://immunefi.com/bounty/morpho/).
 You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) if you find something worrying.
+
+---
 
 ## Deployment Addresses
 
@@ -68,91 +78,90 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 
 - ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
 
-## Licensing
+---
 
-The code is under the GNU General Public License v3.0 license, see [`LICENSE`](https://github.com/morphodao/morpho-core-v1/blob/main/LICENSE).
+## Testing with [Foundry](https://github.com/foundry-rs/foundry) 🔨
 
-## Setup & Testing
+Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
 
-First, you must install dependencies with:
+For testing, make sure `yarn` and `foundry` are installed and install dependencies (node_modules, git submodules) with:
 
-```
-yarn
-```
-
-To conduct test or deploy contracts you must create an environment file named `.env.local` and fill the environment variables.
-
-```
-cp .env.example .env.local
+```bash
+make install
 ```
 
-For the RPC endpoint you can choose your preferred one (do not forget to update the `Makefile` or `hardhat.config.js` accordingly).
-`DEPLOYER_PRIVATE_KEY` is only required to deploy contracts.
+Alternatively, if you only want to set up
 
-### Testing with Foundry
+Refer to the `env.example` for the required environment variable.
 
-Tests are run against a fork of the Ethereum mainnet, which allows us to interact directly with Compound.
+To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
-You must install [Foundry](https://github.com/gakonst/foundry). Run the command below to get `foundryup`, the Foundry toolchain installer:
+To run every test of a specific protocol (e.g. for Morpho-Compound):
 
-```
-curl -L https://foundry.paradigm.xyz | bash
-```
-
-If you do not want to use the redirect, feel free to manually download the foundryup installation script from [here](https://github.com/gakonst/foundry).
-
-Then in a new terminal session or after reloading your PATH, run it to get the latest forge version:
-
-```
-foundryup
+```bash
+make test PROTOCOL=compound
 ```
 
-Finally, update git submodules:
+or to run only a specific set of tests of a specific protocol (e.g. for Morpho-Aave V2):
 
-```
-git submodule init
-git submodule update
-```
-
-To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice.
-
-To run every tests:
-
-```
-make test-compound
+```bash
+make c-TestBorrow PROTOCOL=aave-v2
 ```
 
-or to run only the desired test contract:
+or to run an individual test of a specific protocol (e.g. for Morpho-Aave V3):
 
-```
-make c-{TestContractName}
-make c-TestBorrow
-make c-TestGovernance
-...
+```bash
+make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
 ```
 
-or to run individual tests:
+For the other commands, check the [Makefile](./Makefile).
 
-```
-make s-{testFunctionName}
-make s-testSupply1
-make s-testSupply2
-...
-```
+---
 
-For the other commands, check the `Makefile`.
+## Testing with Hardhat
 
-### Testing with hardhat
+Only tests for the [RewardsDistributor](./contracts/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
 
-Some hardhat tests are also present on this repository (testing of the [`IncentivesVault`](./contracts/common/rewards-distribution/RewardsDistributor.sol) contract).
-You just need to run:
+Just run:
 
-```
+```bash
 yarn test
 ```
 
-For the other commands, check the `package.json` file.
+---
+
+## Deployment & Upgrades
+
+### Network mode (default)
+
+Run the Foundry deployment script with:
+
+```bash
+make script-Deploy PROTOCOL=compound NETWORK=goerli
+```
+
+### Local mode
+
+First start a local EVM:
+
+```bash
+make anvil NETWORK=goerli
+```
+
+Then run the Foundry deployment script in a separate shell, using `SMODE=local`:
+
+```bash
+make script-Deploy PROTOCOL=compound NETWORK=goerli SMODE=local
+```
+
+---
 
 ## Questions & Feedback
 
 For any question or feedback you can send an email to [merlin@morpho.xyz](mailto:merlin@morpho.xyz).
+
+---
+
+## Licensing
+
+The code is under the GNU General Public License v3.0 license, see [`LICENSE`](https://github.com/morphodao/morpho-core-v1/blob/main/LICENSE).
