@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
+import "./helpers/FlashLoan.sol";
 
 contract TestSupply is TestSetup {
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
@@ -243,5 +244,20 @@ contract TestSupply is TestSetup {
 
         assertApproxEqAbs(onPool, expectedOnPool, 1, "on pool");
         assertEq(inP2P, 0, "in peer-to-peer");
+    }
+
+    function testSupplyAfterFlashloan() public {
+        uint256 amount = 1_000 ether;
+        uint256 flashLoanAmount = 10_000 ether;
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, amount);
+
+        FlashLoan flashLoan = new FlashLoan(pool);
+        vm.prank(address(supplier2));
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        flashLoan.callFlashLoan(dai, flashLoanAmount);
+
+        vm.warp(block.timestamp + 1);
+        supplier1.supply(aDai, amount);
     }
 }
