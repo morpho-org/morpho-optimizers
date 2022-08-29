@@ -68,10 +68,6 @@ contract User is Test {
         morpho.supply(_poolToken, address(this), _amount, _maxGasForMatching);
     }
 
-    function withdraw(address _poolToken, uint256 _amount) external {
-        morpho.withdraw(_poolToken, _amount);
-    }
-
     function borrow(address _poolToken, uint256 _amount) external {
         morpho.borrow(_poolToken, _amount);
     }
@@ -82,6 +78,18 @@ contract User is Test {
         uint256 _maxGasForMatching
     ) external {
         morpho.borrow(_poolToken, _amount, _maxGasForMatching);
+    }
+
+    function withdraw(address _poolToken, uint256 _amount) external {
+        morpho.withdraw(_poolToken, _amount);
+    }
+
+    function withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver
+    ) external {
+        morpho.withdraw(_poolToken, _amount, _receiver);
     }
 
     function repay(address _poolToken, uint256 _amount) external {
