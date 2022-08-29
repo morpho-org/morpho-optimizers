@@ -71,7 +71,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 - Morpho Implementation: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
 - EntryPositionsManager: [0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4](https://etherscan.io/address/0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4)
 - ExitPositionsManager: [0xf6998f72b92b81c8f683d30ed8678d348fe9754b](https://etherscan.io/address/0xf6998f72b92b81c8f683d30ed8678d348fe9754b)
-- InterestRatesManager: [0x6176bd8ca7cee64519d6737c51731d33ee7a1d8c](https://etherscan.io/address/0x6176bd8ca7cee64519d6737c51731d33ee7a1d8c)
+- InterestRatesManager: [0x91b23044d4a8089670309852c7f0a93e5ca8efb7](https://etherscan.io/address/0x91b23044d4a8089670309852c7f0a93e5ca8efb7)
 - Lens: [0x8706256509684e9cd93b7f19254775ce9324c226](https://etherscan.io/address/0x8706256509684e9cd93b7f19254775ce9324c226)
 
 ### Common Ethereum
