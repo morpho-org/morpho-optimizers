@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./aave/IPriceOracleGetter.sol";
 import "./aave/ILendingPool.sol";
-import "./IRewardsManager.sol";
 import "./IMorpho.sol";
 
 interface ILens {
@@ -12,8 +11,6 @@ interface ILens {
     function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns (uint16);
 
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
-
-    function RAY() external view returns (uint256);
 
     function morpho() external view returns (IMorpho);
 
