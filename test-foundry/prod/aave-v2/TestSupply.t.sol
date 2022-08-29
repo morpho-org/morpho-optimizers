@@ -48,7 +48,7 @@ contract TestSupply is TestSetup {
         test.morphoBorrowOnPoolBefore = test
         .variablePoolToken
         .scaledBalanceOf(address(morpho))
-        .rayMul(pool.getReserveNormalizedIncome(address(test.underlying)));
+        .rayMul(pool.getReserveNormalizedVariableDebt(address(test.underlying)));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
         uint256 amount = bound(
@@ -79,7 +79,7 @@ contract TestSupply is TestSetup {
             address(supplier1)
         );
 
-        test.underlyingInP2PBefore = test.balanceInP2P.wadMul(test.p2pSupplyIndex);
+        test.underlyingInP2PBefore = test.balanceInP2P.rayMul(test.p2pSupplyIndex);
         test.underlyingOnPoolBefore = test.balanceOnPool.rayMul(test.poolSupplyIndex);
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
 
@@ -108,7 +108,7 @@ contract TestSupply is TestSetup {
         }
 
         assertApproxEqAbs(
-            test.variablePoolToken.scaledBalanceOf(address(morpho)).rayMul(test.poolSupplyIndex) +
+            test.variablePoolToken.scaledBalanceOf(address(morpho)).rayMul(test.poolBorrowIndex) +
                 test.underlyingInP2PBefore,
             test.morphoBorrowOnPoolBefore,
             10**(test.decimals / 2),

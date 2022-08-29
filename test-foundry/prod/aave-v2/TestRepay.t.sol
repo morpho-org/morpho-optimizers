@@ -143,7 +143,7 @@ contract TestRepay is TestSetup {
         _tip(
             address(test.borrowed),
             address(borrower1),
-            test.totalBorrowedAfter - test.borrowed.balanceOf(address(borrower1))
+            test.totalBorrowedAfter - test.totalBorrowedBefore
         );
         borrower1.approve(address(test.borrowed), type(uint256).max);
         borrower1.repay(address(test.borrowedPoolToken), type(uint256).max);

@@ -6,6 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestBorrow is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     struct BorrowTest {
         ERC20 collateral;
@@ -162,7 +163,7 @@ contract TestBorrow is TestSetup {
             assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
         }
 
-        if (test.p2pSupplyDelta <= test.borrowedAmount.rayDiv(test.poolSupplyIndex))
+        if (test.p2pSupplyDelta.rayMul(test.poolSupplyIndex) <= test.borrowedAmount)
             assertGe(
                 test.borrowedInP2PBefore,
                 test.p2pSupplyDelta.rayMul(test.poolSupplyIndex),
@@ -301,9 +302,9 @@ contract TestBorrow is TestSetup {
                 test.collateralDecimals,
                 test.collateralLtv
             );
-            test.collateralAmount -= test.collateralAmount < 10**(test.collateralDecimals - 5)
-                ? test.collateralAmount
-                : 10**(test.collateralDecimals - 5);
+            test.collateralAmount = test.collateralAmount.zeroFloorSub(
+                10**(test.collateralDecimals - 5)
+            );
 
             if (test.collateralAmount > 0) {
                 _tip(address(test.collateral), address(borrower1), test.collateralAmount);

@@ -324,8 +324,6 @@ contract TestSetup is Config, Test {
     ) internal {
         if (_amount == 0) return;
 
-        if (_underlying == wEth) deal(wEth, wEth.balance + _amount); // Refill wrapped Ether.
-
         ERC20(_underlying).safeTransfer(_user, _amount);
     }
 }
