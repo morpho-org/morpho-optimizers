@@ -95,10 +95,7 @@ abstract contract UsersLens is IndexesLens {
             (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice
         );
 
-        if (
-            assetData.liquidationThreshold > 0 &&
-            liquidityData.debt < liquidityData.liquidationThreshold
-        )
+        if (assetData.liquidationThreshold > 0)
             withdrawable = Math.min(
                 withdrawable,
                 ((liquidityData.liquidationThreshold - liquidityData.debt).percentDiv(
