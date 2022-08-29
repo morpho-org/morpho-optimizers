@@ -56,7 +56,7 @@ contract User is Test {
 
     function supply(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
-        morpho.supply(_poolToken, address(this), _amount);
+        morpho.supply(_poolToken, _amount);
     }
 
     function supply(
@@ -86,7 +86,7 @@ contract User is Test {
 
     function repay(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
-        morpho.repay(_poolToken, address(this), _amount);
+        morpho.repay(_poolToken, _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
