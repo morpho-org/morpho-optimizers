@@ -4,11 +4,12 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestSupply is TestSetup {
-    using CompoundMath for uint256;
+    using WadRayMath for uint256;
 
     struct SupplyTest {
         ERC20 underlying;
-        ICToken poolToken;
+        IAToken poolToken;
+        IVariableDebtToken variablePoolToken;
         uint256 decimals;
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoBorrowOnPoolBefore;
@@ -18,9 +19,9 @@ contract TestSupply is TestSetup {
         uint256 poolBorrowIndex;
         bool p2pDisabled;
         uint256 p2pBorrowDelta;
-        uint256 supplyRatePerBlock;
-        uint256 p2pSupplyRatePerBlock;
-        uint256 poolSupplyRatePerBlock;
+        uint256 supplyRatePerYear;
+        uint256 p2pSupplyRatePerYear;
+        uint256 poolSupplyRatePerYear;
         uint256 balanceInP2P;
         uint256 balanceOnPool;
         uint256 unclaimedRewardsBefore;
@@ -35,13 +36,20 @@ contract TestSupply is TestSetup {
 
     function _testShouldSupplyMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
         SupplyTest memory test;
-        test.poolToken = ICToken(_poolToken);
-        (test.underlying, test.decimals) = _getUnderlying(_poolToken);
+        test.poolToken = IAToken(_poolToken);
+        test.underlying = ERC20(test.poolToken.UNDERLYING_ASSET_ADDRESS());
+        test.variablePoolToken = IVariableDebtToken(
+            pool.getReserveData(address(test.underlying)).variableDebtTokenAddress
+        );
+        test.decimals = test.underlying.decimals();
 
         (, test.p2pBorrowDelta, , ) = morpho.deltas(address(test.poolToken));
-        test.p2pDisabled = morpho.p2pDisabled(address(test.poolToken));
+        (, , , , , , test.p2pDisabled) = morpho.market(address(test.poolToken));
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
-        test.morphoBorrowOnPoolBefore = test.poolToken.borrowBalanceCurrent(address(morpho));
+        test.morphoBorrowOnPoolBefore = test
+        .variablePoolToken
+        .scaledBalanceOf(address(morpho))
+        .rayMul(pool.getReserveNormalizedIncome(address(test.underlying)));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
         uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
@@ -52,13 +60,14 @@ contract TestSupply is TestSetup {
         supplier1.supply(address(test.poolToken), amount);
 
         test.p2pSupplyIndex = morpho.p2pSupplyIndex(address(test.poolToken));
-        test.poolSupplyIndex = test.poolToken.exchangeRateCurrent();
-        test.poolBorrowIndex = test.poolToken.borrowIndex();
-        test.supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
+        (, test.poolSupplyIndex, test.poolBorrowIndex) = morpho.poolIndexes(
+            address(test.poolToken)
+        );
+        test.supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(
             address(test.poolToken),
             address(supplier1)
         );
-        (test.p2pSupplyRatePerBlock, , test.poolSupplyRatePerBlock, ) = lens.getRatesPerBlock(
+        (test.p2pSupplyRatePerYear, , test.poolSupplyRatePerYear, ) = lens.getRatesPerYear(
             address(test.poolToken)
         );
 
@@ -69,10 +78,13 @@ contract TestSupply is TestSetup {
 
         address[] memory poolTokens = new address[](1);
         poolTokens[0] = address(test.poolToken);
-        test.unclaimedRewardsBefore = lens.getUserUnclaimedRewards(poolTokens, address(supplier1));
+        test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
+            poolTokens,
+            address(supplier1)
+        );
 
-        test.underlyingInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
-        test.underlyingOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
+        test.underlyingInP2PBefore = test.balanceInP2P.wadMul(test.p2pSupplyIndex);
+        test.underlyingOnPoolBefore = test.balanceOnPool.rayMul(test.poolSupplyIndex);
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
 
         assertEq(
@@ -94,16 +106,17 @@ contract TestSupply is TestSetup {
         assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
 
         assertApproxEqAbs(
-            test.poolToken.borrowBalanceCurrent(address(morpho)) + test.underlyingInP2PBefore,
+            test.variablePoolToken.scaledBalanceOf(address(morpho)).rayMul(test.poolSupplyIndex) +
+                test.underlyingInP2PBefore,
             test.morphoBorrowOnPoolBefore,
             10**(test.decimals / 2),
             "unexpected morpho borrow balance"
         );
 
-        if (test.p2pBorrowDelta <= amount.div(test.poolBorrowIndex))
+        if (test.p2pBorrowDelta <= amount.rayDiv(test.poolBorrowIndex))
             assertGe(
                 test.underlyingInP2PBefore,
-                test.p2pBorrowDelta.mul(test.poolBorrowIndex),
+                test.p2pBorrowDelta.rayMul(test.poolBorrowIndex),
                 "expected p2p borrow delta minimum match"
             );
         else
@@ -127,22 +140,25 @@ contract TestSupply is TestSetup {
 
         vm.roll(block.number + 500);
 
-        morpho.updateP2PIndexes(address(test.poolToken));
+        morpho.updateIndexes(address(test.poolToken));
 
         vm.roll(block.number + 500);
 
-        test.unclaimedRewardsAfter = lens.getUserUnclaimedRewards(poolTokens, address(supplier1));
+        test.unclaimedRewardsAfter = rewardsManager.getUserUnclaimedRewards(
+            poolTokens,
+            address(supplier1)
+        );
         (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
-        uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.mul(
-            1e18 + test.poolSupplyRatePerBlock * 1_000
+        uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.wadMul(
+            1e18 + test.poolSupplyRatePerYear * 1_000
         );
-        uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.mul(
-            1e18 + test.p2pSupplyRatePerBlock * 1_000
+        uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.wadMul(
+            1e18 + test.p2pSupplyRatePerYear * 1_000
         );
-        uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.mul(
-            1e18 + test.supplyRatePerBlock * 1_000
+        uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.wadMul(
+            1e18 + test.supplyRatePerYear * 1_000
         );
 
         assertApproxEqAbs(
@@ -171,7 +187,7 @@ contract TestSupply is TestSetup {
         );
         if (
             test.underlyingOnPoolAfter > 0 &&
-            morpho.comptroller().compSupplySpeeds(address(test.poolToken)) > 0
+            block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
         )
             assertGt(
                 test.unclaimedRewardsAfter,
@@ -193,9 +209,9 @@ contract TestSupply is TestSetup {
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             SupplyTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            test.poolToken = IAToken(activeMarkets[marketIndex]);
 
-            vm.expectRevert(PositionsManager.AmountIsZero.selector);
+            vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
             supplier1.supply(address(test.poolToken), 0);
         }
     }
@@ -205,12 +221,13 @@ contract TestSupply is TestSetup {
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             SupplyTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
-            (test.underlying, test.decimals) = _getUnderlying(activeMarkets[marketIndex]);
+            test.poolToken = IAToken(activeMarkets[marketIndex]);
+            test.underlying = ERC20(test.poolToken.UNDERLYING_ASSET_ADDRESS());
+            test.decimals = test.underlying.decimals();
 
             uint256 amount = bound(_amount, 10**(test.decimals - 6), type(uint96).max);
 
-            vm.expectRevert(PositionsManager.AddressIsZero.selector);
+            vm.expectRevert(PositionsManagerUtils.AddressIsZero.selector);
             supplier1.supply(address(test.poolToken), address(0), amount);
         }
     }

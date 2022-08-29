@@ -1,25 +1,39 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/IRewardsManager.sol";
-import "@contracts/compound/interfaces/IMorpho.sol";
+import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
+import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
+import "@contracts/aave-v2/interfaces/IMorpho.sol";
 
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/compound/libraries/CompoundMath.sol";
+import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-dao/morpho-utils/math/Math.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@contracts/aave-v2/libraries/Types.sol";
 
-import {User} from "../../../compound/helpers/User.sol";
+import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
+import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
+import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
+import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
+import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
+import {PositionsManagerUtils} from "@contracts/aave-v2/PositionsManagerUtils.sol";
+import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
+import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
+import "@contracts/aave-v2/Morpho.sol";
+
+import "../../../common/helpers/Chains.sol";
+import {User} from "../../../aave-v2/helpers/User.sol";
+import {Utils} from "../../../aave-v2/setup/Utils.sol";
 import "@config/Config.sol";
-import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
-import "@forge-std/Vm.sol";
+import "@forge-std/console.sol";
 
 contract TestSetup is Config, Test {
-    using CompoundMath for uint256;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using WadRayMath for uint256;
+    using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
-
-    // MorphoToken public morphoToken;
 
     User public supplier1;
     User public supplier2;
@@ -49,15 +63,13 @@ contract TestSetup is Config, Test {
 
         lens = Lens(address(lensProxy));
         morpho = Morpho(payable(morphoProxy));
-        rewardsManager = RewardsManager(address(morpho.rewardsManager()));
+        rewardsManager = morpho.rewardsManager();
         incentivesVault = morpho.incentivesVault();
-        positionsManager = morpho.positionsManager();
+        entryPositionsManager = morpho.entryPositionsManager();
+        exitPositionsManager = morpho.exitPositionsManager();
         interestRatesManager = morpho.interestRatesManager();
 
         rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
-
-        // morphoToken = new MorphoToken(address(this));
-        // morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
     }
 
     function initUsers() internal {
@@ -104,14 +116,15 @@ contract TestSetup is Config, Test {
     }
 
     function setContractsLabels() internal {
+        vm.label(address(poolAddressesProvider), "PoolAddressesProvider");
+        vm.label(address(aaveIncentivesController), "IncentivesController");
+        vm.label(address(pool), "LendingPool");
         vm.label(address(proxyAdmin), "ProxyAdmin");
         vm.label(address(morphoImplV1), "MorphoImplV1");
         vm.label(address(morpho), "Morpho");
         vm.label(address(interestRatesManager), "InterestRatesManager");
         vm.label(address(rewardsManager), "RewardsManager");
-        // vm.label(address(morphoToken), "MorphoToken");
-        vm.label(address(comptroller), "Comptroller");
-        vm.label(comptroller.oracle(), "CompoundOracle");
+        vm.label(address(oracle), "Oracle");
         vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 
@@ -133,27 +146,16 @@ contract TestSetup is Config, Test {
         vm.label(address(usdp), "USDP");
         vm.label(address(sushi), "SUSHI");
 
-        vm.label(address(cAave), "cAAVE");
-        vm.label(address(cDai), "cDAI");
-        vm.label(address(cUsdc), "cUSDC");
-        vm.label(address(cUsdt), "cUSDT");
-        vm.label(address(cWbtc2), "cWBTC");
-        vm.label(address(cEth), "cWETH");
-        vm.label(address(cComp), "cCOMP");
-        vm.label(address(cBat), "cBAT");
-        vm.label(address(cTusd), "cTUSD");
-        vm.label(address(cUni), "cUNI");
-        vm.label(address(cZrx), "cZRX");
-        vm.label(address(cLink), "cLINK");
-        vm.label(address(cMkr), "cMKR");
-        vm.label(address(cFei), "cFEI");
-        vm.label(address(cYfi), "cYFI");
-        vm.label(address(cUsdp), "cUSDP");
-        vm.label(address(cSushi), "cSUSHI");
+        vm.label(address(aAave), "aAAVE");
+        vm.label(address(aDai), "aDAI");
+        vm.label(address(aUsdc), "aUSDC");
+        vm.label(address(aUsdt), "aUSDT");
+        vm.label(address(aWbtc), "aWBTC");
+        vm.label(address(aWeth), "aWETH");
     }
 
     function getAllFullyActiveMarkets() public view returns (address[] memory activeMarkets) {
-        address[] memory createdMarkets = morpho.getAllMarkets();
+        address[] memory createdMarkets = morpho.getMarketsCreated();
         uint256 nbCreatedMarkets = createdMarkets.length;
 
         uint256 nbActiveMarkets;
@@ -162,7 +164,7 @@ contract TestSetup is Config, Test {
         for (uint256 i; i < nbCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
+            (, , , , bool isPaused, bool isPartiallyPaused, ) = morpho.market(poolToken);
             if (!isPaused && !isPartiallyPaused) {
                 activeMarkets[nbActiveMarkets] = poolToken;
                 ++nbActiveMarkets;
@@ -180,7 +182,7 @@ contract TestSetup is Config, Test {
     }
 
     function getAllUnpausedMarkets() public view returns (address[] memory unpausedMarkets) {
-        address[] memory createdMarkets = morpho.getAllMarkets();
+        address[] memory createdMarkets = morpho.getMarketsCreated();
         uint256 nbCreatedMarkets = createdMarkets.length;
 
         uint256 nbActiveMarkets;
@@ -189,7 +191,7 @@ contract TestSetup is Config, Test {
         for (uint256 i; i < nbCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            (, bool isPaused, ) = morpho.marketStatus(poolToken);
+            (, , , , bool isPaused, , ) = morpho.market(poolToken);
             if (!isPaused) {
                 unpausedMarkets[nbActiveMarkets] = poolToken;
                 ++nbActiveMarkets;
@@ -219,10 +221,11 @@ contract TestSetup is Config, Test {
 
         for (uint256 i; i < nbActiveMarkets; ) {
             address poolToken = activeMarkets[i];
+            address underlying = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
 
-            (, uint256 collateralFactor, ) = morpho.comptroller().markets(poolToken);
-            (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
-            if (collateralFactor > 0 && !isPaused && !isPartiallyPaused) {
+            (uint256 ltv, , , , ) = pool.getConfiguration(underlying).getParamsMemory();
+            (, , , , bool isPaused, bool isPartiallyPaused, ) = morpho.market(poolToken);
+            if (ltv > 0 && !isPaused && !isPartiallyPaused) {
                 activeCollateralMarkets[nbActiveCollateralMarkets] = poolToken;
                 ++nbActiveCollateralMarkets;
             } else console.log("Skipping paused (or partially paused) market:", poolToken);
@@ -244,38 +247,19 @@ contract TestSetup is Config, Test {
         address _underlying,
         uint256 _decimals
     ) internal returns (uint256) {
-        uint256 borrowCap = morpho.comptroller().borrowCaps(_poolToken);
-
-        return
-            bound(
-                _amount,
-                10**(_decimals - 6),
-                Math.min(
-                    (borrowCap > 0 ? borrowCap - 1 : type(uint256).max) -
-                        ICToken(_poolToken).totalBorrows(),
-                    _underlying == wEth
-                        ? _poolToken.balance
-                        : ERC20(_underlying).balanceOf(_poolToken)
-                )
-            );
-    }
-
-    function _getUnderlying(address _poolToken)
-        internal
-        view
-        returns (ERC20 underlying, uint256 decimals)
-    {
-        underlying = ERC20(_poolToken == cEth ? wEth : ICToken(_poolToken).underlying());
-        decimals = underlying.decimals();
+        return bound(_amount, 10**(_decimals - 6), ERC20(_underlying).balanceOf(_poolToken));
     }
 
     function _getMinimumCollateralAmount(
         uint256 _borrowedAmount,
         uint256 _borrowedPrice,
         uint256 _collateralPrice,
-        uint256 _collateralFactor
+        uint256 _collateralLtv
     ) internal pure returns (uint256) {
-        return _borrowedAmount.mul(_borrowedPrice).div(_collateralFactor).div(_collateralPrice);
+        return
+            _borrowedAmount.wadMul(_borrowedPrice).percentDiv(_collateralLtv).wadDiv(
+                _collateralPrice
+            );
     }
 
     /// @dev Allows to add ERC20 tokens to the current balance of a given user (instead of resetting it via `deal`).

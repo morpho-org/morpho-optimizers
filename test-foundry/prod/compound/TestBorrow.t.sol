@@ -21,7 +21,6 @@ contract TestBorrow is TestSetup {
         uint256 borrowedBalanceBefore;
         uint256 borrowedBalanceAfter;
         uint256 morphoBorrowedOnPoolBefore;
-        uint256 morphoBorrowedBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
         bool p2pDisabled;
         uint256 p2pSupplyDelta;
@@ -66,9 +65,6 @@ contract TestBorrow is TestSetup {
         test.p2pDisabled = morpho.p2pDisabled(address(test.borrowedPoolToken));
         test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
         test.morphoBorrowedOnPoolBefore = test.borrowedPoolToken.borrowBalanceCurrent(
-            address(morpho)
-        );
-        test.morphoBorrowedBalanceOnPoolBefore = test.borrowedPoolToken.balanceOfUnderlying(
             address(morpho)
         );
         test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
@@ -154,8 +150,7 @@ contract TestBorrow is TestSetup {
             test.borrowedAmount,
             "unexpected borrowed amount"
         );
-        if (morpho.p2pDisabled(address(test.borrowedPoolToken)))
-            assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
+        if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
         assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
 
         if (test.p2pSupplyDelta <= test.borrowedAmount.div(test.poolSupplyIndex))

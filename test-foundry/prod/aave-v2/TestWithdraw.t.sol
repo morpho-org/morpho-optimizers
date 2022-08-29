@@ -4,11 +4,11 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestWithdraw is TestSetup {
-    using CompoundMath for uint256;
+    using WadRayMath for uint256;
 
     struct WithdrawTest {
         ERC20 underlying;
-        ICToken poolToken;
+        IAToken poolToken;
         uint256 decimals;
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
@@ -26,8 +26,9 @@ contract TestWithdraw is TestSetup {
 
     function _testShouldWithdrawMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
         WithdrawTest memory test;
-        test.poolToken = ICToken(_poolToken);
-        (test.underlying, test.decimals) = _getUnderlying(_poolToken);
+        test.poolToken = IAToken(_poolToken);
+        test.underlying = ERC20(test.poolToken.UNDERLYING_ASSET_ADDRESS());
+        test.decimals = test.underlying.decimals();
 
         test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
@@ -40,20 +41,20 @@ contract TestWithdraw is TestSetup {
         supplier1.supply(address(test.poolToken), amount);
 
         test.p2pSupplyIndex = morpho.p2pSupplyIndex(address(test.poolToken));
-        test.poolSupplyIndex = test.poolToken.exchangeRateCurrent();
+        (, test.poolSupplyIndex, ) = morpho.poolIndexes(address(test.poolToken));
 
         (test.balanceInP2P, test.balanceOnPool) = morpho.supplyBalanceInOf(
             address(test.poolToken),
             address(supplier1)
         );
 
-        test.underlyingInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
-        test.underlyingOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
+        test.underlyingInP2PBefore = test.balanceInP2P.rayMul(test.p2pSupplyIndex);
+        test.underlyingOnPoolBefore = test.balanceOnPool.rayMul(test.poolSupplyIndex);
         test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
 
         vm.roll(block.number + 10_000);
 
-        morpho.updateP2PIndexes(address(test.poolToken));
+        morpho.updateIndexes(address(test.poolToken));
 
         vm.roll(block.number + 10_000);
 
@@ -102,9 +103,9 @@ contract TestWithdraw is TestSetup {
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             WithdrawTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            test.poolToken = IAToken(activeMarkets[marketIndex]);
 
-            vm.expectRevert(PositionsManager.AmountIsZero.selector);
+            vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
             supplier1.withdraw(address(test.poolToken), 0);
         }
     }
@@ -116,9 +117,9 @@ contract TestWithdraw is TestSetup {
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             WithdrawTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            test.poolToken = IAToken(activeMarkets[marketIndex]);
 
-            vm.expectRevert(PositionsManager.UserNotMemberOfMarket.selector);
+            vm.expectRevert(ExitPositionsManager.UserNotMemberOfMarket.selector);
             supplier1.withdraw(address(test.poolToken), _amount);
         }
     }

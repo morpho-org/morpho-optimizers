@@ -3,8 +3,6 @@ pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
-import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
 import "@contracts/aave-v2/interfaces/IMorpho.sol";
 

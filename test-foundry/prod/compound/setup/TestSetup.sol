@@ -19,8 +19,6 @@ contract TestSetup is Config, Test {
     using CompoundMath for uint256;
     using SafeTransferLib for ERC20;
 
-    // MorphoToken public morphoToken;
-
     User public supplier1;
     User public supplier2;
     User public supplier3;
@@ -55,9 +53,6 @@ contract TestSetup is Config, Test {
         interestRatesManager = morpho.interestRatesManager();
 
         rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
-
-        // morphoToken = new MorphoToken(address(this));
-        // morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
     }
 
     function initUsers() internal {
@@ -109,9 +104,8 @@ contract TestSetup is Config, Test {
         vm.label(address(morpho), "Morpho");
         vm.label(address(interestRatesManager), "InterestRatesManager");
         vm.label(address(rewardsManager), "RewardsManager");
-        // vm.label(address(morphoToken), "MorphoToken");
         vm.label(address(comptroller), "Comptroller");
-        vm.label(comptroller.oracle(), "CompoundOracle");
+        vm.label(address(oracle), "Oracle");
         vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 

@@ -22,7 +22,6 @@ contract TestRepay is TestSetup {
         uint256 borrowedBalanceBefore;
         uint256 borrowedBalanceAfter;
         uint256 morphoBalanceOnPoolBefore;
-        uint256 morphoUnderlyingBalanceBefore;
         uint256 p2pBorrowIndex;
         uint256 poolBorrowIndex;
         uint256 borrowRatePerBlock;
@@ -62,7 +61,6 @@ contract TestRepay is TestSetup {
 
         test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
         test.morphoBalanceOnPoolBefore = test.borrowedPoolToken.balanceOf(address(morpho));
-        test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
 
         test.borrowedAmount = _boundBorrowedAmount(
             _amount,
