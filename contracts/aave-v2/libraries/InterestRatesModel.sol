@@ -65,18 +65,25 @@ library InterestRatesModel {
             _lastPoolIndexes.poolBorrowIndex
         );
 
-        uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
-            growthFactors.poolSupplyGrowthFactor,
-            growthFactors.poolBorrowGrowthFactor,
-            _p2pIndexCursor
-        );
+        if (growthFactors.poolSupplyGrowthFactor <= growthFactors.poolBorrowGrowthFactor) {
+            uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
+                growthFactors.poolSupplyGrowthFactor,
+                growthFactors.poolBorrowGrowthFactor,
+                _p2pIndexCursor
+            );
 
-        growthFactors.p2pSupplyGrowthFactor =
-            p2pGrowthFactor -
-            (p2pGrowthFactor - growthFactors.poolSupplyGrowthFactor).percentMul(_reserveFactor);
-        growthFactors.p2pBorrowGrowthFactor =
-            p2pGrowthFactor +
-            (growthFactors.poolBorrowGrowthFactor - p2pGrowthFactor).percentMul(_reserveFactor);
+            growthFactors.p2pSupplyGrowthFactor =
+                p2pGrowthFactor -
+                (p2pGrowthFactor - growthFactors.poolSupplyGrowthFactor).percentMul(_reserveFactor);
+            growthFactors.p2pBorrowGrowthFactor =
+                p2pGrowthFactor +
+                (growthFactors.poolBorrowGrowthFactor - p2pGrowthFactor).percentMul(_reserveFactor);
+        } else {
+            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone has done a flashloan on Aave:
+            // the peer-to-peer growth factors are set to the pool borrow growth factor.
+            growthFactors.p2pSupplyGrowthFactor = growthFactors.poolBorrowGrowthFactor;
+            growthFactors.p2pBorrowGrowthFactor = growthFactors.poolBorrowGrowthFactor;
+        }
     }
 
     /// @notice Computes and returns the new peer-to-peer supply index of a market given its parameters.
