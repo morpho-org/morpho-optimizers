@@ -273,7 +273,7 @@ contract TestSetup is Config, Test {
     }
 
     /// @dev Allows to add ERC20 tokens to the current balance of a given user (instead of resetting it via `deal`).
-    /// @dev Also avoids to mess with snapshots of snapshotted ERC20 (e.g. AAVE).
+    /// @dev Also avoids to revert because of AAVE token snapshots: https://github.com/aave/aave-token-v2/blob/master/contracts/token/base/GovernancePowerDelegationERC20.sol#L174
     function _tip(
         address _underlying,
         address _user,
