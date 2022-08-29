@@ -79,14 +79,21 @@ abstract contract UsersLens is IndexesLens {
         // Not possible to withdraw nor borrow.
         if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
 
+        uint256 poolTokenBalance = ERC20(IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()).balanceOf(
+            _poolToken
+        );
+
         if (liquidityData.debt < liquidityData.maxDebt)
             borrowable = Math.min(
-                ERC20(IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()).balanceOf(_poolToken),
+                poolTokenBalance,
                 ((liquidityData.maxDebt - liquidityData.debt) * assetData.tokenUnit) /
                     assetData.underlyingPrice
             );
 
-        withdrawable = (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice;
+        withdrawable = Math.min(
+            poolTokenBalance,
+            (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice
+        );
 
         if (
             assetData.liquidationThreshold > 0 &&

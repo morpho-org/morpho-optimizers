@@ -68,8 +68,19 @@ abstract contract UsersLens is IndexesLens {
         // Not possible to withdraw nor borrow.
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        borrowable = (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice);
-        withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
+        uint256 poolTokenBalance = _poolToken == morpho.cEth()
+            ? _poolToken.balance
+            : ERC20(ICToken(_poolToken).underlying()).balanceOf(_poolToken);
+
+        borrowable = Math.min(
+            poolTokenBalance,
+            (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice)
+        );
+        withdrawable = Math.min(
+            poolTokenBalance,
+            assetData.collateralValue.div(assetData.underlyingPrice)
+        );
+
         if (assetData.collateralFactor != 0) {
             withdrawable = CompoundMath.min(
                 withdrawable,
