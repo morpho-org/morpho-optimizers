@@ -241,23 +241,32 @@ contract TestLens is TestSetup {
         (uint256 withdrawableDaiAfter, uint256 borrowableDaiAfter) = lens
         .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        (uint256 ltvAave, , , , ) = pool.getConfiguration(aave).getParamsMemory();
+        Types.AssetLiquidityData memory aaveAssetData;
+        (aaveAssetData.ltv, aaveAssetData.liquidationThreshold, , , ) = pool
+        .getConfiguration(aave)
+        .getParamsMemory();
 
         assertEq(withdrawableAaveBefore, amount, "cannot withdraw all AAVE");
-        assertEq(borrowableAaveBefore, amount.percentMul(ltvAave), "cannot borrow all AAVE");
+        assertEq(
+            borrowableAaveBefore,
+            amount.percentMul(aaveAssetData.ltv),
+            "cannot borrow all AAVE"
+        );
         assertEq(withdrawableDaiBefore, 0, "can withdraw DAI not supplied");
         assertApproxEqAbs(
             borrowableDaiBefore,
-            amount.percentMul(ltvAave).wadMul(
+            amount.percentMul(aaveAssetData.ltv).wadMul(
                 oracle.getAssetPrice(aave).wadDiv(oracle.getAssetPrice(dai))
             ),
             1e3,
             "cannot borrow all DAI"
         );
-        assertEq(withdrawableAaveAfter, withdrawableAaveBefore / 2, "cannot withdraw half AAVE");
         assertEq(borrowableAaveAfter, borrowableAaveBefore / 2, "cannot borrow half AAVE");
-        assertEq(withdrawableDaiAfter, withdrawableDaiBefore / 2, "cannot wiothdraw half DAI");
+        assertEq(withdrawableDaiAfter, 0, "unexpected withdrawable DAI");
         assertEq(borrowableDaiAfter, borrowableDaiBefore / 2, "cannot borrow half DAI");
+
+        vm.expectRevert(ExitPositionsManager.UnauthorisedWithdraw.selector);
+        borrower1.withdraw(aAave, withdrawableAaveAfter + 1e8);
     }
 
     function testUserBalanceWithoutMatching() public {
