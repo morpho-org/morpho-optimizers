@@ -182,9 +182,9 @@ interface ILens {
 
     /// RATES ///
 
-    function getAverageSupplyRatePerBlock(address _poolToken) external view returns (uint256);
+    function getAverageSupplyRatePerYear(address _poolToken) external view returns (uint256);
 
-    function getAverageBorrowRatePerBlock(address _poolToken) external view returns (uint256);
+    function getAverageBorrowRatePerYear(address _poolToken) external view returns (uint256);
 
     function getRatesPerYear(address _poolToken)
         external
@@ -196,12 +196,12 @@ interface ILens {
             uint256 poolBorrowRate
         );
 
-    function getCurrentUserSupplyRatePerBlock(address _poolToken, address _user)
+    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
         external
         view
         returns (uint256);
 
-    function getCurrentUserBorrowRatePerBlock(address _poolToken, address _user)
+    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
         external
         view
         returns (uint256);
@@ -214,7 +214,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 nextSupplyRatePerBlock,
+            uint256 nextSupplyRatePerYear,
             uint256 balanceInP2P,
             uint256 balanceOnPool,
             uint256 totalBalance
@@ -228,7 +228,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 nextBorrowRatePerBlock,
+            uint256 nextBorrowRatePerYear,
             uint256 balanceInP2P,
             uint256 balanceOnPool,
             uint256 totalBalance
