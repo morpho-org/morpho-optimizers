@@ -24,7 +24,7 @@ import {RewardsManager} from "@contracts/aave-v3/RewardsManager.sol";
 import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v3/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v3/ExitPositionsManager.sol";
-import {Lens} from "@contracts/aave-v3/Lens.sol";
+import {Lens} from "@contracts/aave-v3/lens/Lens.sol";
 import "@contracts/aave-v3/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -34,7 +34,7 @@ import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
-import "@forge-std/console.sol";
+import "@forge-std/console2.sol";
 import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Utils {
@@ -122,7 +122,7 @@ contract TestSetup is Config, Utils {
             20
         );
 
-        lens = new Lens(address(morpho), poolAddressesProvider);
+        lens = new Lens(address(morpho));
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
@@ -210,6 +210,7 @@ contract TestSetup is Config, Utils {
         deal(wEth, address(_user), INITIAL_BALANCE * WAD);
         deal(usdt, address(_user), INITIAL_BALANCE * WAD);
         deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
+        deal(wbtc, address(_user), INITIAL_BALANCE * 1e8);
     }
 
     function setContractsLabels() internal {

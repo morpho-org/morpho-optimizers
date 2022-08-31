@@ -127,5 +127,8 @@ storage-layout-check:
 config:
 	@forge config
 
+build:
+	@forge build --force --sizes
+
 
 .PHONY: test config test-common foundry

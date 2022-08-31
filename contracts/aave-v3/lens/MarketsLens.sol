@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./RatesLens.sol";
 
@@ -146,7 +146,7 @@ abstract contract MarketsLens is RatesLens {
         p2pIndexCursor = market.p2pIndexCursor;
 
         (loanToValue, liquidationThreshold, liquidationBonus, decimals) = _getPoolParams(
-            market.underlyingToken
+            underlying
         );
     }
 
@@ -184,7 +184,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     function _getTotalMarketSupply(address _poolToken)
-        public
+        internal
         view
         returns (
             address underlyingToken,
@@ -213,7 +213,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function _getTotalMarketBorrow(address _poolToken)
-        public
+        internal
         view
         returns (
             address underlyingToken,

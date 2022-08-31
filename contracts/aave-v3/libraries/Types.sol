@@ -9,6 +9,17 @@ library MarketLib {
     function isCreatedMemory(Types.Market memory _market) internal pure returns (bool) {
         return _market.underlyingToken != address(0);
     }
+
+    function isPausedMemory(Types.Market memory _market) internal pure returns (bool) {
+        return (_market.isSupplyPaused &&
+            _market.isBorrowPaused &&
+            _market.isWithdrawPaused &&
+            _market.isRepayPaused);
+    }
+
+    function isPartiallyPausedMemory(Types.Market memory _market) internal pure returns (bool) {
+        return (_market.isSupplyPaused && _market.isBorrowPaused);
+    }
 }
 
 /// @title Types.

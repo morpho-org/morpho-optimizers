@@ -40,7 +40,7 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+        uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
@@ -71,7 +71,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
 
-        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+        uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);

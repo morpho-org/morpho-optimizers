@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import {ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
@@ -96,12 +96,11 @@ abstract contract UsersLens is IndexesLens {
             (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice
         );
 
-        if (assetData.liquidationThreshold > 0)
+        if (assetData.ltv > 0)
             withdrawable = Math.min(
                 withdrawable,
-                ((liquidityData.liquidationThreshold - liquidityData.debt).percentDiv(
-                    assetData.liquidationThreshold
-                ) * assetData.tokenUnit) / assetData.underlyingPrice
+                ((liquidityData.maxDebt - liquidityData.debt).percentDiv(assetData.ltv) *
+                    assetData.tokenUnit) / assetData.underlyingPrice
             );
     }
 
@@ -298,7 +297,7 @@ abstract contract UsersLens is IndexesLens {
             assetData.tokenUnit;
     }
 
-    /// @dev Returns pool parameters taking into account whether the asset is set as a collateral by the morpho. contract
+    /// @dev Gets pool parameters taking into account whether the asset is set as a collateral by the morpho contract
     /// @param _underlying The underlying asset address
     /// @return ltv The loan to value.
     /// @return lt The liquidation threshold.
@@ -318,7 +317,7 @@ abstract contract UsersLens is IndexesLens {
             address(morpho)
         );
 
-        (ltv, lt, lb, decimals, ) = pool.getConfiguration(_underlying).getParamsMemory();
+        (ltv, lt, lb, decimals, , ) = pool.getConfiguration(_underlying).getParams();
 
         if (!userConfig.isUsingAsCollateral(pool.getReserveData(_underlying).id)) {
             ltv = 0;

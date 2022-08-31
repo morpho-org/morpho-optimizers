@@ -7,6 +7,7 @@ import "./setup/TestSetup.sol";
 
 contract TestLens is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using UserConfiguration for DataTypes.UserConfigurationMap;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
@@ -24,6 +25,9 @@ contract TestLens is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
+        // Need some supply to have asset flagged as collateral
+        supplier1.approve(dai, 1e18);
+        supplier1.supply(aDai, 1e18);
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             aDai,
@@ -135,12 +139,8 @@ contract TestLens is TestSetup {
             (toBorrow * expectedDataUsdc.underlyingPrice) /
             expectedDataUsdc.tokenUnit;
 
-        assertEq(
-            assetDataUsdc.liquidationThreshold,
-            expectedDataUsdc.liquidationThreshold,
-            "liquidationThresholdUsdc"
-        );
-        assertEq(assetDataUsdc.ltv, expectedDataUsdc.ltv, "ltvUsdc");
+        assertEq(assetDataUsdc.liquidationThreshold, 0, "liquidationThresholdUsdc");
+        assertEq(assetDataUsdc.ltv, 0, "ltvUsdc");
         assertEq(
             assetDataUsdc.underlyingPrice,
             expectedDataUsdc.underlyingPrice,
@@ -592,6 +592,8 @@ contract TestLens is TestSetup {
     ///   with error "Division or modulo by zero", as Aave returns 0 for USDT liquidationThreshold.
     function testLiquidityDataForUSDT() public {
         uint256 usdtAmount = to6Decimals(10_000 ether);
+        supplier1.approve(usdc, usdtAmount);
+        supplier1.supply(aUsdc, usdtAmount);
 
         deal(usdt, address(borrower1), usdtAmount);
         borrower1.approve(usdt, usdtAmount);
@@ -696,6 +698,8 @@ contract TestLens is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(aDai, 1 ether);
         {
             (
                 address underlying,
@@ -1497,5 +1501,66 @@ contract TestLens is TestSetup {
         assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
         assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
         assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
+    }
+
+    struct TestLTVandLTStruct {
+        uint256 ltvPool;
+        uint256 ltPool;
+        uint256 ltvBefore;
+        uint256 ltBefore;
+        uint256 ltvAfter;
+        uint256 ltAfter;
+    }
+
+    function testLTVandLTCollateralCheck() public {
+        TestLTVandLTStruct memory usdcParams;
+        TestLTVandLTStruct memory usdtParams;
+        TestLTVandLTStruct memory daiParams;
+        (usdcParams.ltvPool, usdcParams.ltPool, , , ) = pool
+        .getConfiguration(usdc)
+        .getParamsMemory();
+        (usdtParams.ltvPool, usdtParams.ltPool, , , ) = pool
+        .getConfiguration(usdt)
+        .getParamsMemory();
+        (daiParams.ltvPool, daiParams.ltPool, , , ) = pool.getConfiguration(dai).getParamsMemory();
+        (, , , , , , , usdcParams.ltvBefore, usdcParams.ltBefore, , ) = lens.getMarketConfiguration(
+            aUsdc
+        );
+        (, , , , , , , usdtParams.ltvBefore, usdtParams.ltBefore, , ) = lens.getMarketConfiguration(
+            aUsdt
+        );
+        (, , , , , , , daiParams.ltvBefore, daiParams.ltBefore, , ) = lens.getMarketConfiguration(
+            aDai
+        );
+
+        supplier1.approve(usdc, 1e8);
+        supplier1.approve(usdt, 1e8);
+        supplier1.approve(dai, 100 ether);
+        supplier1.supply(aUsdc, 1e8);
+        supplier1.supply(aUsdt, 1e8);
+        supplier1.supply(aDai, 100 ether);
+
+        (, , , , , , , usdcParams.ltvAfter, usdcParams.ltAfter, , ) = lens.getMarketConfiguration(
+            aUsdc
+        );
+        (, , , , , , , usdtParams.ltvAfter, usdtParams.ltAfter, , ) = lens.getMarketConfiguration(
+            aUsdt
+        );
+        (, , , , , , , daiParams.ltvAfter, daiParams.ltAfter, , ) = lens.getMarketConfiguration(
+            aDai
+        );
+
+        assertEq(usdcParams.ltvBefore, 0, "LTV Before USDC");
+        assertEq(usdtParams.ltvBefore, 0, "LTV Before USDT");
+        assertEq(daiParams.ltvBefore, 0, "LTV Before Dai");
+        assertEq(usdcParams.ltvAfter, usdcParams.ltvPool, "LTV After USDC");
+        assertEq(usdtParams.ltvAfter, usdtParams.ltvPool, "LTV After USDT");
+        assertEq(daiParams.ltvAfter, daiParams.ltvPool, "LTV After Dai");
+        assertEq(usdcParams.ltBefore, 0, "LT Before USDC");
+        assertEq(usdtParams.ltBefore, 0, "LT Before USDT");
+        assertEq(daiParams.ltBefore, 0, "LT Before Dai");
+        assertEq(usdcParams.ltAfter, usdcParams.ltPool, "LT After USDC");
+        assertEq(usdtParams.ltAfter, usdtParams.ltPool, "LT After USDT");
+        assertEq(daiParams.ltAfter, daiParams.ltPool, "LT After Dai");
     }
 }
