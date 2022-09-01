@@ -24,16 +24,18 @@ TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aa
 
 In this repository.
 
-The Morpho protocol is designed at its core with a set of contracts acting as a proxy and communicating with upgradeable pieces of logic via calls (to implementation contracts) and delegate calls (to delegation contracts). Here is a brief overview of the Morpho protocol's contracts interactions:
+The Morpho protocol is designed at its core with a set of contracts delegating calls to implementation contracts (to overcome the contract size limit).
+
+Here is a brief overview of the Morpho protocol's contracts interactions:
 
 ![image](https://user-images.githubusercontent.com/3147812/187162991-d9e94841-0f23-4f25-86d4-a495917b70e7.png)
 
-The protocol's storage, located at Morpho's main proxy contract, is defined in the `MorphoStorage` (For example for Morpho-Compound: [`MorphoStorage`](./contracts/compound/MorphoStorage.sol)) contract and is used by every delegation contract. Having this overview in mind, Morpho contracts typically fall under the following 4 main categories:
+The main user's entry points are exposed in the `Morpho` contract. It inherits from `MorphoGovernance` which contains all the admin functions of the DAO, `MorphoUtils`, and `MorphoStorage`, where the protocol's storage is located. This contract delegates call to other contracts, that have the exact same storage layout:
 
-- Core features (supply, borrow, withdraw, repay, liquidate)
-- Underlying logic (peer-to-peer matching, positions management)
-- Peripheral contracts (lending/borrowing incentives, underlying protocol rewards management)
-- Miscellaneous (maths, solidity calls, types)
+- `PositionsManager`: logic of basic supply, borrow, withdraw, repay and liquidate functions. In Morpho-Aave, it is separated into two contracts, `EntryPositionsManager` and `ExitPositionsManager`. These contracts inherit from `MatchingEngine`, which contains the matching engine internal functions.
+- `InterestRatesManager`: logic of indexes computation.
+
+It also interacts with `RewardsManager`, which manages the underlying pool's rewards if any.
 
 ---
 
