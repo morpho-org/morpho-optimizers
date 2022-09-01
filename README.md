@@ -26,7 +26,7 @@ In this repository.
 
 The Morpho protocol is designed at its core with a set of contracts acting as a proxy and communicating with upgradeable pieces of logic via calls (to implementation contracts) and delegate calls (to delegation contracts). Here is a brief overview of the Morpho protocol's contracts interactions:
 
-![image](https://user-images.githubusercontent.com/44097430/170581601-307fbaae-2a27-4065-a9d1-f43172e4a30e.png)
+![image](https://user-images.githubusercontent.com/3147812/187162991-d9e94841-0f23-4f25-86d4-a495917b70e7.png)
 
 The protocol's storage, located at Morpho's main proxy contract, is defined in the `MorphoStorage` (For example for Morpho-Compound: [`MorphoStorage`](./contracts/compound/MorphoStorage.sol)) contract and is used by every delegation contract. Having this overview in mind, Morpho contracts typically fall under the following 4 main categories:
 
@@ -42,6 +42,12 @@ The protocol's storage, located at Morpho's main proxy contract, is defined in t
 - [White Paper](https://whitepaper.morpho.xyz)
 - [Morpho Documentation](https://docs.morpho.xyz)
 - Yellow Paper (coming soon)
+
+---
+
+## Audits
+
+All audits are stored in the [audits](./audits/)' folder.
 
 ---
 
