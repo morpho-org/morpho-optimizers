@@ -19,6 +19,7 @@ contract PositionsManagerHarness is PositionsManager {
     constructor() {}
 
     bool public isTransfer; // transfer vs hard for repay/withdraw
+    uint256 internal _lastBorrowDelta;
 
     function liquidateLogic(
         address _poolTokenBorrowed,
@@ -120,6 +121,7 @@ contract PositionsManagerHarness is PositionsManager {
                     borrowBalanceInOf[_poolToken][_onBehalf].inP2P
                 );
 
+                _lastBorrowDelta = 0;
                 return;
             } else {
                 vars.toRepay = vars.maxToRepayOnPool;
@@ -206,6 +208,7 @@ contract PositionsManagerHarness is PositionsManager {
             borrowBalanceInOf[_poolToken][_onBehalf].onPool,
             borrowBalanceInOf[_poolToken][_onBehalf].inP2P
         );
+        _lastBorrowDelta = delta.p2pBorrowDelta;
     }
 
     function _noMatchingSafeWithdrawLogic(
@@ -271,61 +274,65 @@ contract PositionsManagerHarness is PositionsManager {
             }
         }
 
-        Types.Delta storage delta = deltas[_poolToken];
-        vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
+        if (_lastBorrowDelta == 0) {
+            Types.Delta storage delta = deltas[_poolToken];
+            vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-        supplyBalanceInOf[_poolToken][_supplier].inP2P -= CompoundMath.min(
-            supplyBalanceInOf[_poolToken][_supplier].inP2P,
-            vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
-        ); // In peer-to-peer unit
-        _updateSupplierInDS(_poolToken, _supplier);
+            supplyBalanceInOf[_poolToken][_supplier].inP2P -= CompoundMath.min(
+                supplyBalanceInOf[_poolToken][_supplier].inP2P,
+                vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
+            ); // In peer-to-peer unit
+            _updateSupplierInDS(_poolToken, _supplier);
 
-        // Reduce peer-to-peer supply delta.
-        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
-            uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
+            // Reduce peer-to-peer supply delta.
+            if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
+                uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
 
-            if (
-                deltaInUnderlying > vars.remainingToWithdraw ||
-                deltaInUnderlying > vars.withdrawable - vars.toWithdraw
-            ) {
-                uint256 matchedDelta = CompoundMath.min(
-                    vars.remainingToWithdraw,
-                    vars.withdrawable - vars.toWithdraw
-                );
+                if (
+                    deltaInUnderlying > vars.remainingToWithdraw ||
+                    deltaInUnderlying > vars.withdrawable - vars.toWithdraw
+                ) {
+                    uint256 matchedDelta = CompoundMath.min(
+                        vars.remainingToWithdraw,
+                        vars.withdrawable - vars.toWithdraw
+                    );
 
-                delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
-                delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
-                vars.toWithdraw += matchedDelta;
-                vars.remainingToWithdraw -= matchedDelta;
-            } else {
-                vars.toWithdraw += deltaInUnderlying;
-                vars.remainingToWithdraw -= deltaInUnderlying;
-                delta.p2pSupplyDelta = 0;
-                delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
+                    delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
+                    delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
+                    vars.toWithdraw += matchedDelta;
+                    vars.remainingToWithdraw -= matchedDelta;
+                } else {
+                    vars.toWithdraw += deltaInUnderlying;
+                    vars.remainingToWithdraw -= deltaInUnderlying;
+                    delta.p2pSupplyDelta = 0;
+                    delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
+                }
+
+                emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
+                emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
             }
 
-            emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
-            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
-        }
+            // HARNESS: removed promote suppliers
 
-        // HARNESS: removed promote suppliers
+            // If this value is equal to 0 the withdraw will revert on Compound.
+            if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
+                _withdrawFromPool(_poolToken, vars.toWithdraw); // Reverts on error.
 
-        // If this value is equal to 0 the withdraw will revert on Compound.
-        if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
-            _withdrawFromPool(_poolToken, vars.toWithdraw); // Reverts on error.
+            /// Breaking withdraw ///
 
-        /// Breaking withdraw ///
+            if (vars.remainingToWithdraw > 0) {
+                // HARNESS: removed demote borrowers
+                // Increase the peer-to-peer borrow delta.
+                delta.p2pBorrowDelta += vars.remainingToWithdraw.div(
+                    ICToken(_poolToken).borrowIndex()
+                );
+                emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
 
-        if (vars.remainingToWithdraw > 0) {
-            // HARNESS: removed demote borrowers
-            // Increase the peer-to-peer borrow delta.
-            delta.p2pBorrowDelta += vars.remainingToWithdraw.div(ICToken(_poolToken).borrowIndex());
-            emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
+                delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
+                emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-            delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
-            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
-
-            _borrowFromPool(_poolToken, vars.remainingToWithdraw); // Reverts on error.
+                _borrowFromPool(_poolToken, vars.remainingToWithdraw); // Reverts on error.
+            }
         }
 
         _leaveMarketIfNeeded(_poolToken, _supplier);
