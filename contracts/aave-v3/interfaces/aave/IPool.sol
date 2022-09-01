@@ -74,6 +74,11 @@ interface IPool {
         view
         returns (DataTypes.ReserveConfigurationMap memory);
 
+    function getUserConfiguration(address user)
+        external
+        view
+        returns (DataTypes.UserConfigurationMap memory);
+
     function getReserveNormalizedIncome(address asset) external view returns (uint256);
 
     function getReserveNormalizedVariableDebt(address asset) external view returns (uint256);
