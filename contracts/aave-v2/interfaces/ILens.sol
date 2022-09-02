@@ -182,29 +182,23 @@ interface ILens {
 
     /// RATES ///
 
-    function getAverageSupplyRatePerYear(address _poolToken) external view returns (uint256);
-
-    function getAverageBorrowRatePerYear(address _poolToken) external view returns (uint256);
-
-    function getRatesPerYear(address _poolToken)
+    function getAverageSupplyRatePerYear(address _poolToken)
         external
         view
         returns (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
+            uint256 avgSupplyRatePerYear,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
         );
 
-    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
+    function getAverageBorrowRatePerYear(address _poolToken)
         external
         view
-        returns (uint256);
-
-    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
-        external
-        view
-        returns (uint256);
+        returns (
+            uint256 avgBorrowRatePerYear,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        );
 
     function getNextUserSupplyRatePerYear(
         address _poolToken,
@@ -232,5 +226,25 @@ interface ILens {
             uint256 balanceInP2P,
             uint256 balanceOnPool,
             uint256 totalBalance
+        );
+
+    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getRatesPerYear(address _poolToken)
+        external
+        view
+        returns (
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
         );
 }
