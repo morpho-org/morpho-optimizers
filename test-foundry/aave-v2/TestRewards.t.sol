@@ -22,14 +22,12 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                aDai
+            );
             index = assetData.index;
         }
 
@@ -52,14 +50,12 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(aDaiInArray, false);
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                aDai
+            );
             index = assetData.index;
         }
 
@@ -77,14 +73,12 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                aDai
+            );
             index = assetData.index;
         }
 
@@ -108,14 +102,12 @@ contract TestRewards is TestSetup {
 
         supplier1.claimRewards(aDaiInArray, false);
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                aDai
+            );
             index = assetData.index;
         }
 
@@ -132,14 +124,12 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                variableDebtUsdc
+            );
             index = assetData.index;
         }
 
@@ -159,14 +149,12 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(variableDebtUsdcArray, false);
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                variableDebtUsdc
+            );
             index = assetData.index;
         }
 
@@ -185,14 +173,12 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                variableDebtUsdc
+            );
             index = assetData.index;
         }
 
@@ -216,14 +202,12 @@ contract TestRewards is TestSetup {
 
         supplier1.claimRewards(variableDebtUsdcArray, false);
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                variableDebtUsdc
+            );
             index = assetData.index;
         }
 
@@ -329,9 +313,10 @@ contract TestRewards is TestSetup {
         assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
         assertEq(allUnclaimedRewards, 0);
 
-        uint256 protocolUnclaimedRewards = IAaveIncentivesController(
-            aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(morpho));
+        uint256 protocolUnclaimedRewards = aaveIncentivesController.getRewardsBalance(
+            tokensInArray,
+            address(morpho)
+        );
 
         assertEq(protocolUnclaimedRewards, 0);
     }
@@ -402,9 +387,10 @@ contract TestRewards is TestSetup {
         assertEq(unclaimedRewards2, 0);
         assertEq(unclaimedRewards3, 0);
 
-        uint256 protocolUnclaimedRewards = IAaveIncentivesController(
-            aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(morpho));
+        uint256 protocolUnclaimedRewards = aaveIncentivesController.getRewardsBalance(
+            tokensInArray,
+            address(morpho)
+        );
 
         assertApproxEqAbs(protocolUnclaimedRewards, 0, 5);
     }
@@ -456,14 +442,12 @@ contract TestRewards is TestSetup {
 
         uint256 index;
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = aaveIncentivesController.getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                aDai
+            );
             index = assetData.index;
         }
 

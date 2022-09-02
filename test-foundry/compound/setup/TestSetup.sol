@@ -25,7 +25,6 @@ contract TestSetup is Config, Utils {
 
     DumbOracle public dumbOracle;
     MorphoToken public morphoToken;
-    ICompoundOracle public oracle;
 
     User public treasuryVault;
 
@@ -77,7 +76,6 @@ contract TestSetup is Config, Utils {
 
         treasuryVault = new User(morpho);
 
-        oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
