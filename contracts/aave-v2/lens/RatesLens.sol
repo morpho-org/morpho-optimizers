@@ -213,11 +213,13 @@ abstract contract RatesLens is UsersLens {
         // Do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
         uint256 p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: PercentageMath.weightedAvg(
-                    poolSupplyRate,
-                    poolBorrowRate,
-                    market.p2pIndexCursor
-                ),
+                p2pRate: poolBorrowRate < poolSupplyRate
+                    ? poolBorrowRate
+                    : PercentageMath.weightedAvg(
+                        poolSupplyRate,
+                        poolBorrowRate,
+                        market.p2pIndexCursor
+                    ),
                 poolRate: poolSupplyRate,
                 poolIndex: poolSupplyIndex,
                 p2pIndex: p2pSupplyIndex,
@@ -268,11 +270,13 @@ abstract contract RatesLens is UsersLens {
         // Do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
         uint256 p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: PercentageMath.weightedAvg(
-                    poolSupplyRate,
-                    poolBorrowRate,
-                    market.p2pIndexCursor
-                ),
+                p2pRate: poolBorrowRate < poolSupplyRate
+                    ? poolBorrowRate
+                    : PercentageMath.weightedAvg(
+                        poolSupplyRate,
+                        poolBorrowRate,
+                        market.p2pIndexCursor
+                    ),
                 poolRate: poolBorrowRate,
                 poolIndex: poolBorrowIndex,
                 p2pIndex: p2pBorrowIndex,
@@ -325,11 +329,9 @@ abstract contract RatesLens is UsersLens {
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
         Types.Market memory market = morpho.market(_poolToken);
-        uint256 p2pRate = PercentageMath.weightedAvg(
-            poolSupplyRate,
-            poolBorrowRate,
-            market.p2pIndexCursor
-        );
+        uint256 p2pRate = poolBorrowRate < poolSupplyRate
+            ? poolBorrowRate
+            : PercentageMath.weightedAvg(poolSupplyRate, poolBorrowRate, market.p2pIndexCursor);
 
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
