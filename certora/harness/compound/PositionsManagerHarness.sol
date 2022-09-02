@@ -18,8 +18,7 @@ contract PositionsManagerHarness is PositionsManager {
 
     constructor() {}
 
-    bool public isTransfer; // transfer vs hard for repay/withdraw
-    uint256 internal _lastBorrowDelta;
+    bool internal _borrowDeltaExists;
 
     function liquidateLogic(
         address _poolTokenBorrowed,
@@ -121,7 +120,7 @@ contract PositionsManagerHarness is PositionsManager {
                     borrowBalanceInOf[_poolToken][_onBehalf].inP2P
                 );
 
-                _lastBorrowDelta = 0;
+                _borrowDeltaExists = false;
                 return;
             } else {
                 vars.toRepay = vars.maxToRepayOnPool;
@@ -208,7 +207,7 @@ contract PositionsManagerHarness is PositionsManager {
             borrowBalanceInOf[_poolToken][_onBehalf].onPool,
             borrowBalanceInOf[_poolToken][_onBehalf].inP2P
         );
-        _lastBorrowDelta = delta.p2pBorrowDelta;
+        _borrowDeltaExists = true;
     }
 
     function _noMatchingSafeWithdrawLogic(
@@ -274,7 +273,7 @@ contract PositionsManagerHarness is PositionsManager {
             }
         }
 
-        if (_lastBorrowDelta == 0) {
+        if (!_borrowDeltaExists) {
             Types.Delta storage delta = deltas[_poolToken];
             vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
