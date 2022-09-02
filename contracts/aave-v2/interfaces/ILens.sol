@@ -186,7 +186,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 avgSupplyRatePerBlock,
+            uint256 avgSupplyRatePerYear,
             uint256 p2pSupplyAmount,
             uint256 poolSupplyAmount
         );
@@ -195,7 +195,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 avgBorrowRatePerBlock,
+            uint256 avgBorrowRatePerYear,
             uint256 p2pBorrowAmount,
             uint256 poolBorrowAmount
         );
