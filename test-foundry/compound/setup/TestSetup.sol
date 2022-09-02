@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/compound/ICompound.sol";
-import "@contracts/compound/interfaces/IRewardsManager.sol";
+import "@contracts/compound/interfaces/IMorpho.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-
-import "@contracts/compound/IncentivesVault.sol";
-import "@contracts/compound/RewardsManager.sol";
-import "@contracts/compound/PositionsManager.sol";
-import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/InterestRatesManager.sol";
-import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/lens/Lens.sol";
+import "@contracts/compound/libraries/CompoundMath.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -32,26 +23,8 @@ contract TestSetup is Config, Utils {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
-    ProxyAdmin public proxyAdmin;
-    TransparentUpgradeableProxy public lensProxy;
-    TransparentUpgradeableProxy public morphoProxy;
-    TransparentUpgradeableProxy public rewardsManagerProxy;
-
-    Lens public lensImplV1;
-    Morpho public morphoImplV1;
-    IRewardsManager public rewardsManagerImplV1;
-
-    Lens public lens;
-    Morpho public morpho;
-    IPositionsManager public positionsManager;
-    InterestRatesManager public interestRatesManager;
-    IncentivesVault public incentivesVault;
-    IRewardsManager public rewardsManager;
-
     DumbOracle public dumbOracle;
     MorphoToken public morphoToken;
-    IComptroller public comptroller;
-    ICompoundOracle public oracle;
 
     User public treasuryVault;
 
@@ -78,7 +51,6 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        comptroller = IComptroller(comptrollerAddress);
         interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
@@ -104,7 +76,6 @@ contract TestSetup is Config, Utils {
 
         treasuryVault = new User(morpho);
 
-        oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
@@ -123,10 +94,10 @@ contract TestSetup is Config, Utils {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            IComptroller(comptrollerAddress),
+            comptroller,
             IMorpho(address(morpho)),
             morphoToken,
-            address(1),
+            address(treasuryVault),
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);

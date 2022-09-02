@@ -748,4 +748,17 @@ contract TestWithdraw is TestSetup {
 
         supplier1.withdraw(cDai, type(uint256).max);
     }
+
+    function testShouldWithdrawToReceiver() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, 2 * amount);
+        supplier1.supply(cDai, 2 * amount);
+
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier2));
+
+        supplier1.withdraw(cDai, amount, address(supplier2));
+
+        assertEq(ERC20(dai).balanceOf(address(supplier2)), balanceBefore + amount);
+    }
 }

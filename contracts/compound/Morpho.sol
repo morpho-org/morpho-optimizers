@@ -26,7 +26,19 @@ contract Morpho is MorphoGovernance {
 
     /// EXTERNAL ///
 
-    /// @notice Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens to a specific market.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to supply.
+    function supply(address _poolToken, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
+    {
+        _supply(_poolToken, msg.sender, _amount, defaultMaxGasForMatching.supply);
+    }
+
+    /// @notice Supplies underlying tokens to a specific market, on behalf of a given user.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
@@ -36,43 +48,26 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                positionsManager.supplyLogic.selector,
-                _poolToken,
-                msg.sender,
-                _onBehalf,
-                _amount,
-                defaultMaxGasForMatching.supply
-            )
-        );
+        _supply(_poolToken, _onBehalf, _amount, defaultMaxGasForMatching.supply);
     }
 
-    /// @notice Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens to a specific market, on behalf of a given user,
+    ///         specifying a gas threshold at which to cut the matching engine.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying) to supply.
-    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The gas threshold at which to stop the matching engine.
     function supply(
         address _poolToken,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                positionsManager.supplyLogic.selector,
-                _poolToken,
-                msg.sender,
-                _onBehalf,
-                _amount,
-                _maxGasForMatching
-            )
-        );
+        _supply(_poolToken, _onBehalf, _amount, _maxGasForMatching);
     }
 
-    /// @notice Borrows underlying tokens in a specific market.
+    /// @notice Borrows underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     function borrow(address _poolToken, uint256 _amount)
@@ -80,36 +75,22 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
     {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                positionsManager.borrowLogic.selector,
-                _poolToken,
-                _amount,
-                defaultMaxGasForMatching.borrow
-            )
-        );
+        _borrow(_poolToken, _amount, defaultMaxGasForMatching.borrow);
     }
 
-    /// @notice Borrows underlying tokens in a specific market.
+    /// @notice Borrows underlying tokens from a specific market, specifying a gas threshold at which to stop the matching engine.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The gas threshold at which to stop the matching engine.
     function borrow(
         address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                positionsManager.borrowLogic.selector,
-                _poolToken,
-                _amount,
-                _maxGasForMatching
-            )
-        );
+        _borrow(_poolToken, _amount, _maxGasForMatching);
     }
 
-    /// @notice Withdraws underlying tokens in a specific market.
+    /// @notice Withdraws underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolToken, uint256 _amount)
@@ -117,19 +98,34 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         isMarketCreatedAndNotPaused(_poolToken)
     {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                positionsManager.withdrawLogic.selector,
-                _poolToken,
-                _amount,
-                msg.sender,
-                msg.sender,
-                defaultMaxGasForMatching.withdraw
-            )
-        );
+        _withdraw(_poolToken, _amount, msg.sender, defaultMaxGasForMatching.withdraw);
     }
 
-    /// @notice Repays debt of the user.
+    /// @notice Withdraws underlying tokens from a specific market.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
+    /// @param _receiver The address to send withdrawn tokens to.
+    function withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolToken) {
+        _withdraw(_poolToken, _amount, _receiver, defaultMaxGasForMatching.withdraw);
+    }
+
+    /// @notice Repays the debt of the sender, up to the amount provided.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to repay from borrow.
+    function repay(address _poolToken, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPaused(_poolToken)
+    {
+        _repay(_poolToken, msg.sender, _amount, defaultMaxGasForMatching.repay);
+    }
+
+    /// @notice Repays debt of a given user, up to the amount provided.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _onBehalf The address of the account whose positions will be updated.
@@ -139,16 +135,7 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolToken) {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                positionsManager.repayLogic.selector,
-                _poolToken,
-                msg.sender,
-                _onBehalf,
-                _amount,
-                defaultMaxGasForMatching.repay
-            )
-        );
+        _repay(_poolToken, _onBehalf, _amount, defaultMaxGasForMatching.repay);
     }
 
     /// @notice Liquidates a position.
@@ -169,7 +156,7 @@ contract Morpho is MorphoGovernance {
     {
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.liquidateLogic.selector,
+                IPositionsManager.liquidateLogic.selector,
                 _poolTokenBorrowed,
                 _poolTokenCollateral,
                 _borrower,
@@ -206,4 +193,75 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Allows to receive ETH.
     receive() external payable {}
+
+    /// INTERNAL ///
+
+    function _supply(
+        address _poolToken,
+        address _onBehalf,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) internal {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.supplyLogic.selector,
+                _poolToken,
+                msg.sender,
+                _onBehalf,
+                _amount,
+                _maxGasForMatching
+            )
+        );
+    }
+
+    function _borrow(
+        address _poolToken,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) internal {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.borrowLogic.selector,
+                _poolToken,
+                _amount,
+                _maxGasForMatching
+            )
+        );
+    }
+
+    function _withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver,
+        uint256 _maxGasForMatching
+    ) internal {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.withdrawLogic.selector,
+                _poolToken,
+                _amount,
+                msg.sender,
+                _receiver,
+                _maxGasForMatching
+            )
+        );
+    }
+
+    function _repay(
+        address _poolToken,
+        address _onBehalf,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) internal {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.repayLogic.selector,
+                _poolToken,
+                msg.sender,
+                _onBehalf,
+                _amount,
+                _maxGasForMatching
+            )
+        );
+    }
 }

@@ -4,6 +4,16 @@ pragma solidity ^0.8.0;
 import "./IOracle.sol";
 
 interface IIncentivesVault {
+    function isPaused() external view returns (bool);
+
+    function bonus() external view returns (uint256);
+
+    function MAX_BASIS_POINTS() external view returns (uint256);
+
+    function incentivesTreasuryVault() external view returns (address);
+
+    function oracle() external view returns (IOracle);
+
     function setOracle(IOracle _newOracle) external;
 
     function setIncentivesTreasuryVault(address _newIncentivesTreasuryVault) external;

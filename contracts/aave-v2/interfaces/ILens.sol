@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./aave/IPriceOracleGetter.sol";
 import "./aave/ILendingPool.sol";
-import "./IRewardsManager.sol";
 import "./IMorpho.sol";
 
 interface ILens {
@@ -12,8 +11,6 @@ interface ILens {
     function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns (uint16);
 
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
-
-    function RAY() external view returns (uint256);
 
     function morpho() external view returns (IMorpho);
 
@@ -185,29 +182,23 @@ interface ILens {
 
     /// RATES ///
 
-    function getAverageSupplyRatePerBlock(address _poolToken) external view returns (uint256);
-
-    function getAverageBorrowRatePerBlock(address _poolToken) external view returns (uint256);
-
-    function getRatesPerYear(address _poolToken)
+    function getAverageSupplyRatePerYear(address _poolToken)
         external
         view
         returns (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
+            uint256 avgSupplyRatePerYear,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
         );
 
-    function getCurrentUserSupplyRatePerBlock(address _poolToken, address _user)
+    function getAverageBorrowRatePerYear(address _poolToken)
         external
         view
-        returns (uint256);
-
-    function getCurrentUserBorrowRatePerBlock(address _poolToken, address _user)
-        external
-        view
-        returns (uint256);
+        returns (
+            uint256 avgBorrowRatePerYear,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        );
 
     function getNextUserSupplyRatePerYear(
         address _poolToken,
@@ -217,7 +208,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 nextSupplyRatePerBlock,
+            uint256 nextSupplyRatePerYear,
             uint256 balanceInP2P,
             uint256 balanceOnPool,
             uint256 totalBalance
@@ -231,9 +222,29 @@ interface ILens {
         external
         view
         returns (
-            uint256 nextBorrowRatePerBlock,
+            uint256 nextBorrowRatePerYear,
             uint256 balanceInP2P,
             uint256 balanceOnPool,
             uint256 totalBalance
+        );
+
+    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256);
+
+    function getRatesPerYear(address _poolToken)
+        external
+        view
+        returns (
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
         );
 }

@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import {ILendingPool} from "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
+import {IPriceOracleGetter} from "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
+import {IAaveIncentivesController} from "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import {ILendingPoolAddressesProvider} from "@contracts/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
+import {IIncentivesVault} from "@contracts/aave-v2/interfaces/IIncentivesVault.sol";
+import {IEntryPositionsManager} from "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
+import {IExitPositionsManager} from "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
+import {IInterestRatesManager} from "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
+import {IRewardsManager} from "@contracts/aave-v2/interfaces/IRewardsManager.sol";
+
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
+import {Lens} from "@contracts/aave-v2/lens/Lens.sol";
+import {Morpho} from "@contracts/aave-v2/Morpho.sol";
+
 contract Config {
     address constant aave = 0x63a72806098Bd3D9520cC43356dD78afe5D386D9;
     address constant dai = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
@@ -25,7 +41,33 @@ contract Config {
     address constant variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
     address constant variableDebtUsdc = 0x848c080d2700CBE1B894a3374AD5E887E5cCb89c;
 
-    address constant poolAddressesProviderAddress = 0xb6A86025F0FE1862B372cb0ca18CE3EDe02A318f;
-    address constant aaveIncentivesControllerAddress = 0x01D83Fe6A10D2f2B7AF17034343746188272cAc9;
     address constant swapRouterAddress = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+
+    address public morphoDao;
+    ILendingPoolAddressesProvider public poolAddressesProvider =
+        ILendingPoolAddressesProvider(0xb6A86025F0FE1862B372cb0ca18CE3EDe02A318f);
+    IAaveIncentivesController public aaveIncentivesController =
+        IAaveIncentivesController(0x01D83Fe6A10D2f2B7AF17034343746188272cAc9);
+    IPriceOracleGetter public oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
+    ILendingPool public pool = ILendingPool(poolAddressesProvider.getLendingPool());
+
+    address public REWARD_TOKEN = aaveIncentivesController.REWARD_TOKEN();
+
+    ProxyAdmin public proxyAdmin;
+
+    TransparentUpgradeableProxy public lensProxy;
+    TransparentUpgradeableProxy public morphoProxy;
+    TransparentUpgradeableProxy public rewardsManagerProxy;
+
+    Lens public lensImplV1;
+    Morpho public morphoImplV1;
+    IRewardsManager public rewardsManagerImplV1;
+
+    Lens public lens;
+    Morpho public morpho;
+    IRewardsManager public rewardsManager;
+    IIncentivesVault public incentivesVault;
+    IEntryPositionsManager public entryPositionsManager;
+    IExitPositionsManager public exitPositionsManager;
+    IInterestRatesManager public interestRatesManager;
 }
