@@ -298,7 +298,7 @@ abstract contract MorphoUtils is MorphoStorage {
             .getConfiguration(vars.underlyingToken)
             .getParams();
 
-            // LTV should be zero if morpho has not enabled this asset as collateral
+            // LTV should be zero if Morpho has not enabled this asset as collateral
             if (!morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id))
                 assetData.ltv = 0;
 
