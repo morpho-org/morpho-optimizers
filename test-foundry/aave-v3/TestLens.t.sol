@@ -522,16 +522,25 @@ contract TestLens is TestSetup {
             uint16 expectedReserveFactor,
             ,
             bool isCreated_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            bool isP2PDisabled_
+            bool isSupplyPaused_,
+            bool isBorrowPaused_,
+            bool isP2PDisabled_,
+            bool isWithdrawPaused_,
+            bool isRepayPaused_,
+            bool isLiquidatePaused_
         ) = morpho.market(aDai);
 
         assertTrue(isCreated == isCreated_);
         assertTrue(isP2PDisabled == isP2PDisabled_);
-
-        assertTrue(isPaused == isPaused_);
-        assertTrue(isPartiallyPaused == isPartiallyPaused_);
+        assertTrue(
+            isPaused ==
+                (isSupplyPaused_ &&
+                    isBorrowPaused_ &&
+                    isWithdrawPaused_ &&
+                    isRepayPaused_ &&
+                    isLiquidatePaused_)
+        );
+        assertTrue(isPartiallyPaused == (isSupplyPaused_ && isBorrowPaused_));
         assertTrue(reserveFactor == expectedReserveFactor);
     }
 
