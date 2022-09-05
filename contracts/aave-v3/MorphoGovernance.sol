@@ -264,37 +264,13 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            market[poolToken].isPaused = _newStatus;
+            setPauseStatus(poolToken, _newStatus, _newStatus, _newStatus, _newStatus, _newStatus);
             emit PauseStatusSet(poolToken, _newStatus);
 
             unchecked {
                 ++i;
             }
         }
-    }
-
-    /// @notice Sets the pause status on a specific market in case of emergency.
-    /// @param _poolToken The address of the market to pause/unpause.
-    /// @param _newStatus The new status to set.
-    function setPauseStatus(address _poolToken, bool _newStatus)
-        external
-        onlyOwner
-        isMarketCreated(_poolToken)
-    {
-        market[_poolToken].isPaused = _newStatus;
-        emit PauseStatusSet(_poolToken, _newStatus);
-    }
-
-    /// @notice Sets the partial pause status on a specific market in case of emergency.
-    /// @param _poolToken The address of the market to partially pause/unpause.
-    /// @param _newStatus The new status to set.
-    function setPartialPauseStatus(address _poolToken, bool _newStatus)
-        external
-        onlyOwner
-        isMarketCreated(_poolToken)
-    {
-        market[_poolToken].isPartiallyPaused = _newStatus;
-        emit PartialPauseStatusSet(_poolToken, _newStatus);
     }
 
     /// @notice Sets the peer-to-peer disable status.
@@ -342,7 +318,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             address poolToken = _poolTokens[i];
 
             Types.Market memory market = market[poolToken];
-            if (!market.isCreated || market.isPaused || market.isPartiallyPaused) continue;
+            if (!market.isCreated) continue;
 
             ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
@@ -392,9 +368,12 @@ abstract contract MorphoGovernance is MorphoUtils {
             reserveFactor: _reserveFactor,
             p2pIndexCursor: _p2pIndexCursor,
             isCreated: true,
-            isPaused: false,
-            isPartiallyPaused: false,
-            isP2PDisabled: false
+            isSupplyPaused: false,
+            isBorrowPaused: false,
+            isP2PDisabled: false,
+            isWithdrawPaused: false,
+            isRepayPaused: false,
+            isLiquidatePaused: false
         });
 
         borrowMask[poolToken] = ONE << (marketsCreated.length << 1);
@@ -403,5 +382,24 @@ abstract contract MorphoGovernance is MorphoUtils {
         ERC20(_underlyingToken).safeApprove(address(pool), type(uint256).max);
 
         emit MarketCreated(poolToken, _reserveFactor, _p2pIndexCursor);
+    }
+
+    /// PUBLIC ///
+
+    function setPauseStatus(
+        address _poolToken,
+        bool _pauseSupplyStatus,
+        bool _pauseBorrowStatus,
+        bool _pauseWithdrawStatus,
+        bool _pauseRepayStatus,
+        bool _pauseLiquidateStatus
+    ) public onlyOwner isMarketCreated(_poolToken) {
+        Types.Market storage market = market[_poolToken];
+
+        market.isSupplyPaused = _pauseSupplyStatus;
+        market.isBorrowPaused = _pauseBorrowStatus;
+        market.isWithdrawPaused = _pauseWithdrawStatus;
+        market.isRepayPaused = _pauseRepayStatus;
+        market.isLiquidatePaused = _pauseLiquidateStatus;
     }
 }

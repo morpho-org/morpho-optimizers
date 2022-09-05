@@ -75,19 +75,13 @@ contract Lens {
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused;
-    }
-
-    /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool)
-    {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
+        return
+            market.isCreated &&
+            !market.isSupplyPaused &&
+            !market.isBorrowPaused &&
+            !market.isWithdrawPaused &&
+            !market.isRepayPaused &&
+            !market.isLiquidatePaused;
     }
 
     /// @notice Returns the current balance state of the user.
@@ -405,8 +399,13 @@ contract Lens {
         Types.Market memory market = morpho.market(_poolToken);
         isCreated_ = market.isCreated;
         isP2PDisabled_ = market.isP2PDisabled;
-        isPaused_ = market.isPaused;
-        isPartiallyPaused_ = market.isPartiallyPaused;
+        isPaused_ =
+            market.isSupplyPaused &&
+            market.isBorrowPaused &&
+            market.isWithdrawPaused &&
+            market.isRepayPaused &&
+            market.isLiquidatePaused;
+        isPartiallyPaused_ = market.isSupplyPaused && market.isBorrowPaused;
         reserveFactor_ = market.reserveFactor;
     }
 

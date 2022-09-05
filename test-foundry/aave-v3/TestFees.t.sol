@@ -85,31 +85,31 @@ contract TestFees is TestSetup {
         assertEq(balanceAfter, balanceBefore);
     }
 
-    function testShouldNotClaimFeesIfMarketIsPaused() public {
-        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
-        _createFeeOnMorpho(1_000);
+    // function testShouldNotClaimFeesIfMarketIsPaused() public {
+    //     uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
+    //     _createFeeOnMorpho(1_000);
 
-        // Pause market.
-        morpho.setPauseStatus(aDai, true);
+    //     // Pause market.
+    //     morpho.setPauseStatus(aDai, true);
 
-        morpho.claimToTreasury(aDaiArray, maxAmountArray);
+    //     morpho.claimToTreasury(aDaiArray, maxAmountArray);
 
-        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
-        assertEq(balanceAfter, balanceBefore);
-    }
+    //     uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+    //     assertEq(balanceAfter, balanceBefore);
+    // }
 
-    function testShouldNotClaimFeesIfMarketIsPartiallyPaused() public {
-        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
-        _createFeeOnMorpho(1_000);
+    // function testShouldNotClaimFeesIfMarketIsPartiallyPaused() public {
+    //     uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
+    //     _createFeeOnMorpho(1_000);
 
-        // Partially pause market.
-        morpho.setPartialPauseStatus(aDai, true);
+    //     // Partially pause market.
+    //     morpho.setPartialPauseStatus(aDai, true);
 
-        morpho.claimToTreasury(aDaiArray, maxAmountArray);
+    //     morpho.claimToTreasury(aDaiArray, maxAmountArray);
 
-        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
-        assertEq(balanceAfter, balanceBefore);
-    }
+    //     uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+    //     assertEq(balanceAfter, balanceBefore);
+    // }
 
     function testShouldPayFee() public {
         uint16 reserveFactor = 1_000;

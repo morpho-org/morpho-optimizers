@@ -29,7 +29,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
-    /// @notice Thrown when the market is paused.
+    /// @notice Thrown when the market function is paused.
     error MarketPaused();
 
     /// MODIFIERS ///
@@ -43,19 +43,46 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolToken) {
+    modifier isMarketCreatedAndSupplyNotPaused(address _poolToken) {
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
-        if (market.isPaused) revert MarketPaused();
+        if (market.isSupplyPaused) revert MarketPaused();
         _;
     }
 
-    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
+    modifier isMarketCreatedAndBorrowNotPaused(address _poolToken) {
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
-        if (market.isPaused || market.isPartiallyPaused) revert MarketPaused();
+        if (market.isBorrowPaused) revert MarketPaused();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndWithdrawNotPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isWithdrawPaused) revert MarketPaused();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndRepayNotPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isRepayPaused) revert MarketPaused();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndLiquidateNotPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isLiquidatePaused) revert MarketPaused();
         _;
     }
 

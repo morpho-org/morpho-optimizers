@@ -71,9 +71,12 @@ library Types {
         uint16 reserveFactor; // Proportion of the additional interest earned being matched peer-to-peer on Morpho compared to being on the pool. It is sent to the DAO for each market. The default value is 0. In basis point (100% = 10 000).
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
         bool isCreated; // Whether or not this market is created.
-        bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-        bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+        bool isSupplyPaused; // Whether the supply is paused or not.
+        bool isBorrowPaused; // Whether the borrow is paused or not
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
+        bool isWithdrawPaused; // Whether the withdraw is paused or not.
+        bool isRepayPaused; // Whether the repay is paused or not.
+        bool isLiquidatePaused; // Whether the liquidate is paused or not.
     }
 
     struct LiquidityStackVars {
