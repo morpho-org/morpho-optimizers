@@ -77,11 +77,11 @@ contract Lens {
         Types.Market memory market = morpho.market(_poolToken);
         return
             market.isCreated &&
-            !market.isSupplyPaused &&
-            !market.isBorrowPaused &&
-            !market.isWithdrawPaused &&
-            !market.isRepayPaused &&
-            !market.isLiquidatePaused;
+            (!market.isSupplyPaused ||
+                !market.isBorrowPaused ||
+                !market.isWithdrawPaused ||
+                !market.isRepayPaused ||
+                !market.isLiquidatePaused);
     }
 
     /// @notice Returns the current balance state of the user.
