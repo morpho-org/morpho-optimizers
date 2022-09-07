@@ -55,6 +55,16 @@ interface IPool {
         bytes32 permitS
     ) external returns (uint256);
 
+    function flashLoan(
+        address receiverAddress,
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        uint256[] calldata interestRateModes,
+        address onBehalfOf,
+        bytes calldata params,
+        uint16 referralCode
+    ) external;
+
     function setUserUseReserveAsCollateral(address asset, bool useAsCollateral) external;
 
     function getUserAccountData(address user)
@@ -73,6 +83,11 @@ interface IPool {
         external
         view
         returns (DataTypes.ReserveConfigurationMap memory);
+
+    function getUserConfiguration(address user)
+        external
+        view
+        returns (DataTypes.UserConfigurationMap memory);
 
     function getReserveNormalizedIncome(address asset) external view returns (uint256);
 

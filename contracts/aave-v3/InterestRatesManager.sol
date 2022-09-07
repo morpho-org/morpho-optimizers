@@ -115,13 +115,24 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         // Compute peer-to-peer growth factors.
 
-        uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
-            MAX_BASIS_POINTS - _params.p2pIndexCursor
-        ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
-        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
-            _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
-        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
-            _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
+        uint256 p2pSupplyGrowthFactor;
+        uint256 p2pBorrowGrowthFactor;
+        if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
+            uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
+                MAX_BASIS_POINTS - _params.p2pIndexCursor
+            ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
+            p2pSupplyGrowthFactor =
+                p2pGrowthFactor -
+                _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
+            p2pBorrowGrowthFactor =
+                p2pGrowthFactor +
+                _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
+        } else {
+            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone has done a flashloan on Aave:
+            // the peer-to-peer growth factors are set to the pool borrow growth factor.
+            p2pSupplyGrowthFactor = poolBorrowGrowthFactor;
+            p2pBorrowGrowthFactor = poolBorrowGrowthFactor;
+        }
 
         // Compute new peer-to-peer supply index.
 
