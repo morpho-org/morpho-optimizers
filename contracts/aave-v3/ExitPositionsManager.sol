@@ -132,6 +132,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
         uint256 borrowedTokenPrice; // The price of the borrowed token.
         uint256 amountToLiquidate; // The amount of debt token to repay.
+        uint256 closeFactor;
+        bool liquidationAllowed;
     }
 
     // Struct to avoid stack too deep.
@@ -225,26 +227,26 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
 
-        (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
-        if (!borrowedMarket.isDeprecated && !liquidationAllowed) revert UnauthorisedLiquidate();
-
         LiquidateVars memory vars;
+        if (!borrowedMarket.isDeprecated) {
+            (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(_borrower);
+            if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
+        } else vars.closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+
         vars.amountToLiquidate = Math.min(
             _amount,
-            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(closeFactor) // Max liquidatable debt.
+            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        {
-            IPool poolMem = pool;
-            (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
-            .getConfiguration(collateralMarket.underlyingToken)
-            .getParams();
-            (, , , vars.borrowedReserveDecimals, , ) = poolMem
-            .getConfiguration(borrowedMarket.underlyingToken)
-            .getParams();
-        }
+        IPool poolMem = pool;
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
+        .getConfiguration(collateralMarket.underlyingToken)
+        .getParams();
+        (, , , vars.borrowedReserveDecimals, , ) = poolMem
+        .getConfiguration(borrowedMarket.underlyingToken)
+        .getParams();
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
