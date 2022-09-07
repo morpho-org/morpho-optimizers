@@ -152,22 +152,22 @@ contract TestPausableMarket is TestSetup {
 
         uint256 poolsLength = pools.length;
         for (uint256 i; i < poolsLength; ++i) {
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
             supplier1.supply(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
             supplier1.borrow(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
             supplier1.withdraw(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
             supplier1.repay(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("LiquidatePaused()"));
             supplier1.liquidate(pools[i], pools[0], address(supplier1), 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("LiquidatePaused()"));
             supplier1.liquidate(pools[0], pools[i], address(supplier1), 1);
         }
     }
@@ -177,7 +177,7 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, true, false, false, false, false);
 
-        vm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
         supplier1.supply(aDai, amount);
     }
 
@@ -186,7 +186,7 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, false, true, false, false, false);
 
-        vm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
         supplier1.borrow(aDai, amount);
     }
 
@@ -195,7 +195,7 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, false, false, true, false, false);
 
-        vm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
         supplier1.withdraw(aDai, amount);
     }
 
@@ -204,7 +204,7 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, false, false, false, true, false);
 
-        vm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
         supplier1.repay(aDai, amount);
     }
 
@@ -213,7 +213,7 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, false, false, false, false, true);
 
-        vm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("LiquidatePaused()"));
         supplier1.liquidate(aDai, aUsdc, address(supplier2), amount);
     }
 
@@ -222,7 +222,7 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, false, false, true, false, false);
 
-        vm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
         supplier1.liquidate(aUsdc, aDai, address(supplier2), amount);
     }
 }
