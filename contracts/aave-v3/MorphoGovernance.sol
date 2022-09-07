@@ -259,7 +259,15 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            setPauseStatus(poolToken, _newStatus, _newStatus, _newStatus, _newStatus, _newStatus);
+            setPauseStatus(
+                poolToken,
+                _newStatus,
+                _newStatus,
+                _newStatus,
+                _newStatus,
+                _newStatus,
+                _newStatus
+            );
             emit PauseStatusSet(poolToken, _newStatus);
 
             unchecked {
@@ -368,7 +376,8 @@ abstract contract MorphoGovernance is MorphoUtils {
             isP2PDisabled: false,
             isWithdrawPaused: false,
             isRepayPaused: false,
-            isLiquidatePaused: false
+            isLiquidateCollateralPaused: false,
+            isLiquidateBorrowPaused: false
         });
 
         borrowMask[poolToken] = ONE << (marketsCreated.length << 1);
@@ -387,7 +396,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         bool _pauseBorrowStatus,
         bool _pauseWithdrawStatus,
         bool _pauseRepayStatus,
-        bool _pauseLiquidateStatus
+        bool _pauseLiquidateCollateralStatus,
+        bool _pauseLiquidateBorrowStatus
     ) public onlyOwner isMarketCreated(_poolToken) {
         Types.Market storage market = market[_poolToken];
 
@@ -395,6 +405,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         market.isBorrowPaused = _pauseBorrowStatus;
         market.isWithdrawPaused = _pauseWithdrawStatus;
         market.isRepayPaused = _pauseRepayStatus;
-        market.isLiquidatePaused = _pauseLiquidateStatus;
+        market.isLiquidateCollateralPaused = _pauseLiquidateCollateralStatus;
+        market.isLiquidateBorrowPaused = _pauseLiquidateBorrowStatus;
     }
 }

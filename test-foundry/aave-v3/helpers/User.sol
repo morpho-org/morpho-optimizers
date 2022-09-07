@@ -144,7 +144,8 @@ contract User is Test {
         bool _pauseBorrowStatus,
         bool _pauseWithdrawStatus,
         bool _pauseRepayStatus,
-        bool _pauseLiquidateStatus
+        bool _pauseLiquidateCollateralStatus,
+        bool _pauseLiquidateBorrowStatus
     ) external {
         morpho.setPauseStatus(
             _marketAddress,
@@ -152,7 +153,8 @@ contract User is Test {
             _pauseBorrowStatus,
             _pauseWithdrawStatus,
             _pauseRepayStatus,
-            _pauseLiquidateStatus
+            _pauseLiquidateCollateralStatus,
+            _pauseLiquidateBorrowStatus
         );
     }
 
