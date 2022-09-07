@@ -132,7 +132,7 @@ contract TestGovernance is TestSetup {
         morpho.setP2PDisabledStatus(aDai, true);
 
         morpho.setP2PDisabledStatus(aDai, true);
-        (, , , , , , bool isP2PDisabled, , , ) = morpho.market(aDai);
+        (, , , , bool isP2PDisabled, , , , , ) = morpho.market(aDai);
         assertTrue(isP2PDisabled);
     }
 

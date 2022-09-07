@@ -522,9 +522,9 @@ contract TestLens is TestSetup {
             uint16 expectedReserveFactor,
             ,
             bool isCreated_,
+            bool isP2PDisabled_,
             bool isSupplyPaused_,
             bool isBorrowPaused_,
-            bool isP2PDisabled_,
             bool isWithdrawPaused_,
             bool isRepayPaused_,
             bool isLiquidatePaused_
