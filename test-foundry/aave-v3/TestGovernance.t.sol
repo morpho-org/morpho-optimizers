@@ -125,12 +125,12 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setP2PDisabledStatus(aDai, true);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setP2PDisabledStatus(aDai, true);
 
         morpho.setP2PDisabledStatus(aDai, true);
@@ -216,12 +216,12 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetDeprecatedMarket() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setDeprecatedStatus(aDai, true);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setDeprecatedStatus(aDai, true);
 
         morpho.setDeprecatedStatus(aDai, true);
