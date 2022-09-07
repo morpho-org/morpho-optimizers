@@ -49,8 +49,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// MARKETS STORAGE ///
 
     address[] internal marketsCreated; // Keeps track of the created markets.
-    mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
+    mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
     mapping(address => Types.PoolIndexes) public poolIndexes; // Last pool index stored.
     mapping(address => Types.Market) public market; // Market information.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
