@@ -528,7 +528,8 @@ contract TestLens is TestSetup {
             bool isWithdrawPaused_,
             bool isRepayPaused_,
             bool isLiquidateCollateralPaused_,
-            bool isLiquidateBorrowPaused_
+            bool isLiquidateBorrowPaused_,
+
         ) = morpho.market(aDai);
 
         assertTrue(isCreated == isCreated_);

@@ -24,7 +24,8 @@ contract TestPausableMarket is TestSetup {
             bool isWithdrawPaused,
             bool isRepayPaused,
             bool isLiquidateCollateralPaused,
-            bool isLiquidateBorrowPaused
+            bool isLiquidateBorrowPaused,
+
         ) = morpho.market(aDai);
         assertTrue(isSupplyPaused);
         assertTrue(isBorrowPaused);
@@ -49,7 +50,8 @@ contract TestPausableMarket is TestSetup {
                 bool isWithdrawPaused,
                 bool isRepayPaused,
                 bool isLiquidateCollateralPaused,
-                bool isLiquidateBorrowPaused
+                bool isLiquidateBorrowPaused,
+
             ) = morpho.market(pools[i]);
             assertTrue(isSupplyPaused);
             assertTrue(isBorrowPaused);
@@ -73,7 +75,8 @@ contract TestPausableMarket is TestSetup {
                 bool isWithdrawPaused,
                 bool isRepayPaused,
                 bool isLiquidateCollateralPaused,
-                bool isLiquidateBorrowPaused
+                bool isLiquidateBorrowPaused,
+
             ) = morpho.market(pools[i]);
             assertFalse(isSupplyPaused);
             assertFalse(isBorrowPaused);
@@ -97,7 +100,8 @@ contract TestPausableMarket is TestSetup {
             bool isWithdrawPaused,
             bool isRepayPaused,
             bool isLiquidateCollateralPaused,
-            bool isLiquidateBorrowPaused
+            bool isLiquidateBorrowPaused,
+
         ) = morpho.market(aDai);
         assertTrue(isSupplyPaused);
         assertTrue(isBorrowPaused);
@@ -118,7 +122,8 @@ contract TestPausableMarket is TestSetup {
             isWithdrawPaused,
             isRepayPaused,
             isLiquidateCollateralPaused,
-            isLiquidateBorrowPaused
+            isLiquidateBorrowPaused,
+
         ) = morpho.market(aDai);
         assertFalse(isSupplyPaused);
         assertFalse(isBorrowPaused);
