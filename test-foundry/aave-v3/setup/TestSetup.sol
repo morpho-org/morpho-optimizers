@@ -290,7 +290,7 @@ contract TestSetup is Config, Utils {
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , , , , , ) = morpho.market(
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , , , , , , ) = morpho.market(
             _poolToken
         );
 

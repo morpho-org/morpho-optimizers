@@ -226,7 +226,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenCollateral);
 
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
-        if (!liquidationAllowed) revert UnauthorisedLiquidate();
+        if (!borrowedMarket.isDeprecated && !liquidationAllowed) revert UnauthorisedLiquidate();
 
         LiquidateVars memory vars;
         vars.amountToLiquidate = Math.min(
