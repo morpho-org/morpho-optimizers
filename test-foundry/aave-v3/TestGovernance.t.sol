@@ -51,6 +51,7 @@ contract TestGovernance is TestSetup {
             ,
             ,
             ,
+            ,
 
         ) = morpho.market(aWeth);
         assertEq(reserveFactor, 1_000);
@@ -72,14 +73,14 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (, uint16 reserveFactor, , , , , , , , ) = morpho.market(aDai);
+        (, uint16 reserveFactor, , , , , , , , , ) = morpho.market(aDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
         morpho.createMarket(wEth, 3_333, 0);
 
-        (, , , bool isCreated, , , , , , ) = morpho.market(aWeth);
+        (, , , bool isCreated, , , , , , , ) = morpho.market(aWeth);
 
         assertTrue(isCreated);
         assertEq(morpho.p2pSupplyIndex(aWeth), WadRayMath.RAY);
@@ -132,7 +133,7 @@ contract TestGovernance is TestSetup {
         morpho.setP2PDisabledStatus(aDai, true);
 
         morpho.setP2PDisabledStatus(aDai, true);
-        (, , , , bool isP2PDisabled, , , , , ) = morpho.market(aDai);
+        (, , , , bool isP2PDisabled, , , , , , ) = morpho.market(aDai);
         assertTrue(isP2PDisabled);
     }
 

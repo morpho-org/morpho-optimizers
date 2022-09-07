@@ -89,8 +89,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the repay is paused.
     error RepayPaused();
 
-    /// @notice Thrown when the liquidate is paused.
-    error LiquidatePaused();
+    /// @notice Thrown when the liquidation on this collateral asset is paused.
+    error LiquidateCollateralPaused();
+
+    /// @notice Thrown when the liquidation on this borrowed asset is paused.
+    error LiquidateBorrowPaused();
 
     /// STRUCTS ///
 
@@ -204,12 +207,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
-        Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
-        if (!borrowedMarket.isCreated) revert MarketNotCreated();
-        if (borrowedMarket.isLiquidatePaused) revert LiquidatePaused();
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreated) revert MarketNotCreated();
-        if (collateralMarket.isWithdrawPaused) revert WithdrawPaused();
+        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
+        Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
+        if (!borrowedMarket.isCreated) revert MarketNotCreated();
+        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
 
         if (
             !_isBorrowingAndSupplying(

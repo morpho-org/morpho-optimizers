@@ -81,7 +81,8 @@ contract Lens {
                 !market.isBorrowPaused ||
                 !market.isWithdrawPaused ||
                 !market.isRepayPaused ||
-                !market.isLiquidatePaused);
+                !market.isLiquidateCollateralPaused ||
+                !market.isLiquidateBorrowPaused);
     }
 
     /// @notice Returns the current balance state of the user.
@@ -404,7 +405,8 @@ contract Lens {
             market.isBorrowPaused &&
             market.isWithdrawPaused &&
             market.isRepayPaused &&
-            market.isLiquidatePaused;
+            market.isLiquidateCollateralPaused &&
+            market.isLiquidateBorrowPaused;
         isPartiallyPaused_ = market.isSupplyPaused && market.isBorrowPaused;
         reserveFactor_ = market.reserveFactor;
     }

@@ -76,7 +76,8 @@ library Types {
         bool isBorrowPaused; // Whether the borrow is paused or not
         bool isWithdrawPaused; // Whether the withdraw is paused or not.
         bool isRepayPaused; // Whether the repay is paused or not.
-        bool isLiquidatePaused; // Whether the liquidate is paused or not.
+        bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
+        bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
     }
 
     struct LiquidityStackVars {
