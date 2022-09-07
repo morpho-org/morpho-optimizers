@@ -139,12 +139,7 @@ contract Morpho is MorphoGovernance {
         address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
-    )
-        external
-        nonReentrant
-        isMarketCreatedAndLiquidateNotPaused(_poolTokenBorrowed)
-        isMarketCreatedAndWithdrawNotPaused(_poolTokenCollateral)
-    {
+    ) external nonReentrant {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IExitPositionsManager.liquidateLogic.selector,
@@ -214,7 +209,7 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal isMarketCreatedAndSupplyNotPaused(_poolToken) {
+    ) internal {
         address(entryPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IEntryPositionsManager.supplyLogic.selector,
@@ -231,7 +226,7 @@ contract Morpho is MorphoGovernance {
         address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal isMarketCreatedAndBorrowNotPaused(_poolToken) {
+    ) internal {
         address(entryPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IEntryPositionsManager.borrowLogic.selector,
@@ -247,7 +242,7 @@ contract Morpho is MorphoGovernance {
         uint256 _amount,
         address _receiver,
         uint256 _maxGasForMatching
-    ) internal isMarketCreatedAndWithdrawNotPaused(_poolToken) {
+    ) internal {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IExitPositionsManager.withdrawLogic.selector,
@@ -265,7 +260,7 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal isMarketCreatedAndRepayNotPaused(_poolToken) {
+    ) internal {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IExitPositionsManager.repayLogic.selector,
