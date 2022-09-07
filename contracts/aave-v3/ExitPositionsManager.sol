@@ -115,6 +115,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 borrowedTokenPrice;
+        uint256 amountToLiquidate;
+        uint256 collateralBalance;
+        uint256 collateralPrice;
+        uint256 amountToSeize;
     }
 
     // Struct to avoid stack too deep.
@@ -141,6 +146,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isWithdrawPaused) revert MarketPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
@@ -165,6 +173,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isRepayPaused) revert MarketPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
@@ -184,6 +195,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
+        Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
+        if (!borrowedMarket.isCreated) revert MarketNotCreated();
+        if (borrowedMarket.isLiquidatePaused) revert MarketPaused();
+        Types.Market memory collateralMarket = market[_poolTokenCollateral];
+        if (!collateralMarket.isCreated) revert MarketNotCreated();
+        if (collateralMarket.isWithdrawPaused) revert MarketPaused();
+
         if (
             !_isBorrowingAndSupplying(
                 userMarkets[_borrower],
@@ -198,25 +216,21 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
         if (!liquidationAllowed) revert UnauthorisedLiquidate();
 
-        address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
-
-        uint256 amountToLiquidate = Math.min(
+        LiquidateVars memory vars;
+        vars.amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(closeFactor) // Max liquidatable debt.
         );
 
-        address tokenCollateralAddress = market[_poolTokenCollateral].underlyingToken;
-
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        LiquidateVars memory vars;
         {
             IPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
-            .getConfiguration(tokenCollateralAddress)
+            .getConfiguration(collateralMarket.underlyingToken)
             .getParams();
             (, , , vars.borrowedReserveDecimals, , ) = poolMem
-            .getConfiguration(tokenBorrowedAddress)
+            .getConfiguration(borrowedMarket.underlyingToken)
             .getParams();
         }
 
@@ -225,32 +239,33 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         }
 
-        uint256 borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowedAddress);
-        uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
-        uint256 amountToSeize = ((amountToLiquidate *
-            borrowedTokenPrice *
-            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice))
+        vars.borrowedTokenPrice = oracle.getAssetPrice(borrowedMarket.underlyingToken);
+        vars.collateralPrice = oracle.getAssetPrice(collateralMarket.underlyingToken);
+        vars.amountToSeize = ((vars.amountToLiquidate *
+            vars.borrowedTokenPrice *
+            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * vars.collateralPrice))
         .percentMul(vars.liquidationBonus);
 
-        uint256 collateralBalance = _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower);
+        vars.collateralBalance = _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower);
 
-        if (amountToSeize > collateralBalance) {
-            amountToSeize = collateralBalance;
-            amountToLiquidate = ((collateralBalance * collateralPrice * vars.borrowedTokenUnit) /
-                (borrowedTokenPrice * vars.collateralTokenUnit))
+        if (vars.amountToSeize > vars.collateralBalance) {
+            vars.amountToSeize = vars.collateralBalance;
+            vars.amountToLiquidate = ((vars.collateralBalance *
+                vars.collateralPrice *
+                vars.borrowedTokenUnit) / (vars.borrowedTokenPrice * vars.collateralTokenUnit))
             .percentDiv(vars.liquidationBonus);
         }
 
-        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, amountToLiquidate, 0);
-        _safeWithdrawLogic(_poolTokenCollateral, amountToSeize, _borrower, msg.sender, 0);
+        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, vars.amountToLiquidate, 0);
+        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
 
         emit Liquidated(
             msg.sender,
             _borrower,
             _poolTokenBorrowed,
-            amountToLiquidate,
+            vars.amountToLiquidate,
             _poolTokenCollateral,
-            amountToSeize
+            vars.amountToSeize
         );
     }
 
