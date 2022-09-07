@@ -117,13 +117,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
+        uint256 collateralBalance; // The collateral balance of the borrower.
+        uint256 collateralPrice; // The price of the collateral token.
+        uint256 amountToSeize; // The amount of collateral token to seize.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
-        uint256 borrowedTokenPrice;
-        uint256 amountToLiquidate;
-        uint256 collateralBalance;
-        uint256 collateralPrice;
-        uint256 amountToSeize;
+        uint256 borrowedTokenPrice; // The price of the borrowed token.
+        uint256 amountToLiquidate; // The amount of debt token to repay.
     }
 
     // Struct to avoid stack too deep.
