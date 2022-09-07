@@ -78,11 +78,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newStatus The new pause status of the market.
     event PauseStatusSet(address indexed _poolToken, bool _newStatus);
 
-    /// @notice Emitted when a market is partially paused or unpaused.
-    /// @param _poolToken The address of the concerned market.
-    /// @param _newStatus The new partial pause status of the market.
-    event PartialPauseStatusSet(address indexed _poolToken, bool _newStatus);
-
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _newStatus The new claiming rewards status.
     event ClaimRewardsPauseStatusSet(bool _newStatus);
