@@ -78,6 +78,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
+    /// @notice Thrown when the withdraw is paused.
+    error WithdrawPaused();
+
+    /// @notice Thrown when the repay is paused.
+    error RepayPaused();
+
+    /// @notice Thrown when the liquidate is paused.
+    error LiquidatePaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -143,7 +152,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_receiver == address(0)) revert AddressIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
-        if (market.isWithdrawPaused) revert MarketPaused();
+        if (market.isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
@@ -170,7 +179,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
-        if (market.isRepayPaused) revert MarketPaused();
+        if (market.isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
@@ -192,10 +201,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
         if (!borrowedMarket.isCreated) revert MarketNotCreated();
-        if (borrowedMarket.isLiquidatePaused) revert MarketPaused();
+        if (borrowedMarket.isLiquidatePaused) revert LiquidatePaused();
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreated) revert MarketNotCreated();
-        if (collateralMarket.isWithdrawPaused) revert MarketPaused();
+        if (collateralMarket.isWithdrawPaused) revert WithdrawPaused();
 
         if (
             !_isBorrowingAndSupplying(
