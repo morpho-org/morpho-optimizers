@@ -78,7 +78,7 @@ library Types {
         bool isRepayPaused; // Whether the repay is paused or not.
         bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
-        bool isDeprecated; // Whether a market is deprecared or not.
+        bool isDeprecated; // Whether a market is deprecated or not.
     }
 
     struct LiquidityStackVars {
