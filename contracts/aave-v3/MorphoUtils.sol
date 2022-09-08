@@ -34,7 +34,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated) revert MarketNotCreated();
+        if (market[_poolToken].underlyingToken == address(0)) revert MarketNotCreated();
         _;
     }
 

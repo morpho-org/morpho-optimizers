@@ -156,7 +156,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (market.underlyingToken == address(0)) revert MarketNotCreated();
         if (market.isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
@@ -183,7 +183,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (market.underlyingToken == address(0)) revert MarketNotCreated();
         if (market.isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
@@ -205,10 +205,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount
     ) external {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
-        if (!collateralMarket.isCreated) revert MarketNotCreated();
+        if (collateralMarket.underlyingToken == address(0)) revert MarketNotCreated();
         if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
         Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
-        if (!borrowedMarket.isCreated) revert MarketNotCreated();
+        if (borrowedMarket.underlyingToken == address(0)) revert MarketNotCreated();
         if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
 
         if (

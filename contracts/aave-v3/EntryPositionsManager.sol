@@ -98,7 +98,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (market.underlyingToken == address(0)) revert MarketNotCreated();
         if (market.isSupplyPaused) revert SupplyPaused();
         _updateIndexes(_poolToken);
 
@@ -195,7 +195,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (market.underlyingToken == address(0)) revert MarketNotCreated();
         if (market.isBorrowPaused) revert BorrowPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);

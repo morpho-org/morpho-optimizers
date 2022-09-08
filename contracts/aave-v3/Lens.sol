@@ -67,7 +67,7 @@ contract Lens {
     /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolToken) external view returns (bool) {
-        return morpho.market(_poolToken).isCreated;
+        return morpho.market(_poolToken).underlyingToken != address(0);
     }
 
     /// @notice Checks if a market is created and not paused.
@@ -76,7 +76,7 @@ contract Lens {
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
         return
-            market.isCreated &&
+            morpho.market(_poolToken).underlyingToken != address(0) &&
             (!market.isSupplyPaused ||
                 !market.isBorrowPaused ||
                 !market.isWithdrawPaused ||
@@ -398,7 +398,7 @@ contract Lens {
         )
     {
         Types.Market memory market = morpho.market(_poolToken);
-        isCreated_ = market.isCreated;
+        isCreated_ = morpho.market(_poolToken).underlyingToken != address(0);
         isP2PDisabled_ = market.isP2PDisabled;
         isPaused_ =
             market.isSupplyPaused &&

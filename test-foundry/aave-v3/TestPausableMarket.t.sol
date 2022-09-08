@@ -18,7 +18,6 @@ contract TestPausableMarket is TestSetup {
             ,
             ,
             ,
-            ,
             bool isSupplyPaused,
             bool isBorrowPaused,
             bool isWithdrawPaused,
@@ -40,7 +39,6 @@ contract TestPausableMarket is TestSetup {
 
         for (uint256 i; i < pools.length; ++i) {
             (
-                ,
                 ,
                 ,
                 ,
@@ -69,7 +67,6 @@ contract TestPausableMarket is TestSetup {
                 ,
                 ,
                 ,
-                ,
                 bool isSupplyPaused,
                 bool isBorrowPaused,
                 bool isWithdrawPaused,
@@ -94,7 +91,6 @@ contract TestPausableMarket is TestSetup {
             ,
             ,
             ,
-            ,
             bool isSupplyPaused,
             bool isBorrowPaused,
             bool isWithdrawPaused,
@@ -112,7 +108,6 @@ contract TestPausableMarket is TestSetup {
 
         morpho.setPauseStatus(aDai, false, false, false, false, false, false);
         (
-            ,
             ,
             ,
             ,
