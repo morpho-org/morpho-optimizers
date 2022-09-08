@@ -518,10 +518,9 @@ contract TestLens is TestSetup {
         ) = lens.getMarketConfiguration(aDai);
 
         (
-            ,
+            address underlyingToken_,
             uint16 expectedReserveFactor,
             ,
-            bool isCreated_,
             bool isP2PDisabled_,
             bool isSupplyPaused_,
             bool isBorrowPaused_,
@@ -532,7 +531,7 @@ contract TestLens is TestSetup {
 
         ) = morpho.market(aDai);
 
-        assertTrue(isCreated == isCreated_);
+        assertTrue(isCreated == (underlyingToken_ != address(0)));
         assertTrue(isP2PDisabled == isP2PDisabled_);
         assertTrue(
             isPaused ==

@@ -354,7 +354,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             address poolToken = _poolTokens[i];
 
             Types.Market memory market = market[poolToken];
-            if (!market.isCreated) continue;
+            if (market.underlyingToken == address(0)) continue;
 
             ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
@@ -386,7 +386,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         address poolToken = pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (market[poolToken].isCreated) revert MarketAlreadyCreated();
+        if (market[poolToken].underlyingToken != address(0)) revert MarketAlreadyCreated();
 
         p2pSupplyIndex[poolToken] = WadRayMath.RAY;
         p2pBorrowIndex[poolToken] = WadRayMath.RAY;
@@ -403,7 +403,6 @@ abstract contract MorphoGovernance is MorphoUtils {
             underlyingToken: _underlyingToken,
             reserveFactor: _reserveFactor,
             p2pIndexCursor: _p2pIndexCursor,
-            isCreated: true,
             isSupplyPaused: false,
             isBorrowPaused: false,
             isP2PDisabled: false,
