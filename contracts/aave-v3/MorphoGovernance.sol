@@ -13,6 +13,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using Types for Types.Market;
     using WadRayMath for uint256;
 
     /// EVENTS ///
@@ -338,7 +339,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             address poolToken = _poolTokens[i];
 
             Types.Market memory market = market[poolToken];
-            if (market.underlyingToken == address(0)) continue;
+            if (!market.isCreated()) continue;
 
             ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
