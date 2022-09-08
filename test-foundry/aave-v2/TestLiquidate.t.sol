@@ -6,6 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestLiquidate is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
+    using WadRayMath for uint256;
 
     // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function testShouldNotBePossibleToLiquidateUserAboveWater() public {
@@ -23,6 +24,32 @@ contract TestLiquidate is TestSetup {
 
         hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
+    }
+
+    function testLiquidateWhenMarketDeprecated() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = to6Decimals(2 * amount);
+
+        morpho.setDeprecatedStatus(aDai, true);
+
+        borrower1.approve(usdc, address(morpho), collateral);
+        borrower1.supply(aUsdc, collateral);
+        borrower1.borrow(aDai, amount);
+
+        (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
+        (, uint256 borrowOnPoolbefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+
+        // Liquidate
+        uint256 toRepay = amount / 2;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
+
+        (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
+        (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+
+        assertLt(borrowOnPoolAfter, borrowOnPoolbefore);
+        assertLt(supplyOnPoolAfter, supplyOnPoolBefore);
     }
 
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
