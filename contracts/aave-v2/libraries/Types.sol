@@ -83,7 +83,7 @@ library Types {
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
         bool isSupplyPaused; // Whether the supply is paused or not.
         bool isBorrowPaused; // Whether the borrow is paused or not
-        bool isWithdrawPaused; // Whether the withdraw is paused or not.
+        bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).
         bool isRepayPaused; // Whether the repay is paused or not.
         bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
