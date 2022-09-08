@@ -92,8 +92,4 @@ library Types {
     function isCreated(Market memory _market) internal pure returns (bool) {
         return _market.underlyingToken != address(0);
     }
-
-    function isCreated(Market storage _market) internal view returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
 }
