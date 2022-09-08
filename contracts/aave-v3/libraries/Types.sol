@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+library MarketLib {
+    function isCreated(Types.Market storage _market) internal view returns (bool) {
+        return _market.underlyingToken != address(0);
+    }
+
+    function isCreatedMemory(Types.Market memory _market) internal pure returns (bool) {
+        return _market.underlyingToken != address(0);
+    }
+}
+
 /// @title Types.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
@@ -70,7 +80,6 @@ library Types {
         address underlyingToken; // The underlying address of the market.
         uint16 reserveFactor; // Proportion of the additional interest earned being matched peer-to-peer on Morpho compared to being on the pool. It is sent to the DAO for each market. The default value is 0. In basis point (100% = 10 000).
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
-        bool isCreated; // Whether or not this market is created.
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
         bool isSupplyPaused; // Whether the supply is paused or not.
         bool isBorrowPaused; // Whether the borrow is paused or not

@@ -694,54 +694,105 @@ contract TestLens is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
-        (
-            address underlying,
-            bool isCreated,
-            bool isP2PDisabled,
-            bool isPaused,
-            bool isPartiallyPaused,
-            uint16 reserveFactor,
-            uint16 p2pIndexCursor,
-            uint256 ltv,
-            uint256 liquidationThreshold,
-            uint256 liquidationBonus,
-            uint256 decimals
-        ) = lens.getMarketConfiguration(aDai);
-        assertEq(underlying, dai);
+        {
+            (
+                address underlying,
+                bool isCreated,
+                bool isP2PDisabled,
+                ,
+                ,
+                uint16 reserveFactor,
+                uint16 p2pIndexCursor,
+                ,
+                ,
+                ,
 
-        (
-            ,
-            ,
-            ,
-            bool isCreated_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            bool isP2PDisabled_
-        ) = morpho.market(aDai);
+            ) = lens.getMarketConfiguration(aDai);
+            assertEq(underlying, dai);
 
-        assertEq(isCreated, isCreated_);
-        assertEq(isP2PDisabled, isP2PDisabled_);
+            Types.Market memory expectedConfig;
+            (
+                expectedConfig.underlyingToken,
+                expectedConfig.reserveFactor,
+                expectedConfig.p2pIndexCursor,
+                expectedConfig.isP2PDisabled,
+                ,
+                ,
+                ,
+                ,
+                ,
+                ,
 
-        assertEq(isPaused, isPaused_);
-        assertEq(isPartiallyPaused, isPartiallyPaused_);
-        (, uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor, , , , ) = morpho.market(
-            aDai
-        );
-        assertEq(reserveFactor, expectedReserveFactor);
-        assertEq(p2pIndexCursor, expectedP2PIndexCursor);
+            ) = morpho.market(aDai);
 
-        (
-            uint256 expectedLtv,
-            uint256 expectedLiquidationThreshold,
-            uint256 expectedLiquidationBonus,
-            uint256 expectedDecimals,
+            assertTrue(isCreated == (expectedConfig.underlyingToken != address(0)));
+            assertTrue(isP2PDisabled == expectedConfig.isP2PDisabled);
+            assertEq(reserveFactor, expectedConfig.reserveFactor);
+            assertEq(p2pIndexCursor, expectedConfig.p2pIndexCursor);
+        }
+        {
+            (address underlying, , , bool isPaused, bool isPartiallyPaused, , , , , , ) = lens
+            .getMarketConfiguration(aDai);
+            assertEq(underlying, dai);
 
-        ) = pool.getConfiguration(dai).getParamsMemory();
+            Types.Market memory expectedConfig;
+            (
+                ,
+                ,
+                ,
+                ,
+                expectedConfig.isSupplyPaused,
+                expectedConfig.isBorrowPaused,
+                expectedConfig.isWithdrawPaused,
+                expectedConfig.isRepayPaused,
+                expectedConfig.isLiquidateCollateralPaused,
+                expectedConfig.isLiquidateBorrowPaused,
 
-        assertEq(ltv, expectedLtv);
-        assertEq(liquidationThreshold, expectedLiquidationThreshold);
-        assertEq(liquidationBonus, expectedLiquidationBonus);
-        assertEq(decimals, expectedDecimals);
+            ) = morpho.market(aDai);
+
+            assertTrue(
+                isPaused ==
+                    (expectedConfig.isSupplyPaused &&
+                        expectedConfig.isBorrowPaused &&
+                        expectedConfig.isWithdrawPaused &&
+                        expectedConfig.isRepayPaused &&
+                        expectedConfig.isLiquidateCollateralPaused &&
+                        expectedConfig.isLiquidateBorrowPaused)
+            );
+            assertTrue(
+                isPartiallyPaused ==
+                    (expectedConfig.isSupplyPaused && expectedConfig.isBorrowPaused)
+            );
+        }
+
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                ,
+                ,
+                ,
+                uint256 ltv,
+                uint256 liquidationThreshold,
+                uint256 liquidationBonus,
+                uint256 decimals
+            ) = lens.getMarketConfiguration(aDai);
+
+            (
+                uint256 expectedLtv,
+                uint256 expectedLiquidationThreshold,
+                uint256 expectedLiquidationBonus,
+                uint256 expectedDecimals,
+
+            ) = pool.getConfiguration(dai).getParamsMemory();
+
+            assertEq(ltv, expectedLtv);
+            assertEq(liquidationThreshold, expectedLiquidationThreshold);
+            assertEq(liquidationBonus, expectedLiquidationBonus);
+            assertEq(decimals, expectedDecimals);
+        }
     }
 
     function testGetOutdatedIndexes() public {

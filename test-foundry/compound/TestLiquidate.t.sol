@@ -16,6 +16,8 @@ contract TestLiquidate is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, amount);
 
+        moveOneBlockForwardBorrowRepay();
+
         // Liquidate
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
@@ -23,6 +25,34 @@ contract TestLiquidate is TestSetup {
 
         hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
+    }
+
+    function testLiquidateWhenMarketDeprecated() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = to6Decimals(2 * amount);
+
+        morpho.setDeprecatedStatus(cDai, true);
+
+        borrower1.approve(usdc, address(morpho), collateral);
+        borrower1.supply(cUsdc, collateral);
+        borrower1.borrow(cDai, amount);
+
+        moveOneBlockForwardBorrowRepay();
+
+        (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+        (, uint256 borrowOnPoolbefore) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        // Liquidate
+        uint256 toRepay = amount / 3;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
+
+        (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+        (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        assertLt(borrowOnPoolAfter, borrowOnPoolbefore);
+        assertLt(supplyOnPoolAfter, supplyOnPoolBefore);
     }
 
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
@@ -36,8 +66,6 @@ contract TestLiquidate is TestSetup {
         borrower1.borrow(cDai, amount);
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
-
-        moveOneBlockForwardBorrowRepay();
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
