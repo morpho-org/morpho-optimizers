@@ -16,8 +16,6 @@ contract TestLiquidate is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, amount);
 
-        moveOneBlockForwardBorrowRepay();
-
         // Liquidate
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
@@ -66,6 +64,8 @@ contract TestLiquidate is TestSetup {
         borrower1.borrow(cDai, amount);
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+
+        moveOneBlockForwardBorrowRepay();
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
