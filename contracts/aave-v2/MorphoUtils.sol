@@ -25,6 +25,7 @@ abstract contract MorphoUtils is MorphoStorage {
     using PercentageMath for uint256;
     using DelegateCall for address;
     using WadRayMath for uint256;
+    using Types for Types.Market;
     using Math for uint256;
 
     /// ERRORS ///
@@ -32,33 +33,12 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
-    /// @notice Thrown when the market is paused.
-    error MarketPaused();
-
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated) revert MarketNotCreated();
-        _;
-    }
-
-    /// @notice Prevents a user to trigger a function when market is not created or paused.
-    /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolToken) {
-        Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isPaused) revert MarketPaused();
-        _;
-    }
-
-    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
-    /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
-        Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isPaused || market.isPartiallyPaused) revert MarketPaused();
+        if (market[_poolToken].underlyingToken == address(0)) revert MarketNotCreated();
         _;
     }
 

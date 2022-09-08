@@ -14,6 +14,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using Types for Types.Market;
     using WadRayMath for uint256;
     using Math for uint256;
 
@@ -83,6 +84,18 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
+    /// @notice Thrown when the withdraw is paused.
+    error WithdrawPaused();
+
+    /// @notice Thrown when the repay is paused.
+    error RepayPaused();
+
+    /// @notice Thrown when the liquidation on this asset as collateral is paused.
+    error LiquidateCollateralPaused();
+
+    /// @notice Thrown when the liquidation on this asset as debt is paused.
+    error LiquidateBorrowPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -141,6 +154,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated()) revert MarketNotCreated();
+        if (market.isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
@@ -165,6 +181,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated()) revert MarketNotCreated();
+        if (market.isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
@@ -184,6 +203,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
+        Types.Market memory collateralMarket = market[_poolTokenCollateral];
+        if (!collateralMarket.isCreated()) revert MarketNotCreated();
+        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
+        Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
+        if (!borrowedMarket.isCreated()) revert MarketNotCreated();
+        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+
         if (
             !_isBorrowingAndSupplying(
                 userMarkets[_borrower],
@@ -195,7 +221,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
 
-        if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
+        if (!borrowedMarket.isDeprecated && !_liquidationAllowed(_borrower))
+            revert UnauthorisedLiquidate();
 
         address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
 

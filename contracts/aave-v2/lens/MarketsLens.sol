@@ -17,7 +17,7 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolToken) external view returns (bool) {
-        return morpho.market(_poolToken).isCreated;
+        return morpho.market(_poolToken).underlyingToken != address(0);
     }
 
     /// @notice Checks if a market is created and not paused.
@@ -25,7 +25,12 @@ abstract contract MarketsLens is RatesLens {
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused;
+        return
+            market.underlyingToken != address(0) &&
+            !(market.isSupplyPaused &&
+                market.isBorrowPaused &&
+                market.isWithdrawPaused &&
+                market.isRepayPaused);
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
@@ -37,7 +42,9 @@ abstract contract MarketsLens is RatesLens {
         returns (bool)
     {
         Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
+        return
+            market.underlyingToken != address(0) &&
+            !(market.isSupplyPaused && market.isBorrowPaused);
     }
 
     /// @notice Returns all created markets.
@@ -137,10 +144,14 @@ abstract contract MarketsLens is RatesLens {
         underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
 
         Types.Market memory market = morpho.market(_poolToken);
-        isCreated = market.isCreated;
+        isCreated = market.underlyingToken != address(0);
         isP2PDisabled = market.isP2PDisabled;
-        isPaused = market.isPaused;
-        isPartiallyPaused = market.isPartiallyPaused;
+        isPaused =
+            market.isSupplyPaused &&
+            market.isBorrowPaused &&
+            market.isWithdrawPaused &&
+            market.isRepayPaused;
+        isPartiallyPaused = market.isSupplyPaused && market.isBorrowPaused;
         reserveFactor = market.reserveFactor;
         p2pIndexCursor = market.p2pIndexCursor;
 
