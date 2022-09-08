@@ -41,8 +41,19 @@ contract TestGovernance is TestSetup {
         morpho.createMarket(wEth, 0, 10_001);
 
         morpho.createMarket(wEth, 1_000, 3_333);
-        (address underlyingToken, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho
-        .market(aWeth);
+        (
+            address underlyingToken,
+            uint16 reserveFactor,
+            uint256 p2pIndexCursor,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = morpho.market(aWeth);
         assertEq(reserveFactor, 1_000);
         assertEq(p2pIndexCursor, 3_333);
         assertTrue(underlyingToken == wEth);
@@ -62,16 +73,13 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (, uint16 reserveFactor, , , , , ) = morpho.market(aDai);
+        (, uint16 reserveFactor, , , , , , , , , ) = morpho.market(aDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
         morpho.createMarket(wEth, 3_333, 0);
 
-        (, , , bool isCreated, , , ) = morpho.market(aWeth);
-
-        assertTrue(isCreated);
         assertEq(morpho.p2pSupplyIndex(aWeth), WadRayMath.RAY);
         assertEq(morpho.p2pBorrowIndex(aWeth), WadRayMath.RAY);
     }
@@ -113,16 +121,16 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier1));
-        morpho.setP2PDisabledStatus(aDai, true);
-
         hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setP2PDisabledStatus(aDai, true);
+
         hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setP2PDisabledStatus(aDai, true);
 
         morpho.setP2PDisabledStatus(aDai, true);
-        (, , , , , , bool isP2PDisabled) = morpho.market(aDai);
+        (, , , bool isP2PDisabled, , , , , , , ) = morpho.market(aDai);
         assertTrue(isP2PDisabled);
     }
 
@@ -202,5 +210,23 @@ contract TestGovernance is TestSetup {
         morpho.setPauseStatusForAllMarkets(true);
 
         morpho.setPauseStatusForAllMarkets(true);
+    }
+
+    function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setDeprecatedStatus(aDai, true);
+
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setDeprecatedStatus(aDai, true);
+
+        morpho.setDeprecatedStatus(aDai, true);
+        (, , , , , , , , , , bool isDeprecated) = morpho.market(aDai);
+        assertTrue(isDeprecated);
+
+        morpho.setDeprecatedStatus(aDai, false);
+        (, , , , , , , , , , isDeprecated) = morpho.market(aDai);
+        assertFalse(isDeprecated);
     }
 }

@@ -176,11 +176,23 @@ contract User {
         morpho.setTreasuryVault(_newTreasuryVault);
     }
 
-    function setPauseStatus(address _poolToken, bool _newStatus) external {
-        morpho.setPauseStatus(_poolToken, _newStatus);
-    }
-
-    function setPartialPauseStatus(address _poolToken, bool _newStatus) external {
-        morpho.setPartialPauseStatus(_poolToken, _newStatus);
+    function setPauseStatus(
+        address _marketAddress,
+        bool _pauseSupplyStatus,
+        bool _pauseBorrowStatus,
+        bool _pauseWithdrawStatus,
+        bool _pauseRepayStatus,
+        bool _pauseLiquidateCollateralStatus,
+        bool _pauseLiquidateBorrowStatus
+    ) external {
+        morpho.setPauseStatus(
+            _marketAddress,
+            _pauseSupplyStatus,
+            _pauseBorrowStatus,
+            _pauseWithdrawStatus,
+            _pauseRepayStatus,
+            _pauseLiquidateCollateralStatus,
+            _pauseLiquidateBorrowStatus
+        );
     }
 }
