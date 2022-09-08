@@ -89,10 +89,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the repay is paused.
     error RepayPaused();
 
-    /// @notice Thrown when the liquidation on this collateral asset is paused.
+    /// @notice Thrown when the liquidation on this asset as collateral is paused.
     error LiquidateCollateralPaused();
 
-    /// @notice Thrown when the liquidation on this borrowed asset is paused.
+    /// @notice Thrown when the liquidation on this asset as debt is paused.
     error LiquidateBorrowPaused();
 
     /// STRUCTS ///
