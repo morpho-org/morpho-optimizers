@@ -30,11 +30,7 @@ contract Morpho is MorphoGovernance {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to supply.
-    function supply(address _poolToken, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
-    {
+    function supply(address _poolToken, uint256 _amount) external nonReentrant {
         _supply(_poolToken, msg.sender, _amount, defaultMaxGasForMatching.supply);
     }
 
@@ -47,7 +43,7 @@ contract Morpho is MorphoGovernance {
         address _poolToken,
         address _onBehalf,
         uint256 _amount
-    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+    ) external nonReentrant {
         _supply(_poolToken, _onBehalf, _amount, defaultMaxGasForMatching.supply);
     }
 
@@ -63,18 +59,14 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+    ) external nonReentrant {
         _supply(_poolToken, _onBehalf, _amount, _maxGasForMatching);
     }
 
     /// @notice Borrows underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    function borrow(address _poolToken, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
-    {
+    function borrow(address _poolToken, uint256 _amount) external nonReentrant {
         _borrow(_poolToken, _amount, defaultMaxGasForMatching.borrow);
     }
 
@@ -86,18 +78,14 @@ contract Morpho is MorphoGovernance {
         address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+    ) external nonReentrant {
         _borrow(_poolToken, _amount, _maxGasForMatching);
     }
 
     /// @notice Withdraws underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
-    function withdraw(address _poolToken, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolToken)
-    {
+    function withdraw(address _poolToken, uint256 _amount) external nonReentrant {
         _withdraw(_poolToken, _amount, msg.sender, defaultMaxGasForMatching.withdraw);
     }
 
@@ -109,7 +97,7 @@ contract Morpho is MorphoGovernance {
         address _poolToken,
         uint256 _amount,
         address _receiver
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolToken) {
+    ) external nonReentrant {
         _withdraw(_poolToken, _amount, _receiver, defaultMaxGasForMatching.withdraw);
     }
 
@@ -117,11 +105,7 @@ contract Morpho is MorphoGovernance {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
-    function repay(address _poolToken, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolToken)
-    {
+    function repay(address _poolToken, uint256 _amount) external nonReentrant {
         _repay(_poolToken, msg.sender, _amount, defaultMaxGasForMatching.repay);
     }
 
@@ -134,7 +118,7 @@ contract Morpho is MorphoGovernance {
         address _poolToken,
         address _onBehalf,
         uint256 _amount
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolToken) {
+    ) external nonReentrant {
         _repay(_poolToken, _onBehalf, _amount, defaultMaxGasForMatching.repay);
     }
 
@@ -148,12 +132,7 @@ contract Morpho is MorphoGovernance {
         address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
-    )
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenBorrowed)
-        isMarketCreatedAndNotPaused(_poolTokenCollateral)
-    {
+    ) external nonReentrant {
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IPositionsManager.liquidateLogic.selector,

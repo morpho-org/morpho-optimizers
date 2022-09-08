@@ -77,7 +77,7 @@ contract TestGovernance is TestSetup {
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
         morpho.createMarket(cAave, marketParams);
 
-        (bool isCreated, , ) = morpho.marketStatus(cAave);
+        (bool isCreated, , , , , , , ) = morpho.marketStatus(cAave);
 
         assertTrue(isCreated);
         assertEq(
