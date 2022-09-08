@@ -1,4 +1,4 @@
-name: Storage layout check (Morpho-Compound)
+name: Storage layout checks
 
 on:
   push:
@@ -6,38 +6,47 @@ on:
       - main
       - dev
   pull_request:
+    paths:
+      - lib/**
+      - contracts/common/**
+      - contracts/compound/**
+      - "*.lock"
+      - remappings.txt
+      - .github/actions/ci-storage-layout/*
+      - .github/workflows/ci-storage-layout-compound.yml
 
 jobs:
-  check:
-    name: storage layout check
+  morpho-compound:
+    name: morpho-compound
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: yarn
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      shell: bash
+
+    - name: Install Foundry
+      uses: onbjerg/foundry-toolchain@v1
+      with:
+        version: nightly
+
+      - uses: ./.github/actions/ci-storage-layout
         with:
-          node-version: 16
-          cache: yarn
+          path: contracts/compound/Morpho.sol
+          contract: Morpho
+          protocol: compound
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
+      - uses: ./.github/actions/ci-storage-layout
         with:
-          version: nightly
+          path: contracts/compound/RewardsManager.sol
+          contract: Morpho
+          protocol: compound
 
-      - name: Foundry fork cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            cache
-            out
-          key: foundry-${{ hashFiles('Makefile', 'foundry.toml') }} # where fork block numbers & RPC are stored
-
-      - name: Run tests
-        run: make storage-layout-check
-        env:
-          PROTOCOL: compound
