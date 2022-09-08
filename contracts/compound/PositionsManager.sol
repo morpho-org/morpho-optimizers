@@ -493,6 +493,36 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         );
     }
 
+    /// @notice Implements increaseP2PDeltas logic.
+    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resuppling it.
+    /// In this case, consider calling multiple times this function.
+    /// @param _poolToken The address of the market on which to create deltas.
+    /// @param _amount The amount to add to the deltas (in underlying).
+    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external {
+        _updateP2PIndexes(_poolToken);
+
+        Types.Delta storage deltas = deltas[_poolToken];
+        Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
+        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
+        uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
+
+        _amount = Math.min(
+            _amount,
+            Math.min(
+                deltas.p2pSupplyAmount.mul(p2pSupplyIndex) -
+                    deltas.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex),
+                deltas.p2pBorrowAmount.mul(p2pBorrowIndex) -
+                    deltas.p2pBorrowAmount.mul(lastPoolIndexes.lastBorrowPoolIndex)
+            )
+        );
+
+        deltas.p2pSupplyDelta += _amount.div(lastPoolIndexes.lastSupplyPoolIndex);
+        deltas.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
+
+        _borrowFromPool(_poolToken, _amount);
+        _supplyToPool(_poolToken, _getUnderlying(_poolToken), _amount);
+    }
+
     /// INTERNAL ///
 
     /// @dev Implements withdraw logic without security checks.

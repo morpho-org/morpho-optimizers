@@ -206,4 +206,54 @@ contract TestGovernance is TestSetup {
         morpho.setClaimRewardsPauseStatus(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
+
+    function testOnlyOwnerCanIncreaseP2PDeltas() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.increaseP2PDeltas(cDai, 0);
+
+        morpho.increaseP2PDeltas(cDai, 0);
+    }
+
+    function testIncreaseP2PDeltas() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 increaseDeltaAmount = 30 ether;
+
+        supplier1.approve(wEth, supplyAmount);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+
+        assertEq(p2pSupplyDelta, increaseDeltaAmount.div(ICToken(cDai).exchangeRateStored()));
+        assertEq(p2pBorrowDelta, increaseDeltaAmount.div(ICToken(cDai).borrowIndex()));
+    }
+
+    function testIncreaseP2PDeltasMoreThanWhatIsPossible() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(wEth, supplyAmount);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+
+        assertApproxEqAbs(
+            p2pSupplyDelta,
+            borrowAmount.div(ICToken(cDai).exchangeRateStored()),
+            1e5
+        );
+        assertApproxEqAbs(p2pBorrowDelta, borrowAmount.div(ICToken(cDai).borrowIndex()), 1e13);
+    }
 }
