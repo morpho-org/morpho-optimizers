@@ -9,6 +9,7 @@ import "./RatesLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol markets.
 abstract contract MarketsLens is RatesLens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using MarketLib for Types.Market;
     using WadRayMath for uint256;
 
     /// EXTERNAL ///
@@ -17,7 +18,7 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolToken) external view returns (bool) {
-        return morpho.market(_poolToken).underlyingToken != address(0);
+        return morpho.market(_poolToken).isCreatedMemory();
     }
 
     /// @notice Checks if a market is created and not paused.
@@ -26,7 +27,7 @@ abstract contract MarketsLens is RatesLens {
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
         return
-            market.underlyingToken != address(0) &&
+            market.isCreatedMemory() &&
             !(market.isSupplyPaused &&
                 market.isBorrowPaused &&
                 market.isWithdrawPaused &&
