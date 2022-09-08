@@ -22,7 +22,6 @@ abstract contract MorphoUtils is MorphoStorage {
     using PercentageMath for uint256;
     using DelegateCall for address;
     using WadRayMath for uint256;
-    using Types for Types.Market;
     using Math for uint256;
 
     /// ERRORS ///
