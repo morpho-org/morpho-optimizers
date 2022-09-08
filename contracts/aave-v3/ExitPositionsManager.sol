@@ -14,6 +14,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using MarketLib for Types.Market;
     using WadRayMath for uint256;
     using Math for uint256;
 
@@ -127,6 +128,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
         uint256 borrowedTokenPrice; // The price of the borrowed token.
         uint256 amountToLiquidate; // The amount of debt token to repay.
+        uint256 closeFactor;
+        bool liquidationAllowed;
     }
 
     // Struct to avoid stack too deep.
@@ -154,7 +157,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (!market.isCreatedMemory()) revert MarketNotCreated();
         if (market.isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
@@ -181,7 +184,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (!market.isCreatedMemory()) revert MarketNotCreated();
         if (market.isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
@@ -203,10 +206,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount
     ) external {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
-        if (!collateralMarket.isCreated) revert MarketNotCreated();
+        if (!collateralMarket.isCreatedMemory()) revert MarketNotCreated();
         if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
         Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
-        if (!borrowedMarket.isCreated) revert MarketNotCreated();
+        if (!borrowedMarket.isCreatedMemory()) revert MarketNotCreated();
         if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
 
         if (
@@ -220,26 +223,26 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
 
-        (uint256 closeFactor, bool liquidationAllowed) = _liquidationAllowed(_borrower);
-        if (!liquidationAllowed) revert UnauthorisedLiquidate();
-
         LiquidateVars memory vars;
+        if (!borrowedMarket.isDeprecated) {
+            (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(_borrower);
+            if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
+        } else vars.closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+
         vars.amountToLiquidate = Math.min(
             _amount,
-            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(closeFactor) // Max liquidatable debt.
+            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        {
-            IPool poolMem = pool;
-            (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
-            .getConfiguration(collateralMarket.underlyingToken)
-            .getParams();
-            (, , , vars.borrowedReserveDecimals, , ) = poolMem
-            .getConfiguration(borrowedMarket.underlyingToken)
-            .getParams();
-        }
+        IPool poolMem = pool;
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
+        .getConfiguration(collateralMarket.underlyingToken)
+        .getParams();
+        (, , , vars.borrowedReserveDecimals, , ) = poolMem
+        .getConfiguration(borrowedMarket.underlyingToken)
+        .getParams();
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;

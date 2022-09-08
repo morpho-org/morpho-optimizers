@@ -13,6 +13,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using MarketLib for Types.Market;
     using WadRayMath for uint256;
 
     /// EVENTS ///
@@ -77,6 +78,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _poolToken The address of the concerned market.
     /// @param _newStatus The new pause status of the market.
     event PauseStatusSet(address indexed _poolToken, bool _newStatus);
+
+    /// @notice Emitted when a market is set as deprecated or not.
+    /// @param _poolToken The address of the concerned market.
+    /// @param _newStatus The new deprecated status.
+    event DeprecatedStatusSet(address indexed _poolToken, bool _newStatus);
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _newStatus The new claiming rewards status.
@@ -306,6 +312,18 @@ abstract contract MorphoGovernance is MorphoUtils {
         pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _newStatus);
     }
 
+    /// @notice Sets a market as deprecated (allows liquidation of every positions on this market).
+    /// @param _poolToken The address of the market to update.
+    /// @param _newStatus The new status to set.
+    function setDeprecatedStatus(address _poolToken, bool _newStatus)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
+        market[_poolToken].isDeprecated = _newStatus;
+        emit DeprecatedStatusSet(_poolToken, _newStatus);
+    }
+
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokens The addresses of the pool token addresses on which to claim the reserve fee.
     /// @param _amounts The list of amounts of underlying tokens to claim on each market.
@@ -321,7 +339,7 @@ abstract contract MorphoGovernance is MorphoUtils {
             address poolToken = _poolTokens[i];
 
             Types.Market memory market = market[poolToken];
-            if (!market.isCreated) continue;
+            if (!market.isCreatedMemory()) continue;
 
             ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
@@ -353,7 +371,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         address poolToken = pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (market[poolToken].isCreated) revert MarketAlreadyCreated();
+        if (market[poolToken].isCreated()) revert MarketAlreadyCreated();
 
         p2pSupplyIndex[poolToken] = WadRayMath.RAY;
         p2pBorrowIndex[poolToken] = WadRayMath.RAY;
@@ -370,14 +388,14 @@ abstract contract MorphoGovernance is MorphoUtils {
             underlyingToken: _underlyingToken,
             reserveFactor: _reserveFactor,
             p2pIndexCursor: _p2pIndexCursor,
-            isCreated: true,
             isSupplyPaused: false,
             isBorrowPaused: false,
             isP2PDisabled: false,
             isWithdrawPaused: false,
             isRepayPaused: false,
             isLiquidateCollateralPaused: false,
-            isLiquidateBorrowPaused: false
+            isLiquidateBorrowPaused: false,
+            isDeprecated: false
         });
 
         borrowMask[poolToken] = ONE << (marketsCreated.length << 1);
