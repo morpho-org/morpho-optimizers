@@ -232,11 +232,59 @@ contract TestGovernance is TestSetup {
 
         assertEq(p2pSupplyDelta, increaseDeltaAmount.div(ICToken(cDai).exchangeRateStored()));
         assertEq(p2pBorrowDelta, increaseDeltaAmount.div(ICToken(cDai).borrowIndex()));
+        assertApproxEqRel(
+            ICToken(cDai).balanceOfUnderlying(address(morpho)),
+            supplyAmount - borrowAmount + increaseDeltaAmount,
+            1e8
+        );
+        assertApproxEqRel(
+            ICToken(cDai).borrowBalanceCurrent(address(morpho)),
+            increaseDeltaAmount,
+            1e8
+        );
     }
 
-    function testIncreaseP2PDeltasMoreThanWhatIsPossible() public {
+    function testIncreaseP2PDeltasMoreThanWhatIsPossibleSupply() public {
         uint256 supplyAmount = 100 ether;
         uint256 borrowAmount = 50 ether;
+        uint256 deltaAmount = 25 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(wEth, type(uint256).max);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        hevm.roll(block.number + 1);
+        supplier1.repay(cDai, deltaAmount); // Creates a peer-to-peer supply delta.
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+
+        assertApproxEqRel(
+            p2pSupplyDelta,
+            borrowAmount.div(ICToken(cDai).exchangeRateStored()),
+            1e12
+        );
+        assertApproxEqRel(
+            p2pBorrowDelta,
+            (borrowAmount - deltaAmount).div(ICToken(cDai).borrowIndex()),
+            1e12
+        );
+        assertApproxEqRel(ICToken(cDai).balanceOfUnderlying(address(morpho)), supplyAmount, 1e12);
+        assertApproxEqRel(
+            ICToken(cDai).borrowBalanceCurrent(address(morpho)),
+            borrowAmount - deltaAmount,
+            1e12
+        );
+    }
+
+    function testIncreaseP2PDeltasMoreThanWhatIsPossibleBorrow() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 deltaAmount = 25 ether;
         uint256 increaseDeltaAmount = 80 ether;
 
         supplier1.approve(wEth, supplyAmount);
@@ -244,16 +292,20 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(cDai, supplyAmount);
         supplier1.borrow(cDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(cDai, supplyAmount - borrowAmount + deltaAmount); // Creates a peer-to-peer borrow delta.
 
         morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
 
         (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
 
-        assertApproxEqAbs(
+        assertApproxEqRel(
             p2pSupplyDelta,
-            borrowAmount.div(ICToken(cDai).exchangeRateStored()),
-            1e5
+            (borrowAmount - deltaAmount).div(ICToken(cDai).exchangeRateStored()),
+            1e8
         );
-        assertApproxEqAbs(p2pBorrowDelta, borrowAmount.div(ICToken(cDai).borrowIndex()), 1e13);
+        assertApproxEqRel(p2pBorrowDelta, borrowAmount.div(ICToken(cDai).borrowIndex()), 1e8);
+        assertApproxEqRel(ICToken(cDai).balanceOfUnderlying(address(morpho)), deltaAmount, 1e8);
+        assertApproxEqRel(ICToken(cDai).borrowBalanceCurrent(address(morpho)), borrowAmount, 1e8);
     }
 }
