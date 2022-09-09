@@ -11,6 +11,10 @@ inputs:
   network:
     description: The network against which to run the forge test suite.
     required: true
+  gasReport:
+    description: Whether to display gas reports.
+    default: true
+    required: true
 
 runs:
   using: composite
@@ -53,6 +57,7 @@ runs:
         FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
 
     - name: Compare gas reports
+      if: inputs.gasReport === 'true'
       uses: Rubilmax/foundry-gas-diff@v3.9
       with:
         report: ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
@@ -62,7 +67,7 @@ runs:
       id: gas_diff
 
     - name: Add gas diff to sticky comment
-      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+      if: inputs.gasReport === 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         header: ${{ inputs.protocol }} (${{ inputs.network }})

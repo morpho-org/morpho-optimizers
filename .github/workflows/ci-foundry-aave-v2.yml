@@ -48,6 +48,7 @@ jobs:
           alchemyKey: ${{ secrets.ALCHEMY_KEY }}
           protocol: aave-v2
           network: polygon-mainnet
+          gasReport: false
 
   morpho-aave-v2-avalanche-mainnet:
     name: avalanche-mainnet
@@ -62,3 +63,4 @@ jobs:
           alchemyKey: ${{ secrets.ALCHEMY_KEY }}
           protocol: aave-v2
           network: avalanche-mainnet
+          gasReport: false
