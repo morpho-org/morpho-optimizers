@@ -308,4 +308,8 @@ contract TestGovernance is TestSetup {
         assertApproxEqRel(ICToken(cDai).balanceOfUnderlying(address(morpho)), deltaAmount, 1e8);
         assertApproxEqRel(ICToken(cDai).borrowBalanceCurrent(address(morpho)), borrowAmount, 1e8);
     }
+
+    function testFailCallIncreaseP2PDeltasFromImplementation() public {
+        positionsManager.increaseP2PDeltasLogic(cDai, 0);
+    }
 }
