@@ -18,7 +18,7 @@ contract PositionsManagerHarness is PositionsManager {
 
     constructor() {}
 
-    bool internal _borrowDeltaExists;
+    bool internal _borrowDeltaZero;
 
     function liquidateLogic(
         address _poolTokenBorrowed,
@@ -120,7 +120,6 @@ contract PositionsManagerHarness is PositionsManager {
                     borrowBalanceInOf[_poolToken][_onBehalf].inP2P
                 );
 
-                _borrowDeltaExists = false;
                 return;
             } else {
                 vars.toRepay = vars.maxToRepayOnPool;
@@ -158,6 +157,8 @@ contract PositionsManagerHarness is PositionsManager {
             emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
+
+        _borrowDeltaZero = true;
 
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
@@ -207,7 +208,6 @@ contract PositionsManagerHarness is PositionsManager {
             borrowBalanceInOf[_poolToken][_onBehalf].onPool,
             borrowBalanceInOf[_poolToken][_onBehalf].inP2P
         );
-        _borrowDeltaExists = true;
     }
 
     function _noMatchingSafeWithdrawLogic(
@@ -269,20 +269,21 @@ contract PositionsManagerHarness is PositionsManager {
                     supplyBalanceInOf[_poolToken][_supplier].inP2P
                 );
 
+                _borrowDeltaZero = false;
                 return;
             }
         }
 
-        if (!_borrowDeltaExists) {
-            Types.Delta storage delta = deltas[_poolToken];
-            vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
+        Types.Delta storage delta = deltas[_poolToken];
+        vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-            supplyBalanceInOf[_poolToken][_supplier].inP2P -= CompoundMath.min(
-                supplyBalanceInOf[_poolToken][_supplier].inP2P,
-                vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
-            ); // In peer-to-peer unit
-            _updateSupplierInDS(_poolToken, _supplier);
+        supplyBalanceInOf[_poolToken][_supplier].inP2P -= CompoundMath.min(
+            supplyBalanceInOf[_poolToken][_supplier].inP2P,
+            vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
+        ); // In peer-to-peer unit
+        _updateSupplierInDS(_poolToken, _supplier);
 
+        if (!_borrowDeltaZero) {
             // Reduce peer-to-peer supply delta.
             if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
                 uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
@@ -310,28 +311,26 @@ contract PositionsManagerHarness is PositionsManager {
                 emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
                 emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
             }
+        }
 
-            // HARNESS: removed promote suppliers
+        // HARNESS: removed promote suppliers
 
-            // If this value is equal to 0 the withdraw will revert on Compound.
-            if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
-                _withdrawFromPool(_poolToken, vars.toWithdraw); // Reverts on error.
+        // If this value is equal to 0 the withdraw will revert on Compound.
+        if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
+            _withdrawFromPool(_poolToken, vars.toWithdraw); // Reverts on error.
 
-            /// Breaking withdraw ///
+        /// Breaking withdraw ///
 
-            if (vars.remainingToWithdraw > 0) {
-                // HARNESS: removed demote borrowers
-                // Increase the peer-to-peer borrow delta.
-                delta.p2pBorrowDelta += vars.remainingToWithdraw.div(
-                    ICToken(_poolToken).borrowIndex()
-                );
-                emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
+        if (vars.remainingToWithdraw > 0) {
+            // HARNESS: removed demote borrowers
+            // Increase the peer-to-peer borrow delta.
+            delta.p2pBorrowDelta += vars.remainingToWithdraw.div(ICToken(_poolToken).borrowIndex());
+            emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
 
-                delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
-                emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
+            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-                _borrowFromPool(_poolToken, vars.remainingToWithdraw); // Reverts on error.
-            }
+            _borrowFromPool(_poolToken, vars.remainingToWithdraw); // Reverts on error.
         }
 
         _leaveMarketIfNeeded(_poolToken, _supplier);
@@ -345,5 +344,6 @@ contract PositionsManagerHarness is PositionsManager {
             supplyBalanceInOf[_poolToken][_supplier].onPool,
             supplyBalanceInOf[_poolToken][_supplier].inP2P
         );
+        _borrowDeltaZero = false;
     }
 }
