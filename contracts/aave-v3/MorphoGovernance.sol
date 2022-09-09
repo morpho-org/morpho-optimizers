@@ -93,7 +93,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a withdraw is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _newStatus The new pause status of the market.
-    event WitdhrawPauseStatusSet(address indexed _poolToken, bool _newStatus);
+    event WithdrawPauseStatusSet(address indexed _poolToken, bool _newStatus);
 
     /// @notice Emitted when a repay is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
@@ -309,7 +309,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newStatus The new status to set.
     function setWithdrawPauseStatus(address _poolToken, bool _newStatus) external onlyOwner {
         market[_poolToken].isWithdrawPaused = _newStatus;
-        emit WitdhrawPauseStatusSet(_poolToken, _newStatus);
+        emit WithdrawPauseStatusSet(_poolToken, _newStatus);
     }
 
     /// @notice Sets the supply pause status for a given market.
