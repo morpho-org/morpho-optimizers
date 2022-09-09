@@ -20,6 +20,6 @@ runs:
       shell: bash
 
     - name: Check storage layout
-      uses: Rubilmax/foundry-storage-diff@v1.0
+      uses: Rubilmax/foundry-storage-diff@v1.1
       with:
         report: ${{ inputs.protocol }}.${{ inputs.contract }}.storage_layout.json
