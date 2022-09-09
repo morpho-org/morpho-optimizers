@@ -6,8 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestPausableMarket is TestSetup {
     using CompoundMath for uint256;
 
-    address[] cEthArray = [cEth];
-    address[] cDaiArray = [cDai];
+    address[] public cEthArray = [cEth];
+    address[] public cDaiArray = [cDai];
     uint256[] public amountArray = [1 ether];
 
     function testAllMarketsPauseUnpause() public {
