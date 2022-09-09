@@ -232,6 +232,34 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit P2PIndexCursorSet(_poolToken, _p2pIndexCursor);
     }
 
+    /// @notice Sets the different pause status for a given market.
+    /// @param _poolToken The address of the market to update.
+    /// @param _pauseSupplyStatus Whether to pause the supply or not.
+    /// @param _pauseBorrowStatus Whether to pause the borrow or not.
+    /// @param _pauseWithdrawStatus Whether to pause the withdraw or not. Note that a "withdraw" is still possible using a liquidation (if not paused).
+    /// @param _pauseRepayStatus Whether to pause the repay or not.
+    /// @param _pauseLiquidateCollateralStatus Whether to pause the liquidation on this market as collateral or not.
+    /// @param _pauseLiquidateBorrowStatus Whether to pause the liquidation on this market as borrow or not.
+    function setPauseStatus(
+        address _poolToken,
+        bool _pauseSupplyStatus,
+        bool _pauseBorrowStatus,
+        bool _pauseWithdrawStatus,
+        bool _pauseRepayStatus,
+        bool _pauseLiquidateCollateralStatus,
+        bool _pauseLiquidateBorrowStatus
+    ) public onlyOwner isMarketCreated(_poolToken) {
+        _setPauseStatus(
+            _poolToken,
+            _pauseSupplyStatus,
+            _pauseBorrowStatus,
+            _pauseWithdrawStatus,
+            _pauseRepayStatus,
+            _pauseLiquidateCollateralStatus,
+            _pauseLiquidateBorrowStatus
+        );
+    }
+
     /// @notice Sets the pause status for all markets.
     /// @param _newStatus The new status to set.
     function setPauseStatusForAllMarkets(bool _newStatus) external onlyOwner {
@@ -240,7 +268,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
 
-            setPauseStatus(
+            _setPauseStatus(
                 poolToken,
                 _newStatus,
                 _newStatus,
@@ -371,9 +399,9 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit MarketCreated(_poolToken, _marketParams.reserveFactor, _marketParams.p2pIndexCursor);
     }
 
-    /// PUBLIC ///
+    /// INTERNAL ///
 
-    function setPauseStatus(
+    function _setPauseStatus(
         address _poolToken,
         bool _pauseSupplyStatus,
         bool _pauseBorrowStatus,
@@ -381,7 +409,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         bool _pauseRepayStatus,
         bool _pauseLiquidateCollateralStatus,
         bool _pauseLiquidateBorrowStatus
-    ) public onlyOwner isMarketCreated(_poolToken) {
+    ) internal {
         Types.MarketStatus storage market = marketStatus[_poolToken];
 
         market.isSupplyPaused = _pauseSupplyStatus;
