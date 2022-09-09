@@ -96,8 +96,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     );
 
     /// @notice Emitted when the peer-to-peer deltas are increased by the governance.
-    /// @param _poolToken The address of the market on which the deltas are increased.
-    /// @param _amount The amount to added to the deltas (in underlying).
+    /// @param _poolToken The address of the market on which the deltas were increased.
+    /// @param _amount The amount that has been added to the deltas (in underlying).
     event P2PDeltasIncreased(address indexed _poolToken, uint256 _amount);
 
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
@@ -499,15 +499,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     }
 
     /// @notice Implements increaseP2PDeltas logic.
-    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resuppling it.
-    /// In this case, consider calling multiple times this function.
+    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resupplying it.
+    /// In this case, consider calling this function multiple times.
     /// @param _poolToken The address of the market on which to create deltas.
     /// @param _amount The amount to add to the deltas (in underlying).
     function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external {
         _updateP2PIndexes(_poolToken);
 
         Types.Delta storage deltas = deltas[_poolToken];
-        Types.Delta memory deltasMemory = deltas;
+        Types.Delta memory deltasMem = deltas;
         Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
         uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
         uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
@@ -515,19 +515,19 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _amount = Math.min(
             _amount,
             Math.min(
-                deltasMemory.p2pSupplyAmount.mul(p2pSupplyIndex) -
-                    deltasMemory.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex),
-                deltasMemory.p2pBorrowAmount.mul(p2pBorrowIndex) -
-                    deltasMemory.p2pBorrowAmount.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex) -
+                    deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex),
+                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex) -
+                    deltasMem.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
             )
         );
 
-        deltasMemory.p2pSupplyDelta += _amount.div(lastPoolIndexes.lastSupplyPoolIndex);
-        deltas.p2pSupplyDelta = deltasMemory.p2pSupplyDelta;
-        deltasMemory.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
-        deltas.p2pBorrowDelta = deltasMemory.p2pBorrowDelta;
-        emit P2PSupplyDeltaUpdated(_poolToken, deltasMemory.p2pSupplyDelta);
-        emit P2PBorrowDeltaUpdated(_poolToken, deltasMemory.p2pBorrowDelta);
+        deltasMem.p2pSupplyDelta += _amount.div(lastPoolIndexes.lastSupplyPoolIndex);
+        deltas.p2pSupplyDelta = deltasMem.p2pSupplyDelta;
+        deltasMem.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
+        deltas.p2pBorrowDelta = deltasMem.p2pBorrowDelta;
+        emit P2PSupplyDeltaUpdated(_poolToken, deltasMem.p2pSupplyDelta);
+        emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
 
         _borrowFromPool(_poolToken, _amount);
         _supplyToPool(_poolToken, _getUnderlying(_poolToken), _amount);
