@@ -67,6 +67,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amountSeized
     );
 
+    /// @notice Emitted when the peer-to-peer deltas are increased by the governance.
+    /// @param _poolToken The address of the market on which the deltas were increased.
+    /// @param _amount The amount that has been added to the deltas (in underlying).
+    event P2PDeltasIncreased(address indexed _poolToken, uint256 _amount);
+
     /// ERRORS ///
 
     /// @notice Thrown when user is not a member of the market.
@@ -247,6 +252,46 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _poolTokenCollateral,
             amountToSeize
         );
+    }
+
+    /// @notice Implements increaseP2PDeltas logic.
+    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resupplying it.
+    /// In this case, consider calling this function multiple times.
+    /// @param _poolToken The address of the market on which to create deltas.
+    /// @param _amount The amount to add to the deltas (in underlying).
+    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external {
+        _updateIndexes(_poolToken);
+
+        Types.Delta storage deltas = deltas[_poolToken];
+        Types.Delta memory deltasMem = deltas;
+        Types.PoolIndexes memory poolIndexes = poolIndexes[_poolToken];
+        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
+        uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
+
+        _amount = Math.min(
+            _amount,
+            Math.min(
+                deltasMem.p2pSupplyAmount.rayMul(p2pSupplyIndex).zeroFloorSub(
+                    deltasMem.p2pSupplyDelta.rayMul(poolIndexes.poolSupplyIndex)
+                ),
+                deltasMem.p2pBorrowAmount.rayMul(p2pBorrowIndex).zeroFloorSub(
+                    deltasMem.p2pBorrowDelta.rayMul(poolIndexes.poolBorrowIndex)
+                )
+            )
+        );
+
+        deltasMem.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
+        deltas.p2pSupplyDelta = deltasMem.p2pSupplyDelta;
+        deltasMem.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);
+        deltas.p2pBorrowDelta = deltasMem.p2pBorrowDelta;
+        emit P2PSupplyDeltaUpdated(_poolToken, deltasMem.p2pSupplyDelta);
+        emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
+
+        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        _borrowFromPool(underlyingToken, _amount);
+        _supplyToPool(underlyingToken, _amount);
+
+        emit P2PDeltasIncreased(_poolToken, _amount);
     }
 
     /// INTERNAL ///
@@ -497,8 +542,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = Math.zeroFloorSub(
                 delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex),
-                (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex))
+                delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex).zeroFloorSub(
+                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex)
+                )
             );
 
             if (vars.feeToRepay > 0) {
