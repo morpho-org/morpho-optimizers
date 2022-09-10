@@ -65,11 +65,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
     event P2PStatusSet(address indexed _poolToken, bool _p2pDisabled);
 
-    /// @notice Emitted when a market is paused or unpaused.
-    /// @param _poolToken The address of the concerned market.
-    /// @param _newStatus The new pause status of the market.
-    event PauseStatusSet(address indexed _poolToken, bool _newStatus);
-
     /// @notice Emitted when a supply is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _newStatus The new pause status of the market.
@@ -458,6 +453,11 @@ abstract contract MorphoGovernance is MorphoUtils {
         market.isLiquidateCollateralPaused = _newStatus;
         market.isLiquidateBorrowPaused = _newStatus;
 
-        emit PauseStatusSet(_poolToken, _newStatus);
+        emit SupplyPauseStatusSet(_poolToken, _newStatus);
+        emit BorrowPauseStatusSet(_poolToken, _newStatus);
+        emit WithdrawPauseStatusSet(_poolToken, _newStatus);
+        emit RepayPauseStatusSet(_poolToken, _newStatus);
+        emit LiquidateCollateralPauseStatusSet(_poolToken, _newStatus);
+        emit LiquidateBorrowPauseStatusSet(_poolToken, _newStatus);
     }
 }
