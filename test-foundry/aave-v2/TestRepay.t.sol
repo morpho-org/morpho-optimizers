@@ -651,4 +651,19 @@ contract TestRepay is TestSetup {
         assertEq(inP2P, 0);
         assertEq(onPool, 0);
     }
+
+    function testRepayWithMaxP2PSupplyDelta() public {
+        uint256 supplyAmount = 1_000 ether;
+        uint256 borrowAmount = 50 ether;
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, supplyAmount);
+        supplier1.borrow(aDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(aDai, borrowAmount); // Creates a 100% peer-to-peer borrow delta.
+
+        hevm.warp(block.timestamp + 1000);
+
+        supplier1.repay(aDai, type(uint256).max);
+    }
 }
