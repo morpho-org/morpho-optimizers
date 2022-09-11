@@ -30,7 +30,7 @@ contract Config is BaseConfig {
     address constant aWrappedNativeToken = aWeth;
 
     address constant stableDebtDai = 0x778A13D3eeb110A4f7bb6529F99c000119a08E92;
-    address constant variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
+    address constant variableDebtDai = 0x6C3c78838c761c6Ac7bE9F59fe808ea2A6E4379d;
     address constant variableDebtUsdc = 0x619beb58998eD2278e08620f97007e1116D5D25b;
 
     address constant swapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;

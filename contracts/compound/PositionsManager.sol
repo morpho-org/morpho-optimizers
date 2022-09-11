@@ -95,6 +95,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amountSeized
     );
 
+    /// @notice Emitted when the peer-to-peer deltas are increased by the governance.
+    /// @param _poolToken The address of the market on which the deltas were increased.
+    /// @param _amount The amount that has been added to the deltas (in underlying).
+    event P2PDeltasIncreased(address indexed _poolToken, uint256 _amount);
+
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
     /// @param _poolToken The address of the market.
     /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
@@ -156,6 +161,24 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
     error SameBlockBorrowRepay();
 
+    /// @notice Thrown when the supply is paused.
+    error SupplyPaused();
+
+    /// @notice Thrown when the borrow is paused.
+    error BorrowPaused();
+
+    /// @notice Thrown when the withdraw is paused.
+    error WithdrawPaused();
+
+    /// @notice Thrown when the repay is paused.
+    error RepayPaused();
+
+    /// @notice Thrown when the liquidation on this asset as collateral is paused.
+    error LiquidateCollateralPaused();
+
+    /// @notice Thrown when the liquidation on this asset as debt is paused.
+    error LiquidateBorrowPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -214,8 +237,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolToken);
+        Types.MarketStatus memory market = marketStatus[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isSupplyPaused) revert SupplyPaused();
 
+        _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
         ERC20 underlyingToken = _getUnderlying(_poolToken);
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
@@ -307,8 +333,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolToken);
+        Types.MarketStatus memory market = marketStatus[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isBorrowPaused) revert BorrowPaused();
 
+        _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
         lastBorrowBlock[msg.sender] = block.number;
 
@@ -407,6 +436,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        Types.MarketStatus memory market = marketStatus[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isWithdrawPaused) revert WithdrawPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -431,6 +463,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        Types.MarketStatus memory market = marketStatus[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isRepayPaused) revert RepayPaused();
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -450,6 +485,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
+        Types.MarketStatus memory collateralMarket = marketStatus[_poolTokenCollateral];
+        if (!collateralMarket.isCreated) revert MarketNotCreated();
+        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
+        Types.MarketStatus memory borrowedMarket = marketStatus[_poolTokenBorrowed];
+        if (!borrowedMarket.isCreated) revert MarketNotCreated();
+        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+
         if (
             !userMembership[_poolTokenBorrowed][_borrower] ||
             !userMembership[_poolTokenCollateral][_borrower]
@@ -458,7 +500,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenBorrowed);
         _updateP2PIndexes(_poolTokenCollateral);
 
-        if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+        if (!borrowedMarket.isDeprecated && !_isLiquidatable(_borrower, address(0), 0, 0))
+            revert UnauthorisedLiquidate();
 
         LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
@@ -491,6 +534,45 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _poolTokenCollateral,
             vars.amountToSeize
         );
+    }
+
+    /// @notice Implements increaseP2PDeltas logic.
+    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resupplying it.
+    /// In this case, consider calling this function multiple times.
+    /// @param _poolToken The address of the market on which to create deltas.
+    /// @param _amount The amount to add to the deltas (in underlying).
+    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external {
+        _updateP2PIndexes(_poolToken);
+
+        Types.Delta storage deltas = deltas[_poolToken];
+        Types.Delta memory deltasMem = deltas;
+        Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
+        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
+        uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
+
+        _amount = Math.min(
+            _amount,
+            Math.min(
+                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex).safeSub(
+                    deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex)
+                ),
+                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex).safeSub(
+                    deltasMem.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                )
+            )
+        );
+
+        deltasMem.p2pSupplyDelta += _amount.div(lastPoolIndexes.lastSupplyPoolIndex);
+        deltas.p2pSupplyDelta = deltasMem.p2pSupplyDelta;
+        deltasMem.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
+        deltas.p2pBorrowDelta = deltasMem.p2pBorrowDelta;
+        emit P2PSupplyDeltaUpdated(_poolToken, deltasMem.p2pSupplyDelta);
+        emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
+
+        _borrowFromPool(_poolToken, _amount);
+        _supplyToPool(_poolToken, _getUnderlying(_poolToken), _amount);
+
+        emit P2PDeltasIncreased(_poolToken, _amount);
     }
 
     /// INTERNAL ///
@@ -754,8 +836,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = CompoundMath.safeSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
-                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()))
+                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).safeSub(
+                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
+                )
             );
 
             if (vars.feeToRepay > 0) {

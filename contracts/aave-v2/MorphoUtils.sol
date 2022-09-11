@@ -5,6 +5,8 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
+import "./libraries/aave/UserConfiguration.sol";
+
 import "@morpho-dao/morpho-utils/DelegateCall.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
@@ -18,8 +20,10 @@ import "./MorphoStorage.sol";
 /// @notice Modifiers, getters and other util functions for Morpho.
 abstract contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using UserConfiguration for DataTypes.UserConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
+    using MarketLib for Types.Market;
     using DelegateCall for address;
     using WadRayMath for uint256;
     using Math for uint256;
@@ -29,33 +33,12 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
-    /// @notice Thrown when the market is paused.
-    error MarketPaused();
-
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated) revert MarketNotCreated();
-        _;
-    }
-
-    /// @notice Prevents a user to trigger a function when market is not created or paused.
-    /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolToken) {
-        Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isPaused) revert MarketPaused();
-        _;
-    }
-
-    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
-    /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
-        Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isPaused || market.isPartiallyPaused) revert MarketPaused();
+        if (!market[_poolToken].isCreated()) revert MarketNotCreated();
         _;
     }
 
@@ -274,6 +257,11 @@ abstract contract MorphoUtils is MorphoStorage {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityStackVars memory vars;
+
+        DataTypes.UserConfigurationMap memory morphoUserConfig = pool.getUserConfiguration(
+            address(this)
+        );
+
         vars.poolTokensLength = marketsCreated.length;
         vars.userMarkets = userMarkets[_user];
 
@@ -294,6 +282,14 @@ abstract contract MorphoUtils is MorphoStorage {
 
             unchecked {
                 assetData.tokenUnit = 10**assetData.decimals;
+            }
+
+            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral
+            if (
+                !morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
+            ) {
+                assetData.ltv = 0;
+                assetData.liquidationThreshold = 0;
             }
 
             if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {

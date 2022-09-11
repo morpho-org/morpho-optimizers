@@ -29,7 +29,7 @@ contract TestP2PDisable is TestSetup {
         assertGt(p2pSupplyDelta, 0);
 
         // Disable peer-to-peer.
-        morpho.setP2PDisabledStatus(aDai, true);
+        morpho.setIsP2PDisabled(aDai, true);
 
         // Delta must be reduce to 0.
         borrower1.borrow(aDai, borrowedAmount);
@@ -62,7 +62,7 @@ contract TestP2PDisable is TestSetup {
         assertGt(p2pBorrowDelta, 0);
 
         // Disable peer-to-peer.
-        morpho.setP2PDisabledStatus(aUsdc, true);
+        morpho.setIsP2PDisabled(aUsdc, true);
 
         // Delta must be reduce to 0.
         supplier1.supply(aUsdc, to6Decimals(supplyAmount * 2));

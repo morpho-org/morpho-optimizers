@@ -138,15 +138,31 @@ contract User is Test {
         return morpho.claimRewards(_assets, _tradeForMorphoToken);
     }
 
-    function setPauseStatus(address _marketAddress, bool _newStatus) external {
-        morpho.setPauseStatus(_marketAddress, _newStatus);
-    }
-
-    function setPartialPauseStatus(address _poolToken, bool _newStatus) external {
-        morpho.setPartialPauseStatus(_poolToken, _newStatus);
-    }
-
     function setTreasuryVault(address _newTreasuryVault) external {
         morpho.setTreasuryVault(_newTreasuryVault);
+    }
+
+    function setIsSupplyPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsSupplyPaused(_poolToken, _isPaused);
+    }
+
+    function setIsBorrowPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsBorrowPaused(_poolToken, _isPaused);
+    }
+
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsWithdrawPaused(_poolToken, _isPaused);
+    }
+
+    function setIsRepayPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsRepayPaused(_poolToken, _isPaused);
+    }
+
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsLiquidateCollateralPaused(_poolToken, _isPaused);
+    }
+
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsLiquidateBorrowPaused(_poolToken, _isPaused);
     }
 }

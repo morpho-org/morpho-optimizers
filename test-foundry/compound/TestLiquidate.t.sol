@@ -25,6 +25,34 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
     }
 
+    function testLiquidateWhenMarketDeprecated() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = to6Decimals(2 * amount);
+
+        morpho.setIsDeprecated(cDai, true);
+
+        borrower1.approve(usdc, address(morpho), collateral);
+        borrower1.supply(cUsdc, collateral);
+        borrower1.borrow(cDai, amount);
+
+        moveOneBlockForwardBorrowRepay();
+
+        (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+        (, uint256 borrowOnPoolbefore) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        // Liquidate
+        uint256 toRepay = amount / 3;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
+
+        (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+        (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        assertLt(borrowOnPoolAfter, borrowOnPoolbefore);
+        assertLt(supplyOnPoolAfter, supplyOnPoolBefore);
+    }
+
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
     function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;
