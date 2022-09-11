@@ -168,8 +168,8 @@ contract User {
         return morpho.claimRewards(_assets, _toSwap);
     }
 
-    function setP2PDisabled(address _marketAddress, bool _isPaused) external {
-        morpho.setP2PDisabled(_marketAddress, _isPaused);
+    function setIsP2PDisabled(address _marketAddress, bool _isPaused) external {
+        morpho.setIsP2PDisabled(_marketAddress, _isPaused);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
