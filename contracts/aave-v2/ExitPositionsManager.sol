@@ -5,8 +5,6 @@ import "./interfaces/IExitPositionsManager.sol";
 
 import "./PositionsManagerUtils.sol";
 
-import "@forge-std/console.sol";
-
 /// @title ExitPositionsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
@@ -292,7 +290,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
 
-        console.log(_amount);
         _borrowFromPool(underlyingToken, _amount);
         _supplyToPool(underlyingToken, _amount);
 
