@@ -11,7 +11,7 @@ contract TestPausableMarket is TestSetup {
     uint256[] public amountArray = [1 ether];
 
     function testAllMarketsPauseUnpause() public {
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
 
         for (uint256 i; i < pools.length; ++i) {
             (
@@ -32,7 +32,7 @@ contract TestPausableMarket is TestSetup {
             assertTrue(isLiquidateBorrowPaused);
         }
 
-        morpho.setPauseStatusForAllMarkets(false);
+        morpho.setIsPausedForAllMarkets(false);
 
         for (uint256 i; i < pools.length; ++i) {
             (
@@ -88,7 +88,7 @@ contract TestPausableMarket is TestSetup {
     }
 
     function testShouldDisableAllMarketsWhenGloballyPaused() public {
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
 
         uint256 poolsLength = pools.length;
         for (uint256 i; i < poolsLength; ++i) {
@@ -113,9 +113,9 @@ contract TestPausableMarket is TestSetup {
         uint256 amount = 10_000 ether;
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setSupplyPauseStatus(cDai, true);
+        supplier1.setIsSupplyPaused(cDai, true);
 
-        morpho.setSupplyPauseStatus(cDai, true);
+        morpho.setIsSupplyPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
         supplier1.supply(cDai, amount);
@@ -125,9 +125,9 @@ contract TestPausableMarket is TestSetup {
         uint256 amount = 10_000 ether;
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setBorrowPauseStatus(cDai, true);
+        supplier1.setIsBorrowPaused(cDai, true);
 
-        morpho.setBorrowPauseStatus(cDai, true);
+        morpho.setIsBorrowPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
         supplier1.borrow(cDai, amount);
@@ -137,9 +137,9 @@ contract TestPausableMarket is TestSetup {
         uint256 amount = 10_000 ether;
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setWithdrawPauseStatus(cDai, true);
+        supplier1.setIsWithdrawPaused(cDai, true);
 
-        morpho.setWithdrawPauseStatus(cDai, true);
+        morpho.setIsWithdrawPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
         supplier1.withdraw(cDai, amount);
@@ -149,9 +149,9 @@ contract TestPausableMarket is TestSetup {
         uint256 amount = 10_000 ether;
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setRepayPauseStatus(cDai, true);
+        supplier1.setIsRepayPaused(cDai, true);
 
-        morpho.setRepayPauseStatus(cDai, true);
+        morpho.setIsRepayPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
         supplier1.repay(cDai, amount);
@@ -161,9 +161,9 @@ contract TestPausableMarket is TestSetup {
         uint256 amount = 10_000 ether;
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setLiquidateCollateralPauseStatus(cDai, true);
+        supplier1.setIsLiquidateCollateralPaused(cDai, true);
 
-        morpho.setLiquidateCollateralPauseStatus(cDai, true);
+        morpho.setIsLiquidateCollateralPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
         supplier1.liquidate(cUsdc, cDai, address(supplier2), amount);
@@ -173,9 +173,9 @@ contract TestPausableMarket is TestSetup {
         uint256 amount = 10_000 ether;
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setLiquidateBorrowPauseStatus(cDai, true);
+        supplier1.setIsLiquidateBorrowPaused(cDai, true);
 
-        morpho.setLiquidateBorrowPauseStatus(cDai, true);
+        morpho.setIsLiquidateBorrowPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("LiquidateBorrowPaused()"));
         supplier1.liquidate(cDai, cUsdc, address(supplier2), amount);

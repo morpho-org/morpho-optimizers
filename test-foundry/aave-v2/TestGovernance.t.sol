@@ -123,13 +123,13 @@ contract TestGovernance is TestSetup {
     function testOnlyOwnerShouldFlipMarketStrategy() public {
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setP2PDisabledStatus(aDai, true);
+        morpho.setIsP2PDisabled(aDai, true);
 
         hevm.prank(address(supplier2));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setP2PDisabledStatus(aDai, true);
+        morpho.setIsP2PDisabled(aDai, true);
 
-        morpho.setP2PDisabledStatus(aDai, true);
+        morpho.setIsP2PDisabled(aDai, true);
         (, , , bool isP2PDisabled, , , , , , , ) = morpho.market(aDai);
         assertTrue(isP2PDisabled);
     }
@@ -195,37 +195,37 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
-    function testOnlyOwnerCanSetClaimRewardsStatus() public {
+    function testOnlyOwnerCanSetIsClaimRewardsPaused() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
 
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
 
     function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
 
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
     }
 
     function testOnlyOwnerShouldSetDeprecatedMarket() public {
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setDeprecatedStatus(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
 
         hevm.prank(address(supplier2));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setDeprecatedStatus(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
 
-        morpho.setDeprecatedStatus(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
         (, , , , , , , , , , bool isDeprecated) = morpho.market(aDai);
         assertTrue(isDeprecated);
 
-        morpho.setDeprecatedStatus(aDai, false);
+        morpho.setIsDeprecated(aDai, false);
         (, , , , , , , , , , isDeprecated) = morpho.market(aDai);
         assertFalse(isDeprecated);
     }
