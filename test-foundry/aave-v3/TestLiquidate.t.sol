@@ -30,7 +30,7 @@ contract TestLiquidate is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 collateral = to6Decimals(2 * amount);
 
-        morpho.setDeprecatedStatus(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
 
         borrower1.approve(usdc, address(morpho), collateral);
         borrower1.supply(aUsdc, collateral);

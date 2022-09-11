@@ -660,7 +660,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aWeth, 10 * amount);
         borrower1.borrow(aDai, 10 * amount);
 
-        morpho.setWithdrawPauseStatus(aDai, true);
+        morpho.setIsWithdrawPaused(aDai, true);
 
         supplier1.withdraw(aDai, amount);
         supplier1.withdraw(aDai, amount);
