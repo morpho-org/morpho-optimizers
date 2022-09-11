@@ -309,6 +309,24 @@ contract TestGovernance is TestSetup {
         assertApproxEqRel(ICToken(cDai).borrowBalanceCurrent(address(morpho)), borrowAmount, 1e8);
     }
 
+    function testIncreaseP2PDeltasWithMaxBorrowDelta() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(wEth, supplyAmount);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(cDai, type(uint256).max); // Creates a 100% peer-to-peer borrow delta.
+
+        hevm.roll(block.number + 1000);
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+    }
+
     function testFailCallIncreaseP2PDeltasFromImplementation() public {
         positionsManager.increaseP2PDeltasLogic(cDai, 0);
     }

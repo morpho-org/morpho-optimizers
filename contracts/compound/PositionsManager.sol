@@ -515,10 +515,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _amount = Math.min(
             _amount,
             Math.min(
-                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex) -
-                    deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex),
-                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex) -
+                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex).safeSub(
+                    deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex)
+                ),
+                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex).safeSub(
                     deltasMem.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                )
             )
         );
 
@@ -796,8 +798,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = CompoundMath.safeSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
-                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()))
+                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).safeSub(
+                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
+                )
             );
 
             if (vars.feeToRepay > 0) {

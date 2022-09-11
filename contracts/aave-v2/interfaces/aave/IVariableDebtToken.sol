@@ -69,4 +69,10 @@ interface IVariableDebtToken is IScaledBalanceToken {
         uint256 amount,
         uint256 index
     ) external;
+
+    /**
+     * @dev Returns the debt balance of the user
+     * @return The debt balance of the user.
+     **/
+    function balanceOf(address user) external view returns (uint256);
 }
