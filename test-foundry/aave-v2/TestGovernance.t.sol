@@ -203,4 +203,128 @@ contract TestGovernance is TestSetup {
 
         morpho.setPauseStatusForAllMarkets(true);
     }
+
+    function testOnlyOwnerCanIncreaseP2PDeltas() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.increaseP2PDeltas(aDai, 0);
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, 1_000 ether);
+        supplier1.borrow(aDai, 2 ether);
+
+        morpho.increaseP2PDeltas(aDai, 1 ether);
+    }
+
+    function testIncreaseP2PDeltas() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 increaseDeltaAmount = 30 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(aUsdc, to6Decimals(supplyAmount));
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
+        supplier1.borrow(aDai, borrowAmount);
+
+        morpho.increaseP2PDeltas(aDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(aDai);
+
+        assertEq(p2pSupplyDelta, increaseDeltaAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
+        assertEq(
+            p2pBorrowDelta,
+            increaseDeltaAmount.rayDiv(pool.getReserveNormalizedVariableDebt(dai))
+        );
+        assertApproxEqRel(
+            IAToken(aDai).balanceOf(address(morpho)),
+            supplyAmount - borrowAmount + increaseDeltaAmount,
+            1e8
+        );
+        assertApproxEqRel(
+            IVariableDebtToken(variableDebtDai).balanceOf(address(morpho)),
+            increaseDeltaAmount,
+            1e8
+        );
+    }
+
+    function testIncreaseP2PDeltasMoreThanWhatIsPossibleSupply() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 deltaAmount = 25 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(aUsdc, to6Decimals(supplyAmount));
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, supplyAmount);
+        supplier1.borrow(aDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        hevm.roll(block.number + 1);
+        supplier1.repay(aDai, deltaAmount); // Creates a peer-to-peer supply delta.
+
+        morpho.increaseP2PDeltas(aDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(aDai);
+
+        assertApproxEqRel(
+            p2pSupplyDelta,
+            borrowAmount.rayDiv(pool.getReserveNormalizedIncome(dai)),
+            1e12
+        );
+        assertApproxEqRel(
+            p2pBorrowDelta,
+            (borrowAmount - deltaAmount).rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
+            1e12
+        );
+        assertApproxEqRel(IAToken(aDai).balanceOf(address(morpho)), supplyAmount, 1e12);
+        assertApproxEqRel(
+            IVariableDebtToken(variableDebtDai).balanceOf(address(morpho)),
+            borrowAmount - deltaAmount,
+            1e12
+        );
+    }
+
+    function testIncreaseP2PDeltasMoreThanWhatIsPossibleBorrow() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 deltaAmount = 25 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(aUsdc, to6Decimals(supplyAmount));
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
+        supplier1.borrow(aDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(aDai, supplyAmount - borrowAmount + deltaAmount); // Creates a peer-to-peer borrow delta.
+
+        morpho.increaseP2PDeltas(aDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(aDai);
+
+        assertApproxEqRel(
+            p2pSupplyDelta,
+            (borrowAmount - deltaAmount).rayDiv(pool.getReserveNormalizedIncome(dai)),
+            1e8,
+            "1"
+        );
+        assertApproxEqRel(
+            p2pBorrowDelta,
+            borrowAmount.rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
+            1e8,
+            "2"
+        );
+        assertApproxEqRel(IAToken(aDai).balanceOf(address(morpho)), deltaAmount, 1e8, "3");
+        assertApproxEqRel(
+            IVariableDebtToken(variableDebtDai).balanceOf(address(morpho)),
+            borrowAmount,
+            1e8,
+            "4"
+        );
+    }
+
+    function testFailCallIncreaseP2PDeltasFromImplementation() public {
+        exitPositionsManager.increaseP2PDeltasLogic(aDai, 0);
+    }
 }
