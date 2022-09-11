@@ -367,7 +367,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets a market's asset as collateral.
     /// @param _poolToken The address of the market to (un)set as collateral.
-    /// @param _assetAsCollateral True to set the asset as collateral.
+    /// @param _assetAsCollateral True to set the asset as collateral (True by default).
     function setAssetAsCollateral(address _poolToken, bool _assetAsCollateral)
         external
         onlyOwner
