@@ -225,9 +225,9 @@ contract TestGovernance is TestSetup {
     function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
 
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
     }
 
     function testOnlyOwnerCanIncreaseP2PDeltas() public {
