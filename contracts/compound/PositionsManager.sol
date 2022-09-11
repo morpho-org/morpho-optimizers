@@ -331,6 +331,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     function borrowLogic(
         address _poolToken,
         uint256 _amount,
+        address _receiver,
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
@@ -412,7 +413,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         _updateBorrowerInDS(_poolToken, msg.sender);
-        underlyingToken.safeTransfer(msg.sender, _amount);
+        underlyingToken.safeTransfer(_receiver, _amount);
 
         emit Borrowed(
             msg.sender,

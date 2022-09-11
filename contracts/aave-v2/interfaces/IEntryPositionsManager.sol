@@ -13,6 +13,7 @@ interface IEntryPositionsManager {
     function borrowLogic(
         address _poolToken,
         uint256 _amount,
+        address _receiver,
         uint256 _maxGasForMatching
     ) external;
 }

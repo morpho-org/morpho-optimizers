@@ -80,8 +80,24 @@ contract Morpho is MorphoGovernance {
     /// @notice Borrows underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    function borrow(address _poolToken, uint256 _amount) external nonReentrant {
-        _borrow(_poolToken, _amount, defaultMaxGasForMatching.borrow);
+    function borrow(address _poolToken, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken)
+    {
+        _borrow(_poolToken, _amount, msg.sender, defaultMaxGasForMatching.borrow);
+    }
+
+    /// @notice Borrows underlying tokens from a specific market and sends them to a given address.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying).
+    /// @param _receiver The address to send borrowed tokens to.
+    function borrow(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+        _borrow(_poolToken, _amount, _receiver, defaultMaxGasForMatching.borrow);
     }
 
     /// @notice Borrows underlying tokens from a specific market, specifying a gas threshold at which to stop the matching engine.
@@ -92,8 +108,23 @@ contract Morpho is MorphoGovernance {
         address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external nonReentrant {
-        _borrow(_poolToken, _amount, _maxGasForMatching);
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+        _borrow(_poolToken, _amount, msg.sender, _maxGasForMatching);
+    }
+
+    /// @notice Borrows underlying tokens from a specific market and sends them to a given address,
+    ///         specifying a maximum amount of gas used by the matching engine (not strict).
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying).
+    /// @param _receiver The address to send borrowed tokens to.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    function borrow(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver,
+        uint256 _maxGasForMatching
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+        _borrow(_poolToken, _amount, _receiver, _maxGasForMatching);
     }
 
     /// @notice Withdraws underlying tokens from a specific market.
@@ -207,6 +238,7 @@ contract Morpho is MorphoGovernance {
     function _borrow(
         address _poolToken,
         uint256 _amount,
+        address _receiver,
         uint256 _maxGasForMatching
     ) internal {
         address(entryPositionsManager).functionDelegateCall(
@@ -214,6 +246,7 @@ contract Morpho is MorphoGovernance {
                 IEntryPositionsManager.borrowLogic.selector,
                 _poolToken,
                 _amount,
+                _receiver,
                 _maxGasForMatching
             )
         );
