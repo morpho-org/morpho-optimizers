@@ -53,7 +53,7 @@ interface IMorpho {
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setP2PDisabled(address _poolToken, bool _p2pDisabled) external;
+    function setIsP2PDisabled(address _poolToken, bool _p2pDisabled) external;
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
     function setIsPausedForAllMarkets(bool _isPaused) external;
