@@ -81,6 +81,7 @@ interface IMorpho {
 
     function supply(address _poolToken, uint256 _amount) external;
     function supply(address _poolToken, address _onBehalf, uint256 _amount) external;
+    function supply(address _poolToken, uint256 _amount, uint256 _maxGasForMatching) external;
     function supply(address _poolToken, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) external;
 
     function borrow(address _poolToken, uint256 _amount) external;

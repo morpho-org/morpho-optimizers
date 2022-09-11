@@ -47,6 +47,19 @@ contract Morpho is MorphoGovernance {
         _supply(_poolToken, _onBehalf, _amount, defaultMaxGasForMatching.supply);
     }
 
+    /// @notice Supplies underlying tokens to a specific market, specifying a gas threshold at which to cut the matching engine.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolToken The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to supply.
+    /// @param _maxGasForMatching The gas threshold at which to stop the matching engine.
+    function supply(
+        address _poolToken,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolToken) {
+        _supply(_poolToken, msg.sender, _amount, _maxGasForMatching);
+    }
+
     /// @notice Supplies underlying tokens to a specific market, on behalf of a given user,
     ///         specifying a gas threshold at which to cut the matching engine.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
