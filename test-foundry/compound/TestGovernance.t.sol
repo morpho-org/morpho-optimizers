@@ -77,7 +77,7 @@ contract TestGovernance is TestSetup {
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
         morpho.createMarket(cAave, marketParams);
 
-        (bool isCreated, , ) = morpho.marketStatus(cAave);
+        (bool isCreated, , , , , , , ) = morpho.marketStatus(cAave);
 
         assertTrue(isCreated);
         assertEq(
@@ -128,12 +128,12 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setP2PDisabled(cDai, true);
+        supplier1.setIsP2PDisabled(cDai, true);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier2.setP2PDisabled(cDai, true);
+        supplier2.setIsP2PDisabled(cDai, true);
 
-        morpho.setP2PDisabled(cDai, true);
+        morpho.setIsP2PDisabled(cDai, true);
         assertTrue(morpho.p2pDisabled(cDai));
     }
 
@@ -198,12 +198,12 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
-    function testOnlyOwnerCanSetClaimRewardsStatus() public {
+    function testOnlyOwnerCanSetIsClaimRewardsPaused() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
 
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
 

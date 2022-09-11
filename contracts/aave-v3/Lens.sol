@@ -20,6 +20,7 @@ import "@morpho-dao/morpho-utils/math/Math.sol";
 contract Lens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
+    using MarketLib for Types.Market;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
     using Math for uint256;
@@ -67,7 +68,7 @@ contract Lens {
     /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolToken) external view returns (bool) {
-        return morpho.market(_poolToken).isCreated;
+        return morpho.market(_poolToken).isCreatedMemory();
     }
 
     /// @notice Checks if a market is created and not paused.
@@ -75,19 +76,14 @@ contract Lens {
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused;
-    }
-
-    /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool)
-    {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
+        return
+            morpho.market(_poolToken).isCreatedMemory() &&
+            (!market.isSupplyPaused ||
+                !market.isBorrowPaused ||
+                !market.isWithdrawPaused ||
+                !market.isRepayPaused ||
+                !market.isLiquidateCollateralPaused ||
+                !market.isLiquidateBorrowPaused);
     }
 
     /// @notice Returns the current balance state of the user.
@@ -403,10 +399,16 @@ contract Lens {
         )
     {
         Types.Market memory market = morpho.market(_poolToken);
-        isCreated_ = market.isCreated;
+        isCreated_ = morpho.market(_poolToken).isCreatedMemory();
         isP2PDisabled_ = market.isP2PDisabled;
-        isPaused_ = market.isPaused;
-        isPartiallyPaused_ = market.isPartiallyPaused;
+        isPaused_ =
+            market.isSupplyPaused &&
+            market.isBorrowPaused &&
+            market.isWithdrawPaused &&
+            market.isRepayPaused &&
+            market.isLiquidateCollateralPaused &&
+            market.isLiquidateBorrowPaused;
+        isPartiallyPaused_ = market.isSupplyPaused && market.isBorrowPaused;
         reserveFactor_ = market.reserveFactor;
     }
 
