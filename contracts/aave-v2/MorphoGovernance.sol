@@ -106,8 +106,8 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when a market is set as deprecated or not.
     /// @param _poolToken The address of the concerned market.
-    /// @param _isPaused The new deprecated status.
-    event DeprecatedStatusSet(address indexed _poolToken, bool _isPaused);
+    /// @param _isDeprecated The new deprecated status.
+    event DeprecatedStatusSet(address indexed _poolToken, bool _isDeprecated);
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _isPaused The new claiming rewards status.
@@ -348,14 +348,14 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets `isP2PDisabled` for a given market.
     /// @param _poolToken The address of the market of which to enable/disable peer-to-peer matching.
-    /// @param _isPaused True to pause the mechanism.
-    function setIsP2PDisabled(address _poolToken, bool _isPaused)
+    /// @param _isP2PDisabled True to disable the peer-to-peer market.
+    function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled)
         external
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        market[_poolToken].isP2PDisabled = _isPaused;
-        emit IsP2PDisabledSet(_poolToken, _isPaused);
+        market[_poolToken].isP2PDisabled = _isP2PDisabled;
+        emit IsP2PDisabledSet(_poolToken, _isP2PDisabled);
     }
 
     /// @notice Sets `isClaimRewardsPaused`.
@@ -367,25 +367,25 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets a market's asset as collateral.
     /// @param _poolToken The address of the market to (un)set as collateral.
-    /// @param _isPaused True to pause the mechanism.
-    function setAssetAsCollateral(address _poolToken, bool _isPaused)
+    /// @param _assetAsCollateral True to set the asset as collateral.
+    function setAssetAsCollateral(address _poolToken, bool _assetAsCollateral)
         external
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _isPaused);
+        pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _assetAsCollateral);
     }
 
     /// @notice Sets a market as deprecated (allows liquidation of every positions on this market).
     /// @param _poolToken The address of the market to update.
-    /// @param _isPaused True to pause the mechanism.
-    function setIsDeprecated(address _poolToken, bool _isPaused)
+    /// @param _isDeprecated True to set the market as deprecated.
+    function setIsDeprecated(address _poolToken, bool _isDeprecated)
         external
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        market[_poolToken].isDeprecated = _isPaused;
-        emit DeprecatedStatusSet(_poolToken, _isPaused);
+        market[_poolToken].isDeprecated = _isDeprecated;
+        emit DeprecatedStatusSet(_poolToken, _isDeprecated);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.

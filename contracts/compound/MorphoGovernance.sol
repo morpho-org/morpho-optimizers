@@ -59,10 +59,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolToken, uint256 _amountClaimed);
 
-    /// @notice Emitted when the value of `p2pDisabled` is set.
+    /// @notice Emitted when the value of `isP2PDisabled` is set.
     /// @param _poolToken The address of the concerned market.
-    /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
-    event IsP2PDisabledSet(address indexed _poolToken, bool _p2pDisabled);
+    /// @param _isP2PDisabled The new value of `_isP2PDisabled` adopted.
+    event IsP2PDisabledSet(address indexed _poolToken, bool _isP2PDisabled);
 
     /// @notice Emitted when a supply is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
@@ -96,8 +96,8 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when a market is set as deprecated or not.
     /// @param _poolToken The address of the concerned market.
-    /// @param _isPaused The new deprecated status.
-    event DeprecatedStatusSet(address indexed _poolToken, bool _isPaused);
+    /// @param _isDeprecated The new deprecated status.
+    event DeprecatedStatusSet(address indexed _poolToken, bool _isDeprecated);
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _isPaused The new claiming rewards status.
@@ -322,14 +322,14 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets `isP2PDisabled` for a given market.
     /// @param _poolToken The address of the market to update.
-    /// @param _isPaused True to pause the mechanism.
-    function setP2PDisabled(address _poolToken, bool _isPaused)
+    /// @param _isP2PDisabled True to disable the peer-to-peer market.
+    function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled)
         external
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        p2pDisabled[_poolToken] = _isPaused;
-        emit IsP2PDisabledSet(_poolToken, _isPaused);
+        p2pDisabled[_poolToken] = _isP2PDisabled;
+        emit IsP2PDisabledSet(_poolToken, _isP2PDisabled);
     }
 
     /// @notice Sets `isClaimRewardsPaused`.
@@ -341,14 +341,14 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets a market as deprecated (allows liquidation of every positions on this market).
     /// @param _poolToken The address of the market to update.
-    /// @param _isPaused True to pause the mechanism.
-    function setIsDeprecated(address _poolToken, bool _isPaused)
+    /// @param _isDeprecated True to set the market as deprecated.
+    function setIsDeprecated(address _poolToken, bool _isDeprecated)
         external
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        marketStatus[_poolToken].isDeprecated = _isPaused;
-        emit DeprecatedStatusSet(_poolToken, _isPaused);
+        marketStatus[_poolToken].isDeprecated = _isDeprecated;
+        emit DeprecatedStatusSet(_poolToken, _isDeprecated);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
