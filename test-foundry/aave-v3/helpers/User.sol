@@ -61,11 +61,30 @@ contract User is Test {
 
     function supply(
         address _poolToken,
+        address _onBehalf,
+        uint256 _amount
+    ) public {
+        hevm.warp(block.timestamp + tm);
+        morpho.supply(_poolToken, _onBehalf, _amount);
+    }
+
+    function supply(
+        address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
         hevm.warp(block.timestamp + tm);
-        morpho.supply(_poolToken, address(this), _amount, _maxGasForMatching);
+        morpho.supply(_poolToken, _amount, _maxGasForMatching);
+    }
+
+    function supply(
+        address _poolToken,
+        address _onBehalf,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) public {
+        hevm.warp(block.timestamp + tm);
+        morpho.supply(_poolToken, _onBehalf, _amount, _maxGasForMatching);
     }
 
     function borrow(address _poolToken, uint256 _amount) external {
@@ -75,9 +94,26 @@ contract User is Test {
     function borrow(
         address _poolToken,
         uint256 _amount,
+        address _receiver
+    ) external {
+        morpho.borrow(_poolToken, _amount, _receiver);
+    }
+
+    function borrow(
+        address _poolToken,
+        uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
         morpho.borrow(_poolToken, _amount, _maxGasForMatching);
+    }
+
+    function borrow(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver,
+        uint256 _maxGasForMatching
+    ) external {
+        morpho.borrow(_poolToken, _amount, _receiver, _maxGasForMatching);
     }
 
     function withdraw(address _poolToken, uint256 _amount) external {
@@ -95,6 +131,15 @@ contract User is Test {
     function repay(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
         morpho.repay(_poolToken, _amount);
+    }
+
+    function repay(
+        address _poolToken,
+        address _onBehalf,
+        uint256 _amount
+    ) external {
+        hevm.warp(block.timestamp + tm);
+        morpho.repay(_poolToken, _onBehalf, _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
