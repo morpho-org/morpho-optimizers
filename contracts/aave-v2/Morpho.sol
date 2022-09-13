@@ -194,21 +194,20 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         returns (uint256 claimedAmount)
     {
-        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        claimedAmount = rewardsManager.claimRewards(aaveIncentivesController, _assets, msg.sender);
+        return _claimRewards(_assets, _tradeForMorphoToken, msg.sender);
+    }
 
-        if (claimedAmount > 0) {
-            if (_tradeForMorphoToken) {
-                aaveIncentivesController.claimRewards(
-                    _assets,
-                    claimedAmount,
-                    address(incentivesVault)
-                );
-                incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, claimedAmount);
-            } else aaveIncentivesController.claimRewards(_assets, claimedAmount, msg.sender);
-
-            emit RewardsClaimed(msg.sender, claimedAmount, _tradeForMorphoToken);
-        }
+    /// @notice Claims rewards for the given assets and sends them to `_receiver`.
+    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
+    /// @param _tradeForMorphoToken Whether or not to trade reward tokens for MORPHO tokens.
+    /// @param _receiver The address to send reward tokens to.
+    /// @return claimedAmount The amount of rewards claimed (in reward token).
+    function claimRewards(
+        address[] calldata _assets,
+        bool _tradeForMorphoToken,
+        address _receiver
+    ) external nonReentrant returns (uint256 claimedAmount) {
+        return _claimRewards(_assets, _tradeForMorphoToken, _receiver);
     }
 
     /// INTERNAL ///
@@ -282,5 +281,27 @@ contract Morpho is MorphoGovernance {
                 _maxGasForMatching
             )
         );
+    }
+
+    function _claimRewards(
+        address[] calldata _assets,
+        bool _tradeForMorphoToken,
+        address _receiver
+    ) internal nonReentrant returns (uint256 claimedAmount) {
+        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
+        claimedAmount = rewardsManager.claimRewards(aaveIncentivesController, _assets, msg.sender);
+
+        if (claimedAmount > 0) {
+            if (_tradeForMorphoToken) {
+                aaveIncentivesController.claimRewards(
+                    _assets,
+                    claimedAmount,
+                    address(incentivesVault)
+                );
+                incentivesVault.tradeRewardTokensForMorphoTokens(_receiver, claimedAmount);
+            } else aaveIncentivesController.claimRewards(_assets, claimedAmount, _receiver);
+
+            emit RewardsClaimed(msg.sender, claimedAmount, _tradeForMorphoToken);
+        }
     }
 }

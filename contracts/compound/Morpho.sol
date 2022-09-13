@@ -193,21 +193,20 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         returns (uint256 amountOfRewards)
     {
-        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
+        return _claimRewards(_cTokenAddresses, _tradeForMorphoToken, msg.sender);
+    }
 
-        if (amountOfRewards > 0) {
-            ERC20 comp = ERC20(comptroller.getCompAddress());
-
-            comptroller.claimComp(address(this), _cTokenAddresses);
-
-            if (_tradeForMorphoToken) {
-                comp.safeApprove(address(incentivesVault), amountOfRewards);
-                incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
-            } else comp.safeTransfer(msg.sender, amountOfRewards);
-
-            emit RewardsClaimed(msg.sender, amountOfRewards, _tradeForMorphoToken);
-        }
+    /// @notice Claims rewards for the given assets and sends them to `_receiver`.
+    /// @param _cTokenAddresses The cToken addresses to claim rewards from.
+    /// @param _tradeForMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
+    /// @param _receiver The address to send rewards tokens to.
+    /// @return amountOfRewards The amount of rewards claimed (in COMP).
+    function claimRewards(
+        address[] calldata _cTokenAddresses,
+        bool _tradeForMorphoToken,
+        address _receiver
+    ) external nonReentrant returns (uint256 amountOfRewards) {
+        return _claimRewards(_cTokenAddresses, _tradeForMorphoToken, _receiver);
     }
 
     /// @notice Allows to receive ETH.
@@ -284,5 +283,27 @@ contract Morpho is MorphoGovernance {
                 _maxGasForMatching
             )
         );
+    }
+
+    function _claimRewards(
+        address[] memory _cTokenAddresses,
+        bool _tradeForMorphoToken,
+        address _receiver
+    ) internal returns (uint256 amountOfRewards) {
+        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
+        amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
+
+        if (amountOfRewards > 0) {
+            ERC20 comp = ERC20(comptroller.getCompAddress());
+
+            comptroller.claimComp(address(this), _cTokenAddresses);
+
+            if (_tradeForMorphoToken) {
+                comp.safeApprove(address(incentivesVault), amountOfRewards);
+                incentivesVault.tradeCompForMorphoTokens(_receiver, amountOfRewards);
+            } else comp.safeTransfer(_receiver, amountOfRewards);
+
+            emit RewardsClaimed(msg.sender, amountOfRewards, _tradeForMorphoToken);
+        }
     }
 }

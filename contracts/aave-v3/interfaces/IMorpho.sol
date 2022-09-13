@@ -98,4 +98,5 @@ interface IMorpho {
     function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external;
     
     function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);
+    function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken, address _receiver) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);
 }

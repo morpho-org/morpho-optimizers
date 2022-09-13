@@ -201,45 +201,25 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
     {
-        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
+        (rewardTokens, claimedAmounts) = _claimRewards(_assets, _tradeForMorphoToken, msg.sender);
+    }
 
-        IRewardsController rewardsController = rewardsController;
-        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(
-            rewardsController,
-            _assets,
-            msg.sender
-        );
-        uint256 rewardTokensLength = rewardTokens.length;
-
-        rewardsController.claimAllRewardsToSelf(_assets);
-
-        for (uint256 i; i < rewardTokensLength; ) {
-            uint256 claimedAmount = claimedAmounts[i];
-
-            if (claimedAmount > 0) {
-                if (_tradeForMorphoToken)
-                    ERC20(rewardTokens[i]).safeApprove(address(incentivesVault), claimedAmount);
-                else ERC20(rewardTokens[i]).safeTransfer(msg.sender, claimedAmount);
-
-                emit RewardsClaimed(
-                    msg.sender,
-                    rewardTokens[i],
-                    claimedAmount,
-                    _tradeForMorphoToken
-                );
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        if (_tradeForMorphoToken)
-            incentivesVault.tradeRewardTokensForMorphoTokens(
-                msg.sender,
-                rewardTokens,
-                claimedAmounts
-            );
+    /// @notice Claims rewards for the given assets and sends them to `_receiver`.
+    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
+    /// @param _tradeForMorphoToken Whether or not to trade reward tokens for MORPHO tokens.
+    /// @param _receiver The address to send reward tokens to.
+    /// @return rewardTokens The addresses of each reward token.
+    /// @return claimedAmounts The amount of rewards claimed (in reward tokens).
+    function claimRewards(
+        address[] calldata _assets,
+        bool _tradeForMorphoToken,
+        address _receiver
+    )
+        external
+        nonReentrant
+        returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
+    {
+        (rewardTokens, claimedAmounts) = _claimRewards(_assets, _tradeForMorphoToken, _receiver);
     }
 
     /// INTERNAL ///
@@ -313,5 +293,60 @@ contract Morpho is MorphoGovernance {
                 _maxGasForMatching
             )
         );
+    }
+
+    /// @notice Claims rewards for the given assets.
+    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
+    /// @param _tradeForMorphoToken Whether or not to trade reward tokens for MORPHO tokens.
+    /// @return rewardTokens The addresses of each reward token.
+    /// @return claimedAmounts The amount of rewards claimed (in reward tokens).
+    function _claimRewards(
+        address[] calldata _assets,
+        bool _tradeForMorphoToken,
+        address _receiver
+    )
+        internal
+        nonReentrant
+        returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
+    {
+        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
+
+        IRewardsController rewardsController = rewardsController;
+        (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(
+            rewardsController,
+            _assets,
+            msg.sender
+        );
+        uint256 rewardTokensLength = rewardTokens.length;
+
+        rewardsController.claimAllRewardsToSelf(_assets);
+
+        for (uint256 i; i < rewardTokensLength; ) {
+            uint256 claimedAmount = claimedAmounts[i];
+
+            if (claimedAmount > 0) {
+                if (_tradeForMorphoToken)
+                    ERC20(rewardTokens[i]).safeApprove(address(incentivesVault), claimedAmount);
+                else ERC20(rewardTokens[i]).safeTransfer(_receiver, claimedAmount);
+
+                emit RewardsClaimed(
+                    msg.sender,
+                    rewardTokens[i],
+                    claimedAmount,
+                    _tradeForMorphoToken
+                );
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (_tradeForMorphoToken)
+            incentivesVault.tradeRewardTokensForMorphoTokens(
+                _receiver,
+                rewardTokens,
+                claimedAmounts
+            );
     }
 }
