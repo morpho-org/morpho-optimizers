@@ -22,8 +22,6 @@ TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aa
 
 ## Contracts overview
 
-In this repository.
-
 The Morpho protocol is designed at its core with a set of contracts delegating calls to implementation contracts (to overcome the contract size limit).
 
 Here is a brief overview of the Morpho protocol's contracts interactions:
