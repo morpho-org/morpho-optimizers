@@ -1,6 +1,6 @@
 # Morpho Core Protocol V1
 
-[![Test](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml/badge.svg)](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml)
+[![Test](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
