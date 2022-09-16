@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.5.0;
+pragma solidity >=0.8.0;
 
 contract Config {
     address constant aave = 0x63a72806098Bd3D9520cC43356dD78afe5D386D9;
