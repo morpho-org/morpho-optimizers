@@ -171,4 +171,4 @@ For any question or feedback you can send an email to [merlin@morpho.xyz](mailto
 
 ## Licensing
 
-The code is under the GNU General Public License v3.0 license, see [`LICENSE`](https://github.com/morphodao/morpho-core-v1/blob/main/LICENSE).
+The code is under the GNU AFFERO GENERAL PUBLIC LICENSE v3.0, see [`LICENSE`](./LICENSE).
