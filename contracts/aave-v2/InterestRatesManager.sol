@@ -9,6 +9,10 @@ import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 
+interface ILido {
+    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+}
+
 /// @title InterestRatesManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
@@ -17,6 +21,15 @@ import "./MorphoStorage.sol";
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
+
+    /// STORAGE ///
+
+    address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    uint256 public immutable stEthIndexAtUpgrade;
+
+    constructor() {
+        stEthIndexAtUpgrade = ILido(STETH).getPooledEthByShares(WadRayMath.RAY);
+    }
 
     /// STRUCTS ///
 
@@ -60,7 +73,13 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         Types.Market storage market = market[_poolToken];
 
         address underlyingToken = market.underlyingToken;
-        uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+        uint256 newPoolSupplyIndex;
+        if (underlyingToken == STETH) {
+            newPoolSupplyIndex = ILido(STETH)
+            .getPooledEthByShares(WadRayMath.RAY)
+            .rayMul(pool.getReserveNormalizedIncome(STETH))
+            .rayDiv(stEthIndexAtUpgrade);
+        } else newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
         uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
         Params memory params = Params(
