@@ -69,7 +69,13 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         Types.Market storage market = market[_poolToken];
 
         address underlyingToken = market.underlyingToken;
-        uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+        uint256 newPoolSupplyIndex;
+        if (underlyingToken == STETH) {
+            newPoolSupplyIndex = ILido(STETH)
+            .getPooledEthByShares(WadRayMath.RAY)
+            .rayMul(pool.getReserveNormalizedIncome(STETH))
+            .rayDiv(stEthIndexAtUpgrade);
+        } else newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
         uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
         if (underlyingToken == ST_ETH) {
