@@ -62,7 +62,7 @@ library Types {
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct PoolIndexes {
         uint32 lastUpdateTimestamp; // The last time the local pool and peer-to-peer indexes were updated.
-        uint112 poolSupplyIndex; // Last pool supply index.
+        uint112 poolSupplyIndex; // Last pool supply index. Note: for the stETH the pool index is tweaked to take into account the staking rewards. Same for the borrow index.
         uint112 poolBorrowIndex; // Last pool borrow index.
     }
 
