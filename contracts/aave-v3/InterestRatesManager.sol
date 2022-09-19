@@ -118,9 +118,12 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         uint256 p2pSupplyGrowthFactor;
         uint256 p2pBorrowGrowthFactor;
         if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
-            uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
-                MAX_BASIS_POINTS - _params.p2pIndexCursor
-            ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
+            uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
+                poolSupplyGrowthFactor,
+                poolBorrowGrowthFactor,
+                _params.p2pIndexCursor
+            );
+
             p2pSupplyGrowthFactor =
                 p2pGrowthFactor -
                 _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);

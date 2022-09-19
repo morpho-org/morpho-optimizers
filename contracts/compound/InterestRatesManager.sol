@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IInterestRatesManager.sol";
 
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "./libraries/CompoundMath.sol";
 
 import "./MorphoStorage.sol";
@@ -13,6 +14,7 @@ import "./MorphoStorage.sol";
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
+    using PercentageMath for uint256;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -110,18 +112,18 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         uint256 p2pSupplyGrowthFactor;
         uint256 p2pBorrowGrowthFactor;
         if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
-            uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
-                poolSupplyGrowthFactor +
-                _params.p2pIndexCursor *
-                poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+            uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
+                poolSupplyGrowthFactor,
+                poolBorrowGrowthFactor,
+                _params.p2pIndexCursor
+            );
+
             p2pSupplyGrowthFactor =
                 p2pGrowthFactor -
-                (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
-                MAX_BASIS_POINTS;
+                _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
             p2pBorrowGrowthFactor =
                 p2pGrowthFactor +
-                (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
-                MAX_BASIS_POINTS;
+                _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
         } else {
             // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
             // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.

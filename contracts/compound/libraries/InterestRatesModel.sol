@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "./CompoundMath.sol";
 import "./Types.sol";
 
 library InterestRatesModel {
+    using PercentageMath for uint256;
     using CompoundMath for uint256;
 
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
@@ -69,18 +71,18 @@ library InterestRatesModel {
         );
 
         if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {
-            uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-                growthFactors_.poolSupplyGrowthFactor +
-                _p2pIndexCursor *
-                growthFactors_.poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+            uint256 p2pGrowthFactor = PercentageMath.weightedAvg(
+                growthFactors_.poolSupplyGrowthFactor,
+                growthFactors_.poolBorrowGrowthFactor,
+                _p2pIndexCursor
+            );
+
             growthFactors_.p2pSupplyGrowthFactor =
                 p2pGrowthFactor -
-                (_reserveFactor * (p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor)) /
-                MAX_BASIS_POINTS;
+                _reserveFactor.percentMul(p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor);
             growthFactors_.p2pBorrowGrowthFactor =
                 p2pGrowthFactor +
-                (_reserveFactor * (growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor)) /
-                MAX_BASIS_POINTS;
+                _reserveFactor.percentMul(growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor);
         } else {
             // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
             // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.
