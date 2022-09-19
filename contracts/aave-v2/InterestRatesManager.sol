@@ -2,16 +2,13 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/aave/IAToken.sol";
+import "./interfaces/lido/ILido.sol";
 
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
-
-interface ILido {
-    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
-}
 
 /// @title InterestRatesManager.
 /// @author Morpho Labs.

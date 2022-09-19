@@ -2,12 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IInterestRatesManager.sol";
+import "../interfaces/lido/ILido.sol";
 
 import "./LensStorage.sol";
-
-interface ILido {
-    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
-}
 
 /// @title IndexesLens.
 /// @author Morpho Labs.
