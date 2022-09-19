@@ -25,6 +25,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// STORAGE ///
 
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+
     uint256 public immutable ST_ETH_REBASE_INDEX;
 
     constructor() {
