@@ -21,13 +21,13 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
     /// STORAGE ///
 
-    address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
 
     uint256 public immutable ST_ETH_REBASE_INDEX;
 
     constructor() {
         ST_ETH_REBASE_INDEX = block.chainid == 1
-            ? ILido(STETH).getPooledEthByShares(WadRayMath.RAY)
+            ? ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY)
             : 0;
     }
 
@@ -76,8 +76,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
         uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
-        if (underlyingToken == STETH) {
-            uint256 stEthRebaseIndex = ILido(STETH).getPooledEthByShares(WadRayMath.RAY);
+        if (underlyingToken == ST_ETH) {
+            uint256 stEthRebaseIndex = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
             newPoolSupplyIndex = newPoolSupplyIndex.rayMul(stEthRebaseIndex).rayDiv(
                 ST_ETH_REBASE_INDEX
             );
