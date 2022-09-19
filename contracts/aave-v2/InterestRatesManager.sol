@@ -25,10 +25,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// STORAGE ///
 
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-    uint256 public immutable stEthIndexAtUpgrade;
+    uint256 public immutable ST_ETH_REBASE_INDEX;
 
     constructor() {
-        stEthIndexAtUpgrade = ILido(STETH).getPooledEthByShares(WadRayMath.RAY);
+        ST_ETH_REBASE_INDEX = ILido(STETH).getPooledEthByShares(WadRayMath.RAY);
     }
 
     /// STRUCTS ///
@@ -73,14 +73,18 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         Types.Market storage market = market[_poolToken];
 
         address underlyingToken = market.underlyingToken;
-        uint256 newPoolSupplyIndex;
-        if (underlyingToken == STETH) {
-            newPoolSupplyIndex = ILido(STETH)
-            .getPooledEthByShares(WadRayMath.RAY)
-            .rayMul(pool.getReserveNormalizedIncome(STETH))
-            .rayDiv(stEthIndexAtUpgrade);
-        } else newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+        uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
         uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+
+        if (underlyingToken == STETH) {
+            uint256 stEthRebaseIndex = ILido(STETH).getPooledEthByShares(WadRayMath.RAY);
+            newPoolSupplyIndex = newPoolSupplyIndex.rayMul(stEthRebaseIndex).rayDiv(
+                ST_ETH_REBASE_INDEX
+            );
+            newPoolBorrowIndex = newPoolBorrowIndex.rayMul(stEthRebaseIndex).rayDiv(
+                ST_ETH_REBASE_INDEX
+            );
+        }
 
         Params memory params = Params(
             p2pSupplyIndex[_poolToken],
