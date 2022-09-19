@@ -274,42 +274,34 @@ contract TestSupply is TestSetup {
         vm.prank(stEthWhale2);
         ERC20(stEth).transfer(address(supplier1), balance);
 
-        uint256 totBalance = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 deposited = totalBalance / 2;
 
-        uint256 deposited = totBalance / 2;
-
-        console.log("deposited", deposited);
-        console.log("before", ERC20(stEth).balanceOf(address(supplier1)));
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, deposited);
 
+        // Update the beacon balance to accrue rewards on the stETH token.
         // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
-        uint256 beaconBalance = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
-        console.log("beaconBalance before", beaconBalance);
-
+        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
         vm.store(
             stEth,
             keccak256("lido.Lido.beaconBalance"),
-            bytes32(beaconBalance + 10_000 ether)
+            bytes32(beaconBalanceBefore + 10_000 ether)
         );
+        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        assertGt(beaconBalanceAfter, beaconBalanceBefore);
 
-        console.log(
-            "beaconBalance after",
-            uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")))
-        );
-
-        // TODO: find a way to accrue interest on the stETH.
-        vm.roll(block.number + 30 days / 12);
-        vm.warp(block.timestamp + 30 days);
+        // Update timestamp to update indexes.
+        vm.warp(block.timestamp + 1);
 
         uint256 balanceBeforeWithdraw = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 aTokenBalance = ERC20(aStEth).balanceOf(address(morpho));
         supplier1.withdraw(aStEth, type(uint256).max);
         uint256 balanceAfterWithdraw = ERC20(stEth).balanceOf(address(supplier1));
-
         uint256 withdrawn = balanceAfterWithdraw - balanceBeforeWithdraw;
 
-        console.log("withdrawn", withdrawn);
-
+        // Rewards should accrue on stETH even if there's is no supply interest rate on Aave.
         assertGt(withdrawn, deposited);
+        assertApproxEqAbs(withdrawn, aTokenBalance, 1);
     }
 }
