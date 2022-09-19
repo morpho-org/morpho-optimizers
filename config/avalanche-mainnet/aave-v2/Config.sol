@@ -25,6 +25,7 @@ contract Config {
     address constant wbtc = 0x50b7545627a5162F82A992c33b87aDc75187B218;
     address constant wEth = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
     address constant wavax = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+    address constant stEth = address(0);
 
     address constant aAave = 0xD45B7c061016102f9FA220502908f2c0f1add1D7;
     address constant aDai = 0x47AFa96Cdc9fAb46904A55a6ad4bf6660B53c38a;
@@ -33,6 +34,7 @@ contract Config {
     address constant aWbtc = 0x686bEF2417b6Dc32C50a3cBfbCC3bb60E1e9a15D;
     address constant aWeth = 0x53f7c5869a859F0AeC3D334ee8B4Cf01E3492f21;
     address constant avWavax = 0xDFE521292EcE2A4f44242efBcD66Bc594CA9714B;
+    address constant aStEth = address(0);
 
     address constant wrappedNativeToken = wavax;
     address constant aWrappedNativeToken = avWavax;
@@ -40,6 +42,9 @@ contract Config {
     address constant stableDebtDai = 0x3676E4EE689D527dDb89812B63fAD0B7501772B3;
     address constant variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
     address constant variableDebtUsdc = 0x848c080d2700CBE1B894a3374AD5E887E5cCb89c;
+
+    address constant stEthWhale = address(0);
+    address constant stEthWhale2 = address(0);
 
     address constant swapRouterAddress = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
 

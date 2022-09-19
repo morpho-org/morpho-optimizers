@@ -26,7 +26,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     uint256 public immutable ST_ETH_REBASE_INDEX;
 
     constructor() {
-        ST_ETH_REBASE_INDEX = ILido(STETH).getPooledEthByShares(WadRayMath.RAY);
+        ST_ETH_REBASE_INDEX = block.chainid == 1
+            ? ILido(STETH).getPooledEthByShares(WadRayMath.RAY)
+            : 0;
     }
 
     /// STRUCTS ///
