@@ -120,10 +120,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
             p2pSupplyGrowthFactor =
                 p2pGrowthFactor -
-                _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
+                (p2pGrowthFactor - poolSupplyGrowthFactor).percentMul(_params.reserveFactor);
             p2pBorrowGrowthFactor =
                 p2pGrowthFactor +
-                _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
+                (poolBorrowGrowthFactor - p2pGrowthFactor).percentMul(_params.reserveFactor);
         } else {
             // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
             // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.

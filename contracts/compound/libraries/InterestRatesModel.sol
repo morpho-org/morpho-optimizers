@@ -79,10 +79,14 @@ library InterestRatesModel {
 
             growthFactors_.p2pSupplyGrowthFactor =
                 p2pGrowthFactor -
-                _reserveFactor.percentMul(p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor);
+                (p2pGrowthFactor - growthFactors_.poolSupplyGrowthFactor).percentMul(
+                    _reserveFactor
+                );
             growthFactors_.p2pBorrowGrowthFactor =
                 p2pGrowthFactor +
-                _reserveFactor.percentMul(growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor);
+                (growthFactors_.poolBorrowGrowthFactor - p2pGrowthFactor).percentMul(
+                    _reserveFactor
+                );
         } else {
             // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone sent underlying tokens to the
             // cToken contract: the peer-to-peer growth factors are set to the pool borrow growth factor.
