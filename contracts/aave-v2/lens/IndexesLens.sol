@@ -203,23 +203,23 @@ abstract contract IndexesLens is LensStorage {
     }
 
     /// @notice Returns the current pool indexes.
-    /// @param _underlyinToken The address of the underlying token.
+    /// @param _underlyingToken The address of the underlying token.
     /// @return poolSupplyIndex The pool supply index.
     /// @return poolBorrowIndex The pool borrow index.
-    function _getPoolIndexes(address _underlyinToken)
+    function _getPoolIndexes(address _underlyingToken)
         internal
         view
         returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
     {
-        poolSupplyIndex = pool.getReserveNormalizedIncome(_underlyinToken);
-        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(_underlyinToken);
+        poolSupplyIndex = pool.getReserveNormalizedIncome(_underlyingToken);
+        poolBorrowIndex = pool.getReserveNormalizedVariableDebt(_underlyingToken);
 
-        if (_underlyinToken == ST_ETH) {
+        if (_underlyingToken == ST_ETH) {
             uint256 rebaseIndex = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
-            uint256 rebaseIndexRef = morpho.interestRatesManager().ST_ETH_REBASE_INDEX();
+            uint256 baseRebaseIndex = morpho.interestRatesManager().ST_ETH_BASE_REBASE_INDEX();
 
-            poolSupplyIndex = poolSupplyIndex.rayMul(rebaseIndex).rayDiv(rebaseIndexRef);
-            poolBorrowIndex = poolBorrowIndex.rayMul(rebaseIndex).rayDiv(rebaseIndexRef);
+            poolSupplyIndex = poolSupplyIndex.rayMul(rebaseIndex).rayDiv(baseRebaseIndex);
+            poolBorrowIndex = poolBorrowIndex.rayMul(rebaseIndex).rayDiv(baseRebaseIndex);
         }
     }
 }

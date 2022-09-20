@@ -890,16 +890,18 @@ contract TestLens is TestSetup {
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aStEth), "p2p borrow indexes different");
 
         uint256 rebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
-        uint256 rebaseIndexRef = interestRatesManager.ST_ETH_REBASE_INDEX();
+        uint256 baseRebaseIndex = interestRatesManager.ST_ETH_BASE_REBASE_INDEX();
 
         assertEq(
             newPoolSupplyIndex,
-            pool.getReserveNormalizedIncome(stEth).rayMul(rebaseIndex).rayDiv(rebaseIndexRef),
+            pool.getReserveNormalizedIncome(stEth).rayMul(rebaseIndex).rayDiv(baseRebaseIndex),
             "pool supply indexes different"
         );
         assertEq(
             newPoolBorrowIndex,
-            pool.getReserveNormalizedVariableDebt(stEth).rayMul(rebaseIndex).rayDiv(rebaseIndexRef),
+            pool.getReserveNormalizedVariableDebt(stEth).rayMul(rebaseIndex).rayDiv(
+                baseRebaseIndex
+            ),
             "pool borrow indexes different"
         );
     }
