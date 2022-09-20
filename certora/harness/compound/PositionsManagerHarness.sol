@@ -18,8 +18,6 @@ contract PositionsManagerHarness is PositionsManager {
 
     constructor() {}
 
-    bool internal _borrowDeltaZero;
-
     function liquidateLogic(
         address _poolTokenBorrowed,
         address _poolTokenCollateral,
@@ -158,8 +156,6 @@ contract PositionsManagerHarness is PositionsManager {
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
-        _borrowDeltaZero = true;
-
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
@@ -269,7 +265,6 @@ contract PositionsManagerHarness is PositionsManager {
                     supplyBalanceInOf[_poolToken][_supplier].inP2P
                 );
 
-                _borrowDeltaZero = false;
                 return;
             }
         }
@@ -283,34 +278,32 @@ contract PositionsManagerHarness is PositionsManager {
         ); // In peer-to-peer unit
         _updateSupplierInDS(_poolToken, _supplier);
 
-        if (!_borrowDeltaZero) {
-            // Reduce peer-to-peer supply delta.
-            if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
-                uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
+        // Reduce peer-to-peer supply delta.
+        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0 && delta.p2pBorrowDelta == 0) {
+            uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
 
-                if (
-                    deltaInUnderlying > vars.remainingToWithdraw ||
-                    deltaInUnderlying > vars.withdrawable - vars.toWithdraw
-                ) {
-                    uint256 matchedDelta = CompoundMath.min(
-                        vars.remainingToWithdraw,
-                        vars.withdrawable - vars.toWithdraw
-                    );
+            if (
+                deltaInUnderlying > vars.remainingToWithdraw ||
+                deltaInUnderlying > vars.withdrawable - vars.toWithdraw
+            ) {
+                uint256 matchedDelta = CompoundMath.min(
+                    vars.remainingToWithdraw,
+                    vars.withdrawable - vars.toWithdraw
+                );
 
-                    delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
-                    delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
-                    vars.toWithdraw += matchedDelta;
-                    vars.remainingToWithdraw -= matchedDelta;
-                } else {
-                    vars.toWithdraw += deltaInUnderlying;
-                    vars.remainingToWithdraw -= deltaInUnderlying;
-                    delta.p2pSupplyDelta = 0;
-                    delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
-                }
-
-                emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
-                emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+                delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
+                delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
+                vars.toWithdraw += matchedDelta;
+                vars.remainingToWithdraw -= matchedDelta;
+            } else {
+                vars.toWithdraw += deltaInUnderlying;
+                vars.remainingToWithdraw -= deltaInUnderlying;
+                delta.p2pSupplyDelta = 0;
+                delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
             }
+
+            emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
+            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
         // HARNESS: removed promote suppliers
@@ -344,6 +337,5 @@ contract PositionsManagerHarness is PositionsManager {
             supplyBalanceInOf[_poolToken][_supplier].onPool,
             supplyBalanceInOf[_poolToken][_supplier].inP2P
         );
-        _borrowDeltaZero = false;
     }
 }
