@@ -241,11 +241,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         {
             ILendingPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
-            .getConfiguration(tokenCollateralAddress)
-            .getParamsMemory();
+                .getConfiguration(tokenCollateralAddress)
+                .getParamsMemory();
             (, , , vars.borrowedReserveDecimals, ) = poolMem
-            .getConfiguration(tokenBorrowedAddress)
-            .getParamsMemory();
+                .getConfiguration(tokenBorrowedAddress)
+                .getParamsMemory();
         }
 
         unchecked {
@@ -257,16 +257,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
         uint256 amountToSeize = ((amountToLiquidate *
             borrowedTokenPrice *
-            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice))
-        .percentMul(vars.liquidationBonus);
+            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice)).percentMul(
+                vars.liquidationBonus
+            );
 
         uint256 collateralBalance = _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower);
 
         if (amountToSeize > collateralBalance) {
             amountToSeize = collateralBalance;
             amountToLiquidate = ((collateralBalance * collateralPrice * vars.borrowedTokenUnit) /
-                (borrowedTokenPrice * vars.collateralTokenUnit))
-            .percentDiv(vars.liquidationBonus);
+                (borrowedTokenPrice * vars.collateralTokenUnit)).percentDiv(vars.liquidationBonus);
         }
 
         _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, amountToLiquidate, 0);

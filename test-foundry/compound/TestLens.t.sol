@@ -54,7 +54,7 @@ contract TestLens is TestSetup {
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
 
         uint256 collateralValue = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored())
-        .mul(underlyingPrice);
+            .mul(underlyingPrice);
         uint256 maxDebtValue = collateralValue.mul(collateralFactor);
 
         assertEq(assetData.collateralFactor, collateralFactor, "collateralFactor");
@@ -140,7 +140,7 @@ contract TestLens is TestSetup {
         expectedDataCUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
         expectedDataCUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
-        .mul(expectedDataCUsdc.underlyingPrice);
+            .mul(expectedDataCUsdc.underlyingPrice);
 
         assertEq(
             assetDataCUsdc.underlyingPrice,
@@ -248,7 +248,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getCurrentSupplyBalanceInOf(cDai, address(borrower1));
+            .getCurrentSupplyBalanceInOf(cDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -273,7 +273,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getCurrentBorrowBalanceInOf(cUsdc, address(borrower1));
+            .getCurrentBorrowBalanceInOf(cUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -310,7 +310,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getCurrentSupplyBalanceInOf(cDai, address(borrower1));
+            .getCurrentSupplyBalanceInOf(cDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -334,7 +334,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getCurrentBorrowBalanceInOf(cUsdc, address(borrower1));
+            .getCurrentBorrowBalanceInOf(cUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -420,7 +420,7 @@ contract TestLens is TestSetup {
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdt);
 
         uint256 expectedBorrowableUsdt = (assetDataCDai.maxDebtValue + assetDataCUsdc.maxDebtValue)
-        .div(assetDataCUsdt.underlyingPrice);
+            .div(assetDataCUsdt.underlyingPrice);
 
         assertEq(
             withdrawableUsdc,
@@ -511,8 +511,8 @@ contract TestLens is TestSetup {
 
         // DAI data
         collateralValueToAdd = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored()).mul(
-            oracle.getUnderlyingPrice(cDai)
-        );
+                oracle.getUnderlyingPrice(cDai)
+            );
         expectedStates.collateralValue += collateralValueToAdd;
         (, collateralFactor, ) = comptroller.markets(cDai);
         expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
@@ -628,17 +628,17 @@ contract TestLens is TestSetup {
         // DAI data
         (, collateralFactor, ) = comptroller.markets(cDai);
         collateralValueToAdd = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent())
-        .mul(oracle.getUnderlyingPrice(cDai));
+            .mul(oracle.getUnderlyingPrice(cDai));
         expectedStates.collateralValue += collateralValueToAdd;
         expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
 
         // USDC data
         expectedStates.debtValue += getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
-        .mul(oracle.getUnderlyingPrice(cUsdc));
+            .mul(oracle.getUnderlyingPrice(cUsdc));
 
         // USDT data
         expectedStates.debtValue += getBalanceOnCompound(toBorrow, ICToken(cUsdt).borrowIndex())
-        .mul(oracle.getUnderlyingPrice(cUsdt));
+            .mul(oracle.getUnderlyingPrice(cUsdt));
 
         assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
         assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
@@ -1178,7 +1178,7 @@ contract TestLens is TestSetup {
         createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
 
         (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
-        .getUserBalanceStates(address(borrower1), new address[](0));
+            .getUserBalanceStates(address(borrower1), new address[](0));
 
         uint256 borrowedPrice = oracle.getUnderlyingPrice(cUsdc);
         uint256 toRepay = lens.computeLiquidationRepayAmount(
@@ -1328,9 +1328,9 @@ contract TestLens is TestSetup {
         Amounts memory amounts;
 
         (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
-        .getTotalSupply();
+            .getTotalSupply();
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
-        .getTotalBorrow();
+            .getTotalBorrow();
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai);
@@ -1416,9 +1416,9 @@ contract TestLens is TestSetup {
         Amounts memory amounts;
 
         (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
-        .getTotalSupply();
+            .getTotalSupply();
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
-        .getTotalBorrow();
+            .getTotalBorrow();
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(cDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(cDai);

@@ -839,7 +839,7 @@ contract TestRatesLens is TestSetup {
 
     function testAverageSupplyRateShouldEqual0WhenNoSupply() public {
         (uint256 supplyRatePerYear, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerYear(aDai);
+            .getAverageSupplyRatePerYear(aDai);
 
         assertEq(supplyRatePerYear, 0);
         assertEq(p2pSupplyAmount, 0);
@@ -848,7 +848,7 @@ contract TestRatesLens is TestSetup {
 
     function testAverageBorrowRateShouldEqual0WhenNoBorrow() public {
         (uint256 borrowRatePerYear, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
-        .getAverageBorrowRatePerYear(aDai);
+            .getAverageBorrowRatePerYear(aDai);
 
         assertEq(borrowRatePerYear, 0);
         assertEq(p2pBorrowAmount, 0);
@@ -889,7 +889,7 @@ contract TestRatesLens is TestSetup {
         supplier1.supply(aDai, amount);
 
         (uint256 supplyRatePerYear, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerYear(aDai);
+            .getAverageSupplyRatePerYear(aDai);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
 
@@ -906,7 +906,7 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(aDai, amount);
 
         (uint256 borrowRatePerYear, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
-        .getAverageBorrowRatePerYear(aDai);
+            .getAverageBorrowRatePerYear(aDai);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
 
@@ -929,9 +929,9 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(aDai, amount);
 
         (uint256 supplyRatePerYear, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerYear(aDai);
+            .getAverageSupplyRatePerYear(aDai);
         (uint256 borrowRatePerYear, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
-        .getAverageBorrowRatePerYear(aDai);
+            .getAverageBorrowRatePerYear(aDai);
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
 
         assertApproxEqAbs(supplyRatePerYear, p2pSupplyRate, 1, "unexpected supply rate");

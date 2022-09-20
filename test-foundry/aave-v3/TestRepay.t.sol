@@ -92,7 +92,7 @@ contract TestRepay is TestSetup {
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         (uint256 inP2PAvailableBorrower, uint256 onPoolAvailableBorrower) = morpho
-        .borrowBalanceInOf(aDai, address(borrower2));
+            .borrowBalanceInOf(aDai, address(borrower2));
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
             (25 * borrowedAmount) / 100,
@@ -495,11 +495,11 @@ contract TestRepay is TestSetup {
             newVars.VBR = pool.getReserveData(dai).currentVariableBorrowRate;
 
             uint256 shareOfTheDelta = newVars
-            .SP2PD
-            .wadToRay()
-            .rayMul(newVars.NI)
-            .rayDiv(oldVars.SP2PER)
-            .rayDiv(newVars.SP2PA.wadToRay());
+                .SP2PD
+                .wadToRay()
+                .rayMul(newVars.NI)
+                .rayDiv(oldVars.SP2PER)
+                .rayDiv(newVars.SP2PA.wadToRay());
 
             uint256 expectedSP2PER = oldVars.SP2PER.rayMul(
                 computeCompoundedInterest(oldVars.APR, 365 days).rayMul(
@@ -515,8 +515,8 @@ contract TestRepay is TestSetup {
             );
 
             uint256 expectedSupplyBalanceInUnderlying = suppliedAmount
-            .rayDiv(oldVars.SP2PER)
-            .rayMul(expectedSP2PER);
+                .rayDiv(oldVars.SP2PER)
+                .rayMul(expectedSP2PER);
 
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
@@ -620,7 +620,7 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aUsdt, amount);
 
         uint256 initialDebt = IVariableDebtToken(pool.getReserveData(usdt).variableDebtTokenAddress)
-        .scaledBalanceOf(address(morpho));
+            .scaledBalanceOf(address(morpho));
 
         // Repay on-behalf of Morpho
         deal(usdt, address(this), amount / 2);

@@ -872,7 +872,7 @@ contract TestRatesLens is TestSetup {
 
     function testAverageSupplyRateShouldEqual0WhenNoSupply() public {
         (uint256 supplyRatePerBlock, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerBlock(cDai);
+            .getAverageSupplyRatePerBlock(cDai);
 
         assertEq(supplyRatePerBlock, 0);
         assertEq(p2pSupplyAmount, 0);
@@ -881,7 +881,7 @@ contract TestRatesLens is TestSetup {
 
     function testAverageBorrowRateShouldEqual0WhenNoBorrow() public {
         (uint256 borrowRatePerBlock, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
-        .getAverageBorrowRatePerBlock(cDai);
+            .getAverageBorrowRatePerBlock(cDai);
 
         assertEq(borrowRatePerBlock, 0);
         assertEq(p2pBorrowAmount, 0);
@@ -929,7 +929,7 @@ contract TestRatesLens is TestSetup {
         supplier1.supply(cDai, amount);
 
         (uint256 supplyRatePerBlock, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerBlock(cDai);
+            .getAverageSupplyRatePerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, ICToken(cDai).supplyRatePerBlock(), 1);
         assertApproxEqAbs(poolSupplyAmount, amount, 1e7);
@@ -944,7 +944,7 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(cDai, amount);
 
         (uint256 borrowRatePerBlock, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
-        .getAverageBorrowRatePerBlock(cDai);
+            .getAverageBorrowRatePerBlock(cDai);
 
         assertApproxEqAbs(borrowRatePerBlock, ICToken(cDai).borrowRatePerBlock(), 1);
         assertApproxEqAbs(poolBorrowAmount, amount, 1);
@@ -965,9 +965,9 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(cDai, amount);
 
         (uint256 supplyRatePerBlock, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerBlock(cDai);
+            .getAverageSupplyRatePerBlock(cDai);
         (uint256 borrowRatePerBlock, uint256 p2pBorrowAmount, uint256 poolBorrowAmount) = lens
-        .getAverageBorrowRatePerBlock(cDai);
+            .getAverageBorrowRatePerBlock(cDai);
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, p2pSupplyRate, 1, "unexpected supply rate");

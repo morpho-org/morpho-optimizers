@@ -157,8 +157,8 @@ abstract contract MarketsLens is RatesLens {
         p2pIndexCursor = market.p2pIndexCursor;
 
         (loanToValue, liquidationThreshold, liquidationBonus, decimals, ) = pool
-        .getConfiguration(underlying)
-        .getParamsMemory();
+            .getConfiguration(underlying)
+            .getParamsMemory();
     }
 
     /// PUBLIC ///

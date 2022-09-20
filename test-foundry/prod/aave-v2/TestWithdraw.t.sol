@@ -73,7 +73,7 @@ contract TestWithdraw is TestSetup {
         supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore);
 
         (test.underlyingInP2PAfter, test.underlyingOnPoolAfter, test.totalUnderlyingAfter) = lens
-        .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
+            .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
         assertApproxEqAbs(
             test.underlying.balanceOf(address(supplier1)),

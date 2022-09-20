@@ -93,9 +93,9 @@ contract TestLiquidate is TestSetup {
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cDai);
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(borrowedPrice)
+            .div(collateralPrice);
 
         uint256 expectedOnPool = collateralOnPool -
             amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
@@ -159,9 +159,9 @@ contract TestLiquidate is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cDai, address(borrower1));
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(customOracle.getUnderlyingPrice(cUsdc))
-        .div(customOracle.getUnderlyingPrice(cDai));
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(customOracle.getUnderlyingPrice(cUsdc))
+            .div(customOracle.getUnderlyingPrice(cDai));
 
         testEquality(
             onPoolBorrower,
@@ -225,9 +225,9 @@ contract TestLiquidate is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cDai, address(borrower1));
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(customOracle.getUnderlyingPrice(cUsdc))
-        .div(customOracle.getUnderlyingPrice(cDai));
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(customOracle.getUnderlyingPrice(cUsdc))
+            .div(customOracle.getUnderlyingPrice(cDai));
 
         testEquality(
             onPoolBorrower,

@@ -124,7 +124,7 @@ contract TestRepay is TestSetup {
         );
 
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
-        .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
+            .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         assertGe(
             test.totalBorrowedAfter,
@@ -148,7 +148,7 @@ contract TestRepay is TestSetup {
         );
 
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
-        .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
+            .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         assertEq(test.borrowedOnPoolAfter, 0, "unexpected pool borrowed amount after repay");
         assertEq(test.borrowedInP2PAfter, 0, "unexpected p2p borrowed amount after repay");

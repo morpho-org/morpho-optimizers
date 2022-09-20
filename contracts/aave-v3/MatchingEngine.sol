@@ -339,8 +339,8 @@ abstract contract MatchingEngine is MorphoUtils {
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
             address variableDebtTokenAddress = pool
-            .getReserveData(market[_poolToken].underlyingToken)
-            .variableDebtTokenAddress;
+                .getReserveData(market[_poolToken].underlyingToken)
+                .variableDebtTokenAddress;
             rewardsManager.updateUserAssetAndAccruedRewards(
                 rewardsController,
                 _user,

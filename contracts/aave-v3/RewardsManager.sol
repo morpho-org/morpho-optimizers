@@ -112,8 +112,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             for (uint256 j; j < rewardsList.length; ) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
-                .usersData[_user]
-                .accrued;
+                    .usersData[_user]
+                    .accrued;
 
                 if (rewardAmount != 0) {
                     claimedAmounts[j] += rewardAmount;
@@ -187,8 +187,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         for (uint256 i; i < userAssetBalances.length; ) {
             for (uint256 j; j < rewardsListLength; ) {
                 unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset][rewardsList[j]]
-                .usersData[_user]
-                .accrued;
+                    .usersData[_user]
+                    .accrued;
 
                 if (userAssetBalances[i].balance == 0) continue;
 
@@ -515,12 +515,12 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             if (asset == reserve.aTokenAddress)
                 userAssetBalances[i].balance = morpho
-                .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                    .supplyBalanceInOf(reserve.aTokenAddress, _user)
+                    .onPool;
             else if (asset == reserve.variableDebtTokenAddress)
                 userAssetBalances[i].balance = morpho
-                .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                    .borrowBalanceInOf(reserve.aTokenAddress, _user)
+                    .onPool;
             else revert InvalidAsset();
 
             userAssetBalances[i].totalSupply = IScaledBalanceToken(asset).scaledTotalSupply();

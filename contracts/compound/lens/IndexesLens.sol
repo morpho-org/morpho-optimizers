@@ -71,13 +71,13 @@ abstract contract IndexesLens is LensStorage {
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
 
             InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
-                newPoolSupplyIndex,
-                newPoolBorrowIndex,
-                lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
-            );
+                .computeGrowthFactors(
+                    newPoolSupplyIndex,
+                    newPoolBorrowIndex,
+                    lastPoolIndexes,
+                    marketParams.p2pIndexCursor,
+                    marketParams.reserveFactor
+                );
 
             newP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
                 InterestRatesModel.P2PSupplyIndexComputeParams({
@@ -169,13 +169,13 @@ abstract contract IndexesLens is LensStorage {
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
 
             InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
-                currentPoolSupplyIndex,
-                currentPoolBorrowIndex,
-                lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
-            );
+                .computeGrowthFactors(
+                    currentPoolSupplyIndex,
+                    currentPoolBorrowIndex,
+                    lastPoolIndexes,
+                    marketParams.p2pIndexCursor,
+                    marketParams.reserveFactor
+                );
 
             currentP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
                 InterestRatesModel.P2PSupplyIndexComputeParams({
@@ -214,13 +214,13 @@ abstract contract IndexesLens is LensStorage {
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
 
             InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
-                currentPoolSupplyIndex,
-                currentPoolBorrowIndex,
-                lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
-            );
+                .computeGrowthFactors(
+                    currentPoolSupplyIndex,
+                    currentPoolBorrowIndex,
+                    lastPoolIndexes,
+                    marketParams.p2pIndexCursor,
+                    marketParams.reserveFactor
+                );
 
             currentP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
                 InterestRatesModel.P2PBorrowIndexComputeParams({

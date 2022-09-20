@@ -89,8 +89,7 @@ contract TestBorrow is TestSetup {
             morpho.p2pBorrowIndex(cDai)
         );
         uint256 expectedBorrowOnPool = (borrowAmount -
-            getBalanceOnCompound(amount, cDaiSupplyIndex))
-        .div(ICToken(cDai).borrowIndex());
+            getBalanceOnCompound(amount, cDaiSupplyIndex)).div(ICToken(cDai).borrowIndex());
 
         testEquality(inP2P, expectedBorrowInP2P, "Borrower1 in peer-to-peer");
         testEquality(onPool, expectedBorrowOnPool, "Borrower1 on pool");

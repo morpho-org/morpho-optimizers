@@ -509,11 +509,11 @@ contract TestWithdraw is TestSetup {
             newVars.VBR = pool.getReserveData(dai).currentVariableBorrowRate;
 
             uint256 shareOfTheDelta = newVars
-            .BP2PD
-            .wadToRay()
-            .rayMul(newVars.NVD)
-            .rayDiv(oldVars.BP2PER)
-            .rayDiv(newVars.BP2PA.wadToRay());
+                .BP2PD
+                .wadToRay()
+                .rayMul(newVars.NVD)
+                .rayDiv(oldVars.BP2PER)
+                .rayDiv(newVars.BP2PA.wadToRay());
 
             uint256 expectedBP2PER = oldVars.BP2PER.rayMul(
                 computeCompoundedInterest(oldVars.APR, 365 days).rayMul(RAY - shareOfTheDelta) +
@@ -528,8 +528,8 @@ contract TestWithdraw is TestSetup {
             );
 
             uint256 expectedBorrowBalanceInUnderlying = borrowedAmount
-            .rayDiv(oldVars.BP2PER)
-            .rayMul(expectedBP2PER);
+                .rayDiv(oldVars.BP2PER)
+                .rayMul(expectedBP2PER);
 
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(

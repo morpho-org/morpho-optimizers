@@ -44,8 +44,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
-        .getConfiguration(dai)
-        .getParams();
+            .getConfiguration(dai)
+            .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
 
@@ -71,8 +71,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
-        .getConfiguration(dai)
-        .getParams();
+            .getConfiguration(dai)
+            .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
@@ -100,8 +100,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
-        .getConfiguration(dai)
-        .getParams();
+            .getConfiguration(dai)
+            .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
@@ -140,8 +140,8 @@ contract TestLens is TestSetup {
         uint256 decimalsUsdc;
 
         (expectedDataUsdc.ltv, expectedDataUsdc.liquidationThreshold, , decimalsUsdc, , ) = pool
-        .getConfiguration(usdc)
-        .getParams();
+            .getConfiguration(usdc)
+            .getParams();
         expectedDataUsdc.underlyingPrice = oracle.getAssetPrice(usdc);
         expectedDataUsdc.tokenUnit = 10**decimalsUsdc;
         expectedDataUsdc.debt =
@@ -167,8 +167,8 @@ contract TestLens is TestSetup {
         uint256 decimalsDai;
 
         (expectedDataDai.ltv, expectedDataDai.liquidationThreshold, , decimalsDai, , ) = pool
-        .getConfiguration(dai)
-        .getParams();
+            .getConfiguration(dai)
+            .getParams();
         expectedDataDai.underlyingPrice = oracle.getAssetPrice(dai);
         expectedDataDai.tokenUnit = 10**decimalsDai;
         expectedDataDai.collateral =
@@ -307,8 +307,8 @@ contract TestLens is TestSetup {
 
         // DAI data
         (uint256 ltvDai, uint256 liquidationThresholdDai, , uint256 decimalsDai, , ) = pool
-        .getConfiguration(dai)
-        .getParams();
+            .getConfiguration(dai)
+            .getParams();
         uint256 underlyingPriceDai = oracle.getAssetPrice(dai);
         uint256 tokenUnitDai = 10**decimalsDai;
 
@@ -353,8 +353,8 @@ contract TestLens is TestSetup {
 
         // USDC data
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, , ) = pool
-        .getConfiguration(usdc)
-        .getParams();
+            .getConfiguration(usdc)
+            .getParams();
         uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
             10**decimals;
         expectedStates.collateral += collateralValueToAdd;

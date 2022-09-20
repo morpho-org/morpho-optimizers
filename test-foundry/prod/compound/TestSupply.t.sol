@@ -133,7 +133,7 @@ contract TestSupply is TestSetup {
         vm.roll(block.number + 500);
 
         (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
-        .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
+            .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
         uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.mul(
             1e18 + test.poolSupplyRatePerBlock * 1_000

@@ -231,9 +231,9 @@ contract TestEth is TestSetup {
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cEth);
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(borrowedPrice)
+            .div(collateralPrice);
 
         uint256 expectedOnPool = collateralOnPool -
             amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
@@ -289,9 +289,9 @@ contract TestEth is TestSetup {
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cDai);
 
         uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(borrowedPrice)
+            .div(collateralPrice);
 
         uint256 expectedOnPool = collateralOnPool -
             amountToSeize.div(ICToken(cEth).exchangeRateCurrent());

@@ -1,14 +1,9 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: './.env.local' });
-import 'module-alias/register';
-import '@openzeppelin/hardhat-upgrades';
-import '@tenderly/hardhat-tenderly';
-import '@nomiclabs/hardhat-etherscan';
-import '@nomiclabs/hardhat-waffle';
-import 'hardhat-deploy';
+import * as dotenv from "dotenv";
+
+dotenv.config({ path: "./.env.local" });
 
 module.exports = {
-  defaultNetwork: 'hardhat',
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
     mainnet: {
@@ -46,15 +41,15 @@ module.exports = {
     },
   },
   paths: {
-    sources: './contracts/common/',
+    sources: "./contracts/common/",
   },
   namedAccounts: {
     deployer: {
-      kovan: '0x2F25DB0982Fd8E8be238281e4b6c413Eda688637',
+      kovan: "0x2F25DB0982Fd8E8be238281e4b6c413Eda688637",
     },
   },
   solidity: {
-    version: '0.8.13',
+    version: "0.8.13",
     settings: {
       optimizer: {
         enabled: true,
