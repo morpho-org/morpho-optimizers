@@ -1,23 +1,8 @@
 {
-  "extends": "solhint:recommended",
-  "plugins": ["prettier"],
+  "plugins": [
+    "prettier"
+  ],
   "rules": {
-    "prettier/prettier": "error",
-    "max-line-length": "off",
-    "check-send-result": "off",
-    "not-rely-on-time": "off",
-    "multiple-sends": "off",
-    "compiler-version": "off",
-    "reason-string": "off",
-    "var-name-mixedcase": "off",
-    "no-empty-blocks": "off",
-    "func-name-mixedcase": "off",
-    "max-states-count": "off",
-    "func-visibility": [
-      "warn",
-      {
-        "ignoreConstructors": true
-      }
-    ]
+    "prettier/prettier": "error"
   }
 }
