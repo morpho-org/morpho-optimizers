@@ -263,7 +263,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
     }
 
-    function testAStakedEthMustAccrueInterest() public {
+    function testAStakedEthShouldAccrueInterest() public {
         createMarket(aStEth);
 
         deal(address(supplier1), 1_000 ether);
