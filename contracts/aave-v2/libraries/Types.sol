@@ -73,7 +73,7 @@ library Types {
     struct PoolIndexes {
         uint32 lastUpdateTimestamp; // The last time the local pool and peer-to-peer indexes were updated.
         uint112 poolSupplyIndex; // Last pool supply index. Note that for the stEth market, the pool supply index is tweaked to take into account the staking rewards.
-         uint112 poolBorrowIndex; // Last pool borrow index. Note that for the stEth market, the pool borrow index is tweaked to take into account the staking rewards.
+        uint112 poolBorrowIndex; // Last pool borrow index. Note that for the stEth market, the pool borrow index is tweaked to take into account the staking rewards.
     }
 
     struct Market {
