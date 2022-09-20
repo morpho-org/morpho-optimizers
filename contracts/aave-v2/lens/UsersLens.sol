@@ -128,8 +128,8 @@ abstract contract UsersLens is IndexesLens {
         );
 
         (, , uint256 liquidationBonus, uint256 collateralReserveDecimals, ) = pool
-            .getConfiguration(collateralToken)
-            .getParamsMemory();
+        .getConfiguration(collateralToken)
+        .getParamsMemory();
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 borrowedPrice = oracle.getAssetPrice(borrowedToken);
@@ -138,7 +138,8 @@ abstract contract UsersLens is IndexesLens {
         return
             Math.min(
                 ((totalCollateralBalance * collateralPrice * 10**ERC20(borrowedToken).decimals()) /
-                    (borrowedPrice * 10**collateralReserveDecimals)).percentDiv(liquidationBonus),
+                    (borrowedPrice * 10**collateralReserveDecimals))
+                    .percentDiv(liquidationBonus),
                 totalBorrowBalance.percentMul(DEFAULT_LIQUIDATION_CLOSE_FACTOR)
             );
     }
@@ -273,8 +274,8 @@ abstract contract UsersLens is IndexesLens {
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
-            .getConfiguration(underlyingToken)
-            .getParamsMemory();
+        .getConfiguration(underlyingToken)
+        .getParamsMemory();
 
         (, , uint256 totalCollateralBalance) = _getSupplyBalanceInOf(
             _poolToken,

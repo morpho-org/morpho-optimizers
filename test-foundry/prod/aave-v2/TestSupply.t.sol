@@ -46,9 +46,9 @@ contract TestSupply is TestSetup {
         (, , , , , , test.p2pDisabled) = morpho.market(address(test.poolToken));
         test.morphoBalanceOnPoolBefore = test.poolToken.scaledBalanceOf(address(morpho));
         test.morphoBorrowOnPoolBefore = test
-            .variablePoolToken
-            .scaledBalanceOf(address(morpho))
-            .rayMul(pool.getReserveNormalizedVariableDebt(address(test.underlying)));
+        .variablePoolToken
+        .scaledBalanceOf(address(morpho))
+        .rayMul(pool.getReserveNormalizedVariableDebt(address(test.underlying)));
         test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
 
         uint256 amount = bound(
@@ -150,7 +150,7 @@ contract TestSupply is TestSetup {
         vm.warp(block.timestamp + 60 * 60 * 24);
 
         (test.underlyingInP2PAfter, test.underlyingOnPoolAfter, test.totalUnderlyingAfter) = lens
-            .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
+        .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
 
         uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.rayMul(
             1e27 + (test.poolSupplyRatePerYear * 60 * 60 * 48) / 365 days

@@ -148,8 +148,8 @@ contract Lens {
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In base currency in wad.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
-            .getConfiguration(underlyingToken)
-            .getParams();
+        .getConfiguration(underlyingToken)
+        .getParams();
 
         assetData.tokenUnit = 10**assetData.decimals;
         assetData.debt =
@@ -204,11 +204,11 @@ contract Lens {
                             (_withdrawnAmount * assetData.underlyingPrice) /
                             assetData.tokenUnit;
                         liquidityData.maxDebt -= ((_withdrawnAmount * assetData.underlyingPrice) /
-                            assetData.tokenUnit).percentMul(assetData.ltv);
+                            assetData.tokenUnit)
+                        .percentMul(assetData.ltv);
                         liquidityData.liquidationThreshold -= ((_withdrawnAmount *
-                            assetData.underlyingPrice) / assetData.tokenUnit).percentMul(
-                                assetData.liquidationThreshold
-                            );
+                            assetData.underlyingPrice) / assetData.tokenUnit)
+                        .percentMul(assetData.liquidationThreshold);
                     }
                 }
             }
@@ -431,13 +431,13 @@ contract Lens {
             uint256 p2pBorrowGrowthFactor,
             uint256 poolBorrowGrowthFactor
         ) = _computeGrowthFactors(
-                _params.poolSupplyIndex,
-                _params.poolBorrowIndex,
-                _params.lastPoolSupplyIndex,
-                _params.lastPoolBorrowIndex,
-                _params.reserveFactor,
-                _params.p2pIndexCursor
-            );
+            _params.poolSupplyIndex,
+            _params.poolBorrowIndex,
+            _params.lastPoolSupplyIndex,
+            _params.lastPoolBorrowIndex,
+            _params.reserveFactor,
+            _params.p2pIndexCursor
+        );
 
         // Compute new peer-to-peer supply index.
 
@@ -446,11 +446,9 @@ contract Lens {
         } else {
             uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex))
-                    .rayDiv(
-                        (_params.delta.p2pSupplyAmount.wadToRay()).rayMul(
-                            _params.lastP2PSupplyIndex
-                        )
-                    ),
+                .rayDiv(
+                    (_params.delta.p2pSupplyAmount.wadToRay()).rayMul(_params.lastP2PSupplyIndex)
+                ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
@@ -467,11 +465,9 @@ contract Lens {
         } else {
             uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex))
-                    .rayDiv(
-                        (_params.delta.p2pBorrowAmount.wadToRay()).rayMul(
-                            _params.lastP2PBorrowIndex
-                        )
-                    ),
+                .rayDiv(
+                    (_params.delta.p2pBorrowAmount.wadToRay()).rayMul(_params.lastP2PBorrowIndex)
+                ),
                 RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
@@ -504,9 +500,9 @@ contract Lens {
         } else {
             uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex))
-                    .rayDiv(
-                        _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex)
-                    ),
+                .rayDiv(
+                    _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex)
+                ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -539,9 +535,9 @@ contract Lens {
         } else {
             uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex))
-                    .rayDiv(
-                        _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex)
-                    ),
+                .rayDiv(
+                    _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex)
+                ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 

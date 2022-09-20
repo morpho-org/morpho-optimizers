@@ -91,8 +91,8 @@ contract TestLiquidate is TestSetup {
 
         ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-            .getConfiguration(usdc)
-            .getParams();
+        .getConfiguration(usdc)
+        .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
@@ -173,8 +173,8 @@ contract TestLiquidate is TestSetup {
 
         ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-            .getConfiguration(dai)
-            .getParams();
+        .getConfiguration(dai)
+        .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
@@ -183,7 +183,8 @@ contract TestLiquidate is TestSetup {
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
         uint256 amountToSeize = ((toRepay * borrowedPrice * vars.collateralTokenUnit) /
-            (vars.borrowedTokenUnit * collateralPrice)).percentMul(vars.liquidationBonus);
+            (vars.borrowedTokenUnit * collateralPrice))
+        .percentMul(vars.liquidationBonus);
 
         testEqualityLarge(
             onPoolBorrower,
@@ -250,8 +251,8 @@ contract TestLiquidate is TestSetup {
 
         ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-            .getConfiguration(dai)
-            .getParams();
+        .getConfiguration(dai)
+        .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 

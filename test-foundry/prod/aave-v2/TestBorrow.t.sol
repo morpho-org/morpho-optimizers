@@ -63,9 +63,9 @@ contract TestBorrow is TestSetup {
         test.borrowedPrice = oracle.getAssetPrice(address(test.borrowed));
 
         (test.collateralLtv, , , test.collateralDecimals, ) = morpho
-            .pool()
-            .getConfiguration(address(test.collateral))
-            .getParamsMemory();
+        .pool()
+        .getConfiguration(address(test.collateral))
+        .getParamsMemory();
 
         (test.p2pSupplyDelta, , , ) = morpho.deltas(address(test.borrowedPoolToken));
         (, , , , , , test.p2pDisabled) = morpho.market(address(test.borrowedPoolToken));
@@ -198,7 +198,7 @@ contract TestBorrow is TestSetup {
         vm.warp(block.timestamp + 60 * 60 * 24);
 
         (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
-            .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
+        .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.rayMul(
             1e27 + (test.poolBorrowRatePerYear * 60 * 60 * 48) / 365 days

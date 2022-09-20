@@ -275,8 +275,8 @@ abstract contract MorphoUtils is MorphoStorage {
             if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
             (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
-                .getConfiguration(vars.underlyingToken)
-                .getParams();
+            .getConfiguration(vars.underlyingToken)
+            .getParams();
 
             // LTV should be zero if Morpho has not enabled this asset as collateral
             if (!morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id))

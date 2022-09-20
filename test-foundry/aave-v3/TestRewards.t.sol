@@ -266,7 +266,7 @@ contract TestRewards is TestSetup {
         assertGt(rewardBalanceAfter, rewardBalanceBefore);
 
         uint256 protocolUnclaimedRewards = IRewardsController(rewardsControllerAddress)
-            .getUserRewards(tokensInArray, address(morpho), rewardToken);
+        .getUserRewards(tokensInArray, address(morpho), rewardToken);
 
         assertEq(protocolUnclaimedRewards, 0);
     }
@@ -341,7 +341,7 @@ contract TestRewards is TestSetup {
         assertEq(unclaimedRewards3, 0);
 
         uint256 protocolUnclaimedRewards = IRewardsController(rewardsControllerAddress)
-            .getUserRewards(tokensInArray, address(morpho), rewardToken);
+        .getUserRewards(tokensInArray, address(morpho), rewardToken);
 
         assertApproxEqAbs(protocolUnclaimedRewards, 0, 2);
     }

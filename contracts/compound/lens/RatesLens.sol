@@ -67,11 +67,10 @@ abstract contract RatesLens is UsersLens {
 
         if (_amount > 0 && !morpho.p2pDisabled(_poolToken)) {
             uint256 firstPoolBorrowerBalance = morpho
-                .borrowBalanceInOf(
-                    _poolToken,
-                    morpho.getHead(_poolToken, Types.PositionType.BORROWERS_ON_POOL)
-                )
-                .onPool;
+            .borrowBalanceInOf(
+                _poolToken,
+                morpho.getHead(_poolToken, Types.PositionType.BORROWERS_ON_POOL)
+            ).onPool;
 
             if (firstPoolBorrowerBalance > 0) {
                 uint256 borrowerBalanceInUnderlying = firstPoolBorrowerBalance.mul(
@@ -144,11 +143,10 @@ abstract contract RatesLens is UsersLens {
 
         if (_amount > 0 && !morpho.p2pDisabled(_poolToken)) {
             uint256 firstPoolSupplierBalance = morpho
-                .supplyBalanceInOf(
-                    _poolToken,
-                    morpho.getHead(_poolToken, Types.PositionType.SUPPLIERS_ON_POOL)
-                )
-                .onPool;
+            .supplyBalanceInOf(
+                _poolToken,
+                morpho.getHead(_poolToken, Types.PositionType.SUPPLIERS_ON_POOL)
+            ).onPool;
 
             if (firstPoolSupplierBalance > 0) {
                 uint256 supplierBalanceInUnderlying = firstPoolSupplierBalance.mul(
@@ -416,9 +414,9 @@ abstract contract RatesLens is UsersLens {
             delta.p2pBorrowAmount.mul(_p2pBorrowIndex) -
             delta.p2pBorrowDelta.mul(_poolBorrowIndex);
         poolBorrowAmount = ICToken(_poolToken)
-            .borrowBalanceStored(address(morpho))
-            .div(ICToken(_poolToken).borrowIndex())
-            .mul(_poolBorrowIndex);
+        .borrowBalanceStored(address(morpho))
+        .div(ICToken(_poolToken).borrowIndex())
+        .mul(_poolBorrowIndex);
     }
 
     /// @dev Returns the supply rate per block experienced on a market based on a given position distribution.

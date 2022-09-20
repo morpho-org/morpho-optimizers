@@ -31,8 +31,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-            .getConfiguration(dai)
-            .getParamsMemory();
+        .getConfiguration(dai)
+        .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
 
@@ -58,8 +58,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-            .getConfiguration(dai)
-            .getParamsMemory();
+        .getConfiguration(dai)
+        .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
@@ -87,8 +87,8 @@ contract TestLens is TestSetup {
         );
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-            .getConfiguration(dai)
-            .getParamsMemory();
+        .getConfiguration(dai)
+        .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
         uint256 collateral = (amount * underlyingPrice) / tokenUnit;
@@ -127,8 +127,8 @@ contract TestLens is TestSetup {
         uint256 decimalsUsdc;
 
         (expectedDataUsdc.ltv, expectedDataUsdc.liquidationThreshold, , decimalsUsdc, ) = pool
-            .getConfiguration(usdc)
-            .getParamsMemory();
+        .getConfiguration(usdc)
+        .getParamsMemory();
         expectedDataUsdc.underlyingPrice = oracle.getAssetPrice(usdc);
         expectedDataUsdc.tokenUnit = 10**decimalsUsdc;
         expectedDataUsdc.debt =
@@ -154,8 +154,8 @@ contract TestLens is TestSetup {
         uint256 decimalsDai;
 
         (expectedDataDai.ltv, expectedDataDai.liquidationThreshold, , decimalsDai, ) = pool
-            .getConfiguration(dai)
-            .getParamsMemory();
+        .getConfiguration(dai)
+        .getParamsMemory();
         expectedDataDai.underlyingPrice = oracle.getAssetPrice(dai);
         expectedDataDai.tokenUnit = 10**decimalsDai;
         expectedDataDai.collateral =
@@ -232,21 +232,21 @@ contract TestLens is TestSetup {
         borrower1.supply(aAave, amount);
 
         (uint256 withdrawableAaveBefore, uint256 borrowableAaveBefore) = lens
-            .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
+        .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
         (uint256 withdrawableDaiBefore, uint256 borrowableDaiBefore) = lens
-            .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+        .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
         borrower1.borrow(aDai, borrowableDaiBefore / 2);
 
         (uint256 withdrawableAaveAfter, uint256 borrowableAaveAfter) = lens
-            .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
+        .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
         (uint256 withdrawableDaiAfter, uint256 borrowableDaiAfter) = lens
-            .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+        .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
         Types.AssetLiquidityData memory aaveAssetData;
         (aaveAssetData.ltv, aaveAssetData.liquidationThreshold, , , ) = pool
-            .getConfiguration(aave)
-            .getParamsMemory();
+        .getConfiguration(aave)
+        .getParamsMemory();
 
         assertEq(withdrawableAaveBefore, amount, "cannot withdraw all AAVE");
         assertEq(
@@ -282,7 +282,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.inP2P, userSupplyBalance.onPool, userSupplyBalance.totalBalance) = lens
-            .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
+        .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -307,7 +307,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.inP2P, userBorrowBalance.onPool, userBorrowBalance.totalBalance) = lens
-            .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
+        .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -348,7 +348,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.inP2P, userSupplyBalance.onPool, userSupplyBalance.totalBalance) = lens
-            .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
+        .getCurrentSupplyBalanceInOf(aDai, address(borrower1));
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             aDai,
@@ -372,7 +372,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.inP2P, userBorrowBalance.onPool, userBorrowBalance.totalBalance) = lens
-            .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
+        .getCurrentBorrowBalanceInOf(aUsdc, address(borrower1));
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             aUsdc,
@@ -499,8 +499,8 @@ contract TestLens is TestSetup {
 
         // DAI data
         (uint256 ltvDai, uint256 liquidationThresholdDai, , uint256 decimalsDai, ) = pool
-            .getConfiguration(dai)
-            .getParamsMemory();
+        .getConfiguration(dai)
+        .getParamsMemory();
         uint256 underlyingPriceDai = oracle.getAssetPrice(dai);
         uint256 tokenUnitDai = 10**decimalsDai;
 
@@ -545,8 +545,8 @@ contract TestLens is TestSetup {
 
         // USDC data
         (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
-            .getConfiguration(usdc)
-            .getParamsMemory();
+        .getConfiguration(usdc)
+        .getParamsMemory();
         uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
             10**decimals;
         expectedStates.collateral += collateralValueToAdd;
@@ -734,7 +734,7 @@ contract TestLens is TestSetup {
         }
         {
             (address underlying, , , bool isPaused, bool isPartiallyPaused, , , , , , ) = lens
-                .getMarketConfiguration(aDai);
+            .getMarketConfiguration(aDai);
             assertEq(underlying, dai);
 
             Types.Market memory expectedConfig;
@@ -1134,8 +1134,8 @@ contract TestLens is TestSetup {
         uint256 healthFactor = lens.getUserHealthFactor(address(borrower1));
 
         (uint256 ltv, uint256 liquidationThreshold, , , ) = pool
-            .getConfiguration(usdc)
-            .getParamsMemory();
+        .getConfiguration(usdc)
+        .getParamsMemory();
 
         assertEq(healthFactor, uint256(1 ether).percentMul(liquidationThreshold).percentDiv(ltv));
     }
@@ -1337,9 +1337,9 @@ contract TestLens is TestSetup {
         Amounts memory amounts;
 
         (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
-            .getTotalSupply();
+        .getTotalSupply();
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
-            .getTotalBorrow();
+        .getTotalBorrow();
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);
@@ -1425,9 +1425,9 @@ contract TestLens is TestSetup {
         Amounts memory amounts;
 
         (amounts.totalP2PSupply, amounts.totalPoolSupply, amounts.totalSupply) = lens
-            .getTotalSupply();
+        .getTotalSupply();
         (amounts.totalP2PBorrow, amounts.totalPoolBorrow, amounts.totalBorrow) = lens
-            .getTotalBorrow();
+        .getTotalBorrow();
 
         (amounts.daiP2PSupply, amounts.daiPoolSupply) = lens.getTotalMarketSupply(aDai);
         (amounts.daiP2PBorrow, amounts.daiPoolBorrow) = lens.getTotalMarketBorrow(aDai);

@@ -47,8 +47,8 @@ contract Lens is MarketsLens {
 
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingToken);
             (, , , uint256 reserveDecimals, ) = pool
-                .getConfiguration(underlyingToken)
-                .getParamsMemory();
+            .getConfiguration(underlyingToken)
+            .getParamsMemory();
 
             uint256 tokenUnit = 10**reserveDecimals;
             p2pSupplyAmount += (marketP2PSupplyAmount * underlyingPrice) / tokenUnit;
@@ -90,8 +90,8 @@ contract Lens is MarketsLens {
 
             uint256 underlyingPrice = oracle.getAssetPrice(underlyingToken);
             (, , , uint256 reserveDecimals, ) = pool
-                .getConfiguration(underlyingToken)
-                .getParamsMemory();
+            .getConfiguration(underlyingToken)
+            .getParamsMemory();
 
             uint256 tokenUnit = 10**reserveDecimals;
             p2pBorrowAmount += (marketP2PBorrowAmount * underlyingPrice) / tokenUnit;

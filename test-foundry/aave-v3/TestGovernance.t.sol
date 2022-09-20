@@ -15,7 +15,7 @@ contract TestGovernance is TestSetup {
         assertEq(morpho.maxSortedUsers(), 20);
 
         (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
-            .defaultMaxGasForMatching();
+        .defaultMaxGasForMatching();
         assertEq(supply, 3e6);
         assertEq(borrow, 3e6);
         assertEq(withdraw, 3e6);
@@ -94,7 +94,7 @@ contract TestGovernance is TestSetup {
 
         morpho.setDefaultMaxGasForMatching(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
-            .defaultMaxGasForMatching();
+        .defaultMaxGasForMatching();
         assertEq(supply, newMaxGas.supply);
         assertEq(borrow, newMaxGas.borrow);
         assertEq(withdraw, newMaxGas.withdraw);

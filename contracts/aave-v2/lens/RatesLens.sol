@@ -73,11 +73,10 @@ abstract contract RatesLens is UsersLens {
 
         if (_amount > 0 && !market.isP2PDisabled) {
             uint256 firstPoolBorrowerBalance = morpho
-                .borrowBalanceInOf(
-                    _poolToken,
-                    morpho.getHead(_poolToken, Types.PositionType.BORROWERS_ON_POOL)
-                )
-                .onPool;
+            .borrowBalanceInOf(
+                _poolToken,
+                morpho.getHead(_poolToken, Types.PositionType.BORROWERS_ON_POOL)
+            ).onPool;
 
             if (firstPoolBorrowerBalance > 0) {
                 uint256 matchedP2P = Math.min(
@@ -154,11 +153,10 @@ abstract contract RatesLens is UsersLens {
 
         if (_amount > 0 && !market.isP2PDisabled) {
             uint256 firstPoolSupplierBalance = morpho
-                .supplyBalanceInOf(
-                    _poolToken,
-                    morpho.getHead(_poolToken, Types.PositionType.SUPPLIERS_ON_POOL)
-                )
-                .onPool;
+            .supplyBalanceInOf(
+                _poolToken,
+                morpho.getHead(_poolToken, Types.PositionType.SUPPLIERS_ON_POOL)
+            ).onPool;
 
             if (firstPoolSupplierBalance > 0) {
                 uint256 matchedP2P = Math.min(
@@ -436,8 +434,8 @@ abstract contract RatesLens is UsersLens {
             delta.p2pBorrowAmount.rayMul(_p2pBorrowIndex) -
             delta.p2pBorrowDelta.rayMul(_poolBorrowIndex);
         poolBorrowAmount = IVariableDebtToken(reserve.variableDebtTokenAddress)
-            .scaledBalanceOf(address(morpho))
-            .rayMul(_poolBorrowIndex);
+        .scaledBalanceOf(address(morpho))
+        .rayMul(_poolBorrowIndex);
     }
 
     /// @dev Returns the supply rate per year experienced on a market based on a given position distribution.

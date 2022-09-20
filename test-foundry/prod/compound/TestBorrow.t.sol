@@ -188,7 +188,7 @@ contract TestBorrow is TestSetup {
         vm.roll(block.number + 500);
 
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
-            .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
+        .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
 
         uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.mul(
             1e18 + test.poolBorrowRatePerBlock * 1_000

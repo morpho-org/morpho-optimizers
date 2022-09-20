@@ -247,9 +247,8 @@ contract TestWithdraw is TestSetup {
 
         // The amount withdrawn from supplier1 minus what is on pool will be removed from the borrower peer-to-peer's position.
         uint256 expectedBorrowBalanceOnPool = (toWithdraw -
-            onPoolSupplier.mul(ICToken(cDai).exchangeRateCurrent())).div(
-                ICToken(cDai).borrowIndex()
-            );
+            onPoolSupplier.mul(ICToken(cDai).exchangeRateCurrent()))
+        .div(ICToken(cDai).borrowIndex());
 
         assertApproxEqAbs(inP2PBorrower, expectedBorrowBalanceInP2P, 1, "borrower in peer-to-peer");
         assertApproxEqAbs(onPoolBorrower, expectedBorrowBalanceOnPool, 1e3, "borrower on Pool");
@@ -455,7 +454,7 @@ contract TestWithdraw is TestSetup {
             uint256 expectedP2PBorrowDeltaInUnderlying = (matched.mul(morpho.p2pBorrowIndex(cDai)) -
                 unmatched);
             uint256 expectedP2PBorrowDelta = (matched.mul(morpho.p2pBorrowIndex(cDai)) - unmatched)
-                .div(ICToken(cDai).borrowIndex());
+            .div(ICToken(cDai).borrowIndex());
 
             (, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
             assertEq(p2pBorrowDelta, expectedP2PBorrowDelta, "borrow delta not expected 1");
