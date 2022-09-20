@@ -266,17 +266,18 @@ contract TestSupply is TestSetup {
     function testAStakedEthMustAccrueInterest() public {
         createMarket(aStEth);
 
-        uint256 balance = ERC20(stEth).balanceOf(stEthWhale);
-        vm.prank(stEthWhale);
-        ERC20(stEth).transfer(address(supplier1), balance);
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
 
-        balance = ERC20(stEth).balanceOf(stEthWhale2);
-        vm.prank(stEthWhale2);
-        ERC20(stEth).transfer(address(supplier1), balance);
+        // Handle roundings.
+        vm.prank(address(supplier1));
+        ERC20(stEth).transfer(address(morpho), 100);
 
-        uint256 totalBalance = ERC20(stEth).balanceOf(address(supplier1));
         uint256 deposited = totalBalance / 2;
-
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, deposited);
 
