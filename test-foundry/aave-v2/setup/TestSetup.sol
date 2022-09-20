@@ -51,6 +51,9 @@ contract TestSetup is Config, Utils {
     User public borrower3;
     User[] public borrowers;
 
+    address public constant STETH_SUPPLIER1 = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
+    address public constant STETH_SUPPLIER2 = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+
     address[] public pools;
 
     function setUp() public {

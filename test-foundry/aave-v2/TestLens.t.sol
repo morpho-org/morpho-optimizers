@@ -861,12 +861,12 @@ contract TestLens is TestSetup {
     function testGetUpdatedIndexesOnStEth() public {
         createMarket(aStEth);
 
-        uint256 balance = ERC20(stEth).balanceOf(stEthWhale);
-        vm.prank(stEthWhale);
+        uint256 balance = ERC20(stEth).balanceOf(STETH_SUPPLIER1);
+        vm.prank(STETH_SUPPLIER1);
         ERC20(stEth).transfer(address(supplier1), balance);
 
-        balance = ERC20(stEth).balanceOf(stEthWhale2);
-        vm.prank(stEthWhale2);
+        balance = ERC20(stEth).balanceOf(STETH_SUPPLIER2);
+        vm.prank(STETH_SUPPLIER2);
         ERC20(stEth).transfer(address(supplier1), balance);
 
         uint256 amount = ERC20(stEth).balanceOf(address(supplier1));
