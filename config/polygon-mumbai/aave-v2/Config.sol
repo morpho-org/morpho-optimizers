@@ -1,4 +1,5 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GNU AGPLv3
+pragma solidity >=0.8.0;
 
 import "@contracts/aave-v2/libraries/Types.sol";
 
