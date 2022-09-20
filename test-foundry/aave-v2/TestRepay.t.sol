@@ -381,9 +381,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch borrowers
-        if (block.chainid == Chains.POLYGON_MAINNET)
-            _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
-        else _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;

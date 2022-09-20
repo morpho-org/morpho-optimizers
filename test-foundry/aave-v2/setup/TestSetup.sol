@@ -92,12 +92,7 @@ contract TestSetup is Config, Utils {
         morpho.setTreasuryVault(address(treasuryVault));
         morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
-        if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
-            rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            rewardsManagerImplV1 = new RewardsManagerOnPolygon();
-        }
-
+        rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
         rewardsManagerProxy = new TransparentUpgradeableProxy(
             address(rewardsManagerImplV1),
             address(proxyAdmin),

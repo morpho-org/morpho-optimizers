@@ -264,50 +264,44 @@ contract TestSupply is TestSetup {
     }
 
     function testAStakedEthMustAccrueInterest() public {
-        if (block.chainid == 1) {
-            createMarket(aStEth);
+        createMarket(aStEth);
 
-            uint256 balance = ERC20(stEth).balanceOf(stEthWhale);
-            vm.prank(stEthWhale);
-            ERC20(stEth).transfer(address(supplier1), balance);
+        uint256 balance = ERC20(stEth).balanceOf(stEthWhale);
+        vm.prank(stEthWhale);
+        ERC20(stEth).transfer(address(supplier1), balance);
 
-            balance = ERC20(stEth).balanceOf(stEthWhale2);
-            vm.prank(stEthWhale2);
-            ERC20(stEth).transfer(address(supplier1), balance);
+        balance = ERC20(stEth).balanceOf(stEthWhale2);
+        vm.prank(stEthWhale2);
+        ERC20(stEth).transfer(address(supplier1), balance);
 
-            uint256 totalBalance = ERC20(stEth).balanceOf(address(supplier1));
-            uint256 deposited = totalBalance / 2;
+        uint256 totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 deposited = totalBalance / 2;
 
-            supplier1.approve(stEth, type(uint256).max);
-            supplier1.supply(aStEth, deposited);
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, deposited);
 
-            // Update the beacon balance to accrue rewards on the stETH token.
-            // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
-            uint256 beaconBalanceBefore = uint256(
-                vm.load(stEth, keccak256("lido.Lido.beaconBalance"))
-            );
-            vm.store(
-                stEth,
-                keccak256("lido.Lido.beaconBalance"),
-                bytes32(beaconBalanceBefore + 10_000 ether)
-            );
-            uint256 beaconBalanceAfter = uint256(
-                vm.load(stEth, keccak256("lido.Lido.beaconBalance"))
-            );
-            assertGt(beaconBalanceAfter, beaconBalanceBefore);
+        // Update the beacon balance to accrue rewards on the stETH token.
+        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
+        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        vm.store(
+            stEth,
+            keccak256("lido.Lido.beaconBalance"),
+            bytes32(beaconBalanceBefore + 10_000 ether)
+        );
+        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        assertGt(beaconBalanceAfter, beaconBalanceBefore);
 
-            // Update timestamp to update indexes.
-            vm.warp(block.timestamp + 1);
+        // Update timestamp to update indexes.
+        vm.warp(block.timestamp + 1);
 
-            uint256 balanceBeforeWithdraw = ERC20(stEth).balanceOf(address(supplier1));
-            uint256 aTokenBalance = ERC20(aStEth).balanceOf(address(morpho));
-            supplier1.withdraw(aStEth, type(uint256).max);
-            uint256 balanceAfterWithdraw = ERC20(stEth).balanceOf(address(supplier1));
-            uint256 withdrawn = balanceAfterWithdraw - balanceBeforeWithdraw;
+        uint256 balanceBeforeWithdraw = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 aTokenBalance = ERC20(aStEth).balanceOf(address(morpho));
+        supplier1.withdraw(aStEth, type(uint256).max);
+        uint256 balanceAfterWithdraw = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 withdrawn = balanceAfterWithdraw - balanceBeforeWithdraw;
 
-            // Rewards should accrue on stETH even if there's is no supply interest rate on Aave.
-            assertGt(withdrawn, deposited);
-            assertApproxEqAbs(withdrawn, aTokenBalance, 1);
-        }
+        // Rewards should accrue on stETH even if there's is no supply interest rate on Aave.
+        assertGt(withdrawn, deposited);
+        assertApproxEqAbs(withdrawn, aTokenBalance, 1);
     }
 }
