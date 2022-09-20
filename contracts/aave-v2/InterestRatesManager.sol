@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/aave/IAToken.sol";
+import "./interfaces/lido/ILido.sol";
 
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
@@ -17,6 +18,16 @@ import "./MorphoStorage.sol";
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
+
+    /// STORAGE ///
+
+    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+
+    uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
+
+    constructor() {
+        ST_ETH_BASE_REBASE_INDEX = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
+    }
 
     /// STRUCTS ///
 
@@ -62,6 +73,16 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         address underlyingToken = market.underlyingToken;
         uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
         uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+
+        if (underlyingToken == ST_ETH) {
+            uint256 stEthRebaseIndex = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
+            newPoolSupplyIndex = newPoolSupplyIndex.rayMul(stEthRebaseIndex).rayDiv(
+                ST_ETH_BASE_REBASE_INDEX
+            );
+            newPoolBorrowIndex = newPoolBorrowIndex.rayMul(stEthRebaseIndex).rayDiv(
+                ST_ETH_BASE_REBASE_INDEX
+            );
+        }
 
         Params memory params = Params(
             p2pSupplyIndex[_poolToken],
