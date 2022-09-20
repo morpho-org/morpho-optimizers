@@ -7,7 +7,40 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import "../../hardhat.config";
 
 import WadRayMath from "./maths/WadRayMath";
-import { data, markets } from "./mocks/aave-v2.json";
+import mock from "./mocks/aave-v2.json";
+
+interface UserMarketBalance {
+  onPool: string;
+  inP2P: string;
+  since: {
+    blockNumber: number;
+    transactionIndex: number;
+  };
+}
+
+const data: {
+  users: {
+    [user: string]: {
+      positions: {
+        [market: string]: {
+          supply?: UserMarketBalance;
+          borrow?: UserMarketBalance;
+        };
+      };
+    };
+  };
+} = mock.data;
+const markets: {
+  [market: string]: {
+    price: string;
+    indexes: {
+      poolSupply: string;
+      p2pSupply: string;
+      poolBorrow: string;
+      p2pBorrow: string;
+    };
+  };
+} = mock.markets;
 
 const market = "0x1982b2F5814301d4e9a8b0201555376e62F82428".toLowerCase();
 
@@ -38,7 +71,8 @@ describe("Check ugprade", () => {
     loadFixture(deployUpgrade);
 
     for (const [user, userBalances] of Object.entries(data.users)) {
-      if (!userBalances.positions[market]) continue;
+      const userMarketBalances = userBalances.positions[market];
+      if (!userMarketBalances || !userMarketBalances.supply || !userMarketBalances.borrow) continue;
 
       console.log("Impersonating", user);
       await hre.network.provider.request({
@@ -50,8 +84,8 @@ describe("Check ugprade", () => {
         params: [user],
       });
 
-      const amount = WadRayMath.rayMul(userBalances.positions[market].supply.onPool, markets[market].indexes.poolSupply).add(
-        WadRayMath.rayMul(userBalances.positions[market].supply.inP2P, markets[market].indexes.p2pSupply)
+      const amount = WadRayMath.rayMul(userMarketBalances.supply.onPool, markets[market].indexes.poolSupply).add(
+        WadRayMath.rayMul(userMarketBalances.supply.inP2P, markets[market].indexes.p2pSupply)
       );
       if (amount.eq(0)) continue;
 
