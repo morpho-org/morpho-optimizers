@@ -111,36 +111,36 @@ contract TestPausableMarket is TestSetup {
 
     function testShouldNotPauseSupplyOnMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsSupplyPaused(address(0), true);
+        morpho.setIsSupplyPaused(address(1), true);
     }
 
     function testShouldNotPauseBorrowOnMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsBorrowPaused(address(0), true);
+        morpho.setIsBorrowPaused(address(1), true);
     }
 
     function testShouldNotPauseWithdrawOnMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsWithdrawPaused(address(0), true);
+        morpho.setIsWithdrawPaused(address(1), true);
     }
 
     function testShouldNotPauseRepayMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsRepayPaused(address(0), true);
+        morpho.setIsRepayPaused(address(1), true);
     }
 
     function testShouldNotPauseLiquidateCollateralOnMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsLiquidateCollateralPaused(address(0), true);
+        morpho.setIsLiquidateCollateralPaused(address(1), true);
     }
 
     function testShouldNotPauseLiquidateBorrowOnMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsLiquidateBorrowPaused(address(0), true);
+        morpho.setIsLiquidateBorrowPaused(address(1), true);
     }
 
     function testShouldNotDeprecatedMarketWhenNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsDeprecated(address(0), true);
+        morpho.setIsDeprecated(address(1), true);
     }
 }
