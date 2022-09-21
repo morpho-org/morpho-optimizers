@@ -241,6 +241,11 @@ contract TestGovernance is TestSetup {
         morpho.increaseP2PDeltas(aDai, 1 ether);
     }
 
+    function testShouldIncreaseP2PDeltasWhenMarketNotCreated() public {
+        hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.increaseP2PDeltas(address(1), 0);
+    }
+
     function testIncreaseP2PDeltas() public {
         uint256 supplyAmount = 100 ether;
         uint256 borrowAmount = 50 ether;

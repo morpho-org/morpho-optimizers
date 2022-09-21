@@ -418,7 +418,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// In this case, consider calling multiple times this function.
     /// @param _poolToken The address of the market on which to create deltas.
     /// @param _amount The amount to add to the deltas (in underlying).
-    function increaseP2PDeltas(address _poolToken, uint256 _amount) external onlyOwner {
+    function increaseP2PDeltas(address _poolToken, uint256 _amount)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         address(exitPositionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IExitPositionsManager.increaseP2PDeltasLogic.selector,
