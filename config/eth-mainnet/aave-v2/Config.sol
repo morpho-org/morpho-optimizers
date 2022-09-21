@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity >=0.8.0;
 
 import {ILendingPool} from "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
 import {IPriceOracleGetter} from "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
@@ -25,6 +25,7 @@ contract Config is BaseConfig {
     address constant aUsdt = 0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811;
     address constant aWbtc = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
     address constant aWeth = 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e;
+    address constant aStEth = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
 
     address constant wrappedNativeToken = wEth;
     address constant aWrappedNativeToken = aWeth;

@@ -5,6 +5,7 @@ import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
 import "@contracts/aave-v2/interfaces/IMorpho.sol";
+import "@contracts/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -120,13 +121,8 @@ contract TestSetup is Config, Test {
         (bool deposited, ) = payable(stEth).call{value: 100_000 ether}("");
         require(deposited, "ETH not deposited into stEth");
 
-        uint256 balance = ERC20(stEth).balanceOf(stEthWhale);
-        vm.prank(stEthWhale);
-        ERC20(stEth).transfer(address(this), balance);
-
-        balance = ERC20(stEth).balanceOf(stEthWhale2);
-        vm.prank(stEthWhale2);
-        ERC20(stEth).transfer(address(this), balance);
+        deal(address(supplier1), 1_000_000 ether);
+        ILido(stEth).submit{value: address(this).balance}(address(0));
     }
 
     function setContractsLabels() internal {

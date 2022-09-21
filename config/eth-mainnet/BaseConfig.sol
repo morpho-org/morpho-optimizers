@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity >=0.8.0;
 
 contract BaseConfig {
     address constant aave = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
@@ -21,7 +21,4 @@ contract BaseConfig {
     address constant sushi = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2;
     address constant crv = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address constant stEth = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-
-    address constant stEthWhale = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
-    address constant stEthWhale2 = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 }

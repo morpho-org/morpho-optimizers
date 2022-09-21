@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@contracts/aave-v2/interfaces/lido/ILido.sol";
+
 import "./setup/TestSetup.sol";
 
 contract TestLens is TestSetup {
@@ -852,6 +854,54 @@ contract TestLens is TestSetup {
         assertEq(
             newPoolBorrowIndex,
             pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
+    }
+
+    function testGetUpdatedIndexesOnStEth() public {
+        createMarket(aStEth);
+
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+
+        // Handle roundings.
+        vm.prank(address(supplier1));
+        ERC20(stEth).transfer(address(morpho), 100);
+
+        uint256 amount = ERC20(stEth).balanceOf(address(supplier1));
+
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, amount);
+
+        vm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.warp(block.timestamp + 1);
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aStEth);
+
+        morpho.updateIndexes(aStEth);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aStEth), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aStEth), "p2p borrow indexes different");
+
+        uint256 rebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
+        uint256 baseRebaseIndex = interestRatesManager.ST_ETH_BASE_REBASE_INDEX();
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(stEth).rayMul(rebaseIndex).rayDiv(baseRebaseIndex),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(stEth).rayMul(rebaseIndex).rayDiv(
+                baseRebaseIndex
+            ),
             "pool borrow indexes different"
         );
     }
