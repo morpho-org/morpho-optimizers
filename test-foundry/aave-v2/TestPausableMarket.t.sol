@@ -109,6 +109,54 @@ contract TestPausableMarket is TestSetup {
         }
     }
 
+    function testPauseSupply() public {
+        uint256 amount = 10_000 ether;
+        morpho.setIsSupplyPaused(aDai, true);
+
+        vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
+        supplier1.supply(aDai, amount);
+    }
+
+    function testPauseBorrow() public {
+        uint256 amount = 10_000 ether;
+        morpho.setIsBorrowPaused(aDai, true);
+
+        vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
+        supplier1.borrow(aDai, amount);
+    }
+
+    function testPauseWithdraw() public {
+        uint256 amount = 10_000 ether;
+        morpho.setIsWithdrawPaused(aDai, true);
+
+        vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
+        supplier1.withdraw(aDai, amount);
+    }
+
+    function testPauseRepay() public {
+        uint256 amount = 10_000 ether;
+        morpho.setIsRepayPaused(aDai, true);
+
+        vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
+        supplier1.repay(aDai, amount);
+    }
+
+    function testPauseLiquidateCollateral() public {
+        uint256 amount = 10_000 ether;
+        morpho.setIsLiquidateCollateralPaused(aDai, true);
+
+        vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
+        supplier1.liquidate(aUsdc, aDai, address(supplier2), amount);
+    }
+
+    function testPauseLiquidateBorrow() public {
+        uint256 amount = 10_000 ether;
+        morpho.setIsLiquidateBorrowPaused(aDai, true);
+
+        vm.expectRevert(abi.encodeWithSignature("LiquidateBorrowPaused()"));
+        supplier1.liquidate(aDai, aUsdc, address(supplier2), amount);
+    }
+
     function testShouldNotPauseSupplyOnMarketNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
         morpho.setIsSupplyPaused(address(1), true);

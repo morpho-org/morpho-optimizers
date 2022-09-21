@@ -360,74 +360,44 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldDisableSupply() public {
-        uint256 amount = 10_000 ether;
-
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsSupplyPaused(aDai, true);
 
         morpho.setIsSupplyPaused(aDai, true);
-
-        vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
-        supplier1.supply(aDai, amount);
     }
 
     function testOnlyOwnerShouldDisableBorrow() public {
-        uint256 amount = 10_000 ether;
-
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsBorrowPaused(aDai, true);
 
         morpho.setIsBorrowPaused(aDai, true);
-
-        vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
-        supplier1.borrow(aDai, amount);
     }
 
     function testOnlyOwnerShouldDisableWithdraw() public {
-        uint256 amount = 10_000 ether;
-
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsWithdrawPaused(aDai, true);
 
         morpho.setIsWithdrawPaused(aDai, true);
-
-        vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
-        supplier1.withdraw(aDai, amount);
     }
 
     function testOnlyOwnerShouldDisableRepay() public {
-        uint256 amount = 10_000 ether;
-
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsRepayPaused(aDai, true);
 
         morpho.setIsRepayPaused(aDai, true);
-
-        vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
-        supplier1.repay(aDai, amount);
     }
 
     function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
-        uint256 amount = 10_000 ether;
-
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsLiquidateCollateralPaused(aDai, true);
 
         morpho.setIsLiquidateCollateralPaused(aDai, true);
-
-        vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
-        supplier1.liquidate(aUsdc, aDai, address(supplier2), amount);
     }
 
     function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
-        uint256 amount = 10_000 ether;
-
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsLiquidateBorrowPaused(aDai, true);
 
         morpho.setIsLiquidateBorrowPaused(aDai, true);
-
-        vm.expectRevert(abi.encodeWithSignature("LiquidateBorrowPaused()"));
-        supplier1.liquidate(aDai, aUsdc, address(supplier2), amount);
     }
 }
