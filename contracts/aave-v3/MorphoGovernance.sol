@@ -286,7 +286,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isSupplyPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsSupplyPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsSupplyPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         market[_poolToken].isSupplyPaused = _isPaused;
         emit IsSupplyPausedSet(_poolToken, _isPaused);
     }
@@ -294,7 +298,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isBorrowPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsBorrowPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsBorrowPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         market[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -302,7 +310,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isWithdrawPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         market[_poolToken].isWithdrawPaused = _isPaused;
         emit IsWithdrawPausedSet(_poolToken, _isPaused);
     }
@@ -310,7 +322,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isRepayPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsRepayPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsRepayPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         market[_poolToken].isRepayPaused = _isPaused;
         emit IsRepayPausedSet(_poolToken, _isPaused);
     }
@@ -318,7 +334,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isLiquidateCollateralPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         market[_poolToken].isLiquidateCollateralPaused = _isPaused;
         emit IsLiquidateCollateralPausedSet(_poolToken, _isPaused);
     }
@@ -326,7 +346,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isLiquidateBorrowPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         market[_poolToken].isLiquidateBorrowPaused = _isPaused;
         emit IsLiquidateBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -491,7 +515,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the different pause status for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function _setPauseStatus(address _poolToken, bool _isPaused) internal {
+    function _setPauseStatus(address _poolToken, bool _isPaused)
+        internal
+        isMarketCreated(_poolToken)
+    {
         Types.Market storage market = market[_poolToken];
 
         market.isSupplyPaused = _isPaused;
