@@ -207,6 +207,33 @@ contract TestGovernance is TestSetup {
         assertTrue(morpho.isClaimRewardsPaused());
     }
 
+    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsPausedForAllMarkets(true);
+
+        morpho.setIsPausedForAllMarkets(true);
+    }
+
+    function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        morpho.setIsDeprecated(cDai, true);
+
+        (, , , , , , , bool isDeprecated) = morpho.marketStatus(cDai);
+        assertTrue(isDeprecated);
+
+        morpho.setIsDeprecated(cDai, false);
+        (, , , , , , , isDeprecated) = morpho.marketStatus(cDai);
+        assertFalse(isDeprecated);
+    }
+
     function testOnlyOwnerCanIncreaseP2PDeltas() public {
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");

@@ -210,4 +210,9 @@ contract TestPausableMarket is TestSetup {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
         morpho.setIsLiquidateBorrowPaused(address(0), true);
     }
+
+    function testShouldNotDeprecatedMarketWhenNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsDeprecated(address(0), true);
+    }
 }
