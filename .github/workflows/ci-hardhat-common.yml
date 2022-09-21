@@ -19,7 +19,7 @@ on:
       - test/upgrades/**
 
 jobs:
-  morpho-compound-eth-mainnet:
+  morpho-hardhat-tests:
     name: eth-mainnet
     runs-on: ubuntu-latest
     steps:
