@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Core contracts of the Morpho Protocol V1.",
   "scripts": {
-    "test": "make flatten-tests && NETWORK=eth-mainnet hardhat test test/*.spec.ts",
+    "test": "make flatten-tests && NETWORK=eth-mainnet BLOCK_NUMBER=15580517 hardhat test test/*.spec.ts",
     "test:upgrade:stEth": "make flatten-tests && NETWORK=eth-mainnet hardhat test test/upgrades/stEth.spec.ts",
     "lint": "yarn lint:sol && yarn lint:ts",
     "lint:ts": "eslint . --ext .ts",

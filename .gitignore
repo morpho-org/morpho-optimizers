@@ -17,7 +17,7 @@
 /artifacts
 /cache
 /coverage.json
-test/contracts/upgrades
+test/contracts/flattened
 
 # misc
 .DS_Store

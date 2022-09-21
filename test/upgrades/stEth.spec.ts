@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import hre from "hardhat";
 
 import { MorphoAaveV2__factory } from "@morpho-labs/morpho-ethers-contract";
@@ -7,7 +8,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import "../../hardhat.config";
 
 import WadRayMath from "./maths/WadRayMath";
-import mock from "./mocks/aave-v2.json";
+import mock from "./mocks/aave-v2.15580517.json";
 
 interface UserMarketBalance {
   onPool: string;
@@ -21,7 +22,7 @@ interface UserMarketBalance {
 const data: {
   users: {
     [user: string]: {
-      positions: {
+      balances: {
         [market: string]: {
           supply?: UserMarketBalance;
           borrow?: UserMarketBalance;
@@ -42,7 +43,7 @@ const markets: {
   };
 } = mock.markets;
 
-const market = "0x1982b2F5814301d4e9a8b0201555376e62F82428".toLowerCase();
+const aStEth = "0x1982b2F5814301d4e9a8b0201555376e62F82428".toLowerCase();
 
 describe("Check ugprade", () => {
   let snapshotId: number;
@@ -50,12 +51,21 @@ describe("Check ugprade", () => {
   const morpho = MorphoAaveV2__factory.connect("0x777777c9898d384f785ee44acfe945efdff5f3e0", hre.ethers.provider);
 
   const deployUpgrade = async () => {
-    const InterestRatesManagerUpgraded = await hre.ethers.getContractFactory("InterestRatesManagerUpgraded");
+    const InterestRatesManagerUpgraded = await hre.ethers.getContractFactory("InterestRatesManager");
 
     const interestRatesManagerUpgraded = await InterestRatesManagerUpgraded.deploy();
     await interestRatesManagerUpgraded.deployed();
 
-    const owner = await hre.ethers.provider.getSigner(await morpho.owner());
+    const ownerAddress = await morpho.owner();
+    await hre.network.provider.request({
+      method: "hardhat_setBalance",
+      params: [ownerAddress, "0xffffffffffffffffffffffffffffffffffffff"],
+    });
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [ownerAddress],
+    });
+    const owner = await hre.ethers.provider.getSigner(ownerAddress);
     await morpho.connect(owner).setInterestRatesManager(interestRatesManagerUpgraded.address);
   };
 
@@ -68,11 +78,16 @@ describe("Check ugprade", () => {
   });
 
   it("should withdraw reasonable amount", async () => {
-    loadFixture(deployUpgrade);
+    await loadFixture(deployUpgrade);
 
     for (const [user, userBalances] of Object.entries(data.users)) {
-      const userMarketBalances = userBalances.positions[market];
-      if (!userMarketBalances || !userMarketBalances.supply || !userMarketBalances.borrow) continue;
+      const userMarketBalances = userBalances.balances[aStEth];
+      if (
+        !userMarketBalances ||
+        !userMarketBalances.supply ||
+        BigNumber.from(userMarketBalances.supply.onPool).add(userMarketBalances.supply.inP2P).lte(0)
+      )
+        continue;
 
       console.log("Impersonating", user);
       await hre.network.provider.request({
@@ -84,8 +99,8 @@ describe("Check ugprade", () => {
         params: [user],
       });
 
-      const amount = WadRayMath.rayMul(userMarketBalances.supply.onPool, markets[market].indexes.poolSupply).add(
-        WadRayMath.rayMul(userMarketBalances.supply.inP2P, markets[market].indexes.p2pSupply)
+      const amount = WadRayMath.rayMul(userMarketBalances.supply.onPool, markets[aStEth].indexes.poolSupply).add(
+        WadRayMath.rayMul(userMarketBalances.supply.inP2P, markets[aStEth].indexes.p2pSupply)
       );
       if (amount.eq(0)) continue;
 
@@ -97,15 +112,15 @@ describe("Check ugprade", () => {
 
       const balanceBefore = await stEth.balanceOf(user);
 
-      await morpho.connect(stEth.signer).withdraw(market, amount, { gasLimit: 3_000_000 });
+      await morpho.connect(stEth.signer).withdraw(aStEth, amount, { gasLimit: 3_000_000 });
 
       const balanceAfter = await stEth.balanceOf(user);
 
       expect(balanceAfter.sub(balanceBefore).sub(amount).abs().lt(10)).to.be.true;
 
-      await expect(morpho.connect(stEth.signer).withdraw(market, 1_000_000, { gasLimit: 3_000_000 })).to.be.reverted;
+      await expect(morpho.connect(stEth.signer).withdraw(aStEth, 1_000, { gasLimit: 3_000_000 })).to.be.reverted;
 
-      const supplyBalance = await morpho.supplyBalanceInOf(user, market);
+      const supplyBalance = await morpho.supplyBalanceInOf(user, aStEth);
       expect(supplyBalance.onPool.toString()).to.eq("0");
       expect(supplyBalance.inP2P.toString()).to.eq("0");
     }
