@@ -104,21 +104,22 @@ describe("Check ugprade", () => {
       );
       if (amount.eq(0)) continue;
 
+      const signer = await hre.ethers.provider.getSigner(user);
       const stEth = await hre.ethers.getContractAt(
         ["function balanceOf(address) external view returns (uint256)"],
         "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
-        await hre.ethers.provider.getSigner(user)
+        signer
       );
 
       const balanceBefore = await stEth.balanceOf(user);
 
-      await morpho.connect(stEth.signer).withdraw(aStEth, amount, { gasLimit: 3_000_000 });
+      await morpho.connect(signer).withdraw(aStEth, amount, { gasLimit: 3_000_000 });
 
       const balanceAfter = await stEth.balanceOf(user);
 
       expect(balanceAfter.sub(balanceBefore).sub(amount).abs().lt(10)).to.be.true;
 
-      await expect(morpho.connect(stEth.signer).withdraw(aStEth, 1_000, { gasLimit: 3_000_000 })).to.be.reverted;
+      await expect(morpho.connect(signer).withdraw(aStEth, 1_000, { gasLimit: 3_000_000 })).to.be.reverted;
 
       const supplyBalance = await morpho.supplyBalanceInOf(user, aStEth);
       expect(supplyBalance.onPool.toString()).to.eq("0");
