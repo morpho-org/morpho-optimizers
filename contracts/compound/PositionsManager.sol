@@ -502,8 +502,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         uint256 closeFactor;
         if (!borrowedMarket.isDeprecated) {
-            closeFactor = comptroller.closeFactorMantissa();
             if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+            closeFactor = comptroller.closeFactorMantissa();
         } else closeFactor = WAD; // Allow liquidation of the whole debt.
 
         LiquidateVars memory vars;

@@ -224,8 +224,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         LiquidateVars memory vars;
         if (!borrowedMarket.isDeprecated) {
-            vars.closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
             if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
+            vars.closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
         } else vars.closeFactor = MAX_BASIS_POINTS; // Allow liquidation of the whole debt.
 
         address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
