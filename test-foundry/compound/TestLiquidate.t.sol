@@ -41,7 +41,7 @@ contract TestLiquidate is TestSetup {
         (, uint256 borrowOnPoolbefore) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
         // Liquidate
-        uint256 toRepay = amount / 3;
+        uint256 toRepay = amount; // Full liquidation.
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
