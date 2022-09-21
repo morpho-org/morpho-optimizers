@@ -133,8 +133,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
         uint256 borrowedTokenPrice; // The price of the borrowed token.
         uint256 amountToLiquidate; // The amount of debt token to repay.
-        uint256 closeFactor;
-        bool liquidationAllowed;
+        uint256 closeFactor; // The close factor used during the liquidation.
+        bool liquidationAllowed; // Whether the liquidation is allowed or not.
     }
 
     // Struct to avoid stack too deep.
@@ -232,7 +232,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (!borrowedMarket.isDeprecated) {
             (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(_borrower);
             if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
-        } else vars.closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+        } else vars.closeFactor = MAX_BASIS_POINTS; // Allow liquidation of the whole debt.
 
         vars.amountToLiquidate = Math.min(
             _amount,

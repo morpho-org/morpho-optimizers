@@ -500,14 +500,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenBorrowed);
         _updateP2PIndexes(_poolTokenCollateral);
 
-        if (!borrowedMarket.isDeprecated && !_isLiquidatable(_borrower, address(0), 0, 0))
-            revert UnauthorisedLiquidate();
+        uint256 closeFactor;
+        if (!borrowedMarket.isDeprecated) {
+            closeFactor = comptroller.closeFactorMantissa();
+            if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+        } else closeFactor = WAD; // Allow liquidation of the whole debt.
 
         LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
 
-        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
-            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
+        if (_amount > vars.borrowBalance.mul(closeFactor)) revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
         _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
 

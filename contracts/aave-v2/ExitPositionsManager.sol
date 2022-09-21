@@ -128,6 +128,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 closeFactor; // The close factor used during the liquidation.
     }
 
     // Struct to avoid stack too deep.
@@ -221,11 +222,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
 
-        if (!borrowedMarket.isDeprecated && !_liquidationAllowed(_borrower))
-            revert UnauthorisedLiquidate();
+        LiquidateVars memory vars;
+        if (!borrowedMarket.isDeprecated) {
+            vars.closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+            if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
+        } else vars.closeFactor = MAX_BASIS_POINTS; // Allow liquidation of the whole debt.
 
         address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
-
         uint256 amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(
@@ -237,16 +240,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        LiquidateVars memory vars;
-        {
-            ILendingPool poolMem = pool;
-            (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
-            .getConfiguration(tokenCollateralAddress)
-            .getParamsMemory();
-            (, , , vars.borrowedReserveDecimals, ) = poolMem
-            .getConfiguration(tokenBorrowedAddress)
-            .getParamsMemory();
-        }
+        ILendingPool poolMem = pool;
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
+        .getConfiguration(tokenCollateralAddress)
+        .getParamsMemory();
+        (, , , vars.borrowedReserveDecimals, ) = poolMem
+        .getConfiguration(tokenBorrowedAddress)
+        .getParamsMemory();
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
@@ -316,7 +316,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
-
         _borrowFromPool(underlyingToken, _amount);
         _supplyToPool(underlyingToken, _amount);
 
