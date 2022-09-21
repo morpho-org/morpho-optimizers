@@ -464,10 +464,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the different pause status for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function _setPauseStatus(address _poolToken, bool _isPaused)
-        internal
-        isMarketCreated(_poolToken)
-    {
+    function _setPauseStatus(address _poolToken, bool _isPaused) internal {
         Types.MarketStatus storage market = marketStatus[_poolToken];
 
         market.isSupplyPaused = _isPaused;
