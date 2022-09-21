@@ -127,10 +127,5 @@ storage-layout-check:
 config:
 	@forge config
 
-flatten-tests:
-	@mkdir -p test/contracts/upgrades/
-	@FOUNDRY_SRC=contracts forge flatten contracts/common/rewards-distribution/RewardsDistributor.sol > test/contracts/upgrades/RewardsDistributor.flattened.sol
-	@FOUNDRY_SRC=contracts forge flatten contracts/aave-v2/InterestRatesManager.sol > test/contracts/upgrades/InterestRatesManager.flattened.sol
-
 
 .PHONY: test config test-common foundry
