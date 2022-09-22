@@ -502,10 +502,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenCollateral);
 
         LiquidateVars memory vars;
-        if (!borrowedMarket.isDeprecated) {
+        if (borrowedMarket.isDeprecated)
+            vars.closeFactor = WAD; // Allow liquidation of the whole debt.
+        else {
             if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
             vars.closeFactor = comptroller.closeFactorMantissa();
-        } else vars.closeFactor = WAD; // Allow liquidation of the whole debt.
+        }
 
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
 

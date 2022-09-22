@@ -229,10 +229,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenCollateral);
 
         LiquidateVars memory vars;
-        if (!borrowedMarket.isDeprecated) {
-            (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(_borrower);
-            if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
-        } else vars.closeFactor = MAX_BASIS_POINTS; // Allow liquidation of the whole debt.
+        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+            _borrower,
+            borrowedMarket.isDeprecated
+        );
+        if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
 
         vars.amountToLiquidate = Math.min(
             _amount,
@@ -700,23 +701,30 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
+    /// @param _isDeprecated Whether the market is deprecated or not.
     /// @return closeFactor The close factor to apply.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.
-    function _liquidationAllowed(address _user)
+    function _liquidationAllowed(address _user, bool _isDeprecated)
         internal
         returns (uint256 closeFactor, bool liquidationAllowed)
     {
-        uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
-        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (_isDeprecated) {
+            // Allow liquidation of the whole debt.
+            closeFactor = MAX_BASIS_POINTS;
+            liquidationAllowed = true;
+        } else {
+            uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
+            address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
 
-        closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
-            ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
-            : MAX_LIQUIDATION_CLOSE_FACTOR;
+            closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
+                ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
+                : MAX_LIQUIDATION_CLOSE_FACTOR;
 
-        if (priceOracleSentinel != address(0))
-            liquidationAllowed = (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
-                (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
-                    healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
-        else liquidationAllowed = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+            if (priceOracleSentinel != address(0))
+                liquidationAllowed = (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
+                    (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
+                        healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
+            else liquidationAllowed = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        }
     }
 }
