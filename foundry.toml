@@ -7,4 +7,6 @@ via_ir = false
 revert_strings = "default"
 names = true
 sizes = true
-fuzz_runs = 1024
+
+[fuzz]
+runs = 1024
