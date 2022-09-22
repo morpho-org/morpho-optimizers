@@ -260,7 +260,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isSupplyPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsSupplyPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsSupplyPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketStatus[_poolToken].isSupplyPaused = _isPaused;
         emit IsSupplyPausedSet(_poolToken, _isPaused);
     }
@@ -268,7 +272,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isBorrowPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsBorrowPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsBorrowPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketStatus[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -276,7 +284,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isWithdrawPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketStatus[_poolToken].isWithdrawPaused = _isPaused;
         emit IsWithdrawPausedSet(_poolToken, _isPaused);
     }
@@ -284,7 +296,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isRepayPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsRepayPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsRepayPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketStatus[_poolToken].isRepayPaused = _isPaused;
         emit IsRepayPausedSet(_poolToken, _isPaused);
     }
@@ -292,7 +308,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isLiquidateCollateralPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketStatus[_poolToken].isLiquidateCollateralPaused = _isPaused;
         emit IsLiquidateCollateralPausedSet(_poolToken, _isPaused);
     }
@@ -300,7 +320,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isLiquidateBorrowPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketStatus[_poolToken].isLiquidateBorrowPaused = _isPaused;
         emit IsLiquidateBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -357,7 +381,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// In this case, consider calling multiple times this function.
     /// @param _poolToken The address of the market on which to create deltas.
     /// @param _amount The amount to add to the deltas (in underlying).
-    function increaseP2PDeltas(address _poolToken, uint256 _amount) external onlyOwner {
+    function increaseP2PDeltas(address _poolToken, uint256 _amount)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 IPositionsManager.increaseP2PDeltasLogic.selector,

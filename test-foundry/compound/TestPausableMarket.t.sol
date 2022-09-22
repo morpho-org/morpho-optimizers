@@ -92,92 +92,103 @@ contract TestPausableMarket is TestSetup {
 
         uint256 poolsLength = pools.length;
         for (uint256 i; i < poolsLength; ++i) {
-            hevm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
+            vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
             supplier1.supply(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
+            vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
             supplier1.borrow(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
+            vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
             supplier1.withdraw(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
+            vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
             supplier1.repay(pools[i], 1);
 
-            hevm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
+            vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
             supplier1.liquidate(pools[i], pools[0], address(supplier1), 1);
         }
     }
 
-    function testOnlyOwnerShouldDisableSupply() public {
+    function testPauseSupply() public {
         uint256 amount = 10_000 ether;
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setIsSupplyPaused(cDai, true);
-
         morpho.setIsSupplyPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
         supplier1.supply(cDai, amount);
     }
 
-    function testOnlyOwnerShouldDisableBorrow() public {
+    function testPauseBorrow() public {
         uint256 amount = 10_000 ether;
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setIsBorrowPaused(cDai, true);
-
         morpho.setIsBorrowPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
         supplier1.borrow(cDai, amount);
     }
 
-    function testOnlyOwnerShouldDisableWithdraw() public {
+    function testPauseWithdraw() public {
         uint256 amount = 10_000 ether;
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setIsWithdrawPaused(cDai, true);
-
         morpho.setIsWithdrawPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
         supplier1.withdraw(cDai, amount);
     }
 
-    function testOnlyOwnerShouldDisableRepay() public {
+    function testPauseRepay() public {
         uint256 amount = 10_000 ether;
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setIsRepayPaused(cDai, true);
-
         morpho.setIsRepayPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
         supplier1.repay(cDai, amount);
     }
 
-    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+    function testPauseLiquidateCollateral() public {
         uint256 amount = 10_000 ether;
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setIsLiquidateCollateralPaused(cDai, true);
-
         morpho.setIsLiquidateCollateralPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
         supplier1.liquidate(cUsdc, cDai, address(supplier2), amount);
     }
 
-    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+    function testPauseLiquidateBorrow() public {
         uint256 amount = 10_000 ether;
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setIsLiquidateBorrowPaused(cDai, true);
-
         morpho.setIsLiquidateBorrowPaused(cDai, true);
 
         vm.expectRevert(abi.encodeWithSignature("LiquidateBorrowPaused()"));
         supplier1.liquidate(cDai, cUsdc, address(supplier2), amount);
+    }
+
+    function testShouldNotPauseSupplyOnMarketNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsSupplyPaused(address(1), true);
+    }
+
+    function testShouldNotPauseBorrowOnMarketNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsBorrowPaused(address(1), true);
+    }
+
+    function testShouldNotPauseWithdrawOnMarketNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsWithdrawPaused(address(1), true);
+    }
+
+    function testShouldNotPauseRepayMarketNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsRepayPaused(address(1), true);
+    }
+
+    function testShouldNotPauseLiquidateCollateralOnMarketNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsLiquidateCollateralPaused(address(1), true);
+    }
+
+    function testShouldNotPauseLiquidateBorrowOnMarketNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsLiquidateBorrowPaused(address(1), true);
+    }
+
+    function testShouldNotDeprecatedMarketWhenNotCreated() public {
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.setIsDeprecated(address(1), true);
     }
 }
