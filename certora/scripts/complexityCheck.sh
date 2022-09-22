@@ -1,10 +1,9 @@
-#!/bin/sh
-
 certoraRun \
     certora/munged/compound/PositionsManager.sol \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
     --verify PositionsManager:certora/helpers/complexity.spec \
+    --solc solc8.13 \
     --staging \
     --optimistic_loop \
     --send_only \

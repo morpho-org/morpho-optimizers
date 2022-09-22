@@ -182,4 +182,14 @@ contract DummyPoolTokenImpl {
         underlying.transferFrom(account, address(this), amount);
         return 0;
     }
+
+    // ICETHER
+    function repayBorrow() external returns (uint256) {
+        uint256 amount = _userDebt[msg.sender];
+        _userDebt[msg.sender] -= amount;
+        _supply += amount;
+        IERC20 underlying = IERC20(_underlying);
+        underlying.transferFrom(msg.sender, address(this), amount);
+        return 0;
+    }
 }

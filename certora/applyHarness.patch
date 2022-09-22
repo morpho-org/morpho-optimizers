@@ -1,6 +1,12 @@
+diff -ruN .gitignore .gitignore
+--- .gitignore	1969-12-31 16:00:00.000000000 -0800
++++ .gitignore	2022-08-17 19:56:23.000000000 -0700
+@@ -0,0 +1,2 @@
++*
++!.gitignore
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
---- compound/MorphoGovernance.sol	2022-08-02 16:17:08.052222958 +0200
-+++ compound/MorphoGovernance.sol	2022-08-02 16:19:47.119707031 +0200
+--- compound/MorphoGovernance.sol	2022-08-09 10:29:45.000000000 -0700
++++ compound/MorphoGovernance.sol	2022-08-17 19:56:23.000000000 -0700
 @@ -121,7 +121,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -10,9 +16,21 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
          __ReentrancyGuard_init();
          __Ownable_init();
  
+diff -ruN compound/MorphoUtils.sol compound/MorphoUtils.sol
+--- compound/MorphoUtils.sol	2022-08-09 10:29:45.000000000 -0700
++++ compound/MorphoUtils.sol	2022-08-17 19:59:55.000000000 -0700
+@@ -4,7 +4,7 @@
+ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+ import "@openzeppelin/contracts/utils/math/Math.sol";
+ import "./libraries/CompoundMath.sol";
+-import "@morpho-labs/morpho-utils/DelegateCall.sol";
++import "../../helpers/DelegateCallHarness.sol";
+ 
+ import "./MorphoStorage.sol";
+ 
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
---- compound/PositionsManager.sol	2022-08-02 16:17:08.052222958 +0200
-+++ compound/PositionsManager.sol	2022-08-02 16:19:47.119707031 +0200
+--- compound/PositionsManager.sol	2022-08-09 10:29:45.000000000 -0700
++++ compound/PositionsManager.sol	2022-08-17 19:56:23.000000000 -0700
 @@ -212,7 +212,7 @@
          address _onBehalf,
          uint256 _amount,
@@ -54,13 +72,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          address _borrower,
          uint256 _amount
 -    ) external {
-+    ) external override { // Harness
++    ) external virtual override {
          if (
              !userMembership[_poolTokenBorrowed][_borrower] ||
              !userMembership[_poolTokenCollateral][_borrower]
-diff -ruN .gitignore .gitignore
---- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-08-02 16:19:47.119707031 +0200
-@@ -0,0 +1,2 @@
-+*
-+!.gitignore

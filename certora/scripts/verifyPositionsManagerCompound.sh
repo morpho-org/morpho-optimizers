@@ -4,24 +4,31 @@
 make -C certora munged
 
 certoraRun \
-    certora/munged/compound/PositionsManager.sol \
+    certora/harness/compound/PositionsManagerHarness.sol \
     certora/munged/compound/RewardsManager.sol \
     certora/munged/compound/InterestRatesManager.sol \
-    certora/helpers/compound/DummyPoolTokenImpl.sol \
-    certora/helpers/compound/DummyPoolTokenA.sol \
-    certora/helpers/compound/DummyPoolTokenB.sol \
-    certora/helpers/compound/SymbolicOracle.sol \
-    certora/helpers/compound/SymbolicComptroller.sol \
-    --link PositionsManager:comptroller=SymbolicComptroller \
-    --link PositionsManager:interestRatesManager=InterestRatesManager \
-    --verify PositionsManager:certora/spec/PositionsManagerCompound.spec \
-    --method 'liquidateLogic(address,address,address,uint256)' \
+    certora/helpers/compound/contracts/DummyPoolTokenImpl.sol \
+    certora/helpers/compound/contracts/DummyPoolTokenA.sol \
+    certora/helpers/compound/contracts/DummyPoolTokenB.sol \
+    certora/helpers/compound/contracts/SymbolicOracle.sol \
+    certora/helpers/compound/contracts/SymbolicComptroller.sol \
+    certora/helpers/DummyWeth.sol \
+    --packages @morpho-labs/morpho-utils/=lib/morpho-utils/src/ \
+               @rari-capital/solmate/=lib/solmate/ \
+               @openzeppelin=node_modules/@openzeppelin \
+    --link PositionsManagerHarness:comptroller=SymbolicComptroller \
+    --link PositionsManagerHarness:interestRatesManager=InterestRatesManager \
+    --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
+    --solc solc \
     --loop_iter 2 \
     --optimistic_loop \
+    --settings -t=60\
     --cache morpho \
     --staging \
+    --msg "PositionsManager For Compound: $1" \
     --send_only \
-    --msg "PMFC $1"
+
+    # --method 'repayLogic(address, address, address, uint256, uint256)' \
 
     # notes:
     # keep the cache name common among run scripts, will save a bunch on the setup time 
