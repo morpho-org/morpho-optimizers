@@ -191,10 +191,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolToken);
-
-        bytes32 borrowMask = borrowMask[_poolToken];
-        if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
-            _setBorrowing(msg.sender, borrowMask, true);
+        _setBorrowing(msg.sender, borrowMask[_poolToken], true);
 
         if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
