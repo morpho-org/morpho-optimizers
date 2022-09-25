@@ -24,6 +24,8 @@ abstract contract LensStorage {
     /// STORAGE ///
 
     uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
+    uint16 public constant BASIS_POINTS_UNITS = 10_000; // 100% in basis points.
+
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
 
     IMorpho public immutable morpho;

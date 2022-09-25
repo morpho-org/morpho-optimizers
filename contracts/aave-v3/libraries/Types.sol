@@ -109,4 +109,23 @@ library Types {
         address underlyingToken;
         uint256 underlyingPrice;
     }
+
+    struct GrowthFactors {
+        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in ray).
+        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in ray).
+        uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in ray).
+        uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in ray).
+    }
+
+    struct P2PIndexComputeParams {
+        uint256 lastP2PSupplyIndex; // The peer-to-peer supply index at last update.
+        uint256 lastP2PBorrowIndex; // The peer-to-peer borrow index at last update.
+        uint256 poolSupplyIndex; // The current pool supply index.
+        uint256 poolBorrowIndex; // The current pool borrow index.
+        uint256 lastPoolSupplyIndex; // The pool supply index at last update.
+        uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
+        uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
+        uint256 p2pIndexCursor; // The peer-to-peer index cursor (10 000 = 100%).
+        Types.Delta delta; // The deltas and peer-to-peer amounts.
+    }
 }

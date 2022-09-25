@@ -11,6 +11,8 @@ contract TestLens is TestSetup {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
+    error TestNotImplemented();
+
     struct UserBalanceStates {
         uint256 collateral;
         uint256 debt;
@@ -1562,5 +1564,29 @@ contract TestLens is TestSetup {
         assertEq(usdcParams.ltAfter, usdcParams.ltPool, "LT After USDC");
         assertEq(usdtParams.ltAfter, usdtParams.ltPool, "LT After USDT");
         assertEq(daiParams.ltAfter, daiParams.ltPool, "LT After Dai");
+    }
+
+    function testShouldRevertHypotheticalWithBorrowIfBorrowPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldRevertHypotheticalWithWithdrawIfWithdrawPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldUseFullCloseFactorIfLiquidatingDeprecated() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldSetBorrowableToZeroIfBorrowPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldSetWithdrawableToZeroIfBorrowPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testBalanceShouldBeReflectedWhenStethSlashed() public {
+        revert TestNotImplemented();
     }
 }

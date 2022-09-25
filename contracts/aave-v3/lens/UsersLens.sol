@@ -16,6 +16,9 @@ abstract contract UsersLens is IndexesLens {
     using WadRayMath for uint256;
     using Math for uint256;
 
+    error BorrowPaused();
+    error WithdrawPaused();
+
     /// EXTERNAL ///
 
     /// @notice Returns all markets entered by a given user.
@@ -102,6 +105,10 @@ abstract contract UsersLens is IndexesLens {
                 ((liquidityData.maxDebt - liquidityData.debt).percentDiv(assetData.ltv) *
                     assetData.tokenUnit) / assetData.underlyingPrice
             );
+
+        Types.Market memory market = morpho.market(_poolToken);
+        if (market.isBorrowPaused) borrowable = 0;
+        if (market.isWithdrawPaused) withdrawable = 0;
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
@@ -135,12 +142,16 @@ abstract contract UsersLens is IndexesLens {
         uint256 borrowedPrice = oracle.getAssetPrice(borrowedToken);
         uint256 collateralPrice = oracle.getAssetPrice(collateralToken);
 
+        uint256 closeFactor = morpho.market(borrowedToken).isDeprecated
+            ? BASIS_POINTS_UNITS
+            : DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+
         return
             Math.min(
                 ((totalCollateralBalance * collateralPrice * 10**ERC20(borrowedToken).decimals()) /
                     (borrowedPrice * 10**collateralReserveDecimals))
                     .percentDiv(liquidationBonus),
-                totalBorrowBalance.percentMul(DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+                totalBorrowBalance.percentMul(closeFactor)
             );
     }
 
@@ -230,12 +241,15 @@ abstract contract UsersLens is IndexesLens {
                 liquidityData.debt += assetData.debt;
 
                 if (_poolToken == poolToken) {
-                    if (_borrowedAmount > 0)
+                    if (_borrowedAmount > 0) {
+                        if (morpho.market(_poolToken).isBorrowPaused) revert BorrowPaused();
                         liquidityData.debt += (_borrowedAmount * assetData.underlyingPrice).divUp(
                             assetData.tokenUnit
                         );
+                    }
 
                     if (_withdrawnAmount > 0) {
+                        if (morpho.market(_poolToken).isWithdrawPaused) revert WithdrawPaused();
                         uint256 assetCollateral = (_withdrawnAmount * assetData.underlyingPrice) /
                             assetData.tokenUnit;
 
@@ -359,6 +373,23 @@ abstract contract UsersLens is IndexesLens {
     /// @param _user The user to check.
     /// @return whether or not the user is liquidatable.
     function isLiquidatable(address _user) public view returns (bool) {
+        address[] memory createdMarkets = morpho.getMarketsCreated();
+        uint256 nbCreatedMarkets = createdMarkets.length;
+
+        bytes32 userMarkets = morpho.userMarkets(_user);
+
+        for (uint256 i; i < nbCreatedMarkets; ) {
+            if (
+                _isBorrowing(userMarkets, createdMarkets[i]) &&
+                morpho.market(createdMarkets[i]).isDeprecated
+            ) {
+                return true;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
         return getUserHealthFactor(_user) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
@@ -376,6 +407,16 @@ abstract contract UsersLens is IndexesLens {
         bytes32 marketBorrowMask = morpho.borrowMask(_market);
 
         return _userMarkets & (marketBorrowMask | (marketBorrowMask << 1)) != 0;
+    }
+
+    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @param _userMarkets The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been supplying or borrowing on this market, false otherwise.
+    function _isBorrowing(bytes32 _userMarkets, address _market) internal view returns (bool) {
+        bytes32 marketBorrowMask = morpho.borrowMask(_market);
+
+        return _userMarkets & marketBorrowMask != 0;
     }
 
     /// @notice Returns the balance in underlying of a given user in a given market.

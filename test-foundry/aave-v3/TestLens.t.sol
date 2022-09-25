@@ -8,6 +8,8 @@ contract TestLens is TestSetup {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
+    error TestNotImplemented();
+
     struct UserBalanceStates {
         uint256 collateral;
         uint256 debt;
@@ -1521,13 +1523,35 @@ contract TestLens is TestSetup {
         assertEq(usdtParams.ltvBefore, 0, "LTV Before USDT");
         assertEq(daiParams.ltvBefore, 0, "LTV Before Dai");
         assertEq(usdcParams.ltvAfter, usdcParams.ltvPool, "LTV After USDC");
+        // Should be zero because this is an isolated collateral
         assertEq(usdtParams.ltvAfter, 0, "LTV After USDT");
         assertEq(daiParams.ltvAfter, daiParams.ltvPool, "LTV After Dai");
         assertEq(usdcParams.ltBefore, 0, "LT Before USDC");
         assertEq(usdtParams.ltBefore, 0, "LT Before USDT");
         assertEq(daiParams.ltBefore, 0, "LT Before Dai");
         assertEq(usdcParams.ltAfter, usdcParams.ltPool, "LT After USDC");
+        // Should be zero because this is an isolated collateral
         assertEq(usdtParams.ltAfter, 0, "LT After USDT");
         assertEq(daiParams.ltAfter, daiParams.ltPool, "LT After Dai");
+    }
+
+    function testShouldRevertHypotheticalWithBorrowIfBorrowPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldRevertHypotheticalWithWithdrawIfWithdrawPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldUseFullCloseFactorIfLiquidatingDeprecated() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldSetBorrowableToZeroIfBorrowPaused() public {
+        revert TestNotImplemented();
+    }
+
+    function testShouldSetWithdrawableToZeroIfBorrowPaused() public {
+        revert TestNotImplemented();
     }
 }
