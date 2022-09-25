@@ -66,20 +66,20 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             underlyingToken == ST_ETH ? ST_ETH_BASE_REBASE_INDEX : 0
         );
 
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(
-            p2pSupplyIndex[_poolToken],
-            p2pBorrowIndex[_poolToken],
-            newPoolSupplyIndex,
-            newPoolBorrowIndex,
-            marketPoolIndexes.poolSupplyIndex,
-            marketPoolIndexes.poolBorrowIndex,
-            market.reserveFactor,
-            market.p2pIndexCursor,
-            deltas[_poolToken]
-        );
-
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel
-        .computeP2PIndexes(params);
+        .computeP2PIndexes(
+            Types.P2PIndexComputeParams({
+                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
+                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                poolSupplyIndex: newPoolSupplyIndex,
+                poolBorrowIndex: newPoolBorrowIndex,
+                lastPoolSupplyIndex: marketPoolIndexes.poolSupplyIndex,
+                lastPoolBorrowIndex: marketPoolIndexes.poolBorrowIndex,
+                reserveFactor: market.reserveFactor,
+                p2pIndexCursor: market.p2pIndexCursor,
+                delta: deltas[_poolToken]
+            })
+        );
 
         p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
         p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
