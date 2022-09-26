@@ -143,7 +143,7 @@ abstract contract UsersLens is IndexesLens {
         uint256 collateralPrice = oracle.getAssetPrice(collateralToken);
 
         uint256 closeFactor = morpho.market(_poolTokenBorrowedAddress).isDeprecated
-            ? BASIS_POINTS_UNITS
+            ? PercentageMath.PERCENTAGE_FACTOR
             : DEFAULT_LIQUIDATION_CLOSE_FACTOR;
 
         return
