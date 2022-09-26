@@ -128,6 +128,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 closeFactor; // The close factor used during the liquidation.
+        bool liquidationAllowed; // Whether the liquidation is allowed or not.
     }
 
     // Struct to avoid stack too deep.
@@ -221,23 +223,22 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
 
-        if (!borrowedMarket.isDeprecated && !_liquidationAllowed(_borrower))
-            revert UnauthorisedLiquidate();
-
-        address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
+        LiquidateVars memory vars;
+        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+            _borrower,
+            borrowedMarket.isDeprecated
+        );
+        if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
 
         uint256 amountToLiquidate = Math.min(
             _amount,
-            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(
-                DEFAULT_LIQUIDATION_CLOSE_FACTOR
-            ) // Max liquidatable debt.
+            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
-
-        address tokenCollateralAddress = market[_poolTokenCollateral].underlyingToken;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        LiquidateVars memory vars;
+        address tokenCollateralAddress = market[_poolTokenCollateral].underlyingToken;
+        address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
         {
             ILendingPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
@@ -316,7 +317,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
-
         _borrowFromPool(underlyingToken, _amount);
         _supplyToPool(underlyingToken, _amount);
 
@@ -691,8 +691,21 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
-    /// @return Whether the user is liquidatable or not.
-    function _liquidationAllowed(address _user) internal returns (bool) {
-        return _getUserHealthFactor(_user, address(0), 0) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+    /// @param _isDeprecated Whether the market is deprecated or not.
+    /// @return closeFactor The close factor to apply.
+    /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    function _liquidationAllowed(address _user, bool _isDeprecated)
+        internal
+        returns (uint256 closeFactor, bool liquidationAllowed)
+    {
+        if (_isDeprecated) {
+            // Allow liquidation of the whole debt.
+            closeFactor = MAX_BASIS_POINTS;
+            liquidationAllowed = true;
+        } else {
+            closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+            liquidationAllowed = (_getUserHealthFactor(_user, address(0), 0) <
+                HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
+        }
     }
 }

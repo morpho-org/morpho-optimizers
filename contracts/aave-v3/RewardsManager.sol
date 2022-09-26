@@ -268,8 +268,9 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
             // Optimization: storing one after another saves one SSTORE.
             _localRewardData.index = uint128(newIndex);
-            _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
-        } else _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
+        }
+
+        _localRewardData.lastUpdateTimestamp = uint128(block.timestamp);
 
         return (newIndex, indexUpdated);
     }

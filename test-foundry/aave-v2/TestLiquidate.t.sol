@@ -37,10 +37,10 @@ contract TestLiquidate is TestSetup {
         borrower1.borrow(aDai, amount);
 
         (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
-        (, uint256 borrowOnPoolbefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+        (, uint256 borrowOnPoolBefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         // Liquidate
-        uint256 toRepay = amount / 2;
+        uint256 toRepay = borrowOnPoolBefore.rayMul(pool.getReserveNormalizedVariableDebt(dai)); // Full liquidation.
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
@@ -48,8 +48,28 @@ contract TestLiquidate is TestSetup {
         (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
         (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        assertLt(borrowOnPoolAfter, borrowOnPoolbefore);
-        assertLt(supplyOnPoolAfter, supplyOnPoolBefore);
+        ExitPositionsManager.LiquidateVars memory vars;
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = pool
+        .getConfiguration(usdc)
+        .getParamsMemory();
+        uint256 collateralPrice = oracle.getAssetPrice(usdc);
+        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+
+        {
+            (, , , vars.borrowedReserveDecimals, ) = pool.getConfiguration(dai).getParamsMemory();
+            uint256 borrowedPrice = oracle.getAssetPrice(dai);
+            vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+
+            uint256 amountToSeize = (toRepay * borrowedPrice * vars.collateralTokenUnit) /
+                (vars.borrowedTokenUnit * collateralPrice).percentMul(vars.liquidationBonus);
+
+            uint256 expectedSupplyOnPoolAfter = supplyOnPoolBefore -
+                amountToSeize.rayDiv(pool.getReserveNormalizedIncome(usdc));
+
+            assertApproxEqAbs(supplyOnPoolAfter, expectedSupplyOnPoolAfter, 1e10);
+        }
+
+        assertEq(borrowOnPoolAfter, 0);
     }
 
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
