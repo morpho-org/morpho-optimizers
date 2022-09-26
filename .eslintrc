@@ -4,10 +4,6 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
-    "prettier"
-  ],
-  "rules": {
-    "semi": ["error", "always"],
-    "quotes": ["error", "single"]
-  }
+    "plugin:prettier/recommended"
+  ]
 }
