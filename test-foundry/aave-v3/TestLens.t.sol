@@ -1536,22 +1536,52 @@ contract TestLens is TestSetup {
     }
 
     function testShouldRevertHypotheticalWithBorrowIfBorrowPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsBorrowPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        hevm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
+        lens.getUserHypotheticalBalanceStates(address(supplier1), aDai, 0, 1e18);
     }
 
     function testShouldRevertHypotheticalWithWithdrawIfWithdrawPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsWithdrawPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        hevm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
+        lens.getUserHypotheticalBalanceStates(address(supplier1), aDai, 1e18, 0);
     }
 
-    function testShouldUseFullCloseFactorIfLiquidatingDeprecated() public {
-        revert TestNotImplemented();
+    function testShouldUseFullCloseFactorIfLiquidatingDeprecatedDebt() public {
+        uint256 amount = 10_000 ether;
+
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) * 2));
+
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(aUsdc, to6Decimals(amount));
+        borrower1.borrow(aDai, amount);
+
+        morpho.setIsDeprecated(aDai, true);
+
+        assertApproxEqAbs(
+            lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
+            amount,
+            1
+        );
     }
 
     function testShouldSetBorrowableToZeroIfBorrowPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsBorrowPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
+        assertEq(borrowable, 0);
     }
 
     function testShouldSetWithdrawableToZeroIfBorrowPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsWithdrawPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        (uint256 withdrawable, ) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
+        assertEq(withdrawable, 0);
     }
 }

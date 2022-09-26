@@ -1567,26 +1567,94 @@ contract TestLens is TestSetup {
     }
 
     function testShouldRevertHypotheticalWithBorrowIfBorrowPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsBorrowPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        hevm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
+        lens.getUserHypotheticalBalanceStates(address(supplier1), aDai, 0, 1e18);
     }
 
     function testShouldRevertHypotheticalWithWithdrawIfWithdrawPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsWithdrawPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        hevm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
+        lens.getUserHypotheticalBalanceStates(address(supplier1), aDai, 1e18, 0);
     }
 
-    function testShouldUseFullCloseFactorIfLiquidatingDeprecated() public {
-        revert TestNotImplemented();
+    function testShouldUseFullCloseFactorIfLiquidatingDeprecatedDebt() public {
+        uint256 amount = 10_000 ether;
+
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) * 2));
+
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(aUsdc, to6Decimals(amount));
+        borrower1.borrow(aDai, amount);
+
+        morpho.setIsDeprecated(aDai, true);
+
+        assertApproxEqAbs(
+            lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
+            amount,
+            1
+        );
     }
 
     function testShouldSetBorrowableToZeroIfBorrowPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsBorrowPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
+        assertEq(borrowable, 0);
     }
 
     function testShouldSetWithdrawableToZeroIfBorrowPaused() public {
-        revert TestNotImplemented();
+        morpho.setIsWithdrawPaused(aDai, true);
+        supplier1.approve(dai, 10e18);
+        supplier1.supply(aDai, 10e18);
+        (uint256 withdrawable, ) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
+        assertEq(withdrawable, 0);
     }
 
     function testBalanceShouldBeReflectedWhenStethSlashed() public {
-        revert TestNotImplemented();
+        createMarket(aStEth);
+
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+
+        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, totalBalance);
+
+        (uint256 p2pBalanceBefore, uint256 poolBalanceBefore, ) = lens.getCurrentSupplyBalanceInOf(
+            aStEth,
+            address(supplier1)
+        );
+
+        // Update the beacon balance to slash.
+        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
+        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        vm.store(stEth, keccak256("lido.Lido.beaconBalance"), bytes32(beaconBalanceBefore / 10));
+        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        assertEq(beaconBalanceBefore / 10, beaconBalanceAfter);
+
+        (uint256 p2pBalanceAfter, uint256 poolBalanceAfter, ) = lens.getCurrentSupplyBalanceInOf(
+            aStEth,
+            address(supplier1)
+        );
+        assertEq(p2pBalanceBefore, 0, "P2P balance before");
+        assertEq(p2pBalanceAfter, 0, "P2P balance after");
+        assertApproxEqAbs(poolBalanceBefore, totalBalance, 1, "pool balance before");
+        // Not exact because the total assets of stEth includes other variables
+        assertApproxEqAbs(
+            poolBalanceAfter,
+            totalBalance / 10,
+            totalBalance / 50,
+            "pool balance before"
+        );
     }
 }
