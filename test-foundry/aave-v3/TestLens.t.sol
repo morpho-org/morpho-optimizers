@@ -8,8 +8,6 @@ contract TestLens is TestSetup {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    error TestNotImplemented();
-
     struct UserBalanceStates {
         uint256 collateral;
         uint256 debt;

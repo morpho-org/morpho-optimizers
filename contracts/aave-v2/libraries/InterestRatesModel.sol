@@ -14,11 +14,6 @@ library InterestRatesModel {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    /// ERRORS ///
-
-    // Thrown when percentage is above 100%.
-    error PercentageTooHigh();
-
     /// STRUCTS ///
 
     struct P2PRateComputeParams {
@@ -164,9 +159,9 @@ library InterestRatesModel {
         );
     }
 
-    /// @notice Computes and returns the peer-to-peer supply rate per year of a market given its parameters.
+    /// @notice Computes and returns the peer-to-peer rate per year of a market given its parameters accounting for delta.
     /// @param _params The computation parameters.
-    /// @return p2pSupplyRate The peer-to-peer supply rate per year (in ray).
+    /// @return p2pRate The peer-to-peer rate per year (in ray).
     function computeP2PRatePerYear(P2PRateComputeParams memory _params, uint256 p2pRate)
         internal
         pure

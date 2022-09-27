@@ -144,7 +144,7 @@ abstract contract UsersLens is IndexesLens {
 
         uint256 closeFactor = morpho.market(_poolTokenBorrowedAddress).isDeprecated
             ? PercentageMath.PERCENTAGE_FACTOR
-            : DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+            : PercentageMath.HALF_PERCENTAGE_FACTOR;
 
         return
             Math.min(
