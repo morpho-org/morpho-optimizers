@@ -1,6 +1,8 @@
 # Morpho Core Protocol V1
 
-[![Test](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry.yml)
+[![Morpho-Compound](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
+[![Morpho-AaveV2](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
+[![Morpho-AaveV3](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v3.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v3.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
