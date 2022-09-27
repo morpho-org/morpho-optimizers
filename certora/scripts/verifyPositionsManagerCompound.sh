@@ -19,7 +19,7 @@ certoraRun \
     --link PositionsManagerHarness:comptroller=SymbolicComptroller \
     --link PositionsManagerHarness:interestRatesManager=InterestRatesManager \
     --verify PositionsManagerHarness:certora/spec/PositionsManagerCompound.spec \
-    --solc solc \
+    --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
     --settings -t=60\
