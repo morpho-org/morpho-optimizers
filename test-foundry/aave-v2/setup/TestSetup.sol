@@ -55,6 +55,9 @@ contract TestSetup is Config, Utils {
     address[] public pools;
 
     function setUp() public {
+        string memory endpoint = vm.envString("FOUNDRY_ETH_RPC_URL");
+        forkId = vm.createFork(endpoint);
+        vm.selectFork(forkId);
         initContracts();
         setContractsLabels();
         initUsers();
@@ -63,6 +66,8 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
+
+    function setFork() internal {}
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();
