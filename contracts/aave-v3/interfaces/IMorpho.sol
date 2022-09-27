@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "./aave/IPool.sol";
@@ -21,8 +21,9 @@ interface IMorpho {
     function MAX_BASIS_POINTS() external view returns(uint16);
     function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns(uint16);
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns(uint256);
-    function BORROWING_MASK() external view returns(uint256);
     function MAX_NB_OF_MARKETS() external view returns(uint256);
+    function BORROWING_MASK() external view returns(bytes32);
+    function ONE() external view returns(bytes32);
 
     function isClaimRewardsPaused() external view returns (bool);
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
@@ -30,7 +31,6 @@ interface IMorpho {
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
     function deltas(address) external view returns (Types.Delta memory);
-    function marketsCreated(uint256) external view returns (address);
     function market(address) external view returns (Types.Market memory);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
@@ -64,13 +64,13 @@ interface IMorpho {
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
-    function setP2PDisabledStatus(address _poolToken, bool _isP2PDisabled) external;
+    function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled) external;
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
-    function setPauseStatusForAllMarkets(bool _newStatus) external;
-    function setClaimRewardsPauseStatus(bool _newStatus) external;
-    function setPauseStatus(address _poolToken, bool _newStatus) external;
-    function setPartialPauseStatus(address _poolToken, bool _newStatus) external;
+    function setIsPausedForAllMarkets(bool _isPaused) external;
+    function setIsClaimRewardsPaused(bool _isPaused) external;
+    function setPauseStatus(address _poolToken, bool _isPaused) external;
+    function setPartialPauseStatus(address _poolToken, bool _isPaused) external;
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
@@ -79,11 +79,14 @@ interface IMorpho {
 
     /// USERS ///
 
+    function supply(address _poolToken, uint256 _amount) external;
     function supply(address _poolToken, address _onBehalf, uint256 _amount) external;
     function supply(address _poolToken, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) external;
     function borrow(address _poolToken, uint256 _amount) external;
     function borrow(address _poolToken, uint256 _amount, uint256 _maxGasForMatching) external;
     function withdraw(address _poolToken, uint256 _amount) external;
+    function withdraw(address _poolToken, uint256 _amount, address _receiver) external;
+    function repay(address _poolToken, uint256 _amount) external;
     function repay(address _poolToken, address _onBehalf, uint256 _amount) external;
     function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external;
     function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);

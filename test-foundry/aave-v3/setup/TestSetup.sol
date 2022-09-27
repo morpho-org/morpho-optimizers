@@ -3,13 +3,13 @@ pragma solidity 0.8.10;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
-import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "@contracts/aave-v3/interfaces/aave/IPool.sol";
 import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
 import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v3/interfaces/IMorpho.sol";
+import "../helpers/IVariableDebtTokenExtended.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -290,7 +290,9 @@ contract TestSetup is Config, Utils {
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolToken);
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , , , , , ) = morpho.market(
+            _poolToken
+        );
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

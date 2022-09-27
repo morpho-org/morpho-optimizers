@@ -14,6 +14,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using MarketLib for Types.Market;
     using WadRayMath for uint256;
     using Math for uint256;
 
@@ -57,6 +58,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
 
+    /// @notice Thrown when the supply is paused.
+    error SupplyPaused();
+
+    /// @notice Thrown when the borrow is paused.
+    error BorrowPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -91,6 +98,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreatedMemory()) revert MarketNotCreated();
+        if (market.isSupplyPaused) revert SupplyPaused();
         _updateIndexes(_poolToken);
 
         SupplyVars memory vars;
@@ -98,7 +108,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
             _setSupplying(_onBehalf, vars.borrowMask, true);
 
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
@@ -125,7 +135,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
-            !market[_poolToken].isP2PDisabled &&
+            !market.isP2PDisabled &&
             borrowersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchBorrowers(
@@ -134,18 +144,20 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            if (matched > 0) {
-                vars.toRepay += matched;
-                vars.remainingToSupply -= matched;
-                delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
-            }
+            vars.toRepay += matched;
+            vars.remainingToSupply -= matched;
+            delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
         }
+
+        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
+            _onBehalf
+        ];
 
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
 
             delta.p2pSupplyAmount += toAddInP2P;
-            supplyBalanceInOf[_poolToken][_onBehalf].inP2P += toAddInP2P;
+            supplierSupplyBalance.inP2P += toAddInP2P;
             _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -155,7 +167,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
-            supplyBalanceInOf[_poolToken][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
+            supplierSupplyBalance.onPool += vars.remainingToSupply.rayDiv(
                 poolIndexes[_poolToken].poolSupplyIndex
             ); // In scaled balance.
             _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
@@ -168,8 +180,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             _onBehalf,
             _poolToken,
             _amount,
-            supplyBalanceInOf[_poolToken][_onBehalf].onPool,
-            supplyBalanceInOf[_poolToken][_onBehalf].inP2P
+            supplierSupplyBalance.onPool,
+            supplierSupplyBalance.inP2P
         );
     }
 
@@ -183,16 +195,16 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreatedMemory()) revert MarketNotCreated();
+        if (market.isBorrowPaused) revert BorrowPaused();
 
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolToken);
-
-        bytes32 borrowMask = borrowMask[_poolToken];
-        if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
-            _setBorrowing(msg.sender, borrowMask, true);
+        _setBorrowing(msg.sender, borrowMask[_poolToken], true);
 
         if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
@@ -221,7 +233,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
-            !market[_poolToken].isP2PDisabled &&
+            !market.isP2PDisabled &&
             suppliersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchSuppliers(
@@ -230,18 +242,20 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            if (matched > 0) {
-                toWithdraw += matched;
-                remainingToBorrow -= matched;
-                deltas[_poolToken].p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
-            }
+            toWithdraw += matched;
+            remainingToBorrow -= matched;
+            delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
         }
+
+        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
+            msg.sender
+        ];
 
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
-            deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
-            borrowBalanceInOf[_poolToken][msg.sender].inP2P += toAddInP2P;
+            delta.p2pBorrowAmount += toAddInP2P;
+            borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _withdrawFromPool(underlyingToken, _poolToken, toWithdraw); // Reverts on error.
@@ -251,7 +265,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         // Borrow on pool.
         if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolToken][msg.sender].onPool += remainingToBorrow.rayDiv(
+            borrowerBorrowBalance.onPool += remainingToBorrow.rayDiv(
                 poolIndexes[_poolToken].poolBorrowIndex
             ); // In adUnit.
             _borrowFromPool(underlyingToken, remainingToBorrow);
@@ -264,8 +278,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             msg.sender,
             _poolToken,
             _amount,
-            borrowBalanceInOf[_poolToken][msg.sender].onPool,
-            borrowBalanceInOf[_poolToken][msg.sender].inP2P
+            borrowerBorrowBalance.onPool,
+            borrowerBorrowBalance.inP2P
         );
     }
 

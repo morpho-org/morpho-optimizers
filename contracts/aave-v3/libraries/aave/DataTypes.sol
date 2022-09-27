@@ -23,4 +23,8 @@ library DataTypes {
     struct ReserveConfigurationMap {
         uint256 data;
     }
+
+    struct UserConfigurationMap {
+        uint256 data;
+    }
 }

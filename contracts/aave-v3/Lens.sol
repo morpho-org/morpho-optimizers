@@ -7,11 +7,11 @@ import {IPool} from "./interfaces/aave/IPool.sol";
 import "./interfaces/IMorpho.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
-import {PercentageMath} from "@morpho-labs/morpho-utils/math/PercentageMath.sol";
-import {WadRayMath} from "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import {WadRayMath} from "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-labs/data-structures/contracts/HeapOrdering.sol";
-import "@morpho-labs/morpho-utils/math/Math.sol";
+import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
+import "@morpho-dao/morpho-utils/math/Math.sol";
 
 /// @title Lens.
 /// @author Morpho Labs.
@@ -20,6 +20,7 @@ import "@morpho-labs/morpho-utils/math/Math.sol";
 contract Lens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
+    using MarketLib for Types.Market;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
     using Math for uint256;
@@ -67,7 +68,7 @@ contract Lens {
     /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolToken) external view returns (bool) {
-        return morpho.market(_poolToken).isCreated;
+        return morpho.market(_poolToken).isCreatedMemory();
     }
 
     /// @notice Checks if a market is created and not paused.
@@ -75,19 +76,14 @@ contract Lens {
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused;
-    }
-
-    /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool)
-    {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
+        return
+            morpho.market(_poolToken).isCreatedMemory() &&
+            (!market.isSupplyPaused ||
+                !market.isBorrowPaused ||
+                !market.isWithdrawPaused ||
+                !market.isRepayPaused ||
+                !market.isLiquidateCollateralPaused ||
+                !market.isLiquidateBorrowPaused);
     }
 
     /// @notice Returns the current balance state of the user.
@@ -151,11 +147,11 @@ contract Lens {
         address underlyingToken = morpho.market(_poolToken).underlyingToken;
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In base currency in wad.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
         .getConfiguration(underlyingToken)
         .getParams();
 
-        assetData.tokenUnit = 10**assetData.reserveDecimals;
+        assetData.tokenUnit = 10**assetData.decimals;
         assetData.debt =
             (_getUserBorrowBalanceInOf(_poolToken, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;
@@ -403,10 +399,16 @@ contract Lens {
         )
     {
         Types.Market memory market = morpho.market(_poolToken);
-        isCreated_ = market.isCreated;
+        isCreated_ = morpho.market(_poolToken).isCreatedMemory();
         isP2PDisabled_ = market.isP2PDisabled;
-        isPaused_ = market.isPaused;
-        isPartiallyPaused_ = market.isPartiallyPaused;
+        isPaused_ =
+            market.isSupplyPaused &&
+            market.isBorrowPaused &&
+            market.isWithdrawPaused &&
+            market.isRepayPaused &&
+            market.isLiquidateCollateralPaused &&
+            market.isLiquidateBorrowPaused;
+        isPartiallyPaused_ = market.isSupplyPaused && market.isBorrowPaused;
         reserveFactor_ = market.reserveFactor;
     }
 

@@ -56,7 +56,7 @@ contract User is Test {
 
     function supply(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
-        morpho.supply(_poolToken, address(this), _amount);
+        morpho.supply(_poolToken, _amount);
     }
 
     function supply(
@@ -66,10 +66,6 @@ contract User is Test {
     ) external {
         hevm.warp(block.timestamp + tm);
         morpho.supply(_poolToken, address(this), _amount, _maxGasForMatching);
-    }
-
-    function withdraw(address _poolToken, uint256 _amount) external {
-        morpho.withdraw(_poolToken, _amount);
     }
 
     function borrow(address _poolToken, uint256 _amount) external {
@@ -84,9 +80,21 @@ contract User is Test {
         morpho.borrow(_poolToken, _amount, _maxGasForMatching);
     }
 
+    function withdraw(address _poolToken, uint256 _amount) external {
+        morpho.withdraw(_poolToken, _amount);
+    }
+
+    function withdraw(
+        address _poolToken,
+        uint256 _amount,
+        address _receiver
+    ) external {
+        morpho.withdraw(_poolToken, _amount, _receiver);
+    }
+
     function repay(address _poolToken, uint256 _amount) external {
         hevm.warp(block.timestamp + tm);
-        morpho.repay(_poolToken, address(this), _amount);
+        morpho.repay(_poolToken, _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
@@ -130,15 +138,31 @@ contract User is Test {
         return morpho.claimRewards(_assets, _tradeForMorphoToken);
     }
 
-    function setPauseStatus(address _marketAddress, bool _newStatus) external {
-        morpho.setPauseStatus(_marketAddress, _newStatus);
-    }
-
-    function setPartialPauseStatus(address _poolToken, bool _newStatus) external {
-        morpho.setPartialPauseStatus(_poolToken, _newStatus);
-    }
-
     function setTreasuryVault(address _newTreasuryVault) external {
         morpho.setTreasuryVault(_newTreasuryVault);
+    }
+
+    function setIsSupplyPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsSupplyPaused(_poolToken, _isPaused);
+    }
+
+    function setIsBorrowPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsBorrowPaused(_poolToken, _isPaused);
+    }
+
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsWithdrawPaused(_poolToken, _isPaused);
+    }
+
+    function setIsRepayPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsRepayPaused(_poolToken, _isPaused);
+    }
+
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsLiquidateCollateralPaused(_poolToken, _isPaused);
+    }
+
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external {
+        morpho.setIsLiquidateBorrowPaused(_poolToken, _isPaused);
     }
 }

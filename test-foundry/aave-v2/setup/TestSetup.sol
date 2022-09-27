@@ -2,20 +2,14 @@
 pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
-import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
 import "@contracts/aave-v2/interfaces/IMorpho.sol";
-
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@contracts/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
@@ -26,7 +20,6 @@ import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
-import {Lens} from "@contracts/aave-v2/Lens.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -42,32 +35,10 @@ import "@forge-std/console.sol";
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
-
-    ProxyAdmin public proxyAdmin;
-    TransparentUpgradeableProxy public morphoProxy;
-    TransparentUpgradeableProxy internal rewardsManagerProxy;
-
-    Morpho public morphoImplV1;
-    IRewardsManager internal rewardsManagerImplV1;
-
-    Lens public lens;
-    Morpho public morpho;
-    IEntryPositionsManager public entryPositionsManager;
-    IExitPositionsManager public exitPositionsManager;
-    IInterestRatesManager public interestRatesManager;
-    IncentivesVault public incentivesVault;
-    IRewardsManager internal rewardsManager;
-
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
     DumbOracle internal dumbOracle;
     MorphoToken public morphoToken;
-    ILendingPoolAddressesProvider public poolAddressesProvider;
-    IPriceOracleGetter public oracle;
-    ILendingPool public pool;
 
     User public treasuryVault;
 
@@ -94,22 +65,13 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
-
-        poolAddressesProvider = ILendingPoolAddressesProvider(poolAddressesProviderAddress);
-        pool = ILendingPool(poolAddressesProvider.getLendingPool());
+        interestRatesManager = new InterestRatesManager();
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
         morphoProxy = new TransparentUpgradeableProxy(
@@ -122,22 +84,16 @@ contract TestSetup is Config, Utils {
             entryPositionsManager,
             exitPositionsManager,
             interestRatesManager,
-            ILendingPoolAddressesProvider(poolAddressesProviderAddress),
-            defaultMaxGasForMatching,
+            poolAddressesProvider,
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6}),
             20
         );
 
-        lens = new Lens(address(morpho), poolAddressesProvider);
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
-        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
-        if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
-            rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            rewardsManagerImplV1 = new RewardsManagerOnPolygon();
-        }
-
+        rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
         rewardsManagerProxy = new TransparentUpgradeableProxy(
             address(rewardsManagerImplV1),
             address(proxyAdmin),
@@ -163,15 +119,18 @@ contract TestSetup is Config, Utils {
         incentivesVault = new IncentivesVault(
             IMorpho(address(morpho)),
             morphoToken,
-            ERC20(IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN()),
-            address(1),
+            ERC20(REWARD_TOKEN),
+            address(treasuryVault),
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
-
-        oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
-        morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);
+
+        morpho.setRewardsManager(rewardsManager);
+
+        lensImplV1 = new Lens(address(morpho));
+        lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
+        lens = Lens(address(lensProxy));
     }
 
     function createMarket(address _aToken) internal {
@@ -218,13 +177,14 @@ contract TestSetup is Config, Utils {
         deal(wEth, address(_user), INITIAL_BALANCE * WAD);
         deal(usdt, address(_user), INITIAL_BALANCE * 1e6);
         deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
+        deal(wbtc, address(_user), INITIAL_BALANCE * 1e8);
     }
 
     function setContractsLabels() internal {
         hevm.label(address(morpho), "Morpho");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
+        hevm.label(address(aaveIncentivesController), "AaveIncentivesController");
         hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
         hevm.label(address(pool), "Pool");
         hevm.label(address(oracle), "AaveOracle");
@@ -260,7 +220,7 @@ contract TestSetup is Config, Utils {
         return customOracle;
     }
 
-    function setDefaultMaxGasForMatchingHelper(
+    function _setDefaultMaxGasForMatching(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,
@@ -297,7 +257,9 @@ contract TestSetup is Config, Utils {
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolToken);
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , , , , , ) = morpho.market(
+            _poolToken
+        );
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

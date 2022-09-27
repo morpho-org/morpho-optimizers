@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
@@ -26,7 +26,7 @@ import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
-import {Lens} from "@contracts/aave-v2/Lens.sol";
+import {Lens} from "@contracts/aave-v2/lens/Lens.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
 import "../../../common/helpers/MorphoToken.sol";
@@ -258,7 +258,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         return customOracle;
     }
 
-    function setDefaultMaxGasForMatchingHelper(
+    function _setDefaultMaxGasForMatching(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,

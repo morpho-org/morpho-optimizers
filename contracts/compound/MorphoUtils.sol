@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./libraries/CompoundMath.sol";
-import "@morpho-labs/morpho-utils/DelegateCall.sol";
+import "@morpho-dao/morpho-utils/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
 
@@ -25,33 +25,12 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
-    /// @notice Thrown when the market is paused.
-    error MarketPaused();
-
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        _;
-    }
-
-    /// @notice Prevents a user to trigger a function when market is not created or paused.
-    /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolToken) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolToken];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused) revert MarketPaused();
-        _;
-    }
-
-    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
-    /// @param _poolToken The address of the market to check.
-    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
-        Types.MarketStatus memory marketStatus_ = marketStatus[_poolToken];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
         _;
     }
 

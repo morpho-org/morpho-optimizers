@@ -680,13 +680,23 @@ contract TestLens is TestSetup {
         ) = lens.getMarketConfiguration(cDai);
         assertTrue(underlying == ICToken(cDai).underlying());
 
-        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
+        (
+            bool isCreated_,
+            bool isSupplyPaused_,
+            bool isBorrowPaused_,
+            bool isWithdrawPaused_,
+            bool isRepayPaused_,
+            ,
+            ,
+
+        ) = morpho.marketStatus(cDai);
 
         assertTrue(isCreated == isCreated_);
         assertTrue(p2pDisabled == morpho.p2pDisabled(cDai));
-
-        assertTrue(isPaused == isPaused_);
-        assertTrue(isPartiallyPaused == isPartiallyPaused_);
+        assertTrue(
+            isPaused == (isSupplyPaused_ && isBorrowPaused_ && isWithdrawPaused_ && isRepayPaused_)
+        );
+        assertTrue(isPartiallyPaused == (isSupplyPaused_ && isBorrowPaused_));
         (uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor) = morpho.marketParameters(
             cDai
         );
@@ -815,25 +825,6 @@ contract TestLens is TestSetup {
         for (uint256 i; i < lensEnteredMarkets.length; i++) {
             assertEq(morphoEnteredMarkets[i], lensEnteredMarkets[i]);
         }
-    }
-
-    function testGetRatesPerBlock() public {
-        hevm.roll(block.number + 1_000);
-        (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
-        ) = lens.getRatesPerBlock(cDai);
-
-        (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(cDai);
-        uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
-        uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
-
-        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
-        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
-        assertEq(poolSupplyRate, expectedPoolSupplyRate);
-        assertEq(poolBorrowRate, expectedPoolBorrowRate);
     }
 
     function testIsLiquidatableFalse() public {

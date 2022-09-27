@@ -106,7 +106,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             repay: 3e6
         });
 
-        comptroller = IComptroller(comptrollerAddress);
         interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
@@ -158,7 +157,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         createMarket(cYfi);
         createMarket(cUsdp);
         createMarket(cSushi);
-        // createMarket(cWbtc); // Mint is paused on compound
+        // createMarket(cWbtc2); // Mint is paused on compound
 
         hevm.roll(block.number + 1);
 

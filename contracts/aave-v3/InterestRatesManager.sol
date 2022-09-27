@@ -3,9 +3,9 @@ pragma solidity 0.8.10;
 
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "@morpho-labs/morpho-utils/math/PercentageMath.sol";
-import "@morpho-labs/morpho-utils/math/WadRayMath.sol";
-import "@morpho-labs/morpho-utils/math/Math.sol";
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
+import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import "./MorphoStorage.sol";
 
@@ -55,42 +55,42 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     function updateIndexes(address _poolToken) external {
         Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolToken];
 
-        if (block.timestamp > marketPoolIndexes.lastUpdateTimestamp) {
-            Types.Market storage market = market[_poolToken];
+        if (block.timestamp == marketPoolIndexes.lastUpdateTimestamp) return;
 
-            address underlyingToken = market.underlyingToken;
-            uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
-            uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+        Types.Market storage market = market[_poolToken];
 
-            Params memory params = Params(
-                p2pSupplyIndex[_poolToken],
-                p2pBorrowIndex[_poolToken],
-                newPoolSupplyIndex,
-                newPoolBorrowIndex,
-                marketPoolIndexes.poolSupplyIndex,
-                marketPoolIndexes.poolBorrowIndex,
-                market.reserveFactor,
-                market.p2pIndexCursor,
-                deltas[_poolToken]
-            );
+        address underlyingToken = market.underlyingToken;
+        uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+        uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
-            (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
+        Params memory params = Params(
+            p2pSupplyIndex[_poolToken],
+            p2pBorrowIndex[_poolToken],
+            newPoolSupplyIndex,
+            newPoolBorrowIndex,
+            marketPoolIndexes.poolSupplyIndex,
+            marketPoolIndexes.poolBorrowIndex,
+            market.reserveFactor,
+            market.p2pIndexCursor,
+            deltas[_poolToken]
+        );
 
-            p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
-            p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
 
-            marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
-            marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
+        p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
+        p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
 
-            emit P2PIndexesUpdated(
-                _poolToken,
-                newP2PSupplyIndex,
-                newP2PBorrowIndex,
-                newPoolSupplyIndex,
-                newPoolBorrowIndex
-            );
-        }
+        marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
+        marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
+        marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
+
+        emit P2PIndexesUpdated(
+            _poolToken,
+            newP2PSupplyIndex,
+            newP2PBorrowIndex,
+            newPoolSupplyIndex,
+            newPoolBorrowIndex
+        );
     }
 
     /// INTERNAL ///
@@ -115,13 +115,24 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         // Compute peer-to-peer growth factors.
 
-        uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
-            MAX_BASIS_POINTS - _params.p2pIndexCursor
-        ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
-        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
-            _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
-        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
-            _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
+        uint256 p2pSupplyGrowthFactor;
+        uint256 p2pBorrowGrowthFactor;
+        if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
+            uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
+                MAX_BASIS_POINTS - _params.p2pIndexCursor
+            ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
+            p2pSupplyGrowthFactor =
+                p2pGrowthFactor -
+                _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
+            p2pBorrowGrowthFactor =
+                p2pGrowthFactor +
+                _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
+        } else {
+            // The case poolSupplyGrowthFactor > poolBorrowGrowthFactor happens because someone has done a flashloan on Aave:
+            // the peer-to-peer growth factors are set to the pool borrow growth factor.
+            p2pSupplyGrowthFactor = poolBorrowGrowthFactor;
+            p2pBorrowGrowthFactor = poolBorrowGrowthFactor;
+        }
 
         // Compute new peer-to-peer supply index.
 

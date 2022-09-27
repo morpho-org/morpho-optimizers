@@ -8,7 +8,7 @@ import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 
-import "@morpho-labs/data-structures/contracts/HeapOrdering.sol";
+import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -48,7 +48,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// MARKETS STORAGE ///
 
-    address[] public marketsCreated; // Keeps track of the created markets.
+    address[] internal marketsCreated; // Keeps track of the created markets.
     mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
     mapping(address => Types.PoolIndexes) public poolIndexes; // Last pool index stored.
@@ -58,8 +58,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// CONTRACTS AND ADDRESSES ///
 
-    IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
+    IAaveIncentivesController public aaveIncentivesController;
     ILendingPool public pool;
 
     IEntryPositionsManager public entryPositionsManager;

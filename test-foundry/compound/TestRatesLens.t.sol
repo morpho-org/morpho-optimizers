@@ -6,6 +6,25 @@ import "./setup/TestSetup.sol";
 contract TestRatesLens is TestSetup {
     using CompoundMath for uint256;
 
+    function testGetRatesPerBlock() public {
+        hevm.roll(block.number + 1_000);
+        (
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
+        ) = lens.getRatesPerBlock(cDai);
+
+        (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(cDai);
+        uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
+        uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
+
+        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
+        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
+        assertEq(poolSupplyRate, expectedPoolSupplyRate);
+        assertEq(poolBorrowRate, expectedPoolBorrowRate);
+    }
+
     function testSupplyRateShouldEqual0WhenNoSupply() public {
         uint256 supplyRatePerBlock = lens.getCurrentUserSupplyRatePerBlock(
             cDai,
@@ -482,7 +501,7 @@ contract TestRatesLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        morpho.setP2PDisabled(cDai, true);
+        morpho.setIsP2PDisabled(cDai, true);
 
         (
             uint256 supplyRatePerBlock,
@@ -521,7 +540,7 @@ contract TestRatesLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        morpho.setP2PDisabled(cDai, true);
+        morpho.setIsP2PDisabled(cDai, true);
 
         (
             uint256 borrowRatePerBlock,

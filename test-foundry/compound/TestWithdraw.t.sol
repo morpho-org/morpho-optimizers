@@ -390,7 +390,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1e6, 3e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 9e5, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -551,7 +551,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1e6, 3e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 9e5, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -705,7 +705,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(cEth, 10 * amount);
         borrower1.borrow(cDai, 10 * amount);
 
-        morpho.setP2PDisabled(cDai, true);
+        morpho.setIsP2PDisabled(cDai, true);
 
         supplier1.withdraw(cDai, amount);
         supplier1.withdraw(cDai, amount);
@@ -732,5 +732,33 @@ contract TestWithdraw is TestSetup {
         ERC20(usdc).transfer(cUsdc, 200e6);
 
         supplier1.withdraw(cUsdc, type(uint256).max);
+    }
+
+    function testShouldBeAbleToWithdrawAfterDelayWhenPartiallyMatched() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount / 2);
+
+        hevm.roll(block.number + 100);
+
+        supplier1.withdraw(cDai, type(uint256).max);
+    }
+
+    function testShouldWithdrawToReceiver() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, 2 * amount);
+        supplier1.supply(cDai, 2 * amount);
+
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier2));
+
+        supplier1.withdraw(cDai, amount, address(supplier2));
+
+        assertEq(ERC20(dai).balanceOf(address(supplier2)), balanceBefore + amount);
     }
 }

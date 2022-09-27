@@ -89,7 +89,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -142,7 +142,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -231,5 +231,22 @@ contract TestBorrow is TestSetup {
 
         hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
+    }
+
+    function testShouldNotBorrowWithDisabledCollateral() public {
+        uint256 amount = 100 ether;
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, amount * 10);
+
+        // Give morpho enough of a position size
+        supplier1.approve(usdc, to6Decimals(amount));
+        supplier1.supply(aUsdc, to6Decimals(amount));
+
+        // Cannot disable collateral without some underlying balance that Morpho has
+        morpho.setAssetAsCollateral(aDai, false);
+
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(aUsdc, to6Decimals(amount));
     }
 }

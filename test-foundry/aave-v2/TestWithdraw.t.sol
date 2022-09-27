@@ -135,7 +135,7 @@ contract TestWithdraw is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1);
 
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -292,7 +292,7 @@ contract TestWithdraw is TestSetup {
         // TODO: fix that.
         deal(dai, address(morpho), 1 ether);
 
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -397,8 +397,8 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdraw() public {
-        // 1.3e6 allows only 10 unmatch borrowers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
+        // Allows only 10 unmatch borrowers
+        _setDefaultMaxGasForMatching(3e6, 3e6, 1.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -558,8 +558,8 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdrawAll() public {
-        // 1.3e6 allows only 10 unmatch borrowers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 2.6e6, 3e6);
+        // Allows only 10 unmatch borrowers
+        _setDefaultMaxGasForMatching(3e6, 3e6, 2.6e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -653,7 +653,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aWeth, 10 * amount);
         borrower1.borrow(aDai, 10 * amount);
 
-        morpho.setPauseStatus(aDai, true);
+        morpho.setIsWithdrawPaused(aDai, true);
 
         supplier1.withdraw(aDai, amount);
         supplier1.withdraw(aDai, amount);
@@ -667,5 +667,18 @@ contract TestWithdraw is TestSetup {
         supplier1.withdraw(aDai, amount);
 
         assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
+    }
+
+    function testShouldWithdrawToReceiver() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, 2 * amount);
+        supplier1.supply(aDai, 2 * amount);
+
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier2));
+
+        supplier1.withdraw(aDai, amount, address(supplier2));
+
+        assertEq(ERC20(dai).balanceOf(address(supplier2)), balanceBefore + amount);
     }
 }

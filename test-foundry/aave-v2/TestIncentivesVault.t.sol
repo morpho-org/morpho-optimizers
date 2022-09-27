@@ -1,50 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave-v2/interfaces/IOracle.sol";
+import "./setup/TestSetup.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-
-import "@contracts/aave-v2/IncentivesVault.sol";
-import "../common/helpers/MorphoToken.sol";
-import "./helpers/DumbOracle.sol";
-import "@config/Config.sol";
-import "@forge-std/Test.sol";
-
-contract TestIncentivesVault is Test, Config {
+contract TestIncentivesVault is TestSetup {
     using SafeTransferLib for ERC20;
 
-    Vm public hevm = Vm(HEVM_ADDRESS);
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
-    address public morphoDao = address(1);
-    address public morpho = address(3);
-    IncentivesVault public incentivesVault;
-    MorphoToken public morphoToken;
-    DumbOracle public dumbOracle;
-
-    function setUp() public {
-        morphoToken = new MorphoToken(address(this));
-        dumbOracle = new DumbOracle();
-
-        incentivesVault = new IncentivesVault(
-            IMorpho(address(morpho)),
-            morphoToken,
-            ERC20(REWARD_TOKEN),
-            morphoDao,
-            dumbOracle
-        );
-        ERC20(morphoToken).transfer(
-            address(incentivesVault),
-            ERC20(morphoToken).balanceOf(address(this))
-        );
-
-        hevm.label(address(morphoToken), "MORPHO");
-        hevm.label(address(dumbOracle), "DumbOracle");
-        hevm.label(address(incentivesVault), "IncentivesVault");
-        hevm.label(REWARD_TOKEN, "REWARD_TOKEN");
-        hevm.label(morpho, "morpho");
+    function testShouldNotSetBonusAboveMaxBasisPoints() public {
+        uint256 moreThanMaxBasisPoints = PercentageMath.PERCENTAGE_FACTOR + 1;
+        hevm.expectRevert(abi.encodeWithSelector(IncentivesVault.ExceedsMaxBasisPoints.selector));
+        incentivesVault.setBonus(moreThanMaxBasisPoints);
     }
 
     function testOnlyOwnerShouldSetBonus() public {
@@ -58,13 +23,13 @@ contract TestIncentivesVault is Test, Config {
         assertEq(incentivesVault.bonus(), bonusToSet);
     }
 
-    function testOnlyOwnerShouldSetMorphoDao() public {
+    function testOnlyOwnerShouldSetIncentivesTreasuryVault() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        incentivesVault.setMorphoDao(morphoDao);
+        incentivesVault.setIncentivesTreasuryVault(address(treasuryVault));
 
-        incentivesVault.setMorphoDao(morphoDao);
-        assertEq(incentivesVault.morphoDao(), morphoDao);
+        incentivesVault.setIncentivesTreasuryVault(address(treasuryVault));
+        assertEq(incentivesVault.incentivesTreasuryVault(), address(treasuryVault));
     }
 
     function testOnlyOwnerShouldSetOracle() public {
@@ -91,48 +56,48 @@ contract TestIncentivesVault is Test, Config {
     }
 
     function testOnlyOwnerShouldTransferTokensToDao() public {
-        hevm.prank(address(0));
+        hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         incentivesVault.transferTokensToDao(address(morphoToken), 1);
 
         incentivesVault.transferTokensToDao(address(morphoToken), 1);
-        assertEq(ERC20(morphoToken).balanceOf(morphoDao), 1);
+        assertEq(ERC20(morphoToken).balanceOf(address(treasuryVault)), 1);
     }
 
     function testFailWhenContractNotActive() public {
         incentivesVault.setPauseStatus(true);
 
-        hevm.prank(morpho);
+        hevm.prank(address(morphoProxy));
         incentivesVault.tradeRewardTokensForMorphoTokens(address(1), 0);
     }
 
     function testOnlyMorphoShouldTriggerRewardTradeFunction() public {
-        incentivesVault.setMorphoDao(address(1));
+        incentivesVault.setIncentivesTreasuryVault(address(1));
         uint256 amount = 100;
-        deal(REWARD_TOKEN, address(morpho), amount);
+        deal(REWARD_TOKEN, address(morphoProxy), amount);
 
-        hevm.prank(morpho);
+        hevm.prank(address(morphoProxy));
         ERC20(REWARD_TOKEN).safeApprove(address(incentivesVault), amount);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMorpho()"));
         incentivesVault.tradeRewardTokensForMorphoTokens(address(2), amount);
 
-        hevm.prank(morpho);
+        hevm.prank(address(morphoProxy));
         incentivesVault.tradeRewardTokensForMorphoTokens(address(2), amount);
     }
 
     function testShouldGiveTheRightAmountOfRewards() public {
-        incentivesVault.setMorphoDao(address(1));
+        incentivesVault.setIncentivesTreasuryVault(address(1));
         uint256 toApprove = 1_000 ether;
-        deal(REWARD_TOKEN, address(morpho), toApprove);
+        deal(REWARD_TOKEN, address(morphoProxy), toApprove);
 
-        hevm.prank(morpho);
+        hevm.prank(address(morphoProxy));
         ERC20(REWARD_TOKEN).safeApprove(address(incentivesVault), toApprove);
         uint256 amount = 100;
 
         // O% bonus.
         uint256 balanceBefore = ERC20(morphoToken).balanceOf(address(2));
-        hevm.prank(morpho);
+        hevm.prank(address(morphoProxy));
         incentivesVault.tradeRewardTokensForMorphoTokens(address(2), amount);
         uint256 balanceAfter = ERC20(morphoToken).balanceOf(address(2));
         assertEq(balanceAfter - balanceBefore, 100);
@@ -140,7 +105,7 @@ contract TestIncentivesVault is Test, Config {
         // 10% bonus.
         incentivesVault.setBonus(1_000);
         balanceBefore = ERC20(morphoToken).balanceOf(address(2));
-        hevm.prank(morpho);
+        hevm.prank(address(morphoProxy));
         incentivesVault.tradeRewardTokensForMorphoTokens(address(2), amount);
         balanceAfter = ERC20(morphoToken).balanceOf(address(2));
         assertEq(balanceAfter - balanceBefore, 110);

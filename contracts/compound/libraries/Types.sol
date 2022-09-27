@@ -58,7 +58,7 @@ library Types {
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct LastPoolIndexes {
-        uint32 lastUpdateBlockNumber; // The last time the peer-to-peer indexes were updated.
+        uint32 lastUpdateBlockNumber; // The last time the local pool and peer-to-peer indexes were updated.
         uint112 lastSupplyPoolIndex; // Last pool supply index.
         uint112 lastBorrowPoolIndex; // Last pool borrow index.
     }
@@ -70,7 +70,12 @@ library Types {
 
     struct MarketStatus {
         bool isCreated; // Whether or not this market is created.
-        bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-        bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+        bool isSupplyPaused; // Whether the supply is paused or not.
+        bool isBorrowPaused; // Whether the borrow is paused or not
+        bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).
+        bool isRepayPaused; // Whether the repay is paused or not.
+        bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
+        bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
+        bool isDeprecated; // Whether a market is deprecated or not.
     }
 }

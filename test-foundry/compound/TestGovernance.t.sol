@@ -77,7 +77,7 @@ contract TestGovernance is TestSetup {
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
         morpho.createMarket(cAave, marketParams);
 
-        (bool isCreated, , ) = morpho.marketStatus(cAave);
+        (bool isCreated, , , , , , , ) = morpho.marketStatus(cAave);
 
         assertTrue(isCreated);
         assertEq(
@@ -128,12 +128,12 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setP2PDisabled(cDai, true);
+        supplier1.setIsP2PDisabled(cDai, true);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier2.setP2PDisabled(cDai, true);
+        supplier2.setIsP2PDisabled(cDai, true);
 
-        morpho.setP2PDisabled(cDai, true);
+        morpho.setIsP2PDisabled(cDai, true);
         assertTrue(morpho.p2pDisabled(cDai));
     }
 
@@ -172,7 +172,7 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldSetIncentivesVault() public {
         IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            IComptroller(comptrollerAddress),
+            comptroller,
             IMorpho(address(morpho)),
             morphoToken,
             address(1),
@@ -198,12 +198,210 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
-    function testOnlyOwnerCanSetClaimRewardsStatus() public {
+    function testOnlyOwnerCanSetIsClaimRewardsPaused() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
 
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
         assertTrue(morpho.isClaimRewardsPaused());
+    }
+
+    function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsPausedForAllMarkets(true);
+
+        morpho.setIsPausedForAllMarkets(true);
+    }
+
+    function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        morpho.setIsDeprecated(cDai, true);
+
+        (, , , , , , , bool isDeprecated) = morpho.marketStatus(cDai);
+        assertTrue(isDeprecated);
+
+        morpho.setIsDeprecated(cDai, false);
+        (, , , , , , , isDeprecated) = morpho.marketStatus(cDai);
+        assertFalse(isDeprecated);
+    }
+
+    function testOnlyOwnerCanIncreaseP2PDeltas() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.increaseP2PDeltas(cDai, 0);
+
+        morpho.increaseP2PDeltas(cDai, 0);
+    }
+
+    function testShouldIncreaseP2PDeltasWhenMarketNotCreated() public {
+        hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.increaseP2PDeltas(address(1), 0);
+    }
+
+    function testIncreaseP2PDeltas() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 increaseDeltaAmount = 30 ether;
+
+        supplier1.approve(wEth, supplyAmount);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+
+        assertEq(p2pSupplyDelta, increaseDeltaAmount.div(ICToken(cDai).exchangeRateStored()));
+        assertEq(p2pBorrowDelta, increaseDeltaAmount.div(ICToken(cDai).borrowIndex()));
+        assertApproxEqRel(
+            ICToken(cDai).balanceOfUnderlying(address(morpho)),
+            supplyAmount - borrowAmount + increaseDeltaAmount,
+            1e8
+        );
+        assertApproxEqRel(
+            ICToken(cDai).borrowBalanceCurrent(address(morpho)),
+            increaseDeltaAmount,
+            1e8
+        );
+    }
+
+    function testIncreaseP2PDeltasMoreThanWhatIsPossibleSupply() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 deltaAmount = 25 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(wEth, type(uint256).max);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        hevm.roll(block.number + 1);
+        supplier1.repay(cDai, deltaAmount); // Creates a peer-to-peer supply delta.
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+
+        assertApproxEqRel(
+            p2pSupplyDelta,
+            borrowAmount.div(ICToken(cDai).exchangeRateStored()),
+            1e12
+        );
+        assertApproxEqRel(
+            p2pBorrowDelta,
+            (borrowAmount - deltaAmount).div(ICToken(cDai).borrowIndex()),
+            1e12
+        );
+        assertApproxEqRel(ICToken(cDai).balanceOfUnderlying(address(morpho)), supplyAmount, 1e12);
+        assertApproxEqRel(
+            ICToken(cDai).borrowBalanceCurrent(address(morpho)),
+            borrowAmount - deltaAmount,
+            1e12
+        );
+    }
+
+    function testIncreaseP2PDeltasMoreThanWhatIsPossibleBorrow() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 deltaAmount = 25 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(wEth, supplyAmount);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(cDai, supplyAmount - borrowAmount + deltaAmount); // Creates a peer-to-peer borrow delta.
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+
+        (uint256 p2pSupplyDelta, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+
+        assertApproxEqRel(
+            p2pSupplyDelta,
+            (borrowAmount - deltaAmount).div(ICToken(cDai).exchangeRateStored()),
+            1e8
+        );
+        assertApproxEqRel(p2pBorrowDelta, borrowAmount.div(ICToken(cDai).borrowIndex()), 1e8);
+        assertApproxEqRel(ICToken(cDai).balanceOfUnderlying(address(morpho)), deltaAmount, 1e8);
+        assertApproxEqRel(ICToken(cDai).borrowBalanceCurrent(address(morpho)), borrowAmount, 1e8);
+    }
+
+    function testIncreaseP2PDeltasWithMaxBorrowDelta() public {
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 50 ether;
+        uint256 increaseDeltaAmount = 80 ether;
+
+        supplier1.approve(wEth, supplyAmount);
+        supplier1.supply(cEth, supplyAmount);
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(cDai, supplyAmount);
+        supplier1.borrow(cDai, borrowAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        supplier1.withdraw(cDai, type(uint256).max); // Creates a 100% peer-to-peer borrow delta.
+
+        hevm.roll(block.number + 1000);
+
+        morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
+    }
+
+    function testFailCallIncreaseP2PDeltasFromImplementation() public {
+        positionsManager.increaseP2PDeltasLogic(cDai, 0);
+    }
+
+    function testOnlyOwnerShouldDisableSupply() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsSupplyPaused(cDai, true);
+
+        morpho.setIsSupplyPaused(cDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableBorrow() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsBorrowPaused(cDai, true);
+
+        morpho.setIsBorrowPaused(cDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableWithdraw() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsWithdrawPaused(cDai, true);
+
+        morpho.setIsWithdrawPaused(cDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableRepay() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsRepayPaused(cDai, true);
+
+        morpho.setIsRepayPaused(cDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateCollateralPaused(cDai, true);
+
+        morpho.setIsLiquidateCollateralPaused(cDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateBorrowPaused(cDai, true);
+
+        morpho.setIsLiquidateBorrowPaused(cDai, true);
     }
 }

@@ -2,8 +2,11 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
+import "./helpers/FlashLoan.sol";
 
 contract TestSupply is TestSetup {
+    using stdStorage for StdStorage;
+
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply1() public {
         uint256 amount = 10_000 ether;
@@ -39,7 +42,7 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
@@ -70,7 +73,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
 
-        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
@@ -93,7 +96,7 @@ contract TestSupply is TestSetup {
 
     // There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function testSupply4() public {
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -141,7 +144,7 @@ contract TestSupply is TestSetup {
 
     // The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
     function testSupply5() public {
-        setDefaultMaxGasForMatchingHelper(
+        _setDefaultMaxGasForMatching(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -243,5 +246,63 @@ contract TestSupply is TestSetup {
 
         assertApproxEqAbs(onPool, expectedOnPool, 1, "on pool");
         assertEq(inP2P, 0, "in peer-to-peer");
+    }
+
+    function testSupplyAfterFlashloan() public {
+        uint256 amount = 1_000 ether;
+        uint256 flashLoanAmount = 10_000 ether;
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, amount);
+
+        FlashLoan flashLoan = new FlashLoan(pool);
+        vm.prank(address(supplier2));
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        flashLoan.callFlashLoan(dai, flashLoanAmount);
+
+        vm.warp(block.timestamp + 1);
+        supplier1.supply(aDai, amount);
+    }
+
+    function testAStakedEthShouldAccrueInterest() public {
+        createMarket(aStEth);
+
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+
+        // Handle roundings.
+        vm.prank(address(supplier1));
+        ERC20(stEth).transfer(address(morpho), 100);
+
+        uint256 deposited = totalBalance / 2;
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, deposited);
+
+        // Update the beacon balance to accrue rewards on the stETH token.
+        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
+        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        vm.store(
+            stEth,
+            keccak256("lido.Lido.beaconBalance"),
+            bytes32(beaconBalanceBefore + 10_000 ether)
+        );
+        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        assertGt(beaconBalanceAfter, beaconBalanceBefore);
+
+        // Update timestamp to update indexes.
+        vm.warp(block.timestamp + 1);
+
+        uint256 balanceBeforeWithdraw = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 aTokenBalance = ERC20(aStEth).balanceOf(address(morpho));
+        supplier1.withdraw(aStEth, type(uint256).max);
+        uint256 balanceAfterWithdraw = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 withdrawn = balanceAfterWithdraw - balanceBeforeWithdraw;
+
+        // Rewards should accrue on stETH even if there's is no supply interest rate on Aave.
+        assertGt(withdrawn, deposited);
+        assertApproxEqAbs(withdrawn, aTokenBalance, 1);
     }
 }
