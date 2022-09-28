@@ -19,6 +19,8 @@ import {Morpho} from "@contracts/compound/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";
 
 contract Config is BaseConfig {
+    uint256 constant testBlock = 14292587;
+
     address constant cAave = 0xe65cdB6479BaC1e22340E4E755fAE7E509EcD06c;
     address constant cDai = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address constant cUsdc = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;

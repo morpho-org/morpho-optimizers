@@ -79,6 +79,8 @@ contract TestSetup is Config, Utils {
 
     address[] public pools;
 
+    uint256 public forkId;
+
     function setUp() public {
         setFork();
         initContracts();
@@ -91,10 +93,9 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function setFork() internal {
-        string memory endpoint = "https://api.avax.network/ext/bc/C/rpc";
-        forkId = vm.createFork(endpoint, 15675271);
-
+        forkId = vm.createFork(endpoint(), testBlock);
         vm.selectFork(forkId);
+        vm.chainId(chainId);
     }
 
     function initContracts() internal {

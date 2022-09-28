@@ -16,41 +16,6 @@ ifdef FOUNDRY_ETH_RPC_URL
   FOUNDRY_FUZZ_RUNS=4096
   FOUNDRY_FUZZ_MAX_LOCAL_REJECTS=16384
   FOUNDRY_FUZZ_MAX_GLOBAL_REJECTS=1048576
-else
-  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-
-  ifeq (${NETWORK}, eth-mainnet)
-    FOUNDRY_CHAIN_ID=1
-    FOUNDRY_FORK_BLOCK_NUMBER?=14292587
-  endif
-
-  ifeq (${NETWORK}, eth-ropsten)
-    FOUNDRY_CHAIN_ID=3
-  endif
-
-  ifeq (${NETWORK}, eth-goerli)
-    FOUNDRY_CHAIN_ID=5
-  endif
-
-  ifeq (${NETWORK}, polygon-mainnet)
-    ifeq (${PROTOCOL}, aave-v3)
-      FOUNDRY_FORK_BLOCK_NUMBER?=29116728
-      FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
-    endif
-
-    FOUNDRY_CHAIN_ID=137
-    FOUNDRY_FORK_BLOCK_NUMBER?=22116728
-  endif
-
-  ifeq (${NETWORK}, avalanche-mainnet)
-    ifeq (${PROTOCOL}, aave-v3)
-      FOUNDRY_FORK_BLOCK_NUMBER?=15675271
-    endif
-
-    FOUNDRY_CHAIN_ID=43114
-    FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-    FOUNDRY_FORK_BLOCK_NUMBER?=12675271
-  endif
 endif
 
 ifeq (${SMODE}, local)
@@ -86,24 +51,24 @@ script-%:
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
 test:
-	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv | tee trace.ansi
+	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@forge test -vvv | tee trace.ansi
 
 coverage:
-	@echo Create coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Create coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage
 
 coverage-lcov:
-	@echo Create coverage lcov for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Create coverage lcov for Morpho-${PROTOCOL} tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage --report lcov
 
 fuzz:
 	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
-	@echo Running all Morpho-${PROTOCOL} fuzzing tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Running all Morpho-${PROTOCOL} fuzzing tests on "${NETWORK}" at with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test -vv
 
 gas-report:
-	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test --gas-report
 
 test-common:
@@ -111,11 +76,11 @@ test-common:
 	@FOUNDRY_TEST=test-foundry/common forge test -vvv
 
 contract-% c-%:
-	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
+	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}"
 	@forge test -vvv --match-contract $* | tee trace.ansi
 
 single-% s-%:
-	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
+	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}"
 	@forge test -vvv --match-test $* | tee trace.ansi
 
 storage-layout-generate:

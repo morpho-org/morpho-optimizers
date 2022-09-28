@@ -24,8 +24,10 @@ contract TestIncentivesVault is Test, Config {
     IncentivesVault public incentivesVault;
     MorphoToken public morphoToken;
     DumbOracle public dumbOracle;
+    uint256 forkId;
 
     function setUp() public {
+        setFork();
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
 
@@ -45,6 +47,12 @@ contract TestIncentivesVault is Test, Config {
         hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(REWARD_TOKEN, "REWARD_TOKEN");
         hevm.label(morpho, "morpho");
+    }
+
+    function setFork() internal {
+        forkId = vm.createFork(endpoint(), testBlock);
+        vm.selectFork(forkId);
+        vm.chainId(chainId);
     }
 
     function testShouldNotSetBonusAboveMaxBasisPoints() public {

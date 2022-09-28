@@ -67,12 +67,9 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function setFork() internal {
-        string memory endpoint = string(
-            abi.encodePacked("https://eth-mainnet.g.alchemy.com/v2/", vm.envString("ALCHEMY_KEY"))
-        );
-        forkId = vm.createFork(endpoint, 14292587);
-
+        forkId = vm.createFork(endpoint(), testBlock);
         vm.selectFork(forkId);
+        vm.chainId(chainId);
     }
 
     function initContracts() internal {

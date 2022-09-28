@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity >=0.8.0;
 
+import {Vm} from "forge-std/Vm.sol";
+
 contract BaseConfig {
+    address private constant VM_ADDRESS =
+        address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
+    Vm private constant vm = Vm(VM_ADDRESS);
+
+    uint256 constant chainId = 1;
+
     address constant aave = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
     address constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -21,4 +29,14 @@ contract BaseConfig {
     address constant sushi = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2;
     address constant crv = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address constant stEth = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+
+    function endpoint() internal returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    "https://eth-mainnet.g.alchemy.com/v2/",
+                    vm.envString("ALCHEMY_KEY")
+                )
+            );
+    }
 }

@@ -39,8 +39,10 @@ contract TestSetup is Config, Utils {
     User[] public borrowers;
 
     address[] public pools;
+    uint256 public forkId;
 
     function setUp() public {
+        setFork();
         initContracts();
         setContractsLabels();
         initUsers();
@@ -49,6 +51,12 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
+
+    function setFork() internal {
+        forkId = vm.createFork(endpoint(), testBlock);
+        vm.selectFork(forkId);
+        vm.chainId(chainId);
+    }
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();
