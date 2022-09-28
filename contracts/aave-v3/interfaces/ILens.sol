@@ -6,6 +6,18 @@ import "../interfaces/IMorpho.sol";
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 
 interface ILens {
+    /// STORAGE ///
+
+    function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
+
+    function morpho() external view returns (IMorpho);
+
+    function addressesProvider() external view returns (IPoolAddressesProvider);
+
+    function pool() external view returns (IPool);
+
+    /// GENERAL ///
+
     function getTotalSupply()
         external
         view
@@ -23,6 +35,8 @@ interface ILens {
             uint256 poolBorrowAmount,
             uint256 totalBorrowAmount
         );
+
+    /// MARKETS ///
 
     function isMarketCreated(address _poolToken) external view returns (bool);
 
@@ -87,6 +101,109 @@ interface ILens {
         view
         returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount);
 
+    /// INDEXES ///
+
+    function getCurrentP2PSupplyIndex(address _poolToken) external view returns (uint256);
+
+    function getCurrentP2PBorrowIndex(address _poolToken) external view returns (uint256);
+
+    function getIndexes(address _poolToken)
+        external
+        view
+        returns (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        );
+
+    function getPoolIndexes(address _poolToken)
+        external
+        view
+        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex);
+
+    /// USERS ///
+
+    function getEnteredMarkets(address _user)
+        external
+        view
+        returns (address[] memory enteredMarkets);
+
+    function getUserHealthFactor(address _user) external view returns (uint256);
+
+    function getUserBalanceStates(address _user) external view returns (Types.LiquidityData memory);
+
+    function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
+        external
+        view
+        returns (
+            uint256 balanceInP2P,
+            uint256 balanceOnPool,
+            uint256 totalBalance
+        );
+
+    function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
+        external
+        view
+        returns (
+            uint256 balanceInP2P,
+            uint256 balanceOnPool,
+            uint256 totalBalance
+        );
+
+    function getUserMaxCapacitiesForAsset(address _user, address _poolToken)
+        external
+        view
+        returns (uint256 withdrawable, uint256 borrowable);
+
+    function getUserHypotheticalBalanceStates(
+        address _user,
+        address _poolToken,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) external view returns (Types.LiquidityData memory);
+
+    function getUserHypotheticalHealthFactor(
+        address _user,
+        address _poolToken,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) external view returns (uint256);
+
+    function getUserLiquidityDataForAsset(
+        address _user,
+        address _poolToken,
+        IPriceOracleGetter _oracle
+    ) external view returns (Types.AssetLiquidityData memory assetData);
+
+    function isLiquidatable(address _user) external view returns (bool);
+
+    function computeLiquidationRepayAmount(
+        address _user,
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress
+    ) external view returns (uint256);
+
+    /// RATES ///
+
+    function getAverageSupplyRatePerYear(address _poolToken)
+        external
+        view
+        returns (
+            uint256 avgSupplyRatePerYear,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
+        );
+
+    function getAverageBorrowRatePerYear(address _poolToken)
+        external
+        view
+        returns (
+            uint256 avgBorrowRatePerYear,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        );
+
     function getNextUserSupplyRatePerYear(
         address _poolToken,
         address _user,
@@ -115,34 +232,6 @@ interface ILens {
             uint256 totalBalance
         );
 
-    function getAverageSupplyRatePerYear(address _poolToken)
-        external
-        view
-        returns (
-            uint256 avgSupplyRatePerYear,
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount
-        );
-
-    function getAverageBorrowRatePerYear(address _poolToken)
-        external
-        view
-        returns (
-            uint256 avgBorrowRatePerYear,
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount
-        );
-
-    function getRatesPerYear(address _poolToken)
-        external
-        view
-        returns (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
-        );
-
     function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
         external
         view
@@ -153,89 +242,13 @@ interface ILens {
         view
         returns (uint256);
 
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets);
-
-    function getUserMaxCapacitiesForAsset(address _user, address _poolToken)
-        external
-        view
-        returns (uint256 withdrawable, uint256 borrowable);
-
-    function computeLiquidationRepayAmount(
-        address _user,
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress
-    ) external view returns (uint256);
-
-    function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
+    function getRatesPerYear(address _poolToken)
         external
         view
         returns (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
         );
-
-    function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
-        external
-        view
-        returns (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        );
-
-    function getUserBalanceStates(address _user) external view returns (Types.LiquidityData memory);
-
-    function getUserHypotheticalBalanceStates(
-        address _user,
-        address _poolToken,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) external view returns (Types.LiquidityData memory liquidityData);
-
-    function getUserLiquidityDataForAsset(
-        address _user,
-        address _poolToken,
-        IPriceOracleGetter _oracle
-    ) external view returns (Types.AssetLiquidityData memory assetData);
-
-    function getUserHealthFactor(address _user) external view returns (uint256);
-
-    function getUserHypotheticalHealthFactor(
-        address _user,
-        address _poolToken,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) external view returns (uint256 healthFactor);
-
-    function isLiquidatable(address _user) external view returns (bool);
-
-    function getCurrentP2PSupplyIndex(address _poolToken)
-        external
-        view
-        returns (uint256 currentP2PSupplyIndex);
-
-    function getCurrentP2PBorrowIndex(address _poolToken)
-        external
-        view
-        returns (uint256 currentP2PBorrowIndex);
-
-    function getIndexes(address _poolToken)
-        external
-        view
-        returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        );
-
-    function morpho() external view returns (IMorpho);
-
-    function addressesProvider() external view returns (IPoolAddressesProvider);
-
-    function pool() external view returns (IPool);
 }

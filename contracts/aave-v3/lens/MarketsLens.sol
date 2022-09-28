@@ -98,7 +98,9 @@ abstract contract MarketsLens is RatesLens {
             uint256 p2pBorrowDelta
         )
     {
-        (p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = getIndexes(_poolToken);
+        (, p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = _getIndexes(
+            _poolToken
+        );
 
         Types.Delta memory delta = morpho.deltas(_poolToken);
         p2pSupplyDelta = delta.p2pSupplyDelta.rayMul(poolSupplyIndex);

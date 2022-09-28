@@ -41,7 +41,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
     function getIndexes(address _poolToken)
-        public
+        external
         view
         returns (
             uint256 p2pSupplyIndex,
@@ -53,6 +53,18 @@ abstract contract IndexesLens is LensStorage {
         (, p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = _getIndexes(
             _poolToken
         );
+    }
+
+    /// @notice Returns the updated pool indexes that would be used by Morpho.
+    /// @param _poolToken The address of the market.
+    /// @return poolSupplyIndex The updated pool supply index.
+    /// @return poolBorrowIndex The updated pool borrow index.
+    function getPoolIndexes(address _poolToken)
+        external
+        view
+        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
+    {
+        return _getPoolIndexes(_poolToken);
     }
 
     /// INTERNAL ///

@@ -8,8 +8,6 @@ import "./IMorpho.sol";
 interface ILens {
     /// STORAGE ///
 
-    function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns (uint16);
-
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
 
     function morpho() external view returns (IMorpho);
@@ -49,7 +47,7 @@ interface ILens {
         view
         returns (bool);
 
-    function getAllMarkets() external view returns (address[] memory marketsCreated_);
+    function getAllMarkets() external view returns (address[] memory marketsCreated);
 
     function getMainMarketData(address _poolToken)
         external
@@ -82,11 +80,15 @@ interface ILens {
         returns (
             address underlying,
             bool isCreated,
-            bool p2pDisabled,
+            bool isP2PDisabled,
             bool isPaused,
             bool isPartiallyPaused,
             uint16 reserveFactor,
-            uint16 p2pIndexCursor
+            uint16 p2pIndexCursor,
+            uint256 loanToValue,
+            uint256 liquidationThreshold,
+            uint256 liquidationBonus,
+            uint256 decimals
         );
 
     function getTotalMarketSupply(address _poolToken)
@@ -115,6 +117,11 @@ interface ILens {
             uint256 poolBorrowIndex
         );
 
+    function getPoolIndexes(address _poolToken)
+        external
+        view
+        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex);
+
     /// USERS ///
 
     function getEnteredMarkets(address _user)
@@ -122,12 +129,9 @@ interface ILens {
         view
         returns (address[] memory enteredMarkets);
 
-    function getUserHealthFactor(address _user) external view returns (uint256 healthFactor);
+    function getUserHealthFactor(address _user) external view returns (uint256);
 
-    function getUserBalanceStates(address _user)
-        external
-        view
-        returns (Types.LiquidityData memory assetData);
+    function getUserBalanceStates(address _user) external view returns (Types.LiquidityData memory);
 
     function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
         external
@@ -157,14 +161,14 @@ interface ILens {
         address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) external view returns (Types.LiquidityData memory assetData);
+    ) external view returns (Types.LiquidityData memory);
 
     function getUserHypotheticalHealthFactor(
         address _user,
         address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) external view returns (uint256 healthFactor);
+    ) external view returns (uint256);
 
     function getUserLiquidityDataForAsset(
         address _user,
@@ -178,7 +182,7 @@ interface ILens {
         address _user,
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress
-    ) external view returns (uint256 toRepay);
+    ) external view returns (uint256);
 
     /// RATES ///
 
