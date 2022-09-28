@@ -43,10 +43,11 @@ contract Config is BaseConfig {
         ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
     IAaveIncentivesController public aaveIncentivesController =
         IAaveIncentivesController(0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5);
-    IPriceOracleGetter public oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
-    ILendingPool public pool = ILendingPool(poolAddressesProvider.getLendingPool());
+    IPriceOracleGetter public oracle =
+        IPriceOracleGetter(0xA50ba011c48153De246E5192C8f9258A2ba79Ca9);
+    ILendingPool public pool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
 
-    address public REWARD_TOKEN = aaveIncentivesController.REWARD_TOKEN();
+    address public REWARD_TOKEN = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
 
     ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
 

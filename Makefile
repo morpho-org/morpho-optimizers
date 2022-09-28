@@ -16,6 +16,12 @@ ifdef FOUNDRY_ETH_RPC_URL
   FOUNDRY_FUZZ_RUNS=4096
   FOUNDRY_FUZZ_MAX_LOCAL_REJECTS=16384
   FOUNDRY_FUZZ_MAX_GLOBAL_REJECTS=1048576
+else
+  ifeq (${NETWORK}, avalanche-mainnet)
+    FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+  endif
+  
+  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 endif
 
 ifeq (${SMODE}, local)
@@ -52,7 +58,11 @@ script-%:
 
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vvv | tee trace.ansi
+	@forge test -vv | tee trace.ansi
+
+test-no-rewards:
+	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@forge test -vv --no-match-contract "Fees|IncentivesVault|Rewards" | tee trace.ansi
 
 coverage:
 	@echo Create coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"

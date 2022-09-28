@@ -30,7 +30,7 @@ import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
 import "@forge-std/Test.sol";
-import "@forge-std/console.sol";
+import "@forge-std/console2.sol";
 
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -53,6 +53,7 @@ contract TestSetup is Config, Utils {
     User[] public borrowers;
 
     address[] public pools;
+
     uint256 public forkId;
 
     function setUp() public {
