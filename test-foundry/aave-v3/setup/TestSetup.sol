@@ -80,6 +80,7 @@ contract TestSetup is Config, Utils {
     address[] public pools;
 
     function setUp() public {
+        setFork();
         initContracts();
         setContractsLabels();
         initUsers();
@@ -88,6 +89,13 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
+
+    function setFork() internal {
+        string memory endpoint = "https://api.avax.network/ext/bc/C/rpc";
+        forkId = vm.createFork(endpoint, 15675271);
+
+        vm.selectFork(forkId);
+    }
 
     function initContracts() internal {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({

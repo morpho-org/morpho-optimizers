@@ -53,11 +53,10 @@ contract TestSetup is Config, Utils {
     User[] public borrowers;
 
     address[] public pools;
+    uint256 public forkId;
 
     function setUp() public {
-        string memory endpoint = vm.envString("FOUNDRY_ETH_RPC_URL");
-        forkId = vm.createFork(endpoint);
-        vm.selectFork(forkId);
+        setFork();
         initContracts();
         setContractsLabels();
         initUsers();
@@ -67,7 +66,14 @@ contract TestSetup is Config, Utils {
 
     function onSetUp() public virtual {}
 
-    function setFork() internal {}
+    function setFork() internal {
+        string memory endpoint = string(
+            abi.encodePacked("https://eth-mainnet.g.alchemy.com/v2/", vm.envString("ALCHEMY_KEY"))
+        );
+        forkId = vm.createFork(endpoint, 14292587);
+
+        vm.selectFork(forkId);
+    }
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();
