@@ -181,7 +181,7 @@ contract TestEth is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cEth, address(borrower1));
 
         testEquality(onPool, 0);
-        testEquality(inP2P, 0);
+        assertApproxEqAbs(inP2P, 0, 60);
         assertApproxEqAbs(balanceAfter, balanceBefore, 1e9, "balance");
     }
 

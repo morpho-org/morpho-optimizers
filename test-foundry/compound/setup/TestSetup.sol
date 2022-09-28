@@ -121,7 +121,7 @@ contract TestSetup is Config, Utils {
     }
 
     function createMarket(address _cToken) internal {
-        Types.MarketParameters memory marketParams = Types.MarketParameters(0, 3_333);
+        Types.MarketParameters memory marketParams = Types.MarketParameters(0, 1);
         morpho.createMarket(_cToken, marketParams);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
