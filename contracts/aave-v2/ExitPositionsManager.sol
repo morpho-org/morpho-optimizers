@@ -154,7 +154,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _supplier,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 withdrawn) {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
         Types.Market memory market = market[_poolToken];
@@ -162,12 +162,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (market.isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
-        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
-        if (toWithdraw == 0) revert UserNotMemberOfMarket();
+        withdrawn = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
+        if (withdrawn == 0) revert UserNotMemberOfMarket();
 
-        if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
+        if (!_withdrawAllowed(_supplier, _poolToken, withdrawn)) revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _safeWithdrawLogic(_poolToken, withdrawn, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -182,17 +182,17 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 repaid) {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
         if (market.isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
-        if (toRepay == 0) revert UserNotMemberOfMarket();
+        repaid = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
+        if (repaid == 0) revert UserNotMemberOfMarket();
 
-        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
+        _safeRepayLogic(_poolToken, _repayer, _onBehalf, repaid, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -206,7 +206,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external {
+    ) external returns (uint256 seized) {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreatedMemory()) revert MarketNotCreated();
         if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
@@ -258,15 +258,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         uint256 borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowedAddress);
         uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
-        uint256 amountToSeize = ((vars.amountToLiquidate *
-            borrowedTokenPrice *
-            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice))
+        seized = ((vars.amountToLiquidate * borrowedTokenPrice * vars.collateralTokenUnit) /
+            (vars.borrowedTokenUnit * collateralPrice))
         .percentMul(vars.liquidationBonus);
 
         uint256 collateralBalance = _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower);
 
-        if (amountToSeize > collateralBalance) {
-            amountToSeize = collateralBalance;
+        if (seized > collateralBalance) {
+            seized = collateralBalance;
             vars.amountToLiquidate = ((collateralBalance *
                 collateralPrice *
                 vars.borrowedTokenUnit) / (borrowedTokenPrice * vars.collateralTokenUnit))
@@ -274,7 +273,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         }
 
         _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, vars.amountToLiquidate, 0);
-        _safeWithdrawLogic(_poolTokenCollateral, amountToSeize, _borrower, _receiver, 0);
+        _safeWithdrawLogic(_poolTokenCollateral, seized, _borrower, _receiver, 0);
 
         emit Liquidated(
             msg.sender,
@@ -282,7 +281,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _poolTokenBorrowed,
             vars.amountToLiquidate,
             _poolTokenCollateral,
-            amountToSeize
+            seized
         );
     }
 
