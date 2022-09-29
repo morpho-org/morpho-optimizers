@@ -112,10 +112,10 @@ contract User {
 
     function borrow(
         address _poolToken,
-        uint256 _amount,
-        address _receiver
+        address _receiver,
+        uint256 _amount
     ) external {
-        morpho.borrow(_poolToken, _amount, _receiver);
+        morpho.borrow(_poolToken, _receiver, _amount);
     }
 
     function borrow(
@@ -128,11 +128,11 @@ contract User {
 
     function borrow(
         address _poolToken,
-        uint256 _amount,
         address _receiver,
+        uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        morpho.borrow(_poolToken, _amount, _receiver, _maxGasForMatching);
+        morpho.borrow(_poolToken, _receiver, _amount, _maxGasForMatching);
     }
 
     function withdraw(address _poolToken, uint256 _amount) external {
@@ -141,10 +141,10 @@ contract User {
 
     function withdraw(
         address _poolToken,
-        uint256 _amount,
-        address _receiver
+        address _receiver,
+        uint256 _amount
     ) external {
-        morpho.withdraw(_poolToken, _amount, _receiver);
+        morpho.withdraw(_poolToken, _receiver, _amount);
     }
 
     function repay(address _poolToken, uint256 _amount) external {
@@ -166,6 +166,16 @@ contract User {
         uint256 _amount
     ) external {
         morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _amount);
+    }
+
+    function liquidate(
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
+        address _borrower,
+        address _receiver,
+        uint256 _amount
+    ) external {
+        morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _receiver, _amount);
     }
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {

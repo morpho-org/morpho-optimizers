@@ -480,11 +480,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenBorrowed The address of the pool token the liquidator wants to repay.
     /// @param _poolTokenCollateral The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
+    /// @param _receiver The address of the receiver of the seized collateral.
     /// @param _amount The amount of token (in underlying) to repay.
     function liquidateLogic(
         address _poolTokenBorrowed,
         address _poolTokenCollateral,
         address _borrower,
+        address _receiver,
         uint256 _amount
     ) external {
         Types.MarketStatus memory collateralMarket = marketStatus[_poolTokenCollateral];
@@ -530,7 +532,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower)
         );
 
-        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
+        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, _receiver, 0);
 
         emit Liquidated(
             msg.sender,

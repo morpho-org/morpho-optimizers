@@ -80,7 +80,7 @@ contract Morpho is MorphoGovernance {
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     function borrow(address _poolToken, uint256 _amount) external nonReentrant {
-        _borrow(_poolToken, _amount, msg.sender, defaultMaxGasForMatching.borrow);
+        _borrow(_poolToken, msg.sender, _amount, defaultMaxGasForMatching.borrow);
     }
 
     /// @notice Borrows underlying tokens from a specific market and sends them to a given address.
@@ -89,10 +89,10 @@ contract Morpho is MorphoGovernance {
     /// @param _receiver The address to send borrowed tokens to.
     function borrow(
         address _poolToken,
-        uint256 _amount,
-        address _receiver
+        address _receiver,
+        uint256 _amount
     ) external nonReentrant {
-        _borrow(_poolToken, _amount, _receiver, defaultMaxGasForMatching.borrow);
+        _borrow(_poolToken, _receiver, _amount, defaultMaxGasForMatching.borrow);
     }
 
     /// @notice Borrows underlying tokens from a specific market, specifying a gas threshold at which to stop the matching engine.
@@ -104,7 +104,7 @@ contract Morpho is MorphoGovernance {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external nonReentrant {
-        _borrow(_poolToken, _amount, msg.sender, _maxGasForMatching);
+        _borrow(_poolToken, msg.sender, _amount, _maxGasForMatching);
     }
 
     /// @notice Borrows underlying tokens from a specific market and sends them to a given address,
@@ -115,18 +115,18 @@ contract Morpho is MorphoGovernance {
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function borrow(
         address _poolToken,
-        uint256 _amount,
         address _receiver,
+        uint256 _amount,
         uint256 _maxGasForMatching
     ) external nonReentrant {
-        _borrow(_poolToken, _amount, _receiver, _maxGasForMatching);
+        _borrow(_poolToken, _receiver, _amount, _maxGasForMatching);
     }
 
     /// @notice Withdraws underlying tokens from a specific market.
     /// @param _poolToken The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolToken, uint256 _amount) external nonReentrant {
-        _withdraw(_poolToken, _amount, msg.sender, defaultMaxGasForMatching.withdraw);
+        _withdraw(_poolToken, msg.sender, _amount, defaultMaxGasForMatching.withdraw);
     }
 
     /// @notice Withdraws underlying tokens from a specific market.
@@ -135,10 +135,10 @@ contract Morpho is MorphoGovernance {
     /// @param _receiver The address to send withdrawn tokens to.
     function withdraw(
         address _poolToken,
-        uint256 _amount,
-        address _receiver
+        address _receiver,
+        uint256 _amount
     ) external nonReentrant {
-        _withdraw(_poolToken, _amount, _receiver, defaultMaxGasForMatching.withdraw);
+        _withdraw(_poolToken, _receiver, _amount, defaultMaxGasForMatching.withdraw);
     }
 
     /// @notice Repays the debt of the sender, up to the amount provided.
@@ -173,15 +173,23 @@ contract Morpho is MorphoGovernance {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        address(positionsManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                IPositionsManager.liquidateLogic.selector,
-                _poolTokenBorrowed,
-                _poolTokenCollateral,
-                _borrower,
-                _amount
-            )
-        );
+        _liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, msg.sender, _amount);
+    }
+
+    /// @notice Liquidates a position.
+    /// @param _poolTokenBorrowed The address of the pool token the liquidator wants to repay.
+    /// @param _poolTokenCollateral The address of the collateral pool token the liquidator wants to seize.
+    /// @param _borrower The address of the borrower to liquidate.
+    /// @param _receiver The address of the receiver of the seized collateral.
+    /// @param _amount The amount of token (in underlying) to repay.
+    function liquidate(
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
+        address _borrower,
+        address _receiver,
+        uint256 _amount
+    ) external nonReentrant {
+        _liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _receiver, _amount);
     }
 
     /// @notice Claims rewards for the given assets.
@@ -234,8 +242,8 @@ contract Morpho is MorphoGovernance {
 
     function _borrow(
         address _poolToken,
-        uint256 _amount,
         address _receiver,
+        uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
         address(positionsManager).functionDelegateCall(
@@ -251,8 +259,8 @@ contract Morpho is MorphoGovernance {
 
     function _withdraw(
         address _poolToken,
-        uint256 _amount,
         address _receiver,
+        uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
         address(positionsManager).functionDelegateCall(
@@ -281,6 +289,25 @@ contract Morpho is MorphoGovernance {
                 _onBehalf,
                 _amount,
                 _maxGasForMatching
+            )
+        );
+    }
+
+    function _liquidate(
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral,
+        address _borrower,
+        address _receiver,
+        uint256 _amount
+    ) internal {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.liquidateLogic.selector,
+                _poolTokenBorrowed,
+                _poolTokenCollateral,
+                _borrower,
+                _receiver,
+                _amount
             )
         );
     }

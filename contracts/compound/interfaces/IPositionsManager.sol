@@ -37,6 +37,7 @@ interface IPositionsManager {
         address _poolTokenBorrowed,
         address _poolTokenCollateral,
         address _borrower,
+        address _receiver,
         uint256 _amount
     ) external;
 

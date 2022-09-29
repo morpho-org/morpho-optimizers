@@ -38,7 +38,6 @@ contract TestLiquidate is TestSetup {
         moveOneBlockForwardBorrowRepay();
 
         (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
-        (, uint256 borrowOnPoolBefore) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
         // Liquidate
         uint256 toRepay = amount; // Full liquidation.
@@ -415,5 +414,42 @@ contract TestLiquidate is TestSetup {
         hevm.prank(address(borrower2));
         hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
         morpho.liquidate(cDai, cUsdc, address(borrower1), amount / 3);
+    }
+
+    // A user liquidates a borrower that has not enough collateral to cover for his debt.
+    function testShouldLiquidateUserToReceiver() public {
+        uint256 collateral = 100_000 ether;
+
+        borrower1.approve(usdc, address(morpho), to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+        borrower1.borrow(cDai, amount);
+
+        moveOneBlockForwardBorrowRepay();
+
+        // Change Oracle.
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 94) / 100);
+
+        // Liquidate.
+        uint256 toRepay = amount / 2;
+        User liquidator = borrower3;
+        uint256 usdcBalanceBefore = ERC20(usdc).balanceOf(address(liquidator));
+
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(cDai, cUsdc, address(borrower1), address(8), toRepay);
+
+        uint256 amountToSeize = toRepay
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(customOracle.getUnderlyingPrice(cDai))
+        .div(customOracle.getUnderlyingPrice(cUsdc));
+
+        assertEq(
+            ERC20(usdc).balanceOf(address(liquidator)),
+            usdcBalanceBefore,
+            "unexpected liquidator balance"
+        );
+        assertEq(ERC20(usdc).balanceOf(address(8)), amountToSeize, "unexpected receiver balance");
     }
 }
