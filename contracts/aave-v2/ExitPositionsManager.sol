@@ -123,11 +123,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
-        uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 amountToLiquidate; // The amount of borrowed asset to liquidate.
+        uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 closeFactor; // The close factor used during the liquidation.
         bool liquidationAllowed; // Whether the liquidation is allowed or not.
     }
@@ -203,6 +204,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolTokenBorrowed,
         address _poolTokenCollateral,
         address _borrower,
+        address _receiver,
         uint256 _amount
     ) external {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
@@ -230,7 +232,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         );
         if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
 
-        uint256 amountToLiquidate = Math.min(
+        vars.amountToLiquidate = Math.min(
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
@@ -256,7 +258,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         uint256 borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowedAddress);
         uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
-        uint256 amountToSeize = ((amountToLiquidate *
+        uint256 amountToSeize = ((vars.amountToLiquidate *
             borrowedTokenPrice *
             vars.collateralTokenUnit) / (vars.borrowedTokenUnit * collateralPrice))
         .percentMul(vars.liquidationBonus);
@@ -265,19 +267,20 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         if (amountToSeize > collateralBalance) {
             amountToSeize = collateralBalance;
-            amountToLiquidate = ((collateralBalance * collateralPrice * vars.borrowedTokenUnit) /
-                (borrowedTokenPrice * vars.collateralTokenUnit))
+            vars.amountToLiquidate = ((collateralBalance *
+                collateralPrice *
+                vars.borrowedTokenUnit) / (borrowedTokenPrice * vars.collateralTokenUnit))
             .percentDiv(vars.liquidationBonus);
         }
 
-        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, amountToLiquidate, 0);
-        _safeWithdrawLogic(_poolTokenCollateral, amountToSeize, _borrower, msg.sender, 0);
+        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, vars.amountToLiquidate, 0);
+        _safeWithdrawLogic(_poolTokenCollateral, amountToSeize, _borrower, _receiver, 0);
 
         emit Liquidated(
             msg.sender,
             _borrower,
             _poolTokenBorrowed,
-            amountToLiquidate,
+            vars.amountToLiquidate,
             _poolTokenCollateral,
             amountToSeize
         );

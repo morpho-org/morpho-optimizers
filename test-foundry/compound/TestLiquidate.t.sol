@@ -416,7 +416,6 @@ contract TestLiquidate is TestSetup {
         morpho.liquidate(cDai, cUsdc, address(borrower1), amount / 3);
     }
 
-    // A user liquidates a borrower that has not enough collateral to cover for his debt.
     function testShouldLiquidateUserToReceiver() public {
         uint256 collateral = 100_000 ether;
 
