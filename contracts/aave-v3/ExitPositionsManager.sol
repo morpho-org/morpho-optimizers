@@ -127,7 +127,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 collateralBalance; // The collateral balance of the borrower.
         uint256 collateralPrice; // The price of the collateral token.
-        uint256 amountToSeize; // The amount of collateral token to seize.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
         uint256 borrowedTokenPrice; // The price of the borrowed token.
@@ -152,13 +151,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return withdrawn The amount of collateral withdrawn (in underlying).
     function withdrawLogic(
         address _poolToken,
         uint256 _amount,
         address _supplier,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 withdrawn) {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
         Types.Market memory market = market[_poolToken];
@@ -166,12 +166,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (market.isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
-        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
-        if (toWithdraw == 0) revert UserNotMemberOfMarket();
+        withdrawn = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
+        if (withdrawn == 0) revert UserNotMemberOfMarket();
 
-        if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
+        if (!_withdrawAllowed(_supplier, _poolToken, withdrawn)) revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _safeWithdrawLogic(_poolToken, withdrawn, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -180,23 +180,24 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return repaid The amount of underlying token repaid (in underlying).
     function repayLogic(
         address _poolToken,
         address _repayer,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 repaid) {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
         if (market.isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
-        if (toRepay == 0) revert UserNotMemberOfMarket();
+        repaid = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
+        if (repaid == 0) revert UserNotMemberOfMarket();
 
-        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
+        repaid = _safeRepayLogic(_poolToken, _repayer, _onBehalf, repaid, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -204,13 +205,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _poolTokenCollateral The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
     /// @param _amount The amount of token (in underlying) to repay.
+    /// @return repaid The amount of collateral repaid (in underlying).
+    /// @return seized The amount of collateral seized (in underlying).
     function liquidateLogic(
         address _poolTokenBorrowed,
         address _poolTokenCollateral,
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external {
+    ) external returns (uint256 repaid, uint256 seized) {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreatedMemory()) revert MarketNotCreated();
         if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
@@ -258,23 +261,28 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         vars.borrowedTokenPrice = oracle.getAssetPrice(borrowedMarket.underlyingToken);
         vars.collateralPrice = oracle.getAssetPrice(collateralMarket.underlyingToken);
-        vars.amountToSeize = ((vars.amountToLiquidate *
-            vars.borrowedTokenPrice *
-            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * vars.collateralPrice))
+        seized = ((vars.amountToLiquidate * vars.borrowedTokenPrice * vars.collateralTokenUnit) /
+            (vars.borrowedTokenUnit * vars.collateralPrice))
         .percentMul(vars.liquidationBonus);
 
         vars.collateralBalance = _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower);
 
-        if (vars.amountToSeize > vars.collateralBalance) {
-            vars.amountToSeize = vars.collateralBalance;
+        if (seized > vars.collateralBalance) {
+            seized = vars.collateralBalance;
             vars.amountToLiquidate = ((vars.collateralBalance *
                 vars.collateralPrice *
                 vars.borrowedTokenUnit) / (vars.borrowedTokenPrice * vars.collateralTokenUnit))
             .percentDiv(vars.liquidationBonus);
         }
 
-        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, vars.amountToLiquidate, 0);
-        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, _receiver, 0);
+        repaid = _safeRepayLogic(
+            _poolTokenBorrowed,
+            msg.sender,
+            _borrower,
+            vars.amountToLiquidate,
+            0
+        );
+        seized = _safeWithdrawLogic(_poolTokenCollateral, seized, _borrower, _receiver, 0);
 
         emit Liquidated(
             msg.sender,
@@ -282,7 +290,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _poolTokenBorrowed,
             vars.amountToLiquidate,
             _poolTokenCollateral,
-            vars.amountToSeize
+            seized
         );
     }
 
@@ -334,13 +342,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return withdrawn The amount of underlying token withdrawn (in underlying).
     function _safeWithdrawLogic(
         address _poolToken,
         uint256 _amount,
         address _supplier,
         address _receiver,
         uint256 _maxGasForMatching
-    ) internal {
+    ) internal returns (uint256 withdrawn) {
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
@@ -384,7 +393,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     supplierSupplyBalance.inP2P
                 );
 
-                return;
+                return _amount;
             }
         }
 
@@ -480,6 +489,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             supplierSupplyBalance.onPool,
             supplierSupplyBalance.inP2P
         );
+
+        return _amount;
     }
 
     /// @dev Implements repay logic without security checks.
@@ -488,13 +499,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return repaid The amount of underlying token repaid (in underlying).
     function _safeRepayLogic(
         address _poolToken,
         address _repayer,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal {
+    ) internal returns (uint256 repaid) {
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
@@ -537,7 +549,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     borrowerBorrowBalance.inP2P
                 );
 
-                return;
+                return _amount;
             }
         }
 
@@ -653,6 +665,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             borrowerBorrowBalance.onPool,
             borrowerBorrowBalance.inP2P
         );
+
+        return _amount;
     }
 
     /// @dev Returns the health factor of the user.

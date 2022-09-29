@@ -321,7 +321,13 @@ contract TestLiquidate is TestSetup {
         uint256 usdcBalanceBefore = ERC20(usdc).balanceOf(address(liquidator));
 
         liquidator.approve(dai, address(morpho), toRepay);
-        uint256 seized = liquidator.liquidate(aDai, aUsdc, address(borrower1), address(8), toRepay);
+        (uint256 repaid, uint256 seized) = liquidator.liquidate(
+            aDai,
+            aUsdc,
+            address(borrower1),
+            address(8),
+            toRepay
+        );
 
         ExitPositionsManager.LiquidateVars memory vars;
 
@@ -348,6 +354,7 @@ contract TestLiquidate is TestSetup {
             1,
             "unexpected receiver balance"
         );
-        assertEq(seized, amountToSeize);
+        assertEq(repaid, toRepay, "unexpected repaid amount");
+        assertApproxEqAbs(seized, amountToSeize, 1, "unexpected seized amount");
     }
 }

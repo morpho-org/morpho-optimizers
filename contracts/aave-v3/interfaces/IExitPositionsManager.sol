@@ -8,7 +8,7 @@ interface IExitPositionsManager {
         address _supplier,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external;
+    ) external returns (uint256 withdrawn);
 
     function repayLogic(
         address _poolToken,
@@ -16,7 +16,7 @@ interface IExitPositionsManager {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external;
+    ) external returns (uint256 repaid);
 
     function liquidateLogic(
         address _poolTokenBorrowed,
@@ -24,7 +24,7 @@ interface IExitPositionsManager {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external;
+    ) external returns (uint256 repaid, uint256 seized);
 
     function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external;
 }

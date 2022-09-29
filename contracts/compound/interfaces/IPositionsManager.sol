@@ -8,14 +8,14 @@ interface IPositionsManager {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external;
+    ) external returns (uint256 supplied);
 
     function borrowLogic(
         address _poolToken,
         uint256 _amount,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external;
+    ) external returns (uint256 borrowed);
 
     function withdrawLogic(
         address _poolToken,
@@ -39,7 +39,7 @@ interface IPositionsManager {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external returns (uint256 seized);
+    ) external returns (uint256 repaid, uint256 seized);
 
     function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external;
 }

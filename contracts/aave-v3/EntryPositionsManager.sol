@@ -91,13 +91,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return supplied The amount of underlying token supplied (in underlying).
     function supplyLogic(
         address _poolToken,
         address _from,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 supplied) {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
@@ -185,6 +186,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             supplierSupplyBalance.onPool,
             supplierSupplyBalance.inP2P
         );
+
+        return _amount;
     }
 
     /// @dev Implements borrow logic.
@@ -192,12 +195,13 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @param _amount The amount of token (in underlying).
     /// @param _receiver The address of the receiver of the funds.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return borrowed The amount of underlying token borrowed (in underlying).
     function borrowLogic(
         address _poolToken,
         uint256 _amount,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 borrowed) {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
@@ -286,6 +290,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             borrowerBorrowBalance.onPool,
             borrowerBorrowBalance.inP2P
         );
+
+        return _amount;
     }
 
     /// @dev Checks whether the user can borrow or not.

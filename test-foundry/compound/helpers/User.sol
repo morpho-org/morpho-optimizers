@@ -77,24 +77,24 @@ contract User {
         morpho.setReserveFactor(_poolToken, _reserveFactor);
     }
 
-    function supply(address _poolToken, uint256 _amount) external {
-        morpho.supply(_poolToken, _amount);
+    function supply(address _poolToken, uint256 _amount) external returns (uint256 supplied) {
+        return morpho.supply(_poolToken, _amount);
     }
 
     function supply(
         address _poolToken,
         address _onBehalf,
         uint256 _amount
-    ) public {
-        morpho.supply(_poolToken, _onBehalf, _amount);
+    ) external returns (uint256 supplied) {
+        return morpho.supply(_poolToken, _onBehalf, _amount);
     }
 
     function supply(
         address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
-        morpho.supply(_poolToken, _amount, _maxGasForMatching);
+    ) external returns (uint256 supplied) {
+        return morpho.supply(_poolToken, _amount, _maxGasForMatching);
     }
 
     function supply(
@@ -102,28 +102,28 @@ contract User {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) public {
-        morpho.supply(_poolToken, _onBehalf, _amount, _maxGasForMatching);
+    ) external returns (uint256 supplied) {
+        return morpho.supply(_poolToken, _onBehalf, _amount, _maxGasForMatching);
     }
 
-    function borrow(address _poolToken, uint256 _amount) external {
-        morpho.borrow(_poolToken, _amount);
+    function borrow(address _poolToken, uint256 _amount) external returns (uint256 borrowed) {
+        return morpho.borrow(_poolToken, _amount);
     }
 
     function borrow(
         address _poolToken,
         address _receiver,
         uint256 _amount
-    ) external {
-        morpho.borrow(_poolToken, _receiver, _amount);
+    ) external returns (uint256 borrowed) {
+        return morpho.borrow(_poolToken, _receiver, _amount);
     }
 
     function borrow(
         address _poolToken,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
-        morpho.borrow(_poolToken, _amount, _maxGasForMatching);
+    ) external returns (uint256 borrowed) {
+        return morpho.borrow(_poolToken, _amount, _maxGasForMatching);
     }
 
     function borrow(
@@ -131,8 +131,8 @@ contract User {
         address _receiver,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
-        morpho.borrow(_poolToken, _receiver, _amount, _maxGasForMatching);
+    ) external returns (uint256 borrowed) {
+        return morpho.borrow(_poolToken, _receiver, _amount, _maxGasForMatching);
     }
 
     function withdraw(address _poolToken, uint256 _amount) external returns (uint256 withdrawn) {
@@ -164,7 +164,7 @@ contract User {
         address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
-    ) external returns (uint256 seized) {
+    ) external returns (uint256 repaid, uint256 seized) {
         return morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _amount);
     }
 
@@ -174,15 +174,14 @@ contract User {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external returns (uint256 seized) {
-        return
-            morpho.liquidate(
-                _poolTokenBorrowed,
-                _poolTokenCollateral,
-                _borrower,
-                _receiver,
-                _amount
-            );
+    ) external returns (uint256 repaid, uint256 seized) {
+        (repaid, seized) = morpho.liquidate(
+            _poolTokenBorrowed,
+            _poolTokenCollateral,
+            _borrower,
+            _receiver,
+            _amount
+        );
     }
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {

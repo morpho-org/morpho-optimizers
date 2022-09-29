@@ -24,7 +24,7 @@ interface IExitPositionsManager {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external returns (uint256 seized);
+    ) external returns (uint256 repaid, uint256 seized);
 
     function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external;
 }

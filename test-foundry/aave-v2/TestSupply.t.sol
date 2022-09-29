@@ -12,7 +12,7 @@ contract TestSupply is TestSetup {
         uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
+        uint256 supplied = supplier1.supply(aDai, amount);
 
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
@@ -23,6 +23,7 @@ contract TestSupply is TestSetup {
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
+        assertEq(supplied, amount);
     }
 
     // There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.

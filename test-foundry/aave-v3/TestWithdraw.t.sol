@@ -37,12 +37,13 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2P, 0);
         testEquality(onPool, expectedOnPool);
 
-        supplier1.withdraw(aUsdc, to6Decimals(amount));
+        uint256 withdrawn = supplier1.withdraw(aUsdc, to6Decimals(amount));
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aUsdc, address(supplier1));
 
         testEquality(inP2P, 0);
         testEquality(onPool, expectedOnPool / 2);
+        assertEq(withdrawn, to6Decimals(amount));
     }
 
     // The supplier withdraws all its `onPool` balance.
@@ -684,8 +685,9 @@ contract TestWithdraw is TestSetup {
 
         uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier2));
 
-        supplier1.withdraw(aDai, address(supplier2), amount);
+        uint256 withdrawn = supplier1.withdraw(aDai, address(supplier2), amount);
 
         assertEq(ERC20(dai).balanceOf(address(supplier2)), balanceBefore + amount);
+        assertEq(withdrawn, amount);
     }
 }

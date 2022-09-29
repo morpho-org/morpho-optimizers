@@ -8,12 +8,12 @@ interface IEntryPositionsManager {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external;
+    ) external returns (uint256 supplied);
 
     function borrowLogic(
         address _poolToken,
         uint256 _amount,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external;
+    ) external returns (uint256 borrowed);
 }

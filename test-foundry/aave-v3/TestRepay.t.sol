@@ -16,12 +16,13 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aDai, amount);
 
         borrower1.approve(dai, amount);
-        borrower1.repay(aDai, amount);
+        uint256 repaid = borrower1.repay(aDai, amount);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         testEqualityLarge(inP2P, 0);
         testEqualityLarge(onPool, 0);
+        assertEq(repaid, amount);
     }
 
     function testRepayAll() public {
