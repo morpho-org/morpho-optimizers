@@ -41,37 +41,22 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolToken The address of the market to update.
     function updateIndexes(address _poolToken) external {
-        Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolToken];
+        Types.PoolIndexes storage lastPoolIndexes = poolIndexes[_poolToken];
+        if (block.timestamp == lastPoolIndexes.lastUpdateTimestamp) return;
 
-        if (block.timestamp == marketPoolIndexes.lastUpdateTimestamp) return;
-
-        Types.Market storage market = market[_poolToken];
-
-        address underlyingToken = market.underlyingToken;
-        (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = InterestRatesModel
-        .getPoolIndexes(pool, underlyingToken);
-
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel
-        .computeP2PIndexes(
-            Types.P2PIndexComputeParams({
-                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
-                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
-                poolSupplyIndex: newPoolSupplyIndex,
-                poolBorrowIndex: newPoolBorrowIndex,
-                lastPoolSupplyIndex: marketPoolIndexes.poolSupplyIndex,
-                lastPoolBorrowIndex: marketPoolIndexes.poolBorrowIndex,
-                reserveFactor: market.reserveFactor,
-                p2pIndexCursor: market.p2pIndexCursor,
-                delta: deltas[_poolToken]
-            })
-        );
+        (
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex,
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex
+        ) = getUpdatedIndexes(_poolToken);
 
         p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
         p2pBorrowIndex[_poolToken] = newP2PBorrowIndex;
 
-        marketPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-        marketPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
-        marketPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
+        lastPoolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
+        lastPoolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
+        lastPoolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
 
         emit P2PIndexesUpdated(
             _poolToken,
@@ -80,5 +65,63 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             newPoolSupplyIndex,
             newPoolBorrowIndex
         );
+    }
+
+    function getUpdatedIndexes(address _poolToken)
+        public
+        view
+        returns (
+            uint256 poolSupplyIndex_,
+            uint256 poolBorrowIndex_,
+            uint256 p2pSupplyIndex_,
+            uint256 p2pBorrowIndex_
+        )
+    {
+        Types.Market memory market = market[_poolToken];
+        Types.PoolIndexes storage lastPoolIndexes = poolIndexes[_poolToken];
+        if (block.timestamp == lastPoolIndexes.lastUpdateTimestamp)
+            return (
+                lastPoolIndexes.poolSupplyIndex,
+                lastPoolIndexes.poolBorrowIndex,
+                p2pSupplyIndex[_poolToken],
+                p2pBorrowIndex[_poolToken]
+            );
+        (poolSupplyIndex_, poolBorrowIndex_) = InterestRatesModel.getPoolIndexes(
+            pool,
+            market.underlyingToken
+        );
+
+        (p2pSupplyIndex_, p2pBorrowIndex_) = InterestRatesModel.computeP2PIndexes(
+            Types.P2PIndexComputeParams({
+                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
+                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                poolSupplyIndex: poolSupplyIndex_,
+                poolBorrowIndex: poolBorrowIndex_,
+                lastPoolSupplyIndex: lastPoolIndexes.poolSupplyIndex,
+                lastPoolBorrowIndex: lastPoolIndexes.poolBorrowIndex,
+                reserveFactor: market.reserveFactor,
+                p2pIndexCursor: market.p2pIndexCursor,
+                delta: deltas[_poolToken]
+            })
+        );
+    }
+
+    function getUpdatedPoolIndexes(address _poolToken)
+        external
+        view
+        returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_)
+    {
+        (poolSupplyIndex_, poolBorrowIndex_) = InterestRatesModel.getPoolIndexes(
+            pool,
+            market[_poolToken].underlyingToken
+        );
+    }
+
+    function getUpdatedP2PIndexes(address _poolToken)
+        external
+        view
+        returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
+    {
+        (, , p2pSupplyIndex_, p2pBorrowIndex_) = getUpdatedIndexes(_poolToken);
     }
 }

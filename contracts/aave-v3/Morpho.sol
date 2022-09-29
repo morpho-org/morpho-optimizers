@@ -272,4 +272,57 @@ contract Morpho is MorphoGovernance {
             )
         );
     }
+
+    function getUpdatedIndexes(address _poolToken)
+        external
+        returns (
+            uint256 poolSupplyIndex_,
+            uint256 poolBorrowIndex_,
+            uint256 p2pSupplyIndex_,
+            uint256 p2pBorrowIndex_
+        )
+    {
+        return
+            abi.decode(
+                address(interestRatesManager).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        IInterestRatesManager.getUpdatedIndexes.selector,
+                        _poolToken
+                    )
+                ),
+                (uint256, uint256, uint256, uint256)
+            );
+    }
+
+    function getUpdatedPoolIndexes(address _poolToken)
+        external
+        returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_)
+    {
+        return
+            abi.decode(
+                address(interestRatesManager).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        IInterestRatesManager.getUpdatedPoolIndexes.selector,
+                        _poolToken
+                    )
+                ),
+                (uint256, uint256)
+            );
+    }
+
+    function getUpdatedP2PIndexes(address _poolToken)
+        external
+        returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_)
+    {
+        return
+            abi.decode(
+                address(interestRatesManager).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        IInterestRatesManager.getUpdatedP2PIndexes.selector,
+                        _poolToken
+                    )
+                ),
+                (uint256, uint256)
+            );
+    }
 }
