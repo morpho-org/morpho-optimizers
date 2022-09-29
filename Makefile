@@ -17,11 +17,10 @@ ifdef FOUNDRY_ETH_RPC_URL
   FOUNDRY_FUZZ_MAX_LOCAL_REJECTS=16384
   FOUNDRY_FUZZ_MAX_GLOBAL_REJECTS=1048576
 else
+  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
   ifeq (${NETWORK}, avalanche-mainnet)
     FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
   endif
-  
-  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 endif
 
 ifeq (${SMODE}, local)
