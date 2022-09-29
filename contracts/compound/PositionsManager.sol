@@ -217,7 +217,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 borrowBalance;
         uint256 supplyBalance;
         uint256 borrowedPrice;
-        uint256 amountToSeize;
         uint256 closeFactor;
     }
 
@@ -436,7 +435,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _supplier,
         address _receiver,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 withdrawn) {
         if (_amount == 0) revert AmountIsZero();
         Types.MarketStatus memory market = marketStatus[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
@@ -444,11 +443,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
-        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
+        withdrawn = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
 
-        if (_isLiquidatable(_supplier, _poolToken, toWithdraw, 0)) revert UnauthorisedWithdraw();
+        if (_isLiquidatable(_supplier, _poolToken, withdrawn, 0)) revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _safeWithdrawLogic(_poolToken, withdrawn, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -463,7 +462,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) external {
+    ) external returns (uint256 repaid) {
         if (_amount == 0) revert AmountIsZero();
         Types.MarketStatus memory market = marketStatus[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
@@ -471,9 +470,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
+        repaid = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
 
-        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
+        _safeRepayLogic(_poolToken, _repayer, _onBehalf, repaid, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -488,7 +487,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external {
+    ) external returns (uint256 seized) {
         Types.MarketStatus memory collateralMarket = marketStatus[_poolTokenCollateral];
         if (!collateralMarket.isCreated) revert MarketNotCreated();
         if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
@@ -525,14 +524,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
         // Compute the amount of collateral tokens to seize. This is the minimum between the repaid value plus the liquidation incentive and the available supply.
-        vars.amountToSeize = Math.min(
+        seized = Math.min(
             _amount.mul(comptroller.liquidationIncentiveMantissa()).mul(vars.borrowedPrice).div(
                 vars.collateralPrice
             ),
             _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower)
         );
 
-        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, _receiver, 0);
+        _safeWithdrawLogic(_poolTokenCollateral, seized, _borrower, _receiver, 0);
 
         emit Liquidated(
             msg.sender,
@@ -540,7 +539,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _poolTokenBorrowed,
             _amount,
             _poolTokenCollateral,
-            vars.amountToSeize
+            seized
         );
     }
 

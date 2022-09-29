@@ -757,8 +757,9 @@ contract TestWithdraw is TestSetup {
 
         uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier2));
 
-        supplier1.withdraw(cDai, address(supplier2), amount);
+        uint256 withdrawn = supplier1.withdraw(cDai, address(supplier2), amount);
 
         assertEq(ERC20(dai).balanceOf(address(supplier2)), balanceBefore + amount);
+        assertEq(withdrawn, amount);
     }
 }

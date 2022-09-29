@@ -76,14 +76,14 @@ interface IMorpho {
     function borrow(address _poolToken, uint256 _amount, uint256 _maxGasForMatching) external;
     function borrow(address _poolToken, address _receiver, uint256 _amount, uint256 _maxGasForMatching) external;
 
-    function withdraw(address _poolToken, uint256 _amount) external;
-    function withdraw(address _poolToken, address _receiver, uint256 _amount) external;
+    function withdraw(address _poolToken, uint256 _amount) external returns (uint256 withdrawn);
+    function withdraw(address _poolToken, address _receiver, uint256 _amount) external returns (uint256 withdrawn);
 
-    function repay(address _poolToken, uint256 _amount) external;
-    function repay(address _poolToken, address _onBehalf, uint256 _amount) external;
+    function repay(address _poolToken, uint256 _amount) external returns (uint256 repaid);
+    function repay(address _poolToken, address _onBehalf, uint256 _amount) external returns (uint256 repaid);
 
-    function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external;
-    function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, address _receiver, uint256 _amount) external;
+    function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external returns (uint256 seized);
+    function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, address _receiver, uint256 _amount) external returns (uint256 seized);
 
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken) external returns (uint256 claimedAmount);
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken, address _receiver) external returns (uint256 claimedAmount);

@@ -135,28 +135,28 @@ contract User {
         morpho.borrow(_poolToken, _receiver, _amount, _maxGasForMatching);
     }
 
-    function withdraw(address _poolToken, uint256 _amount) external {
-        morpho.withdraw(_poolToken, _amount);
+    function withdraw(address _poolToken, uint256 _amount) external returns (uint256 withdrawn) {
+        return morpho.withdraw(_poolToken, _amount);
     }
 
     function withdraw(
         address _poolToken,
         address _receiver,
         uint256 _amount
-    ) external {
-        morpho.withdraw(_poolToken, _receiver, _amount);
+    ) external returns (uint256 withdrawn) {
+        return morpho.withdraw(_poolToken, _receiver, _amount);
     }
 
-    function repay(address _poolToken, uint256 _amount) external {
-        morpho.repay(_poolToken, _amount);
+    function repay(address _poolToken, uint256 _amount) external returns (uint256 repaid) {
+        return morpho.repay(_poolToken, _amount);
     }
 
     function repay(
         address _poolToken,
         address _onBehalf,
         uint256 _amount
-    ) public {
-        morpho.repay(_poolToken, _onBehalf, _amount);
+    ) public returns (uint256 repaid) {
+        return morpho.repay(_poolToken, _onBehalf, _amount);
     }
 
     function liquidate(
@@ -164,8 +164,8 @@ contract User {
         address _poolTokenCollateral,
         address _borrower,
         uint256 _amount
-    ) external {
-        morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _amount);
+    ) external returns (uint256 seized) {
+        return morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _amount);
     }
 
     function liquidate(
@@ -174,8 +174,15 @@ contract User {
         address _borrower,
         address _receiver,
         uint256 _amount
-    ) external {
-        morpho.liquidate(_poolTokenBorrowed, _poolTokenCollateral, _borrower, _receiver, _amount);
+    ) external returns (uint256 seized) {
+        return
+            morpho.liquidate(
+                _poolTokenBorrowed,
+                _poolTokenCollateral,
+                _borrower,
+                _receiver,
+                _amount
+            );
     }
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {
