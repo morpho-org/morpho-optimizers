@@ -25,7 +25,7 @@ contract TestBorrow is TestSetup {
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
-        borrower1.borrow(aDai, amount);
+        borrower1.borrow(aDai, address(0xDECAFC0FFEE), amount);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
@@ -34,6 +34,7 @@ contract TestBorrow is TestSetup {
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
+        assertEq(ERC20(dai).balanceOf(address(0xDECAFC0FFEE)), amount);
     }
 
     // There is 1 available supplier, he matches 100% of the borrower liquidity, everything is `inP2P`.

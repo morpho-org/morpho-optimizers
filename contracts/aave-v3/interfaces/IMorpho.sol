@@ -90,12 +90,13 @@ interface IMorpho {
     function borrow(address _poolToken, address _receiver, uint256 _amount, uint256 _maxGasForMatching) external;
 
     function withdraw(address _poolToken, uint256 _amount) external;
-    function withdraw(address _poolToken, uint256 _amount, address _receiver) external;
+    function withdraw(address _poolToken, address _receiver, uint256 _amount) external;
 
     function repay(address _poolToken, uint256 _amount) external;
     function repay(address _poolToken, address _onBehalf, uint256 _amount) external;
 
     function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external;
+    function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, address _receiver, uint256 _amount) external;
     
     function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);
     function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken, address _receiver) external returns (address[] memory rewardTokens, uint256[] memory claimedAmounts);

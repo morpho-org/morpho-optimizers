@@ -297,4 +297,52 @@ contract TestLiquidate is TestSetup {
     function testFailLiquidateZero() public {
         morpho.liquidate(aDai, aDai, aDai, 0);
     }
+
+    function testShouldLiquidateUserToReceiver() public {
+        uint256 collateral = 100_000 ether;
+
+        borrower1.approve(usdc, address(morpho), to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+        borrower1.borrow(aDai, amount);
+
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
+
+        // Liquidate
+        uint256 toRepay = amount / 2;
+        User liquidator = borrower3;
+        uint256 usdcBalanceBefore = ERC20(usdc).balanceOf(address(liquidator));
+
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), address(8), toRepay);
+
+        ExitPositionsManager.LiquidateVars memory vars;
+
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
+        .getConfiguration(usdc)
+        .getParams();
+
+        (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(dai).getParams();
+
+        uint256 amountToSeize = (toRepay *
+            customOracle.getAssetPrice(dai) *
+            10**vars.collateralReserveDecimals *
+            vars.liquidationBonus) /
+            (10**vars.borrowedReserveDecimals * customOracle.getAssetPrice(usdc) * 10_000);
+
+        assertEq(
+            ERC20(usdc).balanceOf(address(liquidator)),
+            usdcBalanceBefore,
+            "unexpected liquidator balance"
+        );
+        assertApproxEqAbs(
+            ERC20(usdc).balanceOf(address(8)),
+            amountToSeize,
+            1,
+            "unexpected receiver balance"
+        );
+    }
 }
