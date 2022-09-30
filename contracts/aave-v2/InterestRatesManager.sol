@@ -21,16 +21,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    /// STORAGE ///
-
-    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-
-    uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
-
-    constructor() {
-        ST_ETH_BASE_REBASE_INDEX = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
-    }
-
     /// EVENTS ///
 
     /// @notice Emitted when the peer-to-peer indexes of a market are updated.
@@ -97,10 +87,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pSupplyIndex[_poolToken],
                 p2pBorrowIndex[_poolToken]
             );
+
         (poolSupplyIndex_, poolBorrowIndex_) = InterestRatesModel.getPoolIndexes(
             pool,
-            market.underlyingToken,
-            market.underlyingToken == ST_ETH ? ST_ETH_BASE_REBASE_INDEX : 0
+            market.underlyingToken
         );
 
         (p2pSupplyIndex_, p2pBorrowIndex_) = InterestRatesModel.computeP2PIndexes(
@@ -123,11 +113,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         view
         returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_)
     {
-        address underlying = market[_poolToken].underlyingToken;
         (poolSupplyIndex_, poolBorrowIndex_) = InterestRatesModel.getPoolIndexes(
             pool,
-            underlying,
-            underlying == ST_ETH ? ST_ETH_BASE_REBASE_INDEX : 0
+            market[_poolToken].underlyingToken
         );
     }
 

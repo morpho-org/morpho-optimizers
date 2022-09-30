@@ -894,7 +894,7 @@ contract TestLens is TestSetup {
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aStEth), "p2p borrow indexes different");
 
         uint256 rebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
-        uint256 baseRebaseIndex = interestRatesManager.ST_ETH_BASE_REBASE_INDEX();
+        uint256 baseRebaseIndex = InterestRatesModel.ST_ETH_BASE_REBASE_INDEX;
 
         assertEq(
             newPoolSupplyIndex,
@@ -1628,7 +1628,7 @@ contract TestLens is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, totalBalance);
 
-        (uint256 p2pBalanceBefore, uint256 poolBalanceBefore, ) = lens.getCurrentSupplyBalanceInOf(
+        (uint256 p2pBalanceBefore, , uint256 deposited) = lens.getCurrentSupplyBalanceInOf(
             aStEth,
             address(supplier1)
         );
@@ -1638,7 +1638,7 @@ contract TestLens is TestSetup {
         uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
         vm.store(stEth, keccak256("lido.Lido.beaconBalance"), bytes32(beaconBalanceBefore / 10));
         uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
-        assertEq(beaconBalanceBefore / 10, beaconBalanceAfter);
+        assertEq(beaconBalanceAfter, beaconBalanceBefore / 10);
 
         (uint256 p2pBalanceAfter, uint256 poolBalanceAfter, ) = lens.getCurrentSupplyBalanceInOf(
             aStEth,
@@ -1646,13 +1646,7 @@ contract TestLens is TestSetup {
         );
         assertEq(p2pBalanceBefore, 0, "P2P balance before");
         assertEq(p2pBalanceAfter, 0, "P2P balance after");
-        assertApproxEqAbs(poolBalanceBefore, totalBalance, 1, "pool balance before");
         // Not exact because the total assets of stEth includes other variables
-        assertApproxEqAbs(
-            poolBalanceAfter,
-            totalBalance / 10,
-            totalBalance / 50,
-            "pool balance before"
-        );
+        assertApproxEqAbs(poolBalanceAfter, deposited / 10, deposited / 50, "pool balance after");
     }
 }

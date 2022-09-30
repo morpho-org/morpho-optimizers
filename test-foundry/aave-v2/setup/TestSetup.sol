@@ -17,7 +17,7 @@ import "@contracts/aave-v2/libraries/Types.sol";
 
 import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
 import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
-import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
+import {InterestRatesManager, InterestRatesModel} from "@contracts/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";

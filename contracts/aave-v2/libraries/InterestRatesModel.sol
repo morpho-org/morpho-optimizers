@@ -14,6 +14,9 @@ library InterestRatesModel {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
+    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    uint256 public constant ST_ETH_BASE_REBASE_INDEX = 1_086492192583716523804482274;
+
     /// STRUCTS ///
 
     struct P2PRateComputeParams {
@@ -185,22 +188,21 @@ library InterestRatesModel {
     /// @notice Returns the current pool indexes.
     /// @param pool The lending pool.
     /// @param _underlyingToken The address of the underlying token.
-    /// @param _stethBaseRebaseIndex The base rebase index of the stETH. 0 if not stETH.
     /// @return poolSupplyIndex The pool supply index.
     /// @return poolBorrowIndex The pool borrow index.
-    function getPoolIndexes(
-        ILendingPool pool,
-        address _underlyingToken,
-        uint256 _stethBaseRebaseIndex
-    ) internal view returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex) {
+    function getPoolIndexes(ILendingPool pool, address _underlyingToken)
+        internal
+        view
+        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
+    {
         poolSupplyIndex = pool.getReserveNormalizedIncome(_underlyingToken);
         poolBorrowIndex = pool.getReserveNormalizedVariableDebt(_underlyingToken);
 
-        if (_stethBaseRebaseIndex != 0) {
-            uint256 rebaseIndex = ILido(_underlyingToken).getPooledEthByShares(WadRayMath.RAY);
+        if (_underlyingToken == ST_ETH) {
+            uint256 rebaseIndex = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
 
-            poolSupplyIndex = poolSupplyIndex.rayMul(rebaseIndex).rayDiv(_stethBaseRebaseIndex);
-            poolBorrowIndex = poolBorrowIndex.rayMul(rebaseIndex).rayDiv(_stethBaseRebaseIndex);
+            poolSupplyIndex = poolSupplyIndex.rayMul(rebaseIndex).rayDiv(ST_ETH_BASE_REBASE_INDEX);
+            poolBorrowIndex = poolBorrowIndex.rayMul(rebaseIndex).rayDiv(ST_ETH_BASE_REBASE_INDEX);
         }
     }
 }
