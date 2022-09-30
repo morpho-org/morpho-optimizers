@@ -23,7 +23,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     uint256 public p2pIndexCursorTest = 3_333;
 
     // prettier-ignore
-    function computeP2PIndexes(Types.P2PIndexComputeParams memory _params)
+    function computeP2PIndexes(InterestRatesManager.Params memory _params)
         public
         pure
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
@@ -64,7 +64,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputation() public {
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -76,14 +76,14 @@ contract TestInterestRates is InterestRatesManager, Test {
             Types.Delta(0, 0, 0, 0)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithReserveFactor() public {
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -95,14 +95,14 @@ contract TestInterestRates is InterestRatesManager, Test {
             Types.Delta(0, 0, 0, 0)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithDelta() public {
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -114,14 +114,14 @@ contract TestInterestRates is InterestRatesManager, Test {
             Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithDeltaAndReserveFactor() public {
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -133,14 +133,14 @@ contract TestInterestRates is InterestRatesManager, Test {
             Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) =InterestRatesModel.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationEdgeCase() public {
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolBorrowIndexTest,
@@ -152,7 +152,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
@@ -192,9 +192,9 @@ contract TestInterestRates is InterestRatesManager, Test {
         hevm.assume(_p2pSupplyAmount * _p2pSupplyIndex / RAY > _p2pSupplyDelta * _poolSupplyIndex / RAY);
         hevm.assume(_p2pBorrowAmount * _p2pBorrowIndex / RAY > _p2pBorrowDelta * _poolBorrowIndex / RAY);
 
-        Types.P2PIndexComputeParams memory params = Types.P2PIndexComputeParams(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = InterestRatesModel.computeP2PIndexes(params);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);
         assertApproxEqAbs(newP2PSupplyIndex, expectednewP2PSupplyIndex, 400);
         assertApproxEqAbs(newP2PBorrowIndex, expectednewP2PBorrowIndex, 400);
