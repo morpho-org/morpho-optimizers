@@ -15,14 +15,11 @@ contract TestLens is TestSetup {
         uint256 poolBorrowIndex;
     }
 
-    function testUpgradeLens() public {
+    function testIndexesShouldBeEqualAfterUpgrade() public {
         Lens lensImplV2 = new Lens(address(morpho));
 
         address[] memory marketsCreated = lens.getAllMarkets();
         Vars[] memory expectedValues = new Vars[](marketsCreated.length);
-
-        vm.prank(proxyAdmin.owner());
-        proxyAdmin.upgrade(lensProxy, address(lensImplV2));
 
         for (uint256 i; i < marketsCreated.length; ++i) {
             address market = marketsCreated[i];
@@ -40,6 +37,9 @@ contract TestLens is TestSetup {
             expectedValues[i].poolSupplyIndex = poolSupplyIndex;
             expectedValues[i].poolBorrowIndex = poolBorrowIndex;
         }
+
+        vm.prank(proxyAdmin.owner());
+        proxyAdmin.upgrade(lensProxy, address(lensImplV2));
 
         for (uint256 i; i < marketsCreated.length; ++i) {
             address market = marketsCreated[i];
