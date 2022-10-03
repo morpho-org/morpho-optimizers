@@ -16,6 +16,13 @@ contract Utils is Test {
     uint256 internal constant PERCENT_BASE = 10_000;
     uint256 internal constant AVERAGE_BLOCK_TIME = 2;
 
+    /// https://github.com/lidofinance/lido-dao/blob/df95e563445821988baf9869fde64d86c36be55f/contracts/0.4.24/Lido.sol#L99-L105
+    bytes32 internal constant LIDO_BUFFERED_ETHER = keccak256("lido.Lido.bufferedEther");
+    bytes32 internal constant LIDO_DEPOSITED_VALIDATORS =
+        keccak256("lido.Lido.depositedValidators");
+    bytes32 internal constant LIDO_BEACON_BALANCE = keccak256("lido.Lido.beaconBalance");
+    bytes32 internal constant LIDO_BEACON_VALIDATORS = keccak256("lido.Lido.beaconValidators");
+
     function to6Decimals(uint256 value) internal pure returns (uint256) {
         return value / 1e12;
     }

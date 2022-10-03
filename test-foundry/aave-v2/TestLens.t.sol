@@ -1613,46 +1613,4 @@ contract TestLens is TestSetup {
         (uint256 withdrawable, ) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
         assertEq(withdrawable, 0);
     }
-
-    function testBalanceShouldBeReflectedWhenStethSlashed() public {
-        createMarket(aStEth);
-
-        deal(address(supplier1), 1_000 ether);
-        uint256 totalEthBalance = address(supplier1).balance;
-        uint256 totalBalance = totalEthBalance / 2;
-        vm.prank(address(supplier1));
-        ILido(stEth).submit{value: totalBalance}(address(0));
-
-        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
-
-        supplier1.approve(stEth, type(uint256).max);
-        supplier1.supply(aStEth, totalBalance);
-
-        (uint256 p2pBalanceBefore, uint256 poolBalanceBefore, ) = lens.getCurrentSupplyBalanceInOf(
-            aStEth,
-            address(supplier1)
-        );
-
-        // Update the beacon balance to slash.
-        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
-        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
-        vm.store(stEth, keccak256("lido.Lido.beaconBalance"), bytes32(beaconBalanceBefore / 10));
-        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
-        assertEq(beaconBalanceBefore / 10, beaconBalanceAfter);
-
-        (uint256 p2pBalanceAfter, uint256 poolBalanceAfter, ) = lens.getCurrentSupplyBalanceInOf(
-            aStEth,
-            address(supplier1)
-        );
-        assertEq(p2pBalanceBefore, 0, "P2P balance before");
-        assertEq(p2pBalanceAfter, 0, "P2P balance after");
-        assertApproxEqAbs(poolBalanceBefore, totalBalance, 1, "pool balance before");
-        // Not exact because the total assets of stEth includes other variables
-        assertApproxEqAbs(
-            poolBalanceAfter,
-            totalBalance / 10,
-            totalBalance / 50,
-            "pool balance before"
-        );
-    }
 }
