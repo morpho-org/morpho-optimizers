@@ -22,6 +22,7 @@ abstract contract LensStorage {
 
     uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
+    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
 
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
