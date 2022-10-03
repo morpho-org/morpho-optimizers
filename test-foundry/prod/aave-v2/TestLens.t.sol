@@ -16,7 +16,7 @@ contract TestBorrow is TestSetup {
             uint256 p2pBorrowIndexBefore,
             uint256 poolSupplyIndexBefore,
             uint256 poolBorrowIndexBefore
-        ) = lens.getIndexes(aStEth);
+        ) = lens.getIndexes(aDai);
 
         vm.prank(proxyAdmin.owner());
         proxyAdmin.upgrade(lensProxy, address(lensImplV2));
@@ -26,7 +26,7 @@ contract TestBorrow is TestSetup {
             uint256 p2pBorrowIndexAfter,
             uint256 poolSupplyIndexAfter,
             uint256 poolBorrowIndexAfter
-        ) = lens.getIndexes(aStEth);
+        ) = lens.getIndexes(aDai);
 
         assertEq(p2pSupplyIndexAfter, p2pSupplyIndexBefore);
         assertEq(p2pBorrowIndexAfter, p2pBorrowIndexBefore);
