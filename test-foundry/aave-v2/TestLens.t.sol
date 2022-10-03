@@ -717,17 +717,13 @@ contract TestLens is TestSetup {
                 expectedConfig.underlyingToken,
                 expectedConfig.reserveFactor,
                 expectedConfig.p2pIndexCursor,
-                expectedConfig.isP2PDisabled,
+                expectedConfig.isCreated,
                 ,
                 ,
-                ,
-                ,
-                ,
-                ,
-
+                expectedConfig.isP2PDisabled
             ) = morpho.market(aDai);
 
-            assertTrue(isCreated == (expectedConfig.underlyingToken != address(0)));
+            assertTrue(isCreated == expectedConfig.isCreated);
             assertTrue(isP2PDisabled == expectedConfig.isP2PDisabled);
             assertEq(reserveFactor, expectedConfig.reserveFactor);
             assertEq(p2pIndexCursor, expectedConfig.p2pIndexCursor);
@@ -737,20 +733,16 @@ contract TestLens is TestSetup {
             .getMarketConfiguration(aDai);
             assertEq(underlying, dai);
 
-            Types.Market memory expectedConfig;
+            Types.PauseStatus memory expectedConfig;
             (
-                ,
-                ,
-                ,
-                ,
                 expectedConfig.isSupplyPaused,
                 expectedConfig.isBorrowPaused,
                 expectedConfig.isWithdrawPaused,
                 expectedConfig.isRepayPaused,
                 expectedConfig.isLiquidateCollateralPaused,
                 expectedConfig.isLiquidateBorrowPaused,
-
-            ) = morpho.market(aDai);
+                expectedConfig.isDeprecated
+            ) = morpho.pauseStatus(aDai);
 
             assertTrue(
                 isPaused ==

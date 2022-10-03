@@ -23,7 +23,6 @@ abstract contract MorphoUtils is MorphoStorage {
     using UserConfiguration for DataTypes.UserConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
-    using MarketLib for Types.Market;
     using DelegateCall for address;
     using WadRayMath for uint256;
     using Math for uint256;
@@ -38,7 +37,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated()) revert MarketNotCreated();
+        if (!market[_poolToken].isCreated) revert MarketNotCreated();
         _;
     }
 

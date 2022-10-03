@@ -13,10 +13,6 @@ contract TestPausableMarket is TestSetup {
 
         for (uint256 i; i < pools.length; ++i) {
             (
-                ,
-                ,
-                ,
-                ,
                 bool isSupplyPaused,
                 bool isBorrowPaused,
                 bool isWithdrawPaused,
@@ -24,7 +20,7 @@ contract TestPausableMarket is TestSetup {
                 bool isLiquidateCollateralPaused,
                 bool isLiquidateBorrowPaused,
 
-            ) = morpho.market(pools[i]);
+            ) = morpho.pauseStatus(pools[i]);
             assertTrue(isSupplyPaused);
             assertTrue(isBorrowPaused);
             assertTrue(isWithdrawPaused);
@@ -37,10 +33,6 @@ contract TestPausableMarket is TestSetup {
 
         for (uint256 i; i < pools.length; ++i) {
             (
-                ,
-                ,
-                ,
-                ,
                 bool isSupplyPaused,
                 bool isBorrowPaused,
                 bool isWithdrawPaused,
@@ -48,7 +40,7 @@ contract TestPausableMarket is TestSetup {
                 bool isLiquidateCollateralPaused,
                 bool isLiquidateBorrowPaused,
 
-            ) = morpho.market(pools[i]);
+            ) = morpho.pauseStatus(pools[i]);
             assertFalse(isSupplyPaused);
             assertFalse(isBorrowPaused);
             assertFalse(isWithdrawPaused);

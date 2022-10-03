@@ -41,19 +41,8 @@ contract TestGovernance is TestSetup {
         morpho.createMarket(wEth, 0, 10_001);
 
         morpho.createMarket(wEth, 1_000, 3_333);
-        (
-            address underlyingToken,
-            uint16 reserveFactor,
-            uint256 p2pIndexCursor,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = morpho.market(aWeth);
+        (address underlyingToken, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho
+        .market(aWeth);
         assertEq(reserveFactor, 1_000);
         assertEq(p2pIndexCursor, 3_333);
         assertTrue(underlyingToken == wEth);
@@ -73,7 +62,7 @@ contract TestGovernance is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         morpho.setReserveFactor(aDai, 1111);
-        (, uint16 reserveFactor, , , , , , , , , ) = morpho.market(aDai);
+        (, uint16 reserveFactor, , , , , ) = morpho.market(aDai);
         assertEq(reserveFactor, 1111);
     }
 
@@ -130,7 +119,7 @@ contract TestGovernance is TestSetup {
         morpho.setIsP2PDisabled(aDai, true);
 
         morpho.setIsP2PDisabled(aDai, true);
-        (, , , bool isP2PDisabled, , , , , , , ) = morpho.market(aDai);
+        (, , , , , , bool isP2PDisabled) = morpho.market(aDai);
         assertTrue(isP2PDisabled);
     }
 
@@ -214,11 +203,11 @@ contract TestGovernance is TestSetup {
         morpho.setIsDeprecated(aDai, true);
 
         morpho.setIsDeprecated(aDai, true);
-        (, , , , , , , , , , bool isDeprecated) = morpho.market(aDai);
+        (, , , , , , bool isDeprecated) = morpho.pauseStatus(aDai);
         assertTrue(isDeprecated);
 
         morpho.setIsDeprecated(aDai, false);
-        (, , , , , , , , , , isDeprecated) = morpho.market(aDai);
+        (, , , , , , isDeprecated) = morpho.pauseStatus(aDai);
         assertFalse(isDeprecated);
     }
 

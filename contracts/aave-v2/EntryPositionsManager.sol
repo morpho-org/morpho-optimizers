@@ -14,7 +14,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
-    using MarketLib for Types.Market;
     using WadRayMath for uint256;
     using Math for uint256;
 
@@ -99,8 +98,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isSupplyPaused) revert SupplyPaused();
+        if (!market.isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyPaused();
         _updateIndexes(_poolToken);
 
         SupplyVars memory vars;
@@ -196,8 +195,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isBorrowPaused) revert BorrowPaused();
+        if (!market.isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
