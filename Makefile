@@ -37,7 +37,7 @@ else
       FOUNDRY_FORK_BLOCK_NUMBER?=29116728
       FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
     endif
-  
+
     FOUNDRY_CHAIN_ID=137
     FOUNDRY_FORK_BLOCK_NUMBER?=22116728
   endif
@@ -121,7 +121,7 @@ single-% s-%:
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
 
-storage-layout-check: 
+storage-layout-check:
 	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
 
 config:
