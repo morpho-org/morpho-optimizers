@@ -97,7 +97,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
-        Types.Market memory market = market[_poolToken];
+        Types.Market memory market = _market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyPaused();
         _updateIndexes(_poolToken);
@@ -194,7 +194,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        Types.Market memory market = market[_poolToken];
+        Types.Market memory market = _market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowPaused();
 

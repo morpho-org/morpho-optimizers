@@ -52,7 +52,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
     mapping(address => Types.PoolIndexes) public poolIndexes; // Last pool index stored.
-    mapping(address => Types.Market) public market; // Market information.
+    mapping(address => Types.Market) internal _market; // Market information. Note: internal because the granular pausing features was added after deployment.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
     mapping(address => bytes32) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
 
@@ -69,7 +69,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     IRewardsManager public rewardsManager;
     address public treasuryVault;
 
-    /// APPENDIX STORAGE ///
+    /// GRANULAR PAUSING & DEPRECATED MARKET STORAGE ///
 
     mapping(address => Types.PauseStatus) public pauseStatus;
 
@@ -78,4 +78,37 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice Constructs the contract.
     /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
     constructor() initializer {}
+
+    /// GETTERS ///
+
+    /// @notice Returns market's data.
+    /// @dev Getter letting former integrations with the Morpho version introducing granular pausing and deprecrated markets.
+    function market(address _poolToken)
+        external
+        view
+        returns (
+            address underlyingToken,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor,
+            bool isCreated,
+            bool isPaused,
+            bool isPartiallyPaused,
+            bool isP2PDisabled
+        )
+    {
+        Types.Market memory marketData = _market[_poolToken];
+        Types.PauseStatus memory pause = pauseStatus[_poolToken];
+
+        underlyingToken = marketData.underlyingToken;
+        reserveFactor = marketData.reserveFactor;
+        p2pIndexCursor = marketData.p2pIndexCursor;
+        isCreated = marketData.isCreated;
+        isPaused =
+            pause.isSupplyPaused &&
+            pause.isBorrowPaused &&
+            pause.isWithdrawPaused &&
+            pause.isRepayPaused;
+        isPartiallyPaused = pause.isSupplyPaused && pause.isBorrowPaused;
+        isP2PDisabled = marketData.isP2PDisabled;
+    }
 }

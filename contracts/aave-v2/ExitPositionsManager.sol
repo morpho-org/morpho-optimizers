@@ -155,8 +155,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
-        Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (!_market[_poolToken].isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
@@ -182,8 +181,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        Types.Market memory market = market[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
+        if (!_market[_poolToken].isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolToken].isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
@@ -204,11 +202,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
-        if (!market[_poolTokenCollateral].isCreated) revert MarketNotCreated();
+        if (!_market[_poolTokenCollateral].isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
             revert LiquidateCollateralPaused();
         Types.PauseStatus memory pauseBorrow = pauseStatus[_poolTokenBorrowed];
-        if (!market[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
+        if (!_market[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolTokenBorrowed].isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
 
         if (
@@ -236,8 +234,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        address tokenCollateralAddress = market[_poolTokenCollateral].underlyingToken;
-        address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
+        address tokenCollateralAddress = _market[_poolTokenCollateral].underlyingToken;
+        address tokenBorrowedAddress = _market[_poolTokenBorrowed].underlyingToken;
         {
             ILendingPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
@@ -315,7 +313,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         emit P2PSupplyDeltaUpdated(_poolToken, deltasMem.p2pSupplyDelta);
         emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
 
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(_market[_poolToken].underlyingToken);
         _borrowFromPool(underlyingToken, _amount);
         _supplyToPool(underlyingToken, _amount);
 
@@ -337,7 +335,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(_market[_poolToken].underlyingToken);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
@@ -415,7 +413,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Promote pool suppliers.
         if (
             vars.remainingToWithdraw > 0 &&
-            !market[_poolToken].isP2PDisabled &&
+            !_market[_poolToken].isP2PDisabled &&
             suppliersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
@@ -491,7 +489,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(_market[_poolToken].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
@@ -588,7 +586,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Promote pool borrowers.
         if (
             vars.remainingToRepay > 0 &&
-            !market[_poolToken].isP2PDisabled &&
+            !_market[_poolToken].isP2PDisabled &&
             borrowersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(

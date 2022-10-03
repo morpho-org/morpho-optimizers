@@ -37,7 +37,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated) revert MarketNotCreated();
+        if (!_market[_poolToken].isCreated) revert MarketNotCreated();
         _;
     }
 
@@ -270,7 +270,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
             if (!_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) continue;
 
-            vars.underlyingToken = market[vars.poolToken].underlyingToken;
+            vars.underlyingToken = _market[vars.poolToken].underlyingToken;
             vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingToken);
 
             if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
