@@ -2,11 +2,8 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
-import "./helpers/FlashLoan.sol";
 
 contract TestSupply is TestSetup {
-    using stdStorage for StdStorage;
-
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply1() public {
         uint256 amount = 10_000 ether;
@@ -261,113 +258,5 @@ contract TestSupply is TestSetup {
 
         vm.warp(block.timestamp + 1);
         supplier1.supply(aDai, amount);
-    }
-
-    function testStEthSupplyShouldAccrueStakingRewards() public {
-        createMarket(aStEth);
-
-        stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
-            1_000 ether
-        );
-
-        // Handle roundings.
-        vm.prank(address(supplier1));
-        ERC20(stEth).transfer(address(morpho), 100);
-
-        supplier1.approve(stEth, type(uint256).max);
-        supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
-
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
-        (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-
-        vm.store(
-            stEth,
-            LIDO_BUFFERED_ETHER,
-            bytes32(uint256(vm.load(stEth, LIDO_BUFFERED_ETHER)) * 2)
-        );
-        vm.store(
-            stEth,
-            LIDO_DEPOSITED_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_DEPOSITED_VALIDATORS)) * 2)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_BALANCE,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_BALANCE)) * 2)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_VALIDATORS)) * 2)
-        );
-        deal(stEth, stEth.balance * 2);
-
-        // Update timestamp to update indexes.
-        vm.warp(block.timestamp + 1);
-
-        (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertEq(totalAfter, totalBefore * 2, "unexpected balance after rewards accrued");
-
-        uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
-        supplier1.withdraw(aStEth, type(uint256).max);
-        uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
-
-        // Staking rewards should accrue on stETH even if there's is no supply interest rate on Aave.
-        assertApproxEqAbs(withdrawn, totalBefore * 2, 1, "unexpected balance after withdraw");
-    }
-
-    function testStEthSupplyShouldReflectOnSlashing() public {
-        createMarket(aStEth);
-
-        stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
-            1_000 ether
-        );
-
-        // Handle roundings.
-        vm.prank(address(supplier1));
-        ERC20(stEth).transfer(address(morpho), 100);
-
-        supplier1.approve(stEth, type(uint256).max);
-        supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
-
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
-        (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-
-        vm.store(
-            stEth,
-            LIDO_BUFFERED_ETHER,
-            bytes32(uint256(vm.load(stEth, LIDO_BUFFERED_ETHER)) / 10)
-        );
-        vm.store(
-            stEth,
-            LIDO_DEPOSITED_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_DEPOSITED_VALIDATORS)) / 10)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_BALANCE,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_BALANCE)) / 10)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_VALIDATORS)) / 10)
-        );
-        deal(stEth, stEth.balance / 10);
-
-        // Update timestamp to update indexes.
-        vm.warp(block.timestamp + 1);
-
-        (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertEq(totalAfter, totalBefore / 10, "unexpected balance after slash");
-
-        uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
-        supplier1.withdraw(aStEth, type(uint256).max);
-        uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
-
-        // Slashed amount should reflect on stETH even if there's is no supply interest rate on Aave.
-        assertApproxEqAbs(withdrawn, totalBefore / 10, 1, "unexpected balance after withdraw");
     }
 }
