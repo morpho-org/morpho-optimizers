@@ -8,10 +8,10 @@ interface IInterestRatesManager {
         external
         view
         returns (
-            uint256 poolSupplyIndex_,
-            uint256 poolBorrowIndex_,
             uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_
+            uint256 p2pBorrowIndex_,
+            uint256 poolSupplyIndex_,
+            uint256 poolBorrowIndex_
         );
 
     function getUpdatedPoolIndexes(address _poolToken)

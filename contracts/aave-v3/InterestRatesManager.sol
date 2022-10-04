@@ -45,10 +45,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         if (block.timestamp == lastPoolIndexes.lastUpdateTimestamp) return;
 
         (
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex,
             uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
         ) = getUpdatedIndexes(_poolToken);
 
         p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
@@ -71,21 +71,24 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         public
         view
         returns (
-            uint256 poolSupplyIndex_,
-            uint256 poolBorrowIndex_,
             uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_
+            uint256 p2pBorrowIndex_,
+            uint256 poolSupplyIndex_,
+            uint256 poolBorrowIndex_
         )
     {
         Types.Market memory market = market[_poolToken];
-        Types.PoolIndexes storage lastPoolIndexes = poolIndexes[_poolToken];
+        Types.PoolIndexes memory lastPoolIndexes = poolIndexes[_poolToken];
+        uint256 lastP2PSupplyIndex = p2pSupplyIndex[_poolToken];
+        uint256 lastP2PBorrowIndex = p2pBorrowIndex[_poolToken];
         if (block.timestamp == lastPoolIndexes.lastUpdateTimestamp)
             return (
+                lastP2PSupplyIndex,
+                lastP2PBorrowIndex,
                 lastPoolIndexes.poolSupplyIndex,
-                lastPoolIndexes.poolBorrowIndex,
-                p2pSupplyIndex[_poolToken],
-                p2pBorrowIndex[_poolToken]
+                lastPoolIndexes.poolBorrowIndex
             );
+
         (poolSupplyIndex_, poolBorrowIndex_) = InterestRatesModel.getPoolIndexes(
             pool,
             market.underlyingToken
@@ -93,8 +96,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         (p2pSupplyIndex_, p2pBorrowIndex_) = InterestRatesModel.computeP2PIndexes(
             Types.P2PIndexComputeParams({
-                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
-                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                lastP2PSupplyIndex: lastP2PSupplyIndex,
+                lastP2PBorrowIndex: lastP2PBorrowIndex,
                 poolSupplyIndex: poolSupplyIndex_,
                 poolBorrowIndex: poolBorrowIndex_,
                 lastPoolSupplyIndex: lastPoolIndexes.poolSupplyIndex,
@@ -122,6 +125,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         view
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
     {
-        (, , p2pSupplyIndex_, p2pBorrowIndex_) = getUpdatedIndexes(_poolToken);
+        (p2pSupplyIndex_, p2pBorrowIndex_, , ) = getUpdatedIndexes(_poolToken);
     }
 }

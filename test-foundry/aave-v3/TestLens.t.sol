@@ -1582,4 +1582,85 @@ contract TestLens is TestSetup {
         (uint256 withdrawable, ) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
         assertEq(withdrawable, 0);
     }
+
+    struct GetIndexTestStruct {
+        uint256 p2pSupplyIndex;
+        uint256 p2pBorrowIndex;
+        uint256 poolSupplyIndex;
+        uint256 poolBorrowIndex;
+    }
+
+    function testGetIndexes() public {
+        GetIndexTestStruct memory beforeIndexes;
+        GetIndexTestStruct memory morphoIndexes;
+        GetIndexTestStruct memory morphoIndexesParts;
+        GetIndexTestStruct memory lensIndexes;
+
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+        borrower1.borrow(aDai, amount / 4);
+
+        (
+            beforeIndexes.p2pSupplyIndex,
+            beforeIndexes.p2pBorrowIndex,
+            beforeIndexes.poolSupplyIndex,
+            beforeIndexes.poolBorrowIndex
+        ) = morpho.getUpdatedIndexes(aDai);
+
+        vm.warp(block.timestamp + 10000);
+        vm.roll(block.number + 500);
+
+        (
+            morphoIndexes.p2pSupplyIndex,
+            morphoIndexes.p2pBorrowIndex,
+            morphoIndexes.poolSupplyIndex,
+            morphoIndexes.poolBorrowIndex
+        ) = morpho.getUpdatedIndexes(aDai);
+
+        (morphoIndexesParts.p2pSupplyIndex, morphoIndexesParts.p2pBorrowIndex) = morpho
+        .getUpdatedP2PIndexes(aDai);
+        (morphoIndexesParts.poolSupplyIndex, morphoIndexesParts.poolBorrowIndex) = morpho
+        .getUpdatedPoolIndexes(aDai);
+
+        (
+            lensIndexes.p2pSupplyIndex,
+            lensIndexes.p2pBorrowIndex,
+            lensIndexes.poolSupplyIndex,
+            lensIndexes.poolBorrowIndex
+        ) = lens.getIndexes(aDai);
+
+        // Indexes should have grown
+        assertGt(
+            morphoIndexes.p2pSupplyIndex,
+            beforeIndexes.p2pSupplyIndex,
+            "p2p supply index growth"
+        );
+        assertGt(
+            morphoIndexes.p2pBorrowIndex,
+            beforeIndexes.p2pBorrowIndex,
+            "p2p borrow index growth"
+        );
+        assertGt(
+            morphoIndexes.poolSupplyIndex,
+            beforeIndexes.poolSupplyIndex,
+            "pool supply index growth"
+        );
+        assertGt(
+            morphoIndexes.poolBorrowIndex,
+            beforeIndexes.poolBorrowIndex,
+            "pool borrow index growth"
+        );
+
+        // Indexes across functions should be the same
+        assertEq(morphoIndexes.p2pSupplyIndex, morphoIndexesParts.p2pSupplyIndex);
+        assertEq(morphoIndexes.p2pBorrowIndex, morphoIndexesParts.p2pBorrowIndex);
+        assertEq(morphoIndexes.poolSupplyIndex, morphoIndexesParts.poolSupplyIndex);
+        assertEq(morphoIndexes.poolBorrowIndex, morphoIndexesParts.poolBorrowIndex);
+        assertEq(morphoIndexes.p2pSupplyIndex, lensIndexes.p2pSupplyIndex);
+        assertEq(morphoIndexes.p2pBorrowIndex, lensIndexes.p2pBorrowIndex);
+        assertEq(morphoIndexes.poolSupplyIndex, lensIndexes.poolSupplyIndex);
+        assertEq(morphoIndexes.poolBorrowIndex, lensIndexes.poolBorrowIndex);
+    }
 }

@@ -56,7 +56,7 @@ interface IMorpho {
     function getMarketsCreated() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolToken, Types.PositionType _positionType) external view returns (address head);
     function getNext(address _poolToken, Types.PositionType _positionType, address _user) external view returns (address next);
-    function getUpdatedIndexes(address _poolToken) external view returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_, uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_);    
+    function getUpdatedIndexes(address _poolToken) external view returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_, uint256 poolSupplyIndex_, uint256 poolBorrowIndex_);    
     function getUpdatedPoolIndexes(address _poolToken) external view returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_);
     function getUpdatedP2PIndexes(address _poolToken) external view returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_);
 
