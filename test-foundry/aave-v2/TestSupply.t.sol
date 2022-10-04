@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
-import "./helpers/FlashLoan.sol";
 
 contract TestSupply is TestSetup {
     using stdStorage for StdStorage;
