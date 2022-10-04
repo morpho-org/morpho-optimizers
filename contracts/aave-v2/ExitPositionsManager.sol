@@ -207,7 +207,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             revert LiquidateCollateralPaused();
         Types.PauseStatus memory pauseBorrow = pauseStatus[_poolTokenBorrowed];
         if (!_market[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolTokenBorrowed].isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+        if (pauseBorrow.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
 
         if (
             !_isBorrowingAndSupplying(
