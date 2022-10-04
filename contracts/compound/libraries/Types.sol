@@ -78,4 +78,11 @@ library Types {
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
         bool isDeprecated; // Whether a market is deprecated or not.
     }
+
+    struct GrowthFactors {
+        uint256 poolSupplyGrowthFactor; // Pool supply index growth factor (in wad).
+        uint256 poolBorrowGrowthFactor; // Pool borrow index growth factor (in wad).
+        uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
+        uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
+    }
 }

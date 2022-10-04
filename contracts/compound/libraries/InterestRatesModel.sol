@@ -12,13 +12,6 @@ library InterestRatesModel {
 
     /// STRUCTS ///
 
-    struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // Pool supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // Pool borrow index growth factor (in wad).
-        uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
-        uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
-    }
-
     struct P2PSupplyIndexComputeParams {
         uint256 poolSupplyGrowthFactor; // Pool supply index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
@@ -57,16 +50,13 @@ library InterestRatesModel {
     function computeGrowthFactors(
         uint256 _newPoolSupplyIndex,
         uint256 _newPoolBorrowIndex,
-        Types.LastPoolIndexes memory _lastPoolIndexes,
+        uint256 _lastPoolSupplyIndex,
+        uint256 _lastPoolBorrowIndex,
         uint16 _p2pIndexCursor,
         uint256 _reserveFactor
-    ) internal pure returns (GrowthFactors memory growthFactors_) {
-        growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.div(
-            _lastPoolIndexes.lastSupplyPoolIndex
-        );
-        growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(
-            _lastPoolIndexes.lastBorrowPoolIndex
-        );
+    ) internal pure returns (Types.GrowthFactors memory growthFactors_) {
+        growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.div(_lastSupplyPoolIndex);
+        growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(_lastBorrowPoolIndex);
 
         if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {
             uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
@@ -154,6 +144,37 @@ library InterestRatesModel {
                 _poolSupplyRate +
                 _p2pIndexCursor *
                 _poolBorrowRate) / MAX_BASIS_POINTS;
+    }
+
+    /// @notice Computes and returns the new peer-to-peer index of a market given its parameters.
+    /// @param _poolGrowthFactor The pool growth factor.
+    /// @param _p2pGrowthFactor The P2P growth factor.
+    /// @param _lastPoolIndex The last pool index.
+    /// @param _lastP2PIndex The last P2P index.
+    /// @param _p2pDelta The last P2P delta.
+    /// @param _p2pAmount The last P2P amount.
+    /// @return newP2PIndex_ The updated peer-to-peer index (in ray).
+    function computeP2PIndex(
+        uint256 _poolGrowthFactor,
+        uint256 _p2pGrowthFactor,
+        uint256 _lastPoolIndex,
+        uint256 _lastP2PIndex,
+        uint256 _p2pDelta,
+        uint256 _p2pAmount
+    ) internal pure returns (uint256 newP2PIndex_) {
+        if (_p2pAmount == 0 || _p2pDelta == 0) {
+            newP2PIndex_ = _lastP2PIndex.mul(_p2pGrowthFactor);
+        } else {
+            uint256 shareOfTheDelta = Math.min(
+                _p2pDelta.mul(_lastPoolIndex).div(_p2pAmount.mul(_lastP2PIndex)),
+                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
+            ); // In ray.
+
+            newP2PIndex_ = _lastP2PIndex.mul(
+                (WadRayMath.RAY - shareOfTheDelta).mul(_p2pGrowthFactor) +
+                    shareOfTheDelta.mul(_poolGrowthFactor)
+            );
+        }
     }
 
     /// @notice Computes and returns the peer-to-peer supply rate per block of a market given its parameters.
