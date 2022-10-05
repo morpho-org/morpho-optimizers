@@ -38,15 +38,13 @@ jobs:
       with:
         version: nightly
 
-      - uses: ./.github/actions/ci-storage-layout
+      - name: Check Morpho storage layout
+        uses: Rubilmax/foundry-storage-check@v2
         with:
-          path: contracts/compound/Morpho.sol
-          contract: Morpho
-          protocol: compound
+          contract: contracts/compound/Morpho.sol:Morpho
 
-      - uses: ./.github/actions/ci-storage-layout
+      - name: Check RewardsManager storage layout
+        uses: Rubilmax/foundry-storage-check@v2
         with:
-          path: contracts/compound/RewardsManager.sol
-          contract: Morpho
-          protocol: compound
+          contract: contracts/compound/RewardsManager.sol:RewardsManager
 
