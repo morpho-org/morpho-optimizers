@@ -38,15 +38,13 @@ jobs:
       with:
         version: nightly
 
-      - uses: ./.github/actions/ci-storage-layout
+      - name: Check Morpho storage layout
+        uses: Rubilmax/foundry-storage-check@v2
         with:
-          path: contracts/aave-v2/Morpho.sol
-          contract: Morpho
-          protocol: aave-v2
+          contract: contracts/aave-v2/Morpho.sol:Morpho
 
-      - uses: ./.github/actions/ci-storage-layout
+      - name: Check RewardsManager storage layout
+        uses: Rubilmax/foundry-storage-check@v2
         with:
-          path: contracts/aave-v2/RewardsManager.sol
-          contract: Morpho
-          protocol: aave-v2
+          contract: contracts/aave-v2/RewardsManager.sol:RewardsManager
 
