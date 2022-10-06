@@ -99,7 +99,7 @@ contract TestLiquidate is TestSetup {
         uint256 expectedBorrowBalanceOnPool = onPoolBorrower.rayMul(
             pool.getReserveNormalizedVariableDebt(dai)
         );
-        testEquality(expectedBorrowBalanceOnPool, toRepay);
+        assertApproxEqAbs(expectedBorrowBalanceOnPool, toRepay, 2);
         assertEq(inP2PBorrower, 0);
 
         // Check borrower1 supply balance
@@ -126,7 +126,7 @@ contract TestLiquidate is TestSetup {
             uint256 normalizedIncome = pool.getReserveNormalizedIncome(usdc);
             uint256 expectedOnPool = collateralOnPool - amountToSeize.rayDiv(normalizedIncome);
 
-            testEquality(onPoolBorrower, expectedOnPool);
+            assertEq(onPoolBorrower, expectedOnPool);
             assertEq(inP2PBorrower, 0);
         }
     }
@@ -281,7 +281,7 @@ contract TestLiquidate is TestSetup {
             vars.collateralTokenUnit *
             vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
-        testEquality(
+        assertEq(
             onPoolBorrower,
             onPoolDai - amountToSeize.rayDiv(pool.getReserveNormalizedIncome(dai)),
             "borrower supply on pool"

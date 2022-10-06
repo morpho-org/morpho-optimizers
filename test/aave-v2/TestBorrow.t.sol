@@ -32,8 +32,8 @@ contract TestBorrow is TestSetup {
 
         uint256 expectedOnPool = amount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
-        testEquality(onPool, expectedOnPool);
-        testEquality(inP2P, 0);
+        assertEq(onPool, expectedOnPool);
+        assertEq(inP2P, 0);
     }
 
     // There is 1 available supplier, he matches 100% of the borrower liquidity, everything is `inP2P`.
@@ -52,12 +52,12 @@ contract TestBorrow is TestSetup {
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 expectedInP2PInUnderlying = supplyInP2P.rayMul(p2pBorrowIndex);
 
-        testEquality(amount, expectedInP2PInUnderlying);
+        assertEq(amount, expectedInP2PInUnderlying);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        testEquality(onPool, 0);
-        testEquality(inP2P, supplyInP2P);
+        assertEq(onPool, 0);
+        assertEq(inP2P, supplyInP2P);
     }
 
     // There is 1 available supplier, he doesn't match 100% of the borrower liquidity. Borrower `inP2P` is equal to the supplier previous amount `onPool`, the rest is set `onPool`.
@@ -76,11 +76,11 @@ contract TestBorrow is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        testEquality(inP2P, supplyInP2P, "in P2P");
+        assertEq(inP2P, supplyInP2P, "in P2P");
 
         uint256 expectedOnPool = amount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
-        testEquality(onPool, expectedOnPool, "on pool");
+        assertEq(onPool, expectedOnPool, "on pool");
     }
 
     // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
@@ -122,18 +122,14 @@ contract TestBorrow is TestSetup {
 
             expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerSupplier);
-            testEquality(onPool, 0);
+            assertEq(expectedInP2P, amountPerSupplier);
+            assertEq(onPool, 0);
         }
 
         (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        testEquality(
-            inP2P,
-            amount.rayDiv(morpho.p2pBorrowIndex(aDai)),
-            "Borrower1 in peer-to-peer"
-        );
-        testEquality(onPool, 0, "Borrower1 on pool");
+        assertEq(inP2P, amount.rayDiv(morpho.p2pBorrowIndex(aDai)), "Borrower1 in peer-to-peer");
+        assertEq(onPool, 0, "Borrower1 on pool");
     }
 
     // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
@@ -176,8 +172,8 @@ contract TestBorrow is TestSetup {
 
             expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerSupplier, "on pool");
-            testEquality(onPool, 0);
+            assertEq(expectedInP2P, amountPerSupplier, "on pool");
+            assertEq(onPool, 0);
         }
 
         (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
@@ -185,8 +181,8 @@ contract TestBorrow is TestSetup {
         expectedInP2P = (amount / 2).rayDiv(morpho.p2pBorrowIndex(aDai));
         uint256 expectedOnPool = (amount / 2).rayDiv(normalizedVariableDebt);
 
-        testEquality(inP2P, expectedInP2P, "Borrower1 in peer-to-peer");
-        testEquality(onPool, expectedOnPool, "Borrower1 on pool");
+        assertEq(inP2P, expectedInP2P, "Borrower1 in peer-to-peer");
+        assertEq(onPool, expectedOnPool, "Borrower1 on pool");
     }
 
     function testBorrowMultipleAssets() public {
@@ -202,7 +198,7 @@ contract TestBorrow is TestSetup {
 
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = (2 * amount).rayDiv(normalizedVariableDebt);
-        testEquality(onPool, expectedOnPool);
+        assertEq(onPool, expectedOnPool);
     }
 
     function testShouldNotBorrowZero() public {

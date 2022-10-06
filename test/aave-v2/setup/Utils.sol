@@ -31,18 +31,6 @@ contract Utils is Test {
         return value / 1e10;
     }
 
-    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertApproxEqAbs(_firstValue, _secondValue, 20);
-    }
-
-    function testEquality(
-        uint256 _firstValue,
-        uint256 _secondValue,
-        string memory err
-    ) internal {
-        assertApproxEqAbs(_firstValue, _secondValue, 20, err);
-    }
-
     /// @dev calculates compounded interest over a period of time.
     ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
     ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
