@@ -26,6 +26,7 @@ import "../../common/helpers/MorphoToken.sol";
 import "../helpers/SimplePriceOracle.sol";
 import {DumbOracle} from "../helpers/DumbOracle.sol";
 import "../../common/helpers/Chains.sol";
+import "../../common/helpers/TestHelpers.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
@@ -57,7 +58,7 @@ contract TestSetup is Config, Utils {
     uint256 public forkId;
 
     function setUp() public {
-        setFork();
+        forkId = TestHelpers.setForkFromJson(vm.envString("NETWORK"), vm.envString("PROTOCOL"));
         initContracts();
         setContractsLabels();
         initUsers();
@@ -66,12 +67,6 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
-
-    function setFork() internal {
-        forkId = vm.createFork(endpoint(), testBlock);
-        vm.selectFork(forkId);
-        vm.chainId(chainId);
-    }
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();

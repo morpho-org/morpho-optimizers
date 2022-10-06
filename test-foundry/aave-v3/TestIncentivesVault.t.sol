@@ -7,6 +7,8 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import {DumbOracle} from "./helpers/DumbOracle.sol";
 import "@contracts/aave-v3/IncentivesVault.sol";
+
+import "../common/helpers/TestHelpers.sol";
 import "../common/helpers/MorphoToken.sol";
 import "../common/helpers/Chains.sol";
 import "@forge-std/Test.sol";
@@ -27,7 +29,7 @@ contract TestIncentivesVault is Test, Config {
     uint256 forkId;
 
     function setUp() public {
-        setFork();
+        TestHelpers.setForkFromJson(vm.envString("NETWORK"), vm.envString("PROTOCOL"));
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
 
@@ -47,12 +49,6 @@ contract TestIncentivesVault is Test, Config {
         hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(REWARD_TOKEN, "REWARD_TOKEN");
         hevm.label(morpho, "morpho");
-    }
-
-    function setFork() internal {
-        forkId = vm.createFork(endpoint(), testBlock);
-        vm.selectFork(forkId);
-        vm.chainId(chainId);
     }
 
     function testShouldNotSetBonusAboveMaxBasisPoints() public {

@@ -19,8 +19,6 @@ import {Morpho} from "@contracts/aave-v2/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";
 
 contract Config is BaseConfig {
-    uint256 constant testBlock = 14292587;
-
     address constant aAave = 0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B;
     address constant aDai = 0x028171bCA77440897B824Ca71D1c56caC55b68A3;
     address constant aUsdc = 0xBcca60bB61934080951369a648Fb03DF4F96263C;

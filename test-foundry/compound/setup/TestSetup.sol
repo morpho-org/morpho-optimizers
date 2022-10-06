@@ -13,6 +13,8 @@ import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
+import "../../common/helpers/TestHelpers.sol";
+
 import "@config/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/Vm.sol";
@@ -42,7 +44,7 @@ contract TestSetup is Config, Utils {
     uint256 public forkId;
 
     function setUp() public {
-        setFork();
+        forkId = TestHelpers.setForkFromJson(vm.envString("NETWORK"), vm.envString("PROTOCOL"));
         initContracts();
         setContractsLabels();
         initUsers();
@@ -51,12 +53,6 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
-
-    function setFork() internal {
-        forkId = vm.createFork(endpoint(), testBlock);
-        vm.selectFork(forkId);
-        vm.chainId(chainId);
-    }
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();

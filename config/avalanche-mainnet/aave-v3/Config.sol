@@ -4,9 +4,6 @@ pragma solidity >=0.8.0;
 import {Vm} from "forge-std/Vm.sol";
 
 contract Config {
-    uint256 constant testBlock = 15675271;
-    uint256 constant chainId = 43114;
-
     address constant aave = 0x63a72806098Bd3D9520cC43356dD78afe5D386D9;
     address constant dai = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
     address constant usdc = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -35,8 +32,4 @@ contract Config {
     address constant poolAddressesProviderAddress = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address constant rewardsControllerAddress = 0x929EC64c34a17401F460460D4B9390518E5B473e;
     address constant swapRouterAddress = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
-
-    function endpoint() internal pure returns (string memory) {
-        return "https://api.avax.network/ext/bc/C/rpc";
-    }
 }
