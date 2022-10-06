@@ -29,7 +29,7 @@ contract TestIncentivesVault is Test, Config {
     uint256 forkId;
 
     function setUp() public {
-        TestHelpers.setForkFromJson(vm.envString("NETWORK"), vm.envString("PROTOCOL"));
+        TestHelpers.setFork();
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
 

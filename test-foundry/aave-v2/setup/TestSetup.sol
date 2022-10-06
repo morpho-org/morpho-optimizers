@@ -58,7 +58,7 @@ contract TestSetup is Config, Utils {
     uint256 public forkId;
 
     function setUp() public {
-        forkId = TestHelpers.setForkFromJson(vm.envString("NETWORK"), vm.envString("PROTOCOL"));
+        forkId = TestHelpers.setFork();
         initContracts();
         setContractsLabels();
         initUsers();

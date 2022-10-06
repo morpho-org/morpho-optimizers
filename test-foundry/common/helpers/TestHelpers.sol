@@ -10,6 +10,10 @@ library TestHelpers {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
     string private constant CONFIG_PATH = "/config/Config.json";
 
+    function setFork() internal returns (uint256 forkId) {
+        forkId = setForkFromJson(vm.envString("NETWORK"), vm.envString("PROTOCOL"));
+    }
+
     function setForkFromJson(string memory network, string memory protocol)
         internal
         returns (uint256 forkId)

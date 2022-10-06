@@ -1,15 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity >=0.8.0;
 
-import {Vm} from "forge-std/Vm.sol";
-
 contract Config {
-    address private constant VM_ADDRESS =
-        address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
-    Vm private constant vm = Vm(VM_ADDRESS);
-    uint256 constant testBlock = 29116728;
-    uint256 constant chainId = 137;
-
     address constant aave = 0xD6DF932A45C0f255f85145f286eA0b292B21C90B;
     address constant dai = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
     address constant usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
@@ -38,14 +30,4 @@ contract Config {
     address constant poolAddressesProviderAddress = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address constant rewardsControllerAddress = 0x929EC64c34a17401F460460D4B9390518E5B473e;
     address constant swapRouterAddress = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
-    function endpoint() internal returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "https://polygon-mainnet.g.alchemy.com/v2/",
-                    vm.envString("ALCHEMY_KEY")
-                )
-            );
-    }
 }

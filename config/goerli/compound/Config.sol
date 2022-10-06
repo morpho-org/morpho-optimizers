@@ -2,15 +2,8 @@
 pragma solidity >=0.8.0;
 
 import "@contracts/compound/libraries/Types.sol";
-import {Vm} from "forge-std/Vm.sol";
 
 contract Config {
-    address private constant VM_ADDRESS =
-        address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
-    Vm private constant vm = Vm(VM_ADDRESS);
-    uint256 constant testBlock = 7676937;
-    uint256 constant chainId = 1;
-
     address constant cBat = 0xCCaF265E7492c0d9b7C2f0018bf6382Ba7f0148D;
     address constant cDai = 0x822397d9a55d0fefd20F5c4bCaB33C5F65bd28Eb;
     address constant cEth = 0x20572e4c090f15667cF7378e16FaD2eA0e2f3EfF;
@@ -26,14 +19,4 @@ contract Config {
     uint256 constant defaultMaxSortedUsers = 8;
     Types.MaxGasForMatching defaultMaxGasForMatching =
         Types.MaxGasForMatching({supply: 1e5, borrow: 1e5, withdraw: 1e5, repay: 1e5});
-
-    function endpoint() internal returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "https://eth-goerli.g.alchemy.com/v2/",
-                    vm.envString("ALCHEMY_KEY")
-                )
-            );
-    }
 }

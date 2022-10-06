@@ -1,5 +1,4 @@
 -include .env.local
--include .env.common
 .EXPORT_ALL_VARIABLES:
 
 SMODE?=network

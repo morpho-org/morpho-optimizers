@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity >=0.8.0;
 
-import {Vm} from "forge-std/Vm.sol";
-
 contract BaseConfig {
     address constant aave = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
     address constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
