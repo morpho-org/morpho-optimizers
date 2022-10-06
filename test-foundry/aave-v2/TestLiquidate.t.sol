@@ -99,8 +99,7 @@ contract TestLiquidate is TestSetup {
             aDai,
             address(borrower1)
         );
-        uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
-            onPoolBorrower,
+        uint256 expectedBorrowBalanceOnPool = onPoolBorrower.rayMul(
             pool.getReserveNormalizedVariableDebt(dai)
         );
         testEquality(expectedBorrowBalanceOnPool, toRepay);
@@ -128,8 +127,7 @@ contract TestLiquidate is TestSetup {
                 vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
             uint256 normalizedIncome = pool.getReserveNormalizedIncome(usdc);
-            uint256 expectedOnPool = collateralOnPool -
-                underlyingToScaledBalance(amountToSeize, normalizedIncome);
+            uint256 expectedOnPool = collateralOnPool - amountToSeize.rayDiv(normalizedIncome);
 
             testEquality(onPoolBorrower, expectedOnPool);
             assertEq(inP2PBorrower, 0);
@@ -174,16 +172,15 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowBalanceInP2P = aDUnitToUnderlying(
-            onPoolUsdc,
+        uint256 expectedBorrowBalanceInP2P = onPoolUsdc.rayMul(
             pool.getReserveNormalizedVariableDebt(usdc)
         ) +
-            p2pUnitToUnderlying(inP2PUsdc, morpho.p2pBorrowIndex(aUsdc)) -
+            inP2PUsdc.rayMul(morpho.p2pBorrowIndex(aUsdc)) -
             toRepay;
 
         assertApproxEqAbs(onPoolBorrower, 0, 1, "borrower borrow on pool");
         assertApproxEqAbs(
-            p2pUnitToUnderlying(inP2PBorrower, morpho.p2pBorrowIndex(aUsdc)),
+            inP2PBorrower.rayMul(morpho.p2pBorrowIndex(aUsdc)),
             expectedBorrowBalanceInP2P,
             1,
             "borrower borrow in peer-to-peer"
@@ -210,8 +207,7 @@ contract TestLiquidate is TestSetup {
 
         assertApproxEqAbs(
             onPoolBorrower,
-            onPoolDai -
-                underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
+            onPoolDai - amountToSeize.rayDiv(pool.getReserveNormalizedIncome(dai)),
             1,
             "borrower supply on pool"
         );
@@ -256,13 +252,12 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
-            onPoolUsdc,
+        uint256 expectedBorrowBalanceOnPool = onPoolUsdc.rayMul(
             pool.getReserveNormalizedVariableDebt(usdc)
         ) - toRepay;
 
         assertApproxEqAbs(
-            aDUnitToUnderlying(onPoolBorrower, pool.getReserveNormalizedVariableDebt(usdc)),
+            onPoolBorrower.rayMul(pool.getReserveNormalizedVariableDebt(usdc)),
             expectedBorrowBalanceOnPool,
             1,
             "borrower borrow on pool"
@@ -291,8 +286,7 @@ contract TestLiquidate is TestSetup {
 
         testEquality(
             onPoolBorrower,
-            onPoolDai -
-                underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
+            onPoolDai - amountToSeize.rayDiv(pool.getReserveNormalizedIncome(dai)),
             "borrower supply on pool"
         );
         assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
