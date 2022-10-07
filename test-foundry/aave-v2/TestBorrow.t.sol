@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using WadRayMath for uint256;
 
     // The borrower tries to borrow more than his collateral allows, the transaction reverts.
     function testBorrow1() public {
@@ -29,8 +30,7 @@ contract TestBorrow is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
-        uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
+        uint256 expectedOnPool = amount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
@@ -50,9 +50,9 @@ contract TestBorrow is TestSetup {
         (uint256 supplyInP2P, ) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
-        uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, p2pBorrowIndex);
+        uint256 expectedInP2PInUnderlying = supplyInP2P.rayMul(p2pBorrowIndex);
 
-        testEquality(expectedInP2P, amount);
+        testEquality(amount, expectedInP2PInUnderlying);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
@@ -78,8 +78,7 @@ contract TestBorrow is TestSetup {
 
         testEquality(inP2P, supplyInP2P, "in P2P");
 
-        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
-        uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
+        uint256 expectedOnPool = amount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
         testEquality(onPool, expectedOnPool, "on pool");
     }
@@ -121,7 +120,7 @@ contract TestBorrow is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
@@ -131,7 +130,7 @@ contract TestBorrow is TestSetup {
 
         testEquality(
             inP2P,
-            underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai)),
+            amount.rayDiv(morpho.p2pBorrowIndex(aDai)),
             "Borrower1 in peer-to-peer"
         );
         testEquality(onPool, 0, "Borrower1 on pool");
@@ -175,7 +174,7 @@ contract TestBorrow is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
 
             testEquality(expectedInP2P, amountPerSupplier, "on pool");
             testEquality(onPool, 0);
@@ -183,8 +182,8 @@ contract TestBorrow is TestSetup {
 
         (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pBorrowIndex(aDai));
-        uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedVariableDebt);
+        expectedInP2P = (amount / 2).rayDiv(morpho.p2pBorrowIndex(aDai));
+        uint256 expectedOnPool = (amount / 2).rayDiv(normalizedVariableDebt);
 
         testEquality(inP2P, expectedInP2P, "Borrower1 in peer-to-peer");
         testEquality(onPool, expectedOnPool, "Borrower1 on pool");
@@ -202,7 +201,7 @@ contract TestBorrow is TestSetup {
         (, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
-        uint256 expectedOnPool = underlyingToAdUnit(2 * amount, normalizedVariableDebt);
+        uint256 expectedOnPool = (2 * amount).rayDiv(normalizedVariableDebt);
         testEquality(onPool, expectedOnPool);
     }
 

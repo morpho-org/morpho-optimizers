@@ -22,7 +22,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         supplier1.supply(asset, amount);
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlying);
-        uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
+        uint256 expectedOnPool = amount.rayDiv(normalizedIncome);
 
         testEquality(ERC20(asset).balanceOf(address(morpho)), amount, "balance of aToken");
 
