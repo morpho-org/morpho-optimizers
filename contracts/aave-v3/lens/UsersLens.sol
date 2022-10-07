@@ -337,6 +337,9 @@ abstract contract UsersLens is IndexesLens {
             ltv = 0;
             lt = 0;
         }
+        // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
+        // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
+        if (ltv == 0) lt = 0;
     }
 
     /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.

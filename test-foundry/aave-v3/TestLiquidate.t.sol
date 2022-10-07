@@ -297,4 +297,22 @@ contract TestLiquidate is TestSetup {
     function testFailLiquidateZero() public {
         morpho.liquidate(aDai, aDai, aDai, 0);
     }
+
+    function testShouldLiquidateIfLTVIsZero() public {
+        uint256 amount = 10000 ether;
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        borrower1.borrow(aUsdc, to6Decimals(amount / 10));
+
+        DataTypes.ReserveConfigurationMap memory currentConfig = pool.getConfiguration(dai);
+        currentConfig.setLtv(0);
+        vm.prank(poolAddressesProvider.getPoolConfigurator());
+        pool.setConfiguration(dai, currentConfig);
+
+        uint256 toRepay = to6Decimals(amount / 10);
+        User liquidator = borrower3;
+        liquidator.approve(usdc, address(morpho), toRepay);
+        liquidator.liquidate(aUsdc, aDai, address(borrower1), toRepay);
+    }
 }

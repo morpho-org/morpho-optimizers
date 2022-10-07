@@ -1582,4 +1582,18 @@ contract TestLens is TestSetup {
         (uint256 withdrawable, ) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aDai);
         assertEq(withdrawable, 0);
     }
+
+    function testShouldSetLiquidationThresholdToTZeroIfLTVIsZero() public {
+        DataTypes.ReserveConfigurationMap memory currentConfig = pool.getConfiguration(dai);
+        currentConfig.setLtv(0);
+        vm.prank(poolAddressesProvider.getPoolConfigurator());
+        pool.setConfiguration(dai, currentConfig);
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+            address(supplier1),
+            aDai,
+            oracle
+        );
+        assertEq(assetData.ltv, 0);
+        assertEq(assetData.liquidationThreshold, 0);
+    }
 }

@@ -86,4 +86,8 @@ library ReserveConfiguration {
             (dataLocal & ~EMODE_CATEGORY_MASK) >> EMODE_CATEGORY_START_BIT_POSITION
         );
     }
+
+    function setLtv(DataTypes.ReserveConfigurationMap memory self, uint256 ltv) internal pure {
+        self.data = (self.data & LTV_MASK) | ltv;
+    }
 }
