@@ -17,7 +17,7 @@ contract TestLiquidate is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
-        // Liquidate
+        // Liquidate.
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
@@ -39,7 +39,7 @@ contract TestLiquidate is TestSetup {
         (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
         (, uint256 borrowOnPoolBefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        // Liquidate
+        // Liquidate.
         uint256 toRepay = borrowOnPoolBefore.rayMul(pool.getReserveNormalizedVariableDebt(dai)); // Full liquidation.
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
@@ -81,17 +81,17 @@ contract TestLiquidate is TestSetup {
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
 
-        // Change Oracle
+        // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 95) / 100);
 
-        // Liquidate
+        // Liquidate.
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
 
-        // Check borrower1 borrow balance
+        // Check borrower1 borrow balance.
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
@@ -99,10 +99,11 @@ contract TestLiquidate is TestSetup {
         uint256 expectedBorrowBalanceOnPool = onPoolBorrower.rayMul(
             pool.getReserveNormalizedVariableDebt(dai)
         );
+
         assertApproxEqAbs(expectedBorrowBalanceOnPool, toRepay, 2);
         assertEq(inP2PBorrower, 0);
 
-        // Check borrower1 supply balance
+        // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
 
         ExitPositionsManager.LiquidateVars memory vars;
@@ -150,7 +151,6 @@ contract TestLiquidate is TestSetup {
             aUsdc,
             address(borrower1)
         );
-
         (uint256 inP2PDai, uint256 onPoolDai) = morpho.supplyBalanceInOf(aDai, address(borrower1));
 
         // Change Oracle.
@@ -287,9 +287,5 @@ contract TestLiquidate is TestSetup {
             "borrower supply on pool"
         );
         assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
-    }
-
-    function testFailLiquidateZero() public {
-        morpho.liquidate(aDai, aDai, aDai, 0);
     }
 }

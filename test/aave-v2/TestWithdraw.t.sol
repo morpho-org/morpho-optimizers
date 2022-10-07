@@ -85,43 +85,40 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        // Check balances after match of borrower1 & supplier1
+        // Check balances after match of borrower1 & supplier1.
         (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-
         uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         assertEq(onPoolSupplier, expectedOnPool, "supplier on pool 0");
         assertEq(onPoolBorrower1, 0, "borrower on pool 0");
         assertEq(inP2PSupplier, inP2PBorrower1, "matched");
 
-        // An available supplier onPool
+        // An available supplier onPool.
         supplier2.approve(dai, suppliedAmount);
         supplier2.supply(aDai, suppliedAmount);
 
-        // supplier withdraws suppliedAmount
+        // supplier withdraws suppliedAmount.
         supplier1.withdraw(aDai, suppliedAmount);
 
-        // Check balances for supplier1
+        // Check balances for supplier1.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         assertEq(onPoolSupplier, 0, "supplier on pool 1");
         assertEq(inP2PSupplier, 0, "supplier in P2P 1");
 
-        // Check balances for supplier2
+        // Check balances for supplier2.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier2));
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedInP2P = (suppliedAmount / 2).rayDiv(p2pSupplyIndex);
+        uint256 expectedInP2P = (suppliedAmount / 2).rayDiv(morpho.p2pSupplyIndex(aDai));
         assertEq(onPoolSupplier, expectedOnPool, "supplier on pool 2");
         assertEq(inP2PSupplier, expectedInP2P, "supplier in P2P 2");
 
-        // Check balances for borrower1
+        // Check balances for borrower1.
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(aDai, address(borrower1));
         assertEq(onPoolBorrower1, 0, "borrower on pool 1");
         assertEq(inP2PSupplier, inP2PBorrower1, "borrower in P2P 1");
@@ -156,40 +153,38 @@ contract TestWithdraw is TestSetup {
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-
         uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         assertEq(onPoolSupplier, expectedOnPool, "supplier on pool");
         assertEq(onPoolBorrower, 0, "borrower on pool");
         assertEq(inP2PSupplier, inP2PBorrower, "equality");
 
-        // NMAX-1 suppliers have up to suppliedAmount waiting on pool
+        // NMAX - 1 suppliers have up to suppliedAmount waiting on pool.
         uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
-        // minus 1 because supplier1 must not be counted twice !
-        for (uint256 i = 0; i < NMAX; i++) {
+        // Minus 1 because supplier1 must not be counted twice!
+        for (uint256 i; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
 
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        // supplier withdraws suppliedAmount
+        // supplier1 withdraws suppliedAmount.
         supplier1.withdraw(aDai, suppliedAmount);
 
-        // Check balances for supplier1
+        // Check balances for supplier1.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         assertEq(onPoolSupplier, 0, "supplier on pool");
         assertEq(inP2PSupplier, 0, "supplier in P2P");
 
-        // Check balances for the borrower
+        // Check balances for the borrower.
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
@@ -202,7 +197,7 @@ contract TestWithdraw is TestSetup {
         uint256 onPool;
 
         // Now test for each individual supplier that replaced the original
-        for (uint256 i = 0; i < suppliers.length; i++) {
+        for (uint256 i; i < suppliers.length; i++) {
             if (suppliers[i] == supplier1) continue;
 
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
@@ -232,22 +227,20 @@ contract TestWithdraw is TestSetup {
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-
         uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         assertEq(onPoolSupplier, expectedOnPool, "supplier on pool");
         assertEq(onPoolBorrower, 0, "borrower on pool");
         assertEq(inP2PSupplier, inP2PBorrower, "equality P2P");
 
-        // Supplier1 withdraws 75% of supplied amount
+        // Supplier1 withdraws 75% of supplied amount.
         supplier1.withdraw(aDai, (75 * suppliedAmount) / 100);
 
-        // Check balances for the borrower
+        // Check balances for the borrower.
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
@@ -259,9 +252,8 @@ contract TestWithdraw is TestSetup {
         assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
         assertEq(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower in pool 2");
 
-        // Check balances for supplier
+        // Check balances for supplier.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-
         uint256 expectedSupplyBalanceInP2P = ((25 * suppliedAmount) / 100).rayDiv(p2pSupplyIndex);
 
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
@@ -284,7 +276,7 @@ contract TestWithdraw is TestSetup {
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for suppliedAmount
+        // borrower1 & supplier1 are matched for suppliedAmount.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -292,45 +284,43 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
-        // Check balances after match of borrower1 & supplier1
+        // Check balances after match of borrower1 & supplier1.
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-
         uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         assertEq(onPoolSupplier, expectedOnPool);
         assertEq(onPoolBorrower, 0);
         assertEq(inP2PSupplier, inP2PBorrower);
 
-        // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
+        // NMAX - 1 suppliers have up to suppliedAmount/2 waiting on pool
         uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
-        // minus 1 because supplier1 must not be counted twice !
-        for (uint256 i = 0; i < NMAX; i++) {
+        // Minus 1 because supplier1 must not be counted twice!
+        for (uint256 i; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
 
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        // supplier withdraws suppliedAmount
+        // supplier1 withdraws suppliedAmount.
         supplier1.withdraw(aDai, suppliedAmount);
 
-        // Check balances for supplier1
+        // Check balances for supplier1.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         assertEq(onPoolSupplier, 0, "supplier on pool");
         assertEq(inP2PSupplier, 0, "supplier in P2P");
 
-        // Check balances for the borrower
+        // Check balances for the borrower.
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
@@ -345,8 +335,8 @@ contract TestWithdraw is TestSetup {
         uint256 inP2P;
         uint256 onPool;
 
-        // Now test for each individual supplier that replaced the original
-        for (uint256 i = 0; i < suppliers.length; i++) {
+        // Now test for each supplier that replaced the original.
+        for (uint256 i; i < suppliers.length; i++) {
             if (suppliers[i] == supplier1) continue;
 
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
@@ -633,22 +623,22 @@ contract TestWithdraw is TestSetup {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = toSupply / 2;
 
-        // supplier1 deposits collateral
+        // supplier1 deposits collateral.
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
-        // supplier2 deposits collateral
+        // supplier2 deposits collateral.
         supplier2.approve(dai, toSupply);
         supplier2.supply(aDai, toSupply);
 
-        // supplier1 tries to withdraw more than allowed
+        // supplier1 tries to withdraw more than allowed.
         supplier1.borrow(aUsdc, to6Decimals(toBorrow));
         hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         supplier1.withdraw(aDai, toSupply);
     }
 
     // Test attack
-    // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
+    // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract.
     function testWithdrawWhileAttackerSendsAToken() public {
         Attacker attacker = new Attacker(pool);
         deal(dai, address(attacker), type(uint256).max / 2);
@@ -657,20 +647,20 @@ contract TestWithdraw is TestSetup {
         uint256 collateral = 2 * toSupply;
         uint256 toBorrow = toSupply;
 
-        // attacker sends aToken to Morpho contract
+        // attacker sends aToken to Morpho contract.
         attacker.approve(dai, address(pool), toSupply);
         attacker.deposit(dai, toSupply, address(attacker), 0);
         attacker.transfer(dai, address(morpho), toSupply);
 
-        // supplier1 deposits collateral
+        // supplier1 deposits collateral.
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
-        // borrower1 deposits collateral
+        // borrower1 deposits collateral.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
-        // supplier1 tries to withdraw
+        // supplier1 tries to withdraw.
         borrower1.borrow(aDai, toBorrow);
         supplier1.withdraw(aDai, toSupply);
     }

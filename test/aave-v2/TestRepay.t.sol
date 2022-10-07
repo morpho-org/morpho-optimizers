@@ -15,7 +15,6 @@ contract TestRepay is TestSetup {
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
-
         borrower1.approve(dai, amount);
         borrower1.repay(aDai, amount);
 
@@ -34,6 +33,7 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aDai, amount);
 
         uint256 balanceBefore = borrower1.balanceOf(dai);
+
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
@@ -51,7 +51,7 @@ contract TestRepay is TestSetup {
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for suppliedAmount
+        // borrower1 & supplier1 are matched for suppliedAmount
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -64,29 +64,27 @@ contract TestRepay is TestSetup {
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-
         uint256 expectedOnPool = suppliedAmount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
         assertEq(onPoolSupplier, 0, "supplier on pool");
         assertEq(onPoolBorrower1, expectedOnPool, "borrower on pool");
         assertEq(inP2PSupplier, inP2PBorrower1, "equality");
 
-        // An available borrower onPool
+        // An available borrower onPool.
         uint256 availableBorrowerAmount = borrowedAmount / 4;
         borrower2.approve(usdc, to6Decimals(collateral));
         borrower2.supply(aUsdc, to6Decimals(collateral));
         borrower2.borrow(aDai, availableBorrowerAmount);
 
-        // Borrower1 repays 75% of suppliedAmount
+        // Borrower1 repays 75% of suppliedAmount.
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
         borrower1.repay(aDai, (75 * borrowedAmount) / 100);
 
-        // Check balances for borrower1 & borrower2
+        // Check balances for borrower1 & borrower2.
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         (uint256 inP2PAvailableBorrower, uint256 onPoolAvailableBorrower) = morpho
@@ -99,7 +97,7 @@ contract TestRepay is TestSetup {
         assertEq(onPoolBorrower1, 0);
         assertEq(onPoolAvailableBorrower, 0);
 
-        // Check balances for supplier
+        // Check balances for supplier.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         assertEq(2 * inP2PBorrower1, inP2PSupplier);
         assertEq(onPoolSupplier, 0);
@@ -118,7 +116,7 @@ contract TestRepay is TestSetup {
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched up to suppliedAmount
+        // borrower1 & supplier1 are matched up to suppliedAmount.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -126,12 +124,11 @@ contract TestRepay is TestSetup {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
-        // Check balances after match of borrower1 & supplier1
+        // Check balances after match of borrower1 & supplier1.
         (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
@@ -144,12 +141,12 @@ contract TestRepay is TestSetup {
         );
         assertEq(inP2PSupplier, inP2PBorrower1);
 
-        // NMAX borrowers have debt waiting on pool
+        // NMAX borrowers have debt waiting on pool.
         uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
-        // Minus because borrower1 must not be counted twice !
+        // Minus because borrower1 must not be counted twice!
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (NMAX - 1);
 
         for (uint256 i; i < NMAX; i++) {
@@ -165,11 +162,11 @@ contract TestRepay is TestSetup {
             assertEq(onPool, amountPerBorrower.rayDiv(normalizedVariableDebt));
         }
 
-        // Borrower1 repays all of his debt
+        // borrower1 repays all of his debt.
         borrower1.approve(dai, borrowedAmount);
         borrower1.repay(aDai, borrowedAmount);
 
-        // His balance should be set to 0
+        // His balance should be set to 0.
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         assertEq(onPoolBorrower1, 0);
@@ -213,12 +210,10 @@ contract TestRepay is TestSetup {
             aDai,
             address(borrower1)
         );
-
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-
         uint256 expectedOnPool = suppliedAmount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
         assertEq(onPoolSupplier, 0);
@@ -263,7 +258,7 @@ contract TestRepay is TestSetup {
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for suppliedAmount
+        // borrower1 & supplier1 are matched for suppliedAmount.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -271,7 +266,7 @@ contract TestRepay is TestSetup {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
-        // Check balances after match of borrower1 & supplier1
+        // Check balances after match of borrower1 & supplier1.
         (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
@@ -289,12 +284,12 @@ contract TestRepay is TestSetup {
         );
         assertEq(inP2PSupplier, inP2PBorrower1);
 
-        // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool
+        // NMAX borrowers have borrowerAmount / 2 (cumulated) of debt waiting on pool.
         uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (2 * (NMAX - 1));
-        // minus because borrower1 must not be counted twice !
+        // Minus because borrower1 must not be counted twice!
         for (uint256 i; i < NMAX; i++) {
             if (borrowers[i] == borrower1) continue;
 
@@ -303,17 +298,17 @@ contract TestRepay is TestSetup {
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
-        // Borrower1 repays all of his debt
+        // borrower1 repays all of his debt.
         borrower1.approve(dai, borrowedAmount);
         borrower1.repay(aDai, borrowedAmount);
 
-        // His balance should be set to 0
+        // His balance should be set to 0.
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         assertEq(onPoolBorrower1, 0);
         assertEq(inP2PBorrower1, 0);
 
-        // Check balances for the supplier
+        // Check balances for the supplier.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
@@ -356,14 +351,14 @@ contract TestRepay is TestSetup {
         uint256 collateral = 2 * borrowedAmount;
         uint256 expectedBorrowBalanceInP2P;
 
-        // borrower1 and 100 suppliers are matched for borrowedAmount
+        // borrower1 and 100 suppliers are matched for borrowedAmount.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
         createSigners(30);
 
-        // 2 * NMAX suppliers supply suppliedAmount
+        // 2 * NMAX suppliers supply suppliedAmount.
         for (uint256 i; i < 20; i++) {
             suppliers[i].approve(dai, type(uint256).max);
             suppliers[i].supply(aDai, suppliedAmount - i); // Minus i to get the right ordering.
@@ -373,7 +368,7 @@ contract TestRepay is TestSetup {
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
             expectedBorrowBalanceInP2P = borrowedAmount.rayDiv(p2pBorrowIndex);
 
-            // Check balances after match of supplier1
+            // Check balances after match of supplier1.
             (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
                 aDai,
                 address(borrower1)
@@ -394,12 +389,12 @@ contract TestRepay is TestSetup {
                 assertApproxEqAbs(inP2PSupplier, expectedSupplyBalanceInP2P, 20);
             }
 
-            // Borrower repays max
-            // Should create a delta on suppliers side
+            // Borrower repays max.
+            // Should create a delta on suppliers side.
             borrower1.approve(dai, type(uint256).max);
             borrower1.repay(aDai, type(uint256).max);
 
-            // Check balances for borrower1
+            // Check balances for borrower1.
             (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = morpho.supplyBalanceInOf(
                 aDai,
                 address(borrower1)
@@ -407,7 +402,7 @@ contract TestRepay is TestSetup {
             assertEq(onPoolBorrower1, 0);
             assertEq(inP2PBorrower1, 0);
 
-            // There should be a delta
+            // There should be a delta.
             uint256 expectedSupplyP2PDeltaInUnderlying = 10 * suppliedAmount;
             uint256 expectedSupplyP2PDelta = expectedSupplyP2PDeltaInUnderlying.rayDiv(
                 pool.getReserveNormalizedIncome(dai)
@@ -415,7 +410,7 @@ contract TestRepay is TestSetup {
             (uint256 supplyP2PDelta, , , ) = morpho.deltas(aDai);
             assertApproxEqAbs(supplyP2PDelta, expectedSupplyP2PDelta, 1e3);
 
-            // Supply delta matching by a new borrower
+            // Supply delta matching by a new borrower.
             borrower2.approve(usdc, to6Decimals(collateral));
             borrower2.supply(aUsdc, to6Decimals(collateral));
             borrower2.borrow(aDai, expectedSupplyP2PDeltaInUnderlying / 2);
@@ -491,7 +486,7 @@ contract TestRepay is TestSetup {
             }
         }
 
-        // Supply delta reduction with suppliers withdrawing
+        // Supply delta reduction with suppliers withdrawing.
         for (uint256 i = 10; i < 20; i++) {
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
@@ -630,7 +625,7 @@ contract TestRepay is TestSetup {
         uint256 initialDebt = IVariableDebtToken(pool.getReserveData(usdt).variableDebtTokenAddress)
         .scaledBalanceOf(address(morpho));
 
-        // Repay on-behalf of Morpho
+        // Repay on-behalf of Morpho.
         deal(usdt, address(this), amount / 2);
         ERC20(usdt).safeApprove(address(pool), amount / 2);
         pool.repay(usdt, amount / 2, 2, address(morpho));
@@ -641,8 +636,7 @@ contract TestRepay is TestSetup {
 
         assertLt(remainingDebt, initialDebt);
 
-        // Borrower1 comes to repay all his debt ignoring the previous
-        // Repay on Behalf of Positions Manager
+        // Borrower1 comes to repay all his debt ignoring the previous.
         borrower1.approve(usdt, amount);
         borrower1.repay(aUsdt, amount);
 

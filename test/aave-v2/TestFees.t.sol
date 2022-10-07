@@ -79,7 +79,6 @@ contract TestFees is TestSetup {
         uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
 
         _createFeeOnMorpho(0);
-
         morpho.claimToTreasury(aDaiArray, maxAmountArray);
 
         uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
@@ -88,7 +87,7 @@ contract TestFees is TestSetup {
 
     function testShouldPayFee() public {
         uint16 reserveFactor = 1_000;
-        uint256 bigAmount = 100_000 ether;
+        uint256 largeAmount = 100_000 ether;
         uint256 smallAmount = 0.00001 ether;
         morpho.setReserveFactor(aDai, reserveFactor); // 10%
 
@@ -100,8 +99,8 @@ contract TestFees is TestSetup {
         supplier1.borrow(aDai, smallAmount / 2);
 
         supplier2.approve(dai, type(uint256).max);
-        supplier2.supply(aDai, bigAmount);
-        supplier2.borrow(aDai, bigAmount / 2);
+        supplier2.supply(aDai, largeAmount);
+        supplier2.borrow(aDai, largeAmount / 2);
 
         hevm.warp(block.timestamp + (365 days));
 
@@ -110,7 +109,7 @@ contract TestFees is TestSetup {
 
     function testShouldReduceTheFeeToRepay() public {
         uint16 reserveFactor = 1_000;
-        uint256 bigAmount = 100_000 ether;
+        uint256 largeAmount = 100_000 ether;
         uint256 smallAmount = 0.00001 ether;
         morpho.setReserveFactor(aDai, reserveFactor); // 10%
 
@@ -122,8 +121,8 @@ contract TestFees is TestSetup {
         supplier1.borrow(aDai, smallAmount / 2);
 
         supplier2.approve(dai, type(uint256).max);
-        supplier2.supply(aDai, bigAmount);
-        supplier2.borrow(aDai, bigAmount / 2);
+        supplier2.supply(aDai, largeAmount);
+        supplier2.borrow(aDai, largeAmount / 2);
 
         hevm.warp(block.timestamp + (365 days));
 
@@ -140,8 +139,8 @@ contract TestFees is TestSetup {
         hevm.warp(block.timestamp + 1);
 
         supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(aDai, 100 * WAD);
-        supplier1.borrow(aDai, 50 * WAD);
+        supplier1.supply(aDai, 100 ether);
+        supplier1.borrow(aDai, 50 ether);
 
         hevm.warp(block.timestamp + (365 days));
 

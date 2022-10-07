@@ -12,13 +12,12 @@ contract TestMarketStrategy is TestSetup {
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
-
         borrower1.borrow(aDai, toBorrow);
 
         supplier1.approve(dai, toBorrow);
         supplier1.supply(aDai, toBorrow);
 
-        // supplier1 and borrower1 should not be in peer-to-peer
+        // supplier1 and borrower1 should not be in peer-to-peer.
         (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
@@ -45,10 +44,9 @@ contract TestMarketStrategy is TestSetup {
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
-
         borrower1.borrow(aDai, toBorrow);
 
-        // supplier1 and borrower1 should not be in peer-to-peer
+        // supplier1 and borrower1 should not be in peer-to-peer.
         (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
@@ -70,7 +68,7 @@ contract TestMarketStrategy is TestSetup {
 
         morpho.setIsP2PDisabled(aDai, true);
 
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i; i < 3; i++) {
             borrowers[i].approve(usdc, to6Decimals(amount));
             borrowers[i].supply(aUsdc, to6Decimals(amount));
             borrowers[i].borrow(aDai, toBorrow);
@@ -104,14 +102,13 @@ contract TestMarketStrategy is TestSetup {
 
         morpho.setIsP2PDisabled(aDai, true);
 
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i; i < 3; i++) {
             suppliers[i].approve(dai, toSupply);
             suppliers[i].supply(aDai, toSupply);
         }
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
-
         borrower1.borrow(aDai, toBorrow);
 
         uint256 supplyInP2P;

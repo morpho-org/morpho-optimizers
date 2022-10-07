@@ -49,7 +49,7 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerCanSetReserveFactor() public {
-        for (uint256 i = 0; i < pools.length; i++) {
+        for (uint256 i; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.setReserveFactor(aDai, 1111);
 

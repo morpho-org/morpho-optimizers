@@ -7,12 +7,12 @@ contract TestBorrow is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
-    // The borrower tries to borrow more than his collateral allows, the transaction reverts.
+    // The borrower tries to borrow more than what his collateral allows, the transaction reverts.
     function testBorrow1() public {
-        uint256 usdcAmount = to6Decimals(10_000 ether);
+        uint256 amount = to6Decimals(10_000 ether);
 
-        borrower1.approve(usdc, usdcAmount);
-        borrower1.supply(aUsdc, usdcAmount);
+        borrower1.approve(usdc, amount);
+        borrower1.supply(aUsdc, amount);
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
@@ -29,7 +29,6 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aDai, amount);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
-
         uint256 expectedOnPool = amount.rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
         assertEq(onPool, expectedOnPool);
@@ -48,9 +47,7 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aDai, amount);
 
         (uint256 supplyInP2P, ) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-
-        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
-        uint256 expectedInP2PInUnderlying = supplyInP2P.rayMul(p2pBorrowIndex);
+        uint256 expectedInP2PInUnderlying = supplyInP2P.rayMul(morpho.p2pBorrowIndex(aDai));
 
         assertEq(amount, expectedInP2PInUnderlying);
 
@@ -69,11 +66,9 @@ contract TestBorrow is TestSetup {
 
         borrower1.approve(usdc, to6Decimals(4 * amount));
         borrower1.supply(aUsdc, to6Decimals(4 * amount));
-        uint256 borrowAmount = amount * 2;
-        borrower1.borrow(aDai, borrowAmount);
+        borrower1.borrow(aDai, amount * 2);
 
         (uint256 supplyInP2P, ) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         assertEq(inP2P, supplyInP2P, "in P2P");
@@ -83,9 +78,9 @@ contract TestBorrow is TestSetup {
         assertEq(onPool, expectedOnPool, "on pool");
     }
 
-    // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
+    // There are NMAX (or less) suppliers that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
     function testBorrow5() public {
-        // TODO: fix this.
+        // Due to roundings, dust must be sent to Morpho contracts.
         deal(dai, address(morpho), 1 ether);
 
         setDefaultMaxGasForMatchingHelper(
@@ -103,7 +98,7 @@ contract TestBorrow is TestSetup {
 
         uint256 amountPerSupplier = amount / NMAX;
 
-        for (uint256 i = 0; i < NMAX; i++) {
+        for (uint256 i; i < NMAX; i++) {
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
@@ -115,14 +110,12 @@ contract TestBorrow is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedInP2P;
 
-        for (uint256 i = 0; i < NMAX; i++) {
+        for (uint256 i; i < NMAX; i++) {
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
+            uint256 inP2PInUnderlying = inP2P.rayMul(p2pSupplyIndex);
 
-            expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
-
-            assertEq(expectedInP2P, amountPerSupplier);
+            assertEq(inP2PInUnderlying, amountPerSupplier);
             assertEq(onPool, 0);
         }
 
@@ -132,9 +125,9 @@ contract TestBorrow is TestSetup {
         assertEq(onPool, 0, "Borrower1 on pool");
     }
 
-    // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
+    // The NMAX biggest suppliers don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ Most gas expensive borrow scenario.
     function testBorrow6() public {
-        // TODO: fix this.
+        // Due to roundings, dust must be sent to Morpho contracts.
         deal(dai, address(morpho), 1 ether);
 
         setDefaultMaxGasForMatchingHelper(
@@ -152,7 +145,7 @@ contract TestBorrow is TestSetup {
 
         uint256 amountPerSupplier = amount / (2 * NMAX);
 
-        for (uint256 i = 0; i < NMAX; i++) {
+        for (uint256 i; i < NMAX; i++) {
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
@@ -164,22 +157,19 @@ contract TestBorrow is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
-        uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
+            uint256 inP2PInUnderlying = inP2P.rayMul(p2pSupplyIndex);
 
-            expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
-
-            assertEq(expectedInP2P, amountPerSupplier, "on pool");
+            assertEq(inP2PInUnderlying, amountPerSupplier, "in P2P");
             assertEq(onPool, 0);
         }
 
         (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        expectedInP2P = (amount / 2).rayDiv(morpho.p2pBorrowIndex(aDai));
-        uint256 expectedOnPool = (amount / 2).rayDiv(normalizedVariableDebt);
+        uint256 expectedInP2P = (amount / 2).rayDiv(morpho.p2pBorrowIndex(aDai));
+        uint256 expectedOnPool = (amount / 2).rayDiv(pool.getReserveNormalizedVariableDebt(dai));
 
         assertEq(inP2P, expectedInP2P, "Borrower1 in peer-to-peer");
         assertEq(onPool, expectedOnPool, "Borrower1 on pool");
@@ -196,8 +186,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
-        uint256 expectedOnPool = (2 * amount).rayDiv(normalizedVariableDebt);
+        uint256 expectedOnPool = (2 * amount).rayDiv(pool.getReserveNormalizedVariableDebt(dai));
         assertEq(onPool, expectedOnPool);
     }
 
