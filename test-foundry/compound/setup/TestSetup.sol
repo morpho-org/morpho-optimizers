@@ -25,6 +25,8 @@ contract TestSetup is Config, Utils {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
+    ICompoundOracle public oracle;
+
     DumbOracle public dumbOracle;
     MorphoToken public morphoToken;
 
@@ -45,6 +47,7 @@ contract TestSetup is Config, Utils {
 
     function setUp() public {
         forkId = TestHelpers.setFork();
+        setContracts();
         initContracts();
         setContractsLabels();
         initUsers();
@@ -53,6 +56,10 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
+
+    function setContracts() internal {
+        oracle = ICompoundOracle(comptroller.oracle());
+    }
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();

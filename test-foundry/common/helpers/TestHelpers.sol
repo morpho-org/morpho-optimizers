@@ -24,7 +24,7 @@ library TestHelpers {
 
         bool rpcPrefixed = stdJson.readBool(
             json,
-            string(abi.encodePacked("$.", network, ".uses-rpc-prefix"))
+            string(abi.encodePacked("$.", network, ".usesRpcPrefix"))
         );
         string memory endpoint = rpcPrefixed
             ? string(
@@ -37,9 +37,9 @@ library TestHelpers {
 
         forkId = vm.createSelectFork(
             endpoint,
-            json.readUint(string(abi.encodePacked("$.", network, ".", protocol, ".", "test-block")))
+            json.readUint(string(abi.encodePacked("$.", network, ".", protocol, ".", "testBlock")))
         );
-        vm.chainId(json.readUint(string(abi.encodePacked("$.", network, ".chain-id"))));
+        vm.chainId(json.readUint(string(abi.encodePacked("$.", network, ".chainId"))));
     }
 
     function setForkFromEnv() internal returns (uint256 forkId) {

@@ -38,6 +38,10 @@ contract TestSetup is Config, Utils {
 
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
+    IPriceOracleGetter public oracle;
+    ILendingPool public pool;
+    address public REWARD_TOKEN;
+
     DumbOracle internal dumbOracle;
     MorphoToken public morphoToken;
 
@@ -59,6 +63,7 @@ contract TestSetup is Config, Utils {
 
     function setUp() public {
         forkId = TestHelpers.setFork();
+        setContracts();
         initContracts();
         setContractsLabels();
         initUsers();
@@ -67,6 +72,12 @@ contract TestSetup is Config, Utils {
     }
 
     function onSetUp() public virtual {}
+
+    function setContracts() internal {
+        oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
+        pool = ILendingPool(poolAddressesProvider.getLendingPool());
+        REWARD_TOKEN = aaveIncentivesController.REWARD_TOKEN();
+    }
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();

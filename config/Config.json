@@ -1,21 +1,21 @@
 {
     "avalanche-mainnet" : {
-        "uses-rpc-prefix" : false,
+        "usesRpcPrefix" : false,
         "rpc" : "https://api.avax.network/ext/bc/C/rpc",
-        "chain-id" : 43114,
+        "chainId" : 43114,
         "aave-v3" : {
-            "test-block" : 15675271
+            "testBlock" : 15675271
         }
     },
     "eth-mainnet" : {
-        "uses-rpc-prefix" : true,
+        "usesRpcPrefix" : true,
         "rpc" : "https://eth-mainnet.g.alchemy.com/v2/",
-        "chain-id" : 1,
+        "chainId" : 1,
         "aave-v2" : {
-            "test-block" : 14292587
+            "testBlock" : 14292587
         },
         "compound" : {
-            "test-block" : 14292587
+            "testBlock" : 14292587
         }
     }
 }
