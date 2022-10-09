@@ -68,7 +68,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
     function _getIndexes(address _poolToken)
-        public
+        internal
         view
         returns (
             address underlyingToken,
