@@ -25,8 +25,9 @@ certoraRun \
     --settings -t=60\
     --cache morpho \
     --staging \
-    --msg "PositionsManager For Compound: $1" \
+    --msg "PositionsManager For Compound" \
     --send_only \
+    $@
 
     # --method 'repayLogic(address, address, address, uint256, uint256)' \
 
