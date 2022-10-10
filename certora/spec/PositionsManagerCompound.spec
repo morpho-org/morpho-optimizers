@@ -78,23 +78,7 @@ rule sanity(method f)
 
 // REVERT CASES
 
-rule supplyAmountZero(address _poolToken, address _supplier, address _onBehalf, uint256 _maxGasForMatching) {
-    env e;
-
-    supplyLogic@withrevert(e, _poolToken, _supplier, _onBehalf, 0, _maxGasForMatching);
-
-    assert lastReverted;
-}
-
-rule supplyOnBehalfZeroAddress(address _poolToken, address _supplier, uint256 _amount, uint256 _maxGasForMatching) {
-    env e;
-
-    supplyLogic@withrevert(e, _poolToken, _supplier, 0, _amount, _maxGasForMatching);
-
-    assert lastReverted;
-}
-
-rule supplyUninitializedMarket(address _poolToken, address _supplier, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) {
+rule supplyInitialReverts(address _poolToken, address _supplier, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) {
     env e; 
     bool isCreated;
     bool isSupplyPaused;
@@ -106,7 +90,8 @@ rule supplyUninitializedMarket(address _poolToken, address _supplier, address _o
     bool isDeprecated;
 
     isCreated, isSupplyPaused, isBorrowPaused, isWithdrawPaused, isRepayPaused, isLiquidateCollateralPaused, isLiquidateBorrowPaused, isDeprecated = marketStatus(_poolToken);
-    require ! isCreated;
+
+    require !isCreated || isSupplyPaused || _onBehalf == 0 || _amount == 0;
 
     supplyLogic@withrevert(e, _poolToken, _supplier, _onBehalf, _amount, _maxGasForMatching);
 
