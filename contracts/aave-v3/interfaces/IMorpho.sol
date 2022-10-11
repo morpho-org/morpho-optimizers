@@ -59,6 +59,7 @@ interface IMorpho {
     function getUpdatedIndexes(address _poolToken) external view returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_, uint256 poolSupplyIndex_, uint256 poolBorrowIndex_);    
     function getUpdatedPoolIndexes(address _poolToken) external view returns (uint256 poolSupplyIndex_, uint256 poolBorrowIndex_);
     function getUpdatedP2PIndexes(address _poolToken) external view returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_);
+    function getPoolParams(address _poolToken) external view returns (uint256 ltv, uint256 liquidationThreshold, uint256 tokenUnit);
 
     /// GOVERNANCE ///
 

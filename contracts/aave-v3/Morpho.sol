@@ -319,4 +319,20 @@ contract Morpho is MorphoGovernance {
             (uint256, uint256)
         );
     }
+
+    function getPoolParams(address _poolToken)
+        external
+        view
+        returns (
+            uint256 ltv,
+            uint256 liquidationThreshold,
+            uint256 tokenUnit
+        )
+    {
+        return
+            _getPoolParams(
+                pool.getUserConfiguration(address(this)),
+                market[_poolToken].underlyingToken
+            );
+    }
 }

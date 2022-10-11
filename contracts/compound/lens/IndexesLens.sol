@@ -70,11 +70,11 @@ abstract contract IndexesLens is LensStorage {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
 
-            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
+            Types.GrowthFactors memory growthFactors = InterestRatesModel.computeGrowthFactors(
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
-                lastPoolIndexes,
+                lastPoolIndexes.lastSupplyPoolIndex,
+                lastPoolIndexes.lastBorrowPoolIndex,
                 marketParams.p2pIndexCursor,
                 marketParams.reserveFactor
             );
@@ -168,11 +168,11 @@ abstract contract IndexesLens is LensStorage {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
 
-            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
+            Types.GrowthFactors memory growthFactors = InterestRatesModel.computeGrowthFactors(
                 currentPoolSupplyIndex,
                 currentPoolBorrowIndex,
-                lastPoolIndexes,
+                lastPoolIndexes.lastSupplyPoolIndex,
+                lastPoolIndexes.lastBorrowPoolIndex,
                 marketParams.p2pIndexCursor,
                 marketParams.reserveFactor
             );
@@ -213,11 +213,11 @@ abstract contract IndexesLens is LensStorage {
             Types.Delta memory delta = morpho.deltas(_poolToken);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
 
-            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
+            Types.GrowthFactors memory growthFactors = InterestRatesModel.computeGrowthFactors(
                 currentPoolSupplyIndex,
                 currentPoolBorrowIndex,
-                lastPoolIndexes,
+                lastPoolIndexes.lastSupplyPoolIndex,
+                lastPoolIndexes.lastBorrowPoolIndex,
                 marketParams.p2pIndexCursor,
                 marketParams.reserveFactor
             );

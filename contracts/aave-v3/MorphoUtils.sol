@@ -274,21 +274,10 @@ abstract contract MorphoUtils is MorphoStorage {
 
             if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
-            (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
-            .getConfiguration(vars.underlyingToken)
-            .getParams();
-
-            // LTV should be zero if Morpho has not enabled this asset as collateral
-            if (!morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id))
-                assetData.ltv = 0;
-
-            // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
-            // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
-            if (assetData.ltv == 0) assetData.liquidationThreshold = 0;
-
-            unchecked {
-                assetData.tokenUnit = 10**assetData.decimals;
-            }
+            (assetData.ltv, assetData.liquidationThreshold, assetData.tokenUnit) = _getPoolParams(
+                morphoUserConfig,
+                vars.underlyingToken
+            );
 
             if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
                 values.debt += _debtValue(
@@ -330,6 +319,41 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.liquidationThreshold -= withdrawn.percentMul(assetData.liquidationThreshold);
                 values.maxDebt -= withdrawn.percentMul(assetData.ltv);
             }
+        }
+    }
+
+    /// @dev Gets the pool parameters that Morpho uses.
+    /// @param _morphoUserConfig The user configuration map of Morpho in the underlying pool
+    /// @param _underlying The underlying token.
+    /// @return ltv The LTV.
+    /// @return liquidationThreshold The liquidation threshold.
+    /// @return tokenUnit The token units.
+    function _getPoolParams(
+        DataTypes.UserConfigurationMap memory _morphoUserConfig,
+        address _underlying
+    )
+        internal
+        view
+        returns (
+            uint256 ltv,
+            uint256 liquidationThreshold,
+            uint256 tokenUnit
+        )
+    {
+        uint256 decimals;
+        (ltv, liquidationThreshold, , decimals, , ) = pool
+        .getConfiguration(_underlying)
+        .getParams();
+
+        // LTV should be zero if Morpho has not enabled this asset as collateral
+        if (!_morphoUserConfig.isUsingAsCollateral(pool.getReserveData(_underlying).id)) ltv = 0;
+
+        // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
+        // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
+        if (ltv == 0) liquidationThreshold = 0;
+
+        unchecked {
+            tokenUnit = 10**decimals;
         }
     }
 }

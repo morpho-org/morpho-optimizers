@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestMorphoGetters is TestSetup {
     using WadRayMath for uint256;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
     struct UserBalanceStates {
         uint256 collateral;
@@ -109,5 +110,26 @@ contract TestMorphoGetters is TestSetup {
         for (uint256 i; i < pools.length; i++) {
             assertEq(marketsCreated[i], pools[i]);
         }
+    }
+
+    struct PoolParamsStruct {
+        uint256 ltv;
+        uint256 lt;
+        uint256 tokenUnit;
+        uint256 decimals;
+    }
+
+    function testGetPoolParams() public {
+        supplier1.approve(dai, 1e18);
+        supplier1.supply(aDai, 1e18);
+        PoolParamsStruct memory morphoParams;
+        PoolParamsStruct memory poolParams;
+        (morphoParams.ltv, morphoParams.lt, morphoParams.tokenUnit) = morpho.getPoolParams(aDai);
+        (poolParams.ltv, poolParams.lt, , poolParams.decimals, , ) = pool
+        .getConfiguration(dai)
+        .getParams();
+        assertEq(morphoParams.ltv, poolParams.ltv);
+        assertEq(morphoParams.lt, poolParams.lt);
+        assertEq(morphoParams.tokenUnit, 10**poolParams.decimals);
     }
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./CompoundMath.sol";
 import "./Types.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 library InterestRatesModel {
     using CompoundMath for uint256;
@@ -41,9 +42,10 @@ library InterestRatesModel {
     }
 
     /// @notice Computes and returns the new peer-to-peer growth factors.
-    /// @param _newPoolSupplyIndex The pool's last current supply index.
-    /// @param _newPoolBorrowIndex The pool's last current borrow index.
-    /// @param _lastPoolIndexes The pool's last stored indexes.
+    /// @param _newPoolSupplyIndex The pool's current supply index.
+    /// @param _newPoolBorrowIndex The pool's current borrow index.
+    /// @param _lastPoolSupplyIndex The pool's last stored supply index.
+    /// @param _lastPoolSupplyIndex The pool's last stored borrow index.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
     /// @return growthFactors_ The pool's indexes growth factor (in wad).
@@ -55,8 +57,8 @@ library InterestRatesModel {
         uint16 _p2pIndexCursor,
         uint256 _reserveFactor
     ) internal pure returns (Types.GrowthFactors memory growthFactors_) {
-        growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.div(_lastSupplyPoolIndex);
-        growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(_lastBorrowPoolIndex);
+        growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.div(_lastPoolSupplyIndex);
+        growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(_lastPoolBorrowIndex);
 
         if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {
             uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
@@ -165,13 +167,13 @@ library InterestRatesModel {
         if (_p2pAmount == 0 || _p2pDelta == 0) {
             newP2PIndex_ = _lastP2PIndex.mul(_p2pGrowthFactor);
         } else {
-            uint256 shareOfTheDelta = Math.min(
+            uint256 shareOfTheDelta = CompoundMath.min(
                 _p2pDelta.mul(_lastPoolIndex).div(_p2pAmount.mul(_lastP2PIndex)),
-                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
-            ); // In ray.
+                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
+            );
 
             newP2PIndex_ = _lastP2PIndex.mul(
-                (WadRayMath.RAY - shareOfTheDelta).mul(_p2pGrowthFactor) +
+                (WAD - shareOfTheDelta).mul(_p2pGrowthFactor) +
                     shareOfTheDelta.mul(_poolGrowthFactor)
             );
         }
