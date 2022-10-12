@@ -754,9 +754,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = CompoundMath.safeSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
-                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).safeSub(
-                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
-                )
+                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
+                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()))
             );
 
             if (vars.feeToRepay > 0) {
