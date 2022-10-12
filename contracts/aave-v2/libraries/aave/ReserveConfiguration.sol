@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
 import {Errors} from "./Errors.sol";
