@@ -5,8 +5,6 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
-import "./libraries/aave/UserConfiguration.sol";
-
 import "@morpho-dao/morpho-utils/DelegateCall.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
@@ -20,7 +18,6 @@ import "./MorphoStorage.sol";
 /// @notice Modifiers, getters and other util functions for Morpho.
 abstract contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using UserConfiguration for DataTypes.UserConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using DelegateCall for address;
@@ -277,11 +274,6 @@ abstract contract MorphoUtils is MorphoStorage {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityStackVars memory vars;
-
-        DataTypes.UserConfigurationMap memory morphoUserConfig = pool.getUserConfiguration(
-            address(this)
-        );
-
         vars.poolTokensLength = marketsCreated.length;
         vars.userMarkets = userMarkets[_user];
 
@@ -302,14 +294,6 @@ abstract contract MorphoUtils is MorphoStorage {
 
             unchecked {
                 assetData.tokenUnit = 10**assetData.decimals;
-            }
-
-            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral
-            if (
-                !morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
-            ) {
-                assetData.ltv = 0;
-                assetData.liquidationThreshold = 0;
             }
 
             if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
