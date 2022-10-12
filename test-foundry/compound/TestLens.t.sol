@@ -680,23 +680,13 @@ contract TestLens is TestSetup {
         ) = lens.getMarketConfiguration(cDai);
         assertTrue(underlying == ICToken(cDai).underlying());
 
-        (
-            bool isCreated_,
-            bool isSupplyPaused_,
-            bool isBorrowPaused_,
-            bool isWithdrawPaused_,
-            bool isRepayPaused_,
-            ,
-            ,
-
-        ) = morpho.marketStatus(cDai);
+        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
 
         assertTrue(isCreated == isCreated_);
         assertTrue(p2pDisabled == morpho.p2pDisabled(cDai));
-        assertTrue(
-            isPaused == (isSupplyPaused_ && isBorrowPaused_ && isWithdrawPaused_ && isRepayPaused_)
-        );
-        assertTrue(isPartiallyPaused == (isSupplyPaused_ && isBorrowPaused_));
+
+        assertTrue(isPaused == isPaused_);
+        assertTrue(isPartiallyPaused == isPartiallyPaused_);
         (uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor) = morpho.marketParameters(
             cDai
         );

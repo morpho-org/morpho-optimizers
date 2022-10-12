@@ -38,6 +38,4 @@ interface IPositionsManager {
         address _borrower,
         uint256 _amount
     ) external;
-
-    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external;
 }
