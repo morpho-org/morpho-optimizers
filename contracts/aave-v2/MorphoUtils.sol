@@ -304,7 +304,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 assetData.tokenUnit = 10**assetData.decimals;
             }
 
-            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral
+            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral.
             if (
                 !morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
             ) {
