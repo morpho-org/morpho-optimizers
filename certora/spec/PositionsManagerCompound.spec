@@ -30,6 +30,7 @@ methods {
     supplyBalanceInOf(address, address) returns (uint256, uint256) envfree
     borrowBalanceInOf(address, address) returns (uint256, uint256) envfree
     marketStatus(address) returns (bool, bool, bool, bool, bool, bool, bool, bool) envfree
+    userMembership(address, address) returns (bool) envfree
 
     // whenever the tool encounters mul or div, it will return an arbitrary value that follows the axioms 
     // within the corresponding ghost
@@ -79,7 +80,7 @@ rule sanity(method f)
 // REVERT CASES
 
 rule supplyInitialReverts(address _poolToken, address _supplier, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) {
-    env e; 
+    env e;
     bool isCreated;
     bool isSupplyPaused;
     bool isBorrowPaused;
@@ -94,6 +95,66 @@ rule supplyInitialReverts(address _poolToken, address _supplier, address _onBeha
     require !isCreated || isSupplyPaused || _onBehalf == 0 || _amount == 0;
 
     supplyLogic@withrevert(e, _poolToken, _supplier, _onBehalf, _amount, _maxGasForMatching);
+
+    assert lastReverted;
+}
+
+rule borrowInitialReverts(address _poolToken, uint256 _amount, uint256 _maxGasForMatching) {
+    env e;
+    bool isCreated;
+    bool isSupplyPaused;
+    bool isBorrowPaused;
+    bool isWithdrawPaused;
+    bool isRepayPaused;
+    bool isLiquidateCollateralPaused;
+    bool isLiquidateBorrowPaused;
+    bool isDeprecated;
+
+    isCreated, isSupplyPaused, isBorrowPaused, isWithdrawPaused, isRepayPaused, isLiquidateCollateralPaused, isLiquidateBorrowPaused, isDeprecated = marketStatus(_poolToken);
+
+    require !isCreated || isBorrowPaused || _amount == 0; // TODO: isLiquidatable reverts too
+
+    borrowLogic@withrevert(e, _poolToken, _amount, _maxGasForMatching);
+
+    assert lastReverted;
+}
+
+rule withdrawInitialReverts(address _poolToken, address _supplier, address _receiver, uint256 _amount, uint256 _maxGasForMatching) {
+    env e;
+    bool isCreated;
+    bool isSupplyPaused;
+    bool isBorrowPaused;
+    bool isWithdrawPaused;
+    bool isRepayPaused;
+    bool isLiquidateCollateralPaused;
+    bool isLiquidateBorrowPaused;
+    bool isDeprecated;
+
+    isCreated, isSupplyPaused, isBorrowPaused, isWithdrawPaused, isRepayPaused, isLiquidateCollateralPaused, isLiquidateBorrowPaused, isDeprecated = marketStatus(_poolToken);
+
+    require !isCreated || isWithdrawPaused || !userMembership(_poolToken, _supplier) || _amount == 0; // it is missing _receiver == 0
+
+    withdrawLogic@withrevert(e, _poolToken, _amount, _supplier, _receiver, _maxGasForMatching);
+
+    assert lastReverted;
+}
+
+rule repayInitialReverts(address _poolToken, address _repayer, address _onBehalf, uint256 _amount, uint256 _maxGasForMatching) {
+    env e;
+    bool isCreated;
+    bool isSupplyPaused;
+    bool isBorrowPaused;
+    bool isWithdrawPaused;
+    bool isRepayPaused;
+    bool isLiquidateCollateralPaused;
+    bool isLiquidateBorrowPaused;
+    bool isDeprecated;
+
+    isCreated, isSupplyPaused, isBorrowPaused, isWithdrawPaused, isRepayPaused, isLiquidateCollateralPaused, isLiquidateBorrowPaused, isDeprecated = marketStatus(_poolToken);
+
+    require !isCreated || isRepayPaused || !userMembership(_poolToken, _onBehalf) || _amount == 0; // it is missing _onBehalf == 0;
+
+    repayLogic@withrevert(e, _poolToken, _repayer, _onBehalf, _amount, _maxGasForMatching);
 
     assert lastReverted;
 }
