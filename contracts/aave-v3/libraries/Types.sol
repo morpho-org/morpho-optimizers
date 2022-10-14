@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 library MarketLib {
     function isCreated(Types.Market storage _market) internal view returns (bool) {
