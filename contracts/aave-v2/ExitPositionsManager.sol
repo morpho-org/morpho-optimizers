@@ -78,6 +78,18 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
+    /// @notice Thrown when the withdraw is paused.
+    error WithdrawPaused();
+
+    /// @notice Thrown when the repay is paused.
+    error RepayPaused();
+
+    /// @notice Thrown when the liquidation on this asset as collateral is paused.
+    error LiquidateCollateralPaused();
+
+    /// @notice Thrown when the liquidation on this asset as debt is paused.
+    error LiquidateBorrowPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -110,6 +122,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 closeFactor; // The close factor used during the liquidation.
+        bool liquidationAllowed; // Whether the liquidation is allowed or not.
     }
 
     // Struct to avoid stack too deep.
@@ -136,6 +150,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
+        if (!market[_poolToken].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
@@ -160,6 +176,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (!market[_poolToken].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isRepayPaused) revert RepayPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
@@ -179,6 +197,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
+        Types.Market memory collateralMarket = market[_poolTokenCollateral];
+        if (!collateralMarket.isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
+            revert LiquidateCollateralPaused();
+        Types.PauseStatus memory borrowPauseStatus = pauseStatus[_poolTokenBorrowed];
+        if (!market[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
+        if (borrowPauseStatus.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+
         if (
             !_isBorrowingAndSupplying(
                 userMarkets[_borrower],
@@ -190,9 +216,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
 
-        if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
-
-        address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
+        LiquidateVars memory vars;
+        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+            _borrower,
+            borrowPauseStatus.isDeprecated
+        );
+        if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
 
         uint256 amountToLiquidate = Math.min(
             _amount,
@@ -201,11 +230,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             ) // Max liquidatable debt.
         );
 
+        address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
         address tokenCollateralAddress = market[_poolTokenCollateral].underlyingToken;
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-
-        LiquidateVars memory vars;
         {
             ILendingPool poolMem = pool;
             (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
@@ -216,6 +243,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             .getParamsMemory();
         }
 
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
@@ -617,8 +645,21 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
     /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
-    /// @return Whether the user is liquidatable or not.
-    function _liquidationAllowed(address _user) internal returns (bool) {
-        return _getUserHealthFactor(_user, address(0), 0) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+    /// @param _isDeprecated Whether the market is deprecated or not.
+    /// @return closeFactor The close factor to apply.
+    /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    function _liquidationAllowed(address _user, bool _isDeprecated)
+        internal
+        returns (uint256 closeFactor, bool liquidationAllowed)
+    {
+        if (_isDeprecated) {
+            // Allow liquidation of the whole debt.
+            closeFactor = MAX_BASIS_POINTS;
+            liquidationAllowed = true;
+        } else {
+            closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
+            liquidationAllowed = (_getUserHealthFactor(_user, address(0), 0) <
+                HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
+        }
     }
 }

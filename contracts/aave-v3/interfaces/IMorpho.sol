@@ -69,8 +69,18 @@ interface IMorpho {
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
     function setIsPausedForAllMarkets(bool _isPaused) external;
     function setIsClaimRewardsPaused(bool _isPaused) external;
-    function setPauseStatus(address _poolToken, bool _isPaused) external;
-    function setPartialPauseStatus(address _poolToken, bool _isPaused) external;
+    function setIsSupplyPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsBorrowPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsRepayPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
+        external;
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;

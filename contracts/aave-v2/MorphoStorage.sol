@@ -69,6 +69,10 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     IRewardsManager public rewardsManager;
     address public treasuryVault;
 
+    /// GRANULAR PAUSING & DEPRECATED MARKET STORAGE ///
+
+    mapping(address => Types.PauseStatus) public pauseStatus;
+
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.

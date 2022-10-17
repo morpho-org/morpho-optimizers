@@ -42,8 +42,10 @@ interface ILens {
 
     function isMarketCreated(address _poolToken) external view returns (bool);
 
+    /// @dev Deprecated.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool);
 
+    /// @dev Deprecated.
     function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
         external
         view

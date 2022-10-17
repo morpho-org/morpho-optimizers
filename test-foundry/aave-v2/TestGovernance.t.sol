@@ -113,15 +113,15 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
         hevm.prank(address(supplier1));
-        morpho.setP2PDisabledStatus(aDai, true);
-
         hevm.expectRevert("Ownable: caller is not the owner");
-        hevm.prank(address(supplier2));
-        morpho.setP2PDisabledStatus(aDai, true);
+        morpho.setIsP2PDisabled(aDai, true);
 
-        morpho.setP2PDisabledStatus(aDai, true);
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsP2PDisabled(aDai, true);
+
+        morpho.setIsP2PDisabled(aDai, true);
         (, , , , , , bool isP2PDisabled) = morpho.market(aDai);
         assertTrue(isP2PDisabled);
     }
@@ -190,17 +190,77 @@ contract TestGovernance is TestSetup {
     function testOnlyOwnerCanSetClaimRewardsStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
 
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
 
     function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
 
-        morpho.setPauseStatusForAllMarkets(true);
+        morpho.setIsPausedForAllMarkets(true);
+    }
+
+    function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(aDai, true);
+
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(aDai, true);
+
+        morpho.setIsDeprecated(aDai, true);
+        (, , , , , , bool isDeprecated) = morpho.pauseStatus(aDai);
+        assertTrue(isDeprecated);
+
+        morpho.setIsDeprecated(aDai, false);
+        (, , , , , , isDeprecated) = morpho.pauseStatus(aDai);
+        assertFalse(isDeprecated);
+    }
+
+    function testOnlyOwnerShouldDisableSupply() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsSupplyPaused(aDai, true);
+
+        morpho.setIsSupplyPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableBorrow() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsBorrowPaused(aDai, true);
+
+        morpho.setIsBorrowPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableWithdraw() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsWithdrawPaused(aDai, true);
+
+        morpho.setIsWithdrawPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableRepay() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsRepayPaused(aDai, true);
+
+        morpho.setIsRepayPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateCollateralPaused(aDai, true);
+
+        morpho.setIsLiquidateCollateralPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateBorrowPaused(aDai, true);
+
+        morpho.setIsLiquidateBorrowPaused(aDai, true);
     }
 }
