@@ -7,9 +7,7 @@ contract TestWithdraw is TestSetup {
     using CompoundMath for uint256;
 
     struct WithdrawTest {
-        ERC20 underlying;
-        ICToken poolToken;
-        uint256 decimals;
+        TestMarket market;
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
         uint256 p2pSupplyIndex;
@@ -24,27 +22,28 @@ contract TestWithdraw is TestSetup {
         uint256 totalUnderlyingAfter;
     }
 
-    function _testShouldWithdrawMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
+    function _testShouldWithdrawMarketP2PAndOnPool(TestMarket memory _market, uint96 _amount)
+        internal
+    {
         WithdrawTest memory test;
-        test.poolToken = ICToken(_poolToken);
-        (test.underlying, test.decimals) = _getUnderlying(_poolToken);
+        test.market = _market;
 
-        test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
-        test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
+        test.morphoBalanceOnPoolBefore = ICToken(_market.poolToken).balanceOf(address(morpho));
+        test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(test.decimals - 4), type(uint96).max);
+        uint256 amount = bound(_amount, 10**(_market.decimals - 4), type(uint96).max);
 
-        _tip(address(test.underlying), address(supplier1), amount);
+        _tip(_market.underlying, address(user), amount);
 
-        supplier1.approve(address(test.underlying), amount);
-        supplier1.supply(address(test.poolToken), amount);
+        user.approve(_market.underlying, amount);
+        user.supply(_market.poolToken, address(user), amount);
 
-        test.p2pSupplyIndex = morpho.p2pSupplyIndex(address(test.poolToken));
-        test.poolSupplyIndex = test.poolToken.exchangeRateCurrent();
+        test.p2pSupplyIndex = morpho.p2pSupplyIndex(_market.poolToken);
+        test.poolSupplyIndex = ICToken(_market.poolToken).exchangeRateCurrent();
 
         (test.balanceInP2P, test.balanceOnPool) = morpho.supplyBalanceInOf(
-            address(test.poolToken),
-            address(supplier1)
+            _market.poolToken,
+            address(user)
         );
 
         test.underlyingInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
@@ -53,35 +52,35 @@ contract TestWithdraw is TestSetup {
 
         vm.roll(block.number + 10_000);
 
-        morpho.updateP2PIndexes(address(test.poolToken));
+        morpho.updateP2PIndexes(_market.poolToken);
 
         vm.roll(block.number + 10_000);
 
         assertEq(
-            test.underlying.balanceOf(address(supplier1)),
+            ERC20(_market.underlying).balanceOf(address(user)),
             0,
             "unexpected underlying balance before withdraw"
         );
 
-        supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore);
+        user.withdraw(_market.poolToken, test.totalUnderlyingBefore);
 
         (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
-        .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
+        .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
 
         assertEq(
-            test.underlying.balanceOf(address(supplier1)),
+            ERC20(_market.underlying).balanceOf(address(user)),
             test.totalUnderlyingBefore,
             "unexpected underlying balance after withdraw"
         );
 
         if (test.totalUnderlyingAfter > 0) {
-            supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore); // Withdraw accrued interests.
+            user.withdraw(_market.poolToken, test.totalUnderlyingBefore); // Withdraw accrued interests.
 
             (
                 test.underlyingOnPoolAfter,
                 test.underlyingInP2PAfter,
                 test.totalUnderlyingAfter
-            ) = lens.getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
+            ) = lens.getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
         }
 
         assertEq(test.underlyingOnPoolAfter, 0, "unexpected pool underlying balance");
@@ -89,37 +88,32 @@ contract TestWithdraw is TestSetup {
         assertEq(test.totalUnderlyingAfter, 0, "unexpected total underlying supplied");
     }
 
-    function testShouldWithdrawAllMarketsP2PAndOnPool(uint8 _marketIndex, uint96 _amount) public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
+    function testShouldWithdrawAllMarketsP2PAndOnPool(uint96 _amount) public {
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
+            snapshotId = vm.snapshot();
 
-        _marketIndex = uint8(_marketIndex % activeMarkets.length);
-
-        _testShouldWithdrawMarketP2PAndOnPool(activeMarkets[_marketIndex], _amount);
+            _testShouldWithdrawMarketP2PAndOnPool(activeMarkets[marketIndex], _amount);
+        }
     }
 
     function testShouldNotWithdrawZeroAmount() public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            WithdrawTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            TestMarket memory market = activeMarkets[marketIndex];
 
             vm.expectRevert(PositionsManager.AmountIsZero.selector);
-            supplier1.withdraw(address(test.poolToken), 0);
+            user.withdraw(market.poolToken, 0);
         }
     }
 
     function testShouldNotWithdrawFromUnenteredMarket(uint96 _amount) public {
         vm.assume(_amount > 0);
 
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            WithdrawTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            TestMarket memory market = activeMarkets[marketIndex];
 
             vm.expectRevert(PositionsManager.UserNotMemberOfMarket.selector);
-            supplier1.withdraw(address(test.poolToken), _amount);
+            user.withdraw(market.poolToken, _amount);
         }
     }
 }
