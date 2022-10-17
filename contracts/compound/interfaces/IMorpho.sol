@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.0;
 
 import "./IInterestRatesManager.sol";
 import "./IPositionsManager.sol";
@@ -53,12 +53,12 @@ interface IMorpho {
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setIsP2PDisabled(address _poolToken, bool _p2pDisabled) external;
+    function setP2PDisabled(address _poolToken, bool _p2pDisabled) external;
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
-    function setIsPausedForAllMarkets(bool _isPaused) external;
-    function setPauseStatus(address _poolToken, bool _isPaused) external;
-    function setPartialPauseStatus(address _poolToken, bool _isPaused) external;
+    function setPauseStatusForAllMarkets(bool _newStatus) external;
+    function setPauseStatus(address _poolToken, bool _newStatus) external;
+    function setPartialPauseStatus(address _poolToken, bool _newStatus) external;
     function setPauseStatus(address _poolToken) external;
     function setPartialPauseStatus(address _poolToken) external;
     function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.8.0;
+// SPDX-License-Identifier: agpl-3.0
+pragma solidity ^0.8.0;
 
 interface IAaveDistributionManager {
     event AssetConfigUpdated(address indexed asset, uint256 emission);

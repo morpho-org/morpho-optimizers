@@ -5,7 +5,6 @@ import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
 import "@contracts/aave-v2/interfaces/IMorpho.sol";
-import "@contracts/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -257,9 +256,7 @@ contract TestSetup is Config, Utils {
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , , , , , ) = morpho.market(
-            _poolToken
-        );
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolToken);
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

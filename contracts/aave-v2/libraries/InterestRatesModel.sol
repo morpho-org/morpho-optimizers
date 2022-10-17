@@ -11,11 +11,6 @@ library InterestRatesModel {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    /// ERRORS ///
-
-    // Thrown when percentage is above 100%.
-    error PercentageTooHigh();
-
     /// STRUCTS ///
 
     struct GrowthFactors {
