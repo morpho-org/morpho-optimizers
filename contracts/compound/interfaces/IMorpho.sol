@@ -38,7 +38,6 @@ interface IMorpho {
 
     /// GETTERS ///
 
-    function updateP2PIndexes(address _poolToken) external;
     function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolToken, Types.PositionType _positionType) external view returns (address head);
@@ -50,17 +49,27 @@ interface IMorpho {
     function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
+    function setPositionsManager(IPositionsManager _positionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setP2PDisabled(address _poolToken, bool _p2pDisabled) external;
+    function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled) external;
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
-    function setPauseStatusForAllMarkets(bool _newStatus) external;
-    function setPauseStatus(address _poolToken, bool _newStatus) external;
-    function setPartialPauseStatus(address _poolToken, bool _newStatus) external;
-    function setPauseStatus(address _poolToken) external;
-    function setPartialPauseStatus(address _poolToken) external;
+    function setIsPausedForAllMarkets(bool _isPaused) external;
+    function setIsClaimRewardsPaused(bool _isPaused) external;
+    function setIsSupplyPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsBorrowPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsRepayPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused)
+        external;
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
+        external;
     function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;
     function createMarket(address _poolToken, Types.MarketParameters calldata _params) external;
 

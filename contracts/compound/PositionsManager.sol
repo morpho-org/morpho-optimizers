@@ -156,6 +156,24 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
     error SameBlockBorrowRepay();
 
+    /// @notice Thrown when the supply is paused.
+    error SupplyPaused();
+
+    /// @notice Thrown when the borrow is paused.
+    error BorrowPaused();
+
+    /// @notice Thrown when the withdraw is paused.
+    error WithdrawPaused();
+
+    /// @notice Thrown when the repay is paused.
+    error RepayPaused();
+
+    /// @notice Thrown when the liquidation on this asset as collateral is paused.
+    error LiquidateCollateralPaused();
+
+    /// @notice Thrown when the liquidation on this asset as debt is paused.
+    error LiquidateBorrowPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -214,8 +232,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolToken);
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyPaused();
 
+        _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
         ERC20 underlyingToken = _getUnderlying(_poolToken);
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
@@ -307,8 +327,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolToken);
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowPaused();
 
+        _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
         lastBorrowBlock[msg.sender] = block.number;
 
@@ -407,6 +429,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -431,6 +455,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolToken].isRepayPaused) revert RepayPaused();
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -450,6 +476,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
+        if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
+        if (pauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
+            revert LiquidateCollateralPaused();
+        if (!marketStatus[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
+        Types.PauseStatus memory borrowPause = pauseStatus[_poolTokenBorrowed];
+        if (borrowPause.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
         if (
             !userMembership[_poolTokenBorrowed][_borrower] ||
             !userMembership[_poolTokenCollateral][_borrower]
@@ -458,7 +490,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenBorrowed);
         _updateP2PIndexes(_poolTokenCollateral);
 
-        if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+        if (!borrowPause.isDeprecated && !_isLiquidatable(_borrower, address(0), 0, 0))
+            revert UnauthorisedLiquidate();
 
         LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
