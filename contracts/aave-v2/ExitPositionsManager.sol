@@ -225,9 +225,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         uint256 amountToLiquidate = Math.min(
             _amount,
-            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(
-                DEFAULT_LIQUIDATION_CLOSE_FACTOR
-            ) // Max liquidatable debt.
+            _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
 
         address tokenBorrowedAddress = market[_poolTokenBorrowed].underlyingToken;
