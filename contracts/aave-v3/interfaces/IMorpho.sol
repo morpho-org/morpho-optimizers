@@ -61,9 +61,12 @@ interface IMorpho {
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external;
     function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
-    function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
+    function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
+    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
+    function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
+    function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled) external;
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
@@ -81,9 +84,6 @@ interface IMorpho {
         external;
     function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
         external;
-    function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
-    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
-    function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;
     function createMarket(address _underlyingToken, uint16 _reserveFactor, uint16 _p2pIndexCursor) external;
 
