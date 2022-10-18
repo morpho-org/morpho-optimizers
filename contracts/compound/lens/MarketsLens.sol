@@ -137,6 +137,17 @@ abstract contract MarketsLens is RatesLens {
         (, collateralFactor, ) = comptroller.markets(_poolToken);
     }
 
+    /// @notice Returns market's pause statuses.
+    /// @param _poolToken The address of the market of which to get pause statuses.
+    /// @return The market status struct.
+    function getMarketPauseStatuses(address _poolToken)
+        external
+        view
+        returns (Types.PauseStatus memory)
+    {
+        return morpho.pauseStatus(_poolToken);
+    }
+
     /// PUBLIC ///
 
     /// @notice Computes and returns the total distribution of supply for a given market.

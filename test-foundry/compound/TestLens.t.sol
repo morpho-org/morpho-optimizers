@@ -1479,4 +1479,39 @@ contract TestLens is TestSetup {
         assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
         assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
     }
+
+    function testGetMarketPauseStatusesDeprecatedMarket() public {
+        morpho.setIsDeprecated(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isDeprecated);
+    }
+
+    function testGetMarketPauseStatusesPauseSupply() public {
+        morpho.setIsSupplyPaused(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isSupplyPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseBorrow() public {
+        morpho.setIsBorrowPaused(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isBorrowPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseWithdraw() public {
+        morpho.setIsWithdrawPaused(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isWithdrawPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseRepay() public {
+        morpho.setIsRepayPaused(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isRepayPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseLiquidateOnCollateral() public {
+        morpho.setIsLiquidateCollateralPaused(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isLiquidateCollateralPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseLiquidateOnBorrow() public {
+        morpho.setIsLiquidateBorrowPaused(cDai, true);
+        assertTrue(lens.getMarketPauseStatuses(cDai).isLiquidateBorrowPaused);
+    }
 }
