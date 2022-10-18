@@ -91,6 +91,11 @@ interface ILens {
             uint16 p2pIndexCursor
         );
 
+    function getMarketPauseStatuses(address _poolToken)
+        external
+        view
+        returns (Types.PauseStatus memory);
+
     function getTotalMarketSupply(address _poolToken)
         external
         view

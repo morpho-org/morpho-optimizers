@@ -1489,4 +1489,39 @@ contract TestLens is TestSetup {
             "pool balance before"
         );
     }
+
+    function testGetMarketPauseStatusesDeprecatedMarket() public {
+        morpho.setIsDeprecated(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isDeprecated);
+    }
+
+    function testGetMarketPauseStatusesPauseSupply() public {
+        morpho.setIsSupplyPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isSupplyPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseBorrow() public {
+        morpho.setIsBorrowPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isBorrowPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseWithdraw() public {
+        morpho.setIsWithdrawPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isWithdrawPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseRepay() public {
+        morpho.setIsRepayPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isRepayPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseLiquidateOnCollateral() public {
+        morpho.setIsLiquidateCollateralPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isLiquidateCollateralPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseLiquidateOnBorrow() public {
+        morpho.setIsLiquidateBorrowPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatuses(aDai).isLiquidateBorrowPaused);
+    }
 }
