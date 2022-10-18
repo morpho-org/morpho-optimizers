@@ -710,7 +710,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.
             liquidationAllowed = true;
-            closeFactor = MAX_BASIS_POINTS;
+            closeFactor = PercentageMath.PERCENTAGE_FACTOR;
         } else {
             uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
             address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();

@@ -261,7 +261,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_newReserveFactor > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
         _updateIndexes(_poolToken);
 
         market[_poolToken].reserveFactor = _newReserveFactor;
@@ -276,7 +276,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
         _updateIndexes(_poolToken);
 
         market[_poolToken].p2pIndexCursor = _p2pIndexCursor;
@@ -472,8 +472,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     ) external onlyOwner {
         if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
         if (_underlyingToken == address(0)) revert ZeroAddress();
-        if (_p2pIndexCursor > MAX_BASIS_POINTS || _reserveFactor > MAX_BASIS_POINTS)
-            revert ExceedsMaxBasisPoints();
+        if (
+            _p2pIndexCursor > PercentageMath.PERCENTAGE_FACTOR ||
+            _reserveFactor > PercentageMath.PERCENTAGE_FACTOR
+        ) revert ExceedsMaxBasisPoints();
 
         if (!pool.getConfiguration(_underlyingToken).getActive()) revert MarketIsNotListedOnAave();
 

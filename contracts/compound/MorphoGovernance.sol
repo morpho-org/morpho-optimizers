@@ -234,7 +234,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_newReserveFactor > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
         _updateP2PIndexes(_poolToken);
 
         marketParameters[_poolToken].reserveFactor = _newReserveFactor;
@@ -249,7 +249,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
         _updateP2PIndexes(_poolToken);
 
         marketParameters[_poolToken].p2pIndexCursor = _p2pIndexCursor;
@@ -388,8 +388,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
     {
         if (
-            _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
-            _marketParams.reserveFactor > MAX_BASIS_POINTS
+            _marketParams.p2pIndexCursor > PercentageMath.PERCENTAGE_FACTOR ||
+            _marketParams.reserveFactor > PercentageMath.PERCENTAGE_FACTOR
         ) revert ExceedsMaxBasisPoints();
 
         if (marketStatus[_poolToken].isCreated) revert MarketAlreadyCreated();
