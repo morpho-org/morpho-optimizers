@@ -206,4 +206,71 @@ contract TestGovernance is TestSetup {
         morpho.setIsClaimRewardsPaused(true);
         assertTrue(morpho.isClaimRewardsPaused());
     }
+
+    function testOnlyOwnerShouldDisableSupply() public {
+        (bool isSupplyPaused, , , , , , ) = morpho.pauseStatus(cDai);
+        assertFalse(isSupplyPaused);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsSupplyPaused(cDai, true);
+
+        morpho.setIsSupplyPaused(cDai, true);
+        (isSupplyPaused, , , , , , ) = morpho.pauseStatus(cDai);
+        assertTrue(isSupplyPaused);
+    }
+
+    function testOnlyOwnerShouldDisableBorrow() public {
+        (, bool isBorrowPaused, , , , , ) = morpho.pauseStatus(cDai);
+        assertFalse(isBorrowPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsBorrowPaused(cDai, true);
+
+        morpho.setIsBorrowPaused(cDai, true);
+        (, isBorrowPaused, , , , , ) = morpho.pauseStatus(cDai);
+        assertTrue(isBorrowPaused);
+    }
+
+    function testOnlyOwnerShouldDisableWithdraw() public {
+        (, , bool isWithdrawPaused, , , , ) = morpho.pauseStatus(cDai);
+        assertFalse(isWithdrawPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsWithdrawPaused(cDai, true);
+
+        morpho.setIsWithdrawPaused(cDai, true);
+        (, , isWithdrawPaused, , , , ) = morpho.pauseStatus(cDai);
+        assertTrue(isWithdrawPaused);
+    }
+
+    function testOnlyOwnerShouldDisableRepay() public {
+        (, , , bool isRepayPaused, , , ) = morpho.pauseStatus(cDai);
+        assertFalse(isRepayPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsRepayPaused(cDai, true);
+
+        morpho.setIsRepayPaused(cDai, true);
+        (, , , isRepayPaused, , , ) = morpho.pauseStatus(cDai);
+        assertTrue(isRepayPaused);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+        (, , , , bool isLiquidateCollateralPaused, , ) = morpho.pauseStatus(cDai);
+        assertFalse(isLiquidateCollateralPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateCollateralPaused(cDai, true);
+
+        morpho.setIsLiquidateCollateralPaused(cDai, true);
+        (, , , , isLiquidateCollateralPaused, , ) = morpho.pauseStatus(cDai);
+        assertTrue(isLiquidateCollateralPaused);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+        (, , , , , bool isLiquidateBorrowPaused, ) = morpho.pauseStatus(cDai);
+        assertFalse(isLiquidateBorrowPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateBorrowPaused(cDai, true);
+
+        morpho.setIsLiquidateBorrowPaused(cDai, true);
+        (, , , , , isLiquidateBorrowPaused, ) = morpho.pauseStatus(cDai);
+        assertTrue(isLiquidateBorrowPaused);
+    }
 }
