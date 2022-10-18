@@ -17,7 +17,6 @@ interface IMorpho {
 
     function NO_REFERRAL_CODE() external view returns(uint8);
     function VARIABLE_INTEREST_MODE() external view returns(uint8);
-    function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns(uint16);
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns(uint256);
     function MAX_NB_OF_MARKETS() external view returns(uint256);
     function BORROWING_MASK() external view returns(bytes32);
