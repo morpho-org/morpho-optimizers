@@ -1,0 +1,43 @@
+name: Storage layout snapshot check (Morpho-Compound)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
+jobs:
+  check:
+    name: Storage layout snapshot check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Foundry fork cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            cache
+            out
+          key: foundry-${{ hashFiles('Makefile', 'foundry.toml') }} # where fork block numbers & RPC are stored
+
+      - name: Run tests
+        run: make storage-layout-check
+        env:
+          PROTOCOL: compound
