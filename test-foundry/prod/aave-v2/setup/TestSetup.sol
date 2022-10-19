@@ -4,14 +4,13 @@ pragma solidity ^0.8.0;
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
-import "@contracts/aave-v2/interfaces/IMorpho.sol";
 import "@contracts/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/aave-v2/libraries/Types.sol";
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
 import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
@@ -23,12 +22,10 @@ import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.so
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
-import "../../../common/helpers/Chains.sol";
 import {User} from "../../../aave-v2/helpers/User.sol";
-import {Utils} from "../../../aave-v2/setup/Utils.sol";
 import "@config/Config.sol";
-import "@forge-std/Test.sol";
 import "@forge-std/console.sol";
+import "@forge-std/Test.sol";
 
 contract TestSetup is Config, Test {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
@@ -37,20 +34,35 @@ contract TestSetup is Config, Test {
     using SafeTransferLib for ERC20;
     using stdStorage for StdStorage;
 
-    User public supplier1;
-    User public supplier2;
-    User public supplier3;
-    User[] public suppliers;
+    uint256 MIN_ETH_AMOUNT = 0.005 ether;
 
-    User public borrower1;
-    User public borrower2;
-    User public borrower3;
-    User[] public borrowers;
+    User public user;
+
+    struct TestMarket {
+        address poolToken;
+        address debtToken;
+        address underlying;
+        uint256 decimals;
+        uint256 ltv;
+        uint256 liquidationThreshold;
+        Types.Market config;
+    }
+
+    TestMarket[] public markets;
+    TestMarket[] public activeMarkets;
+    TestMarket[] public unpausedMarkets;
+    TestMarket[] public collateralMarkets;
+    TestMarket[] public borrowableMarkets;
+    TestMarket[] public borrowableCollateralMarkets;
+
+    uint256 snapshotId = type(uint256).max;
 
     function setUp() public {
         initContracts();
         setContractsLabels();
         initUsers();
+
+        _initMarkets();
 
         onSetUp();
     }
@@ -58,14 +70,8 @@ contract TestSetup is Config, Test {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        // vm.prank(address(proxyAdmin));
-        // lensImplV1 = Lens(lensProxy.implementation());
-        // morphoImplV1 = Morpho(payable(morphoProxy.implementation()));
-        // rewardsManagerImplV1 = RewardsManager(rewardsManagerProxy.implementation());
-
         lens = Lens(address(lensProxy));
         morpho = Morpho(payable(morphoProxy));
-        rewardsManager = morpho.rewardsManager();
         incentivesVault = morpho.incentivesVault();
         entryPositionsManager = morpho.entryPositionsManager();
         exitPositionsManager = morpho.exitPositionsManager();
@@ -75,28 +81,9 @@ contract TestSetup is Config, Test {
     }
 
     function initUsers() internal {
-        for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(morpho));
-            vm.label(
-                address(suppliers[i]),
-                string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
-            );
-        }
-        supplier1 = suppliers[0];
-        supplier2 = suppliers[1];
-        supplier3 = suppliers[2];
+        user = new User(morpho);
 
-        for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(morpho));
-            vm.label(
-                address(borrowers[i]),
-                string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
-            );
-        }
-
-        borrower1 = borrowers[0];
-        borrower2 = borrowers[1];
-        borrower3 = borrowers[2];
+        vm.label(address(user), "User");
 
         deal(aave, address(this), type(uint256).max);
         deal(dai, address(this), type(uint256).max);
@@ -117,12 +104,10 @@ contract TestSetup is Config, Test {
         deal(sushi, address(this), type(uint256).max);
         deal(crv, address(this), type(uint256).max);
 
-        deal(address(this), type(uint256).max);
-        (bool deposited, ) = payable(stEth).call{value: 100_000 ether}("");
-        require(deposited, "ETH not deposited into stEth");
-
-        deal(address(supplier1), 1_000_000 ether);
-        ILido(stEth).submit{value: address(this).balance}(address(0));
+        deal(stEth, type(uint256).max);
+        stdstore.target(stEth).sig("sharesOf(address)").with_key(address(this)).checked_write(
+            type(uint256).max / 1e36
+        );
     }
 
     function setContractsLabels() internal {
@@ -164,136 +149,80 @@ contract TestSetup is Config, Test {
         vm.label(address(aUsdt), "aUSDT");
         vm.label(address(aWbtc), "aWBTC");
         vm.label(address(aWeth), "aWETH");
+        vm.label(address(aDai), "aDAI");
+        vm.label(address(aCrv), "aCrv");
+        vm.label(address(aStEth), "astETH");
     }
 
-    function getAllFullyActiveMarkets() public view returns (address[] memory activeMarkets) {
+    function _initMarkets() internal {
         address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 nbCreatedMarkets = createdMarkets.length;
 
-        uint256 nbActiveMarkets;
-        activeMarkets = new address[](nbCreatedMarkets);
-
-        for (uint256 i; i < nbCreatedMarkets; ) {
+        for (uint256 i; i < createdMarkets.length; ) {
             address poolToken = createdMarkets[i];
-
-            (, , , , bool isPaused, bool isPartiallyPaused, ) = morpho.market(poolToken);
-            if (!isPaused && !isPartiallyPaused) {
-                activeMarkets[nbActiveMarkets] = poolToken;
-                ++nbActiveMarkets;
-            } else console.log("Skipping paused (or partially paused) market:", poolToken);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Resize the array for return
-        assembly {
-            mstore(activeMarkets, nbActiveMarkets)
-        }
-    }
-
-    function getAllUnpausedMarkets() public view returns (address[] memory unpausedMarkets) {
-        address[] memory createdMarkets = morpho.getMarketsCreated();
-        uint256 nbCreatedMarkets = createdMarkets.length;
-
-        uint256 nbActiveMarkets;
-        unpausedMarkets = new address[](nbCreatedMarkets);
-
-        for (uint256 i; i < nbCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
-
-            (, , , , bool isPaused, , ) = morpho.market(poolToken);
-            if (!isPaused) {
-                unpausedMarkets[nbActiveMarkets] = poolToken;
-                ++nbActiveMarkets;
-            } else console.log("Skipping paused market:", poolToken);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Resize the array for return
-        assembly {
-            mstore(unpausedMarkets, nbActiveMarkets)
-        }
-    }
-
-    function getAllBorrowingEnabledMarkets()
-        public
-        view
-        returns (address[] memory borrowingEnabledMarkets)
-    {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-        uint256 nbActiveMarkets = activeMarkets.length;
-
-        uint256 nbBorrowingEnabledMarkets;
-        borrowingEnabledMarkets = new address[](nbActiveMarkets);
-
-        for (uint256 i; i < nbActiveMarkets; ) {
-            address poolToken = activeMarkets[i];
-
-            if (
-                pool
-                    .getConfiguration(IAToken(poolToken).UNDERLYING_ASSET_ADDRESS())
-                    .getBorrowingEnabled()
-            ) {
-                borrowingEnabledMarkets[nbBorrowingEnabledMarkets] = poolToken;
-                ++nbBorrowingEnabledMarkets;
-            } else console.log("Skipping borrowing disabled market:", poolToken);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Resize the array for return
-        assembly {
-            mstore(borrowingEnabledMarkets, nbBorrowingEnabledMarkets)
-        }
-    }
-
-    function getAllFullyActiveCollateralMarkets()
-        public
-        view
-        returns (address[] memory activeCollateralMarkets)
-    {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-        uint256 nbActiveMarkets = activeMarkets.length;
-
-        uint256 nbActiveCollateralMarkets;
-        activeCollateralMarkets = new address[](nbActiveMarkets);
-
-        for (uint256 i; i < nbActiveMarkets; ) {
-            address poolToken = activeMarkets[i];
             address underlying = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
 
-            (uint256 ltv, , , , ) = pool.getConfiguration(underlying).getParamsMemory();
-            (, , , , bool isPaused, bool isPartiallyPaused, ) = morpho.market(poolToken);
-            if (ltv > 0 && !isPaused && !isPartiallyPaused) {
-                activeCollateralMarkets[nbActiveCollateralMarkets] = poolToken;
-                ++nbActiveCollateralMarkets;
-            } else console.log("Skipping paused (or partially paused) market:", poolToken);
+            Types.Market memory marketConfig;
+            (
+                marketConfig.underlyingToken,
+                marketConfig.reserveFactor,
+                marketConfig.p2pIndexCursor,
+                marketConfig.isCreated,
+                marketConfig.isPaused,
+                marketConfig.isPartiallyPaused,
+                marketConfig.isP2PDisabled
+            ) = morpho.market(poolToken);
+            TestMarket memory market = TestMarket({
+                poolToken: poolToken,
+                debtToken: pool.getReserveData(underlying).variableDebtTokenAddress,
+                underlying: underlying,
+                ltv: 0,
+                liquidationThreshold: 0,
+                decimals: 0,
+                config: marketConfig
+            });
+
+            DataTypes.ReserveConfigurationMap memory config = pool.getConfiguration(underlying);
+            (market.ltv, market.liquidationThreshold, , market.decimals, ) = config
+            .getParamsMemory();
+            (bool isActive, bool isFrozen, bool isBorrowable, ) = config.getFlagsMemory();
+
+            markets.push(market);
+
+            if (isActive && !isFrozen && !market.config.isPaused) {
+                unpausedMarkets.push(market);
+
+                if (!market.config.isPartiallyPaused) {
+                    activeMarkets.push(market);
+
+                    if (isBorrowable) borrowableMarkets.push(market);
+                    else console.log("Unborrowable market:", poolToken);
+
+                    if (market.ltv > 0) {
+                        collateralMarkets.push(market);
+
+                        if (isBorrowable) borrowableCollateralMarkets.push(market);
+                        else console.log("Unborrowable collateral market:", poolToken);
+                    } else console.log("Zero ltv market:", poolToken);
+                } else console.log("Partially paused market:", poolToken);
+            } else console.log("Paused market:", poolToken);
 
             unchecked {
                 ++i;
             }
-        }
-
-        // Resize the array for return
-        assembly {
-            mstore(activeCollateralMarkets, nbActiveCollateralMarkets)
         }
     }
 
     function _boundBorrowedAmount(
+        TestMarket memory _market,
         uint96 _amount,
-        address _poolToken,
-        address _underlying,
-        uint256 _decimals
+        uint256 _price
     ) internal returns (uint256) {
-        return bound(_amount, 10**(_decimals - 6), ERC20(_underlying).balanceOf(_poolToken));
+        return
+            bound(
+                _amount,
+                (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
+                ERC20(_market.underlying).balanceOf(_market.poolToken)
+            );
     }
 
     function _getMinimumCollateralAmount(
@@ -319,6 +248,8 @@ contract TestSetup is Config, Test {
         uint256 _amount
     ) internal {
         if (_amount == 0) return;
+
+        if (_underlying == wEth) deal(wEth, wEth.balance + _amount); // Refill wrapped Ether.
 
         ERC20(_underlying).safeTransfer(_user, _amount);
     }

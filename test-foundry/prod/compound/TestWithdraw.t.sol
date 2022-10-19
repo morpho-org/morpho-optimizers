@@ -8,18 +8,23 @@ contract TestWithdraw is TestSetup {
 
     struct WithdrawTest {
         TestMarket market;
+        //
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
+        //
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
+        //
         uint256 balanceInP2P;
         uint256 balanceOnPool;
-        uint256 underlyingOnPoolBefore;
-        uint256 underlyingInP2PBefore;
-        uint256 totalUnderlyingBefore;
-        uint256 underlyingOnPoolAfter;
-        uint256 underlyingInP2PAfter;
-        uint256 totalUnderlyingAfter;
+        //
+        uint256 suppliedOnPoolBefore;
+        uint256 suppliedInP2PBefore;
+        uint256 totalSuppliedBefore;
+        //
+        uint256 suppliedOnPoolAfter;
+        uint256 suppliedInP2PAfter;
+        uint256 totalSuppliedAfter;
     }
 
     function _testShouldWithdrawMarketP2PAndOnPool(TestMarket memory _market, uint96 _amount)
@@ -31,12 +36,22 @@ contract TestWithdraw is TestSetup {
         test.morphoBalanceOnPoolBefore = ICToken(_market.poolToken).balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(_market.decimals - 4), type(uint96).max);
+        uint256 amount = bound(
+            _amount,
+            10**(_market.decimals - 4),
+            2**96 / (10**(18 - _market.decimals)) // ~8 billion underlying
+        );
+        if (_market.underlying == uni || _market.underlying == comp)
+            amount = uint96(uint80(amount)); // avoids overflows
 
         _tip(_market.underlying, address(user), amount);
 
         user.approve(_market.underlying, amount);
         user.supply(_market.poolToken, address(user), amount);
+
+        vm.roll(block.number + 100_000);
+
+        morpho.updateP2PIndexes(_market.poolToken);
 
         test.p2pSupplyIndex = morpho.p2pSupplyIndex(_market.poolToken);
         test.poolSupplyIndex = ICToken(_market.poolToken).exchangeRateCurrent();
@@ -46,46 +61,24 @@ contract TestWithdraw is TestSetup {
             address(user)
         );
 
-        test.underlyingInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
-        test.underlyingOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
-        test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
+        test.suppliedInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
+        test.suppliedOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
+        test.totalSuppliedBefore = test.suppliedOnPoolBefore + test.suppliedInP2PBefore;
 
-        vm.roll(block.number + 10_000);
-
-        morpho.updateP2PIndexes(_market.poolToken);
-
-        vm.roll(block.number + 10_000);
+        user.withdraw(_market.poolToken, type(uint256).max);
 
         assertEq(
             ERC20(_market.underlying).balanceOf(address(user)),
-            0,
-            "unexpected underlying balance before withdraw"
-        );
-
-        user.withdraw(_market.poolToken, test.totalUnderlyingBefore);
-
-        (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
-        .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
-
-        assertEq(
-            ERC20(_market.underlying).balanceOf(address(user)),
-            test.totalUnderlyingBefore,
+            test.totalSuppliedBefore,
             "unexpected underlying balance after withdraw"
         );
 
-        if (test.totalUnderlyingAfter > 0) {
-            user.withdraw(_market.poolToken, test.totalUnderlyingBefore); // Withdraw accrued interests.
+        (test.suppliedOnPoolAfter, test.suppliedInP2PAfter, test.totalSuppliedAfter) = lens
+        .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
 
-            (
-                test.underlyingOnPoolAfter,
-                test.underlyingInP2PAfter,
-                test.totalUnderlyingAfter
-            ) = lens.getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
-        }
-
-        assertEq(test.underlyingOnPoolAfter, 0, "unexpected pool underlying balance");
-        assertEq(test.underlyingInP2PAfter, 0, "unexpected p2p underlying balance");
-        assertEq(test.totalUnderlyingAfter, 0, "unexpected total underlying supplied");
+        assertEq(test.suppliedOnPoolAfter, 0, "unexpected pool underlying balance");
+        assertEq(test.suppliedInP2PAfter, 0, "unexpected p2p underlying balance");
+        assertEq(test.totalSuppliedAfter, 0, "unexpected total underlying supplied");
     }
 
     function testShouldWithdrawAllMarketsP2PAndOnPool(uint96 _amount) public {

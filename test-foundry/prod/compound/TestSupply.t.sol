@@ -8,23 +8,31 @@ contract TestSupply is TestSetup {
 
     struct SupplyTest {
         TestMarket market;
-        uint256 morphoBalanceOnPoolBefore;
-        uint256 morphoBorrowOnPoolBefore;
+        //
+        uint256 morphoSuppliedOnPoolBefore;
+        uint256 morphoBorrowedOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
+        //
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
         uint256 poolBorrowIndex;
+        //
         bool p2pDisabled;
         uint256 p2pBorrowDelta;
+        //
         uint256 supplyRatePerBlock;
         uint256 p2pSupplyRatePerBlock;
         uint256 poolSupplyRatePerBlock;
+        //
         uint256 balanceInP2P;
         uint256 balanceOnPool;
+        //
         uint256 unclaimedRewardsBefore;
+        //
         uint256 underlyingOnPoolBefore;
         uint256 underlyingInP2PBefore;
         uint256 totalUnderlyingBefore;
+        //
         uint256 underlyingOnPoolAfter;
         uint256 underlyingInP2PAfter;
         uint256 totalUnderlyingAfter;
@@ -38,13 +46,19 @@ contract TestSupply is TestSetup {
 
         (, test.p2pBorrowDelta, , ) = morpho.deltas(_market.poolToken);
         test.p2pDisabled = morpho.p2pDisabled(_market.poolToken);
-        test.morphoBalanceOnPoolBefore = ICToken(_market.poolToken).balanceOf(address(morpho));
-        test.morphoBorrowOnPoolBefore = ICToken(_market.poolToken).borrowBalanceCurrent(
+        test.morphoSuppliedOnPoolBefore = ICToken(_market.poolToken).balanceOf(address(morpho));
+        test.morphoBorrowedOnPoolBefore = ICToken(_market.poolToken).borrowBalanceCurrent(
             address(morpho)
         );
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(_market.decimals - 6), type(uint96).max);
+        uint256 amount = bound(
+            _amount,
+            10**(_market.decimals - 6),
+            ERC20(_market.underlying).balanceOf(address(this))
+        );
+        if (_market.underlying == uni || _market.underlying == comp)
+            amount = uint96(uint80(amount)); // avoids overflows
 
         _tip(_market.underlying, address(user), amount);
 
@@ -92,12 +106,22 @@ contract TestSupply is TestSetup {
             assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
         }
 
+        assertEq(
+            ERC20(_market.underlying).balanceOf(address(morpho)),
+            test.morphoUnderlyingBalanceBefore,
+            "unexpected morpho underlying balance"
+        );
+        assertEq(
+            ICToken(_market.poolToken).balanceOf(address(morpho)),
+            test.morphoSuppliedOnPoolBefore + test.balanceOnPool,
+            "unexpected morpho supply balance on pool"
+        );
         assertApproxEqAbs(
             ICToken(_market.poolToken).borrowBalanceCurrent(address(morpho)) +
                 test.underlyingInP2PBefore,
-            test.morphoBorrowOnPoolBefore,
+            test.morphoBorrowedOnPoolBefore,
             10**(_market.decimals / 2),
-            "unexpected morpho borrow balance"
+            "unexpected morpho borrow balance on pool"
         );
 
         if (test.p2pBorrowDelta <= amount.div(test.poolBorrowIndex))
@@ -113,17 +137,6 @@ contract TestSupply is TestSetup {
                 10**(_market.decimals / 2),
                 "expected full match"
             );
-
-        assertEq(
-            ERC20(_market.underlying).balanceOf(address(morpho)),
-            test.morphoUnderlyingBalanceBefore,
-            "unexpected morpho underlying balance"
-        );
-        assertEq(
-            ICToken(_market.poolToken).balanceOf(address(morpho)),
-            test.morphoBalanceOnPoolBefore + test.balanceOnPool,
-            "unexpected morpho underlying balance on pool"
-        );
 
         vm.roll(block.number + 500);
 

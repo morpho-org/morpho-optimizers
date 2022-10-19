@@ -4,130 +4,129 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
-    using Math for uint256;
 
     struct BorrowTest {
-        ERC20 collateral;
-        IAToken collateralPoolToken;
-        uint256 collateralDecimals;
-        ERC20 borrowed;
-        IAToken borrowedPoolToken;
-        IVariableDebtToken borrowedVariablePoolToken;
-        uint256 borrowedDecimals;
-        uint256 collateralLtv;
+        TestMarket collateralMarket;
+        TestMarket borrowedMarket;
+        //
         uint256 collateralPrice;
         uint256 borrowedPrice;
+        //
         uint256 borrowedAmount;
         uint256 collateralAmount;
+        //
         uint256 borrowedBalanceBefore;
         uint256 borrowedBalanceAfter;
+        //
+        uint256 morphoSuppliedOnPoolBefore;
         uint256 morphoBorrowedOnPoolBefore;
-        uint256 morphoUnderlyingBalanceBefore;
+        uint256 morphoBorrowedBalanceBefore;
+        //
         bool p2pDisabled;
         uint256 p2pSupplyDelta;
+        //
         uint256 p2pBorrowIndex;
         uint256 poolSupplyIndex;
         uint256 poolBorrowIndex;
+        //
         uint256 borrowRatePerYear;
         uint256 p2pBorrowRatePerYear;
         uint256 poolBorrowRatePerYear;
+        //
         uint256 balanceInP2P;
         uint256 balanceOnPool;
+        //
         uint256 unclaimedRewardsBefore;
+        //
         uint256 borrowedOnPoolBefore;
         uint256 borrowedInP2PBefore;
         uint256 totalBorrowedBefore;
+        //
         uint256 borrowedOnPoolAfter;
         uint256 borrowedInP2PAfter;
         uint256 totalBorrowedAfter;
     }
 
     function _setUpBorrowTest(
-        address _borrowedPoolToken,
-        address _collateralPoolToken,
-        uint96 _amount
+        TestMarket memory _collateralMarket,
+        TestMarket memory _borrowedMarket,
+        uint96 _amount,
+        uint256 _collateralMultiplier
     ) internal returns (BorrowTest memory test) {
-        test.borrowedPoolToken = IAToken(_borrowedPoolToken);
-        test.collateralPoolToken = IAToken(_collateralPoolToken);
+        test.collateralMarket = _collateralMarket;
+        test.borrowedMarket = _borrowedMarket;
 
-        test.collateral = ERC20(test.collateralPoolToken.UNDERLYING_ASSET_ADDRESS());
-        test.borrowed = ERC20(test.borrowedPoolToken.UNDERLYING_ASSET_ADDRESS());
-        test.borrowedVariablePoolToken = IVariableDebtToken(
-            pool.getReserveData(address(test.borrowed)).variableDebtTokenAddress
-        );
-        test.borrowedDecimals = test.borrowed.decimals();
+        test.collateralPrice = oracle.getAssetPrice(_collateralMarket.underlying);
+        test.borrowedPrice = oracle.getAssetPrice(_borrowedMarket.underlying);
 
-        test.collateralPrice = oracle.getAssetPrice(address(test.collateral));
-        test.borrowedPrice = oracle.getAssetPrice(address(test.borrowed));
+        (, , , , , , test.p2pDisabled) = morpho.market(_borrowedMarket.poolToken);
 
-        (test.collateralLtv, , , test.collateralDecimals, ) = morpho
-        .pool()
-        .getConfiguration(address(test.collateral))
-        .getParamsMemory();
+        test.borrowedAmount = _boundBorrowedAmount(_borrowedMarket, _amount, test.borrowedPrice);
+        test.collateralAmount = _getMinimumCollateralAmount(
+            test.borrowedAmount,
+            test.borrowedPrice,
+            _borrowedMarket.decimals,
+            test.collateralPrice,
+            _collateralMarket.decimals,
+            _collateralMarket.ltv
+        ).wadMul(_collateralMultiplier);
 
-        (test.p2pSupplyDelta, , , ) = morpho.deltas(address(test.borrowedPoolToken));
-        (, , , , , , test.p2pDisabled) = morpho.market(address(test.borrowedPoolToken));
-        test.borrowedBalanceBefore = test.borrowed.balanceOf(address(borrower1));
-        test.morphoBorrowedOnPoolBefore = test.borrowedVariablePoolToken.scaledBalanceOf(
+        if (test.collateralAmount > 0) {
+            _tip(_collateralMarket.underlying, address(user), test.collateralAmount);
+
+            user.approve(_collateralMarket.underlying, test.collateralAmount);
+            user.supply(_collateralMarket.poolToken, address(user), test.collateralAmount);
+        }
+
+        vm.roll(block.number + 100_000);
+        vm.warp(block.timestamp + 2 weeks);
+
+        morpho.updateIndexes(_borrowedMarket.poolToken);
+
+        (test.p2pSupplyDelta, , , ) = morpho.deltas(_borrowedMarket.poolToken);
+        test.borrowedBalanceBefore = ERC20(_borrowedMarket.underlying).balanceOf(address(user));
+        test.morphoSuppliedOnPoolBefore = IAToken(_borrowedMarket.poolToken).balanceOf(
             address(morpho)
         );
-        test.morphoUnderlyingBalanceBefore = test.borrowed.balanceOf(address(morpho));
-
-        test.borrowedAmount = _boundBorrowedAmount(
-            _amount,
-            _borrowedPoolToken,
-            address(test.borrowed),
-            test.borrowedDecimals
+        test.morphoBorrowedOnPoolBefore = IAToken(_borrowedMarket.debtToken).balanceOf(
+            address(morpho)
+        );
+        test.morphoBorrowedBalanceBefore = ERC20(_borrowedMarket.underlying).balanceOf(
+            address(morpho)
         );
     }
 
     function _testShouldBorrowMarketP2PAndFromPool(
-        address _borrowedPoolToken,
-        address _collateralPoolToken,
+        TestMarket memory _collateralMarket,
+        TestMarket memory _borrowedMarket,
         uint96 _amount
-    ) internal {
-        BorrowTest memory test = _setUpBorrowTest(
-            _borrowedPoolToken,
-            _collateralPoolToken,
-            _amount
+    ) internal returns (BorrowTest memory test) {
+        test = _setUpBorrowTest(
+            _collateralMarket,
+            _borrowedMarket,
+            _amount,
+            1.001 ether // Inflate collateral amount to compensate for compound rounding errors.
         );
 
-        test.collateralAmount =
-            _getMinimumCollateralAmount(
-                test.borrowedAmount,
-                test.borrowedPrice,
-                test.borrowedDecimals,
-                test.collateralPrice,
-                test.collateralDecimals,
-                test.collateralLtv
-            ) +
-            10**(test.collateralDecimals + 1);
-        if (address(test.collateral) == stEth)
-            vm.assume(test.collateral.balanceOf(address(this)) >= test.collateralAmount); // stEth storage cannot be manipulated so `_tip` is limited
-        _tip(address(test.collateral), address(borrower1), test.collateralAmount);
+        user.borrow(_borrowedMarket.poolToken, test.borrowedAmount);
 
-        borrower1.approve(address(test.collateral), test.collateralAmount);
-        borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
-        borrower1.borrow(address(test.borrowedPoolToken), test.borrowedAmount);
-
-        test.borrowedBalanceAfter = test.borrowed.balanceOf(address(borrower1));
-        test.p2pBorrowIndex = morpho.p2pBorrowIndex(address(test.borrowedPoolToken));
+        test.borrowedBalanceAfter = ERC20(_borrowedMarket.underlying).balanceOf(address(user));
+        test.p2pBorrowIndex = morpho.p2pBorrowIndex(_borrowedMarket.poolToken);
         (, test.poolSupplyIndex, test.poolBorrowIndex) = morpho.poolIndexes(
-            address(test.borrowedPoolToken)
+            _borrowedMarket.poolToken
         );
         test.borrowRatePerYear = lens.getCurrentUserBorrowRatePerYear(
-            address(test.borrowedPoolToken),
-            address(borrower1)
+            _borrowedMarket.poolToken,
+            address(user)
         );
         (, test.p2pBorrowRatePerYear, , test.poolBorrowRatePerYear) = lens.getRatesPerYear(
-            address(test.borrowedPoolToken)
+            _borrowedMarket.poolToken
         );
 
         (test.balanceInP2P, test.balanceOnPool) = morpho.borrowBalanceInOf(
-            address(test.borrowedPoolToken),
-            address(borrower1)
+            _borrowedMarket.poolToken,
+            address(user)
         );
 
         test.borrowedInP2PBefore = test.balanceInP2P.rayMul(test.p2pBorrowIndex);
@@ -135,8 +134,13 @@ contract TestBorrow is TestSetup {
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
 
         assertEq(
-            test.collateral.balanceOf(address(borrower1)),
-            address(test.collateral) == address(test.borrowed) ? test.borrowedAmount : 0,
+            ERC20(_borrowedMarket.underlying).balanceOf(address(user)),
+            test.borrowedAmount,
+            "unexpected borrowed balance after borrow"
+        );
+        assertEq(
+            ERC20(_collateralMarket.underlying).balanceOf(address(user)),
+            _collateralMarket.underlying == _borrowedMarket.underlying ? test.borrowedAmount : 0,
             "unexpected collateral balance after"
         );
         assertEq(
@@ -153,15 +157,32 @@ contract TestBorrow is TestSetup {
         if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
 
         address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = address(test.borrowedPoolToken);
+        borrowedPoolTokens[0] = _borrowedMarket.poolToken;
         if (address(rewardsManager) != address(0)) {
             test.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
                 borrowedPoolTokens,
-                address(borrower1)
+                address(user)
             );
-
-            assertEq(test.unclaimedRewardsBefore, 0, "unclaimed rewards not zero");
         }
+
+        assertEq(
+            ERC20(_borrowedMarket.underlying).balanceOf(address(morpho)),
+            test.morphoBorrowedBalanceBefore,
+            "unexpected morpho underlying balance"
+        );
+        assertApproxEqAbs(
+            IAToken(_borrowedMarket.poolToken).balanceOf(address(morpho)) +
+                test.borrowedInP2PBefore,
+            test.morphoSuppliedOnPoolBefore,
+            1,
+            "unexpected morpho supply balance on pool"
+        );
+        assertApproxEqAbs(
+            IAToken(_borrowedMarket.debtToken).balanceOf(address(morpho)),
+            test.morphoBorrowedOnPoolBefore + test.borrowedOnPoolBefore,
+            1,
+            "unexpected morpho borrow balance on pool"
+        );
 
         if (test.p2pSupplyDelta.rayMul(test.poolSupplyIndex) <= test.borrowedAmount)
             assertGe(
@@ -174,64 +195,52 @@ contract TestBorrow is TestSetup {
                 test.borrowedInP2PBefore,
                 test.borrowedAmount,
                 1,
-                "expected full match"
+                "expected p2p supply delta full match"
             );
 
-        assertEq(
-            test.borrowed.balanceOf(address(morpho)),
-            test.morphoUnderlyingBalanceBefore,
-            "unexpected morpho underlying balance"
-        );
-        assertApproxEqAbs(
-            test.borrowedVariablePoolToken.scaledBalanceOf(address(morpho)),
-            test.morphoBorrowedOnPoolBefore + test.balanceOnPool,
-            10,
-            "unexpected morpho borrowed balance on pool"
-        );
+        vm.roll(block.number + 500);
+        vm.warp(block.timestamp + 1.5 hours);
+
+        morpho.updateIndexes(_borrowedMarket.poolToken);
 
         vm.roll(block.number + 500);
-        vm.warp(block.timestamp + 60 * 60 * 24);
-
-        morpho.updateIndexes(address(test.borrowedPoolToken));
-
-        vm.roll(block.number + 500);
-        vm.warp(block.timestamp + 60 * 60 * 24);
+        vm.warp(block.timestamp + 1.5 hours);
 
         (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
-        .getCurrentBorrowBalanceInOf(address(test.borrowedPoolToken), address(borrower1));
+        .getCurrentBorrowBalanceInOf(_borrowedMarket.poolToken, address(user));
 
         uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.rayMul(
-            1e27 + (test.poolBorrowRatePerYear * 60 * 60 * 48) / 365 days
+            1e27 + (test.poolBorrowRatePerYear * 3 hours) / 365 days
         );
         uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.rayMul(
-            1e27 + (test.p2pBorrowRatePerYear * 60 * 60 * 48) / 365 days
+            1e27 + (test.p2pBorrowRatePerYear * 3 hours) / 365 days
         );
         uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.rayMul(
-            1e27 + (test.borrowRatePerYear * 60 * 60 * 48) / 365 days
+            1e27 + (test.borrowRatePerYear * 3 hours) / 365 days
         );
 
         assertApproxEqAbs(
             test.borrowedOnPoolAfter,
             expectedBorrowedOnPoolAfter,
-            test.borrowedOnPoolAfter / 1e3 + 1,
+            test.borrowedOnPoolAfter / 1e6 + 1,
             "unexpected pool borrowed amount"
         );
         assertApproxEqAbs(
             test.borrowedInP2PAfter,
             expectedBorrowedInP2PAfter,
-            test.borrowedInP2PAfter / 1e3 + 1,
+            test.borrowedInP2PAfter / 1e6 + 1,
             "unexpected p2p borrowed amount"
         );
         assertApproxEqAbs(
             test.totalBorrowedAfter,
             expectedTotalBorrowedAfter,
-            test.totalBorrowedAfter / 1e3 + 1,
+            test.totalBorrowedAfter / 1e6 + 1,
             "unexpected total borrowed amount from avg borrow rate"
         );
         assertApproxEqAbs(
             test.totalBorrowedAfter,
             expectedBorrowedOnPoolAfter + expectedBorrowedInP2PAfter,
-            test.totalBorrowedAfter / 1e3 + 1,
+            test.totalBorrowedAfter / 1e6 + 1,
             "unexpected total borrowed amount"
         );
         if (
@@ -240,80 +249,68 @@ contract TestBorrow is TestSetup {
             block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
         )
             assertGt(
-                rewardsManager.getUserUnclaimedRewards(borrowedPoolTokens, address(borrower1)),
+                rewardsManager.getUserUnclaimedRewards(borrowedPoolTokens, address(user)),
                 test.unclaimedRewardsBefore,
                 "lower unclaimed rewards"
             );
     }
 
-    function testShouldBorrowAmountP2PAndFromPool(
-        uint8 _borrowMarketIndex,
-        uint8 _collateralMarketIndex,
-        uint96 _amount
-    ) public {
-        address[] memory activeMarkets = getAllBorrowingEnabledMarkets();
-        address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
+    function testShouldBorrowAmountP2PAndFromPool(uint96 _amount) public {
+        for (
+            uint256 collateralMarketIndex;
+            collateralMarketIndex < collateralMarkets.length;
+            ++collateralMarketIndex
+        ) {
+            for (
+                uint256 borrowedMarketIndex;
+                borrowedMarketIndex < borrowableMarkets.length;
+                ++borrowedMarketIndex
+            ) {
+                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
+                snapshotId = vm.snapshot();
 
-        _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
-        _collateralMarketIndex = uint8(_collateralMarketIndex % activeCollateralMarkets.length);
-
-        _testShouldBorrowMarketP2PAndFromPool(
-            activeMarkets[_borrowMarketIndex],
-            activeCollateralMarkets[_collateralMarketIndex],
-            _amount
-        );
+                _testShouldBorrowMarketP2PAndFromPool(
+                    collateralMarkets[collateralMarketIndex],
+                    borrowableMarkets[borrowedMarketIndex],
+                    _amount
+                );
+            }
+        }
     }
 
     function testShouldNotBorrowZeroAmount() public {
-        address[] memory markets = getAllFullyActiveMarkets();
-
-        for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
-            BorrowTest memory test;
-            test.borrowedPoolToken = IAToken(markets[marketIndex]);
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
 
             vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
-            borrower1.borrow(address(test.borrowedPoolToken), 0);
+            user.borrow(market.poolToken, 0);
         }
     }
 
-    function testShouldNotBorrowWithoutEnoughCollateral(
-        uint8 _borrowMarketIndex,
-        uint8 _collateralMarketIndex,
-        uint96 _amount
-    ) public {
-        address[] memory activeMarkets = getAllBorrowingEnabledMarkets();
-        address[] memory activeCollateralMarkets = getAllFullyActiveCollateralMarkets();
+    function testShouldNotBorrowWithoutEnoughCollateral(uint96 _amount) public {
+        for (
+            uint256 collateralMarketIndex;
+            collateralMarketIndex < collateralMarkets.length;
+            ++collateralMarketIndex
+        ) {
+            for (
+                uint256 borrowedMarketIndex;
+                borrowedMarketIndex < borrowableMarkets.length;
+                ++borrowedMarketIndex
+            ) {
+                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
+                snapshotId = vm.snapshot();
 
-        _borrowMarketIndex = uint8(_borrowMarketIndex % activeMarkets.length);
-        _collateralMarketIndex = uint8(_collateralMarketIndex % activeCollateralMarkets.length);
+                BorrowTest memory test = _setUpBorrowTest(
+                    collateralMarkets[collateralMarketIndex],
+                    borrowableMarkets[borrowedMarketIndex],
+                    _amount,
+                    0.995 ether
+                );
 
-        BorrowTest memory test = _setUpBorrowTest(
-            activeMarkets[_borrowMarketIndex],
-            activeCollateralMarkets[_collateralMarketIndex],
-            _amount
-        );
-
-        if (test.collateralLtv > 0) {
-            test.collateralAmount = _getMinimumCollateralAmount(
-                test.borrowedAmount,
-                test.borrowedPrice,
-                test.borrowedDecimals,
-                test.collateralPrice,
-                test.collateralDecimals,
-                test.collateralLtv
-            );
-            test.collateralAmount = test.collateralAmount.zeroFloorSub(
-                10**(test.collateralDecimals - 5)
-            );
-
-            if (test.collateralAmount > 0) {
-                _tip(address(test.collateral), address(borrower1), test.collateralAmount);
-                borrower1.approve(address(test.collateral), test.collateralAmount);
-                borrower1.supply(address(test.collateralPoolToken), test.collateralAmount);
+                vm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+                user.borrow(test.borrowedMarket.poolToken, test.borrowedAmount);
             }
         }
-
-        vm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
-        borrower1.borrow(address(test.borrowedPoolToken), test.borrowedAmount);
     }
 }

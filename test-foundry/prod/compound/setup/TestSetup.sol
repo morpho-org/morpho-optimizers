@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/interfaces/IRewardsManager.sol";
-import "@contracts/compound/interfaces/IMorpho.sol";
+import {CompoundMath} from "@contracts/compound/libraries/CompoundMath.sol";
+import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {Types} from "@contracts/compound/libraries/Types.sol";
 
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/compound/libraries/CompoundMath.sol";
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-dao/morpho-utils/math/Math.sol";
-
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
 import {User} from "../../../compound/helpers/User.sol";
 import "@config/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
-import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Test {
     using CompoundMath for uint256;
@@ -153,6 +150,7 @@ contract TestSetup is Config, Test {
                 maxBorrows: comptroller.borrowCaps(poolToken),
                 totalBorrows: ICToken(poolToken).totalBorrows()
             });
+
             (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
             (, market.collateralFactor, ) = comptroller.markets(poolToken);
             market.maxBorrows = market.maxBorrows == 0 ? type(uint256).max : market.maxBorrows;
