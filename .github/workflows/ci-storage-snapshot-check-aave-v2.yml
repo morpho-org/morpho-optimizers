@@ -1,4 +1,4 @@
-name: Storage layout check (Morpho-Compound)
+name: Storage layout snapshot check (Morpho-Compound)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   check:
-    name: storage layout check
+    name: Storage layout snapshot check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

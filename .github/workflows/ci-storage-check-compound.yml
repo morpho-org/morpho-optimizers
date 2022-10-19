@@ -1,0 +1,50 @@
+name: Storage layout checks
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    paths:
+      - lib/**
+      - contracts/common/**
+      - contracts/compound/**
+      - "*.lock"
+      - remappings.txt
+      - .github/actions/ci-storage-layout/*
+      - .github/workflows/ci-storage-layout-compound.yml
+
+jobs:
+  morpho-compound:
+    name: morpho-compound
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: yarn
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      shell: bash
+
+    - name: Install Foundry
+      uses: onbjerg/foundry-toolchain@v1
+      with:
+        version: nightly
+
+      - name: Check Morpho storage layout
+        uses: Rubilmax/foundry-storage-check@v2
+        with:
+          contract: contracts/compound/Morpho.sol:Morpho
+
+      - name: Check RewardsManager storage layout
+        uses: Rubilmax/foundry-storage-check@v2
+        with:
+          contract: contracts/compound/RewardsManager.sol:RewardsManager
+
