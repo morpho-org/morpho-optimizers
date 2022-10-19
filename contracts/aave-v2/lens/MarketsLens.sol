@@ -9,7 +9,6 @@ import "./RatesLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol markets.
 abstract contract MarketsLens is RatesLens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using MarketLib for Types.Market;
     using WadRayMath for uint256;
 
     /// EXTERNAL ///
@@ -18,7 +17,7 @@ abstract contract MarketsLens is RatesLens {
     /// @param _poolToken The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreated(address _poolToken) external view returns (bool) {
-        return morpho.market(_poolToken).isCreatedMemory();
+        return morpho.market(_poolToken).isCreated;
     }
 
     /// @notice Checks if a market is created and not paused.
@@ -26,12 +25,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
         Types.Market memory market = morpho.market(_poolToken);
-        return
-            market.isCreatedMemory() &&
-            !(market.isSupplyPaused &&
-                market.isBorrowPaused &&
-                market.isWithdrawPaused &&
-                market.isRepayPaused);
+        return market.isCreated && !market.isPaused;
     }
 
     /// @notice Checks if a market is created and not paused or partially paused.
@@ -43,9 +37,7 @@ abstract contract MarketsLens is RatesLens {
         returns (bool)
     {
         Types.Market memory market = morpho.market(_poolToken);
-        return
-            market.underlyingToken != address(0) &&
-            !(market.isSupplyPaused && market.isBorrowPaused);
+        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
     }
 
     /// @notice Returns all created markets.
@@ -145,14 +137,10 @@ abstract contract MarketsLens is RatesLens {
         underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
 
         Types.Market memory market = morpho.market(_poolToken);
-        isCreated = market.underlyingToken != address(0);
+        isCreated = market.isCreated;
         isP2PDisabled = market.isP2PDisabled;
-        isPaused =
-            market.isSupplyPaused &&
-            market.isBorrowPaused &&
-            market.isWithdrawPaused &&
-            market.isRepayPaused;
-        isPartiallyPaused = market.isSupplyPaused && market.isBorrowPaused;
+        isPaused = market.isPaused;
+        isPartiallyPaused = market.isPartiallyPaused;
         reserveFactor = market.reserveFactor;
         p2pIndexCursor = market.p2pIndexCursor;
 
@@ -195,7 +183,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     function _getTotalMarketSupply(address _poolToken)
-        public
+        internal
         view
         returns (
             address underlyingToken,
@@ -224,7 +212,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function _getTotalMarketBorrow(address _poolToken)
-        public
+        internal
         view
         returns (
             address underlyingToken,

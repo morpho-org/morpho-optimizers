@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.8.0;
+// SPDX-License-Identifier: agpl-3.0
+pragma solidity ^0.8.0;
 
 import {IScaledBalanceToken} from "./IScaledBalanceToken.sol";
 
@@ -69,10 +69,4 @@ interface IVariableDebtToken is IScaledBalanceToken {
         uint256 amount,
         uint256 index
     ) external;
-
-    /**
-     * @dev Returns the debt balance of the user
-     * @return The debt balance of the user.
-     **/
-    function balanceOf(address user) external view returns (uint256);
 }

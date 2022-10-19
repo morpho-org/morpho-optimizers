@@ -696,105 +696,54 @@ contract TestLens is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
-        {
-            (
-                address underlying,
-                bool isCreated,
-                bool isP2PDisabled,
-                ,
-                ,
-                uint16 reserveFactor,
-                uint16 p2pIndexCursor,
-                ,
-                ,
-                ,
+        (
+            address underlying,
+            bool isCreated,
+            bool isP2PDisabled,
+            bool isPaused,
+            bool isPartiallyPaused,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor,
+            uint256 ltv,
+            uint256 liquidationThreshold,
+            uint256 liquidationBonus,
+            uint256 decimals
+        ) = lens.getMarketConfiguration(aDai);
+        assertEq(underlying, dai);
 
-            ) = lens.getMarketConfiguration(aDai);
-            assertEq(underlying, dai);
+        (
+            ,
+            ,
+            ,
+            bool isCreated_,
+            bool isPaused_,
+            bool isPartiallyPaused_,
+            bool isP2PDisabled_
+        ) = morpho.market(aDai);
 
-            Types.Market memory expectedConfig;
-            (
-                expectedConfig.underlyingToken,
-                expectedConfig.reserveFactor,
-                expectedConfig.p2pIndexCursor,
-                expectedConfig.isP2PDisabled,
-                ,
-                ,
-                ,
-                ,
-                ,
-                ,
+        assertEq(isCreated, isCreated_);
+        assertEq(isP2PDisabled, isP2PDisabled_);
 
-            ) = morpho.market(aDai);
+        assertEq(isPaused, isPaused_);
+        assertEq(isPartiallyPaused, isPartiallyPaused_);
+        (, uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor, , , , ) = morpho.market(
+            aDai
+        );
+        assertEq(reserveFactor, expectedReserveFactor);
+        assertEq(p2pIndexCursor, expectedP2PIndexCursor);
 
-            assertTrue(isCreated == (expectedConfig.underlyingToken != address(0)));
-            assertTrue(isP2PDisabled == expectedConfig.isP2PDisabled);
-            assertEq(reserveFactor, expectedConfig.reserveFactor);
-            assertEq(p2pIndexCursor, expectedConfig.p2pIndexCursor);
-        }
-        {
-            (address underlying, , , bool isPaused, bool isPartiallyPaused, , , , , , ) = lens
-            .getMarketConfiguration(aDai);
-            assertEq(underlying, dai);
+        (
+            uint256 expectedLtv,
+            uint256 expectedLiquidationThreshold,
+            uint256 expectedLiquidationBonus,
+            uint256 expectedDecimals,
 
-            Types.Market memory expectedConfig;
-            (
-                ,
-                ,
-                ,
-                ,
-                expectedConfig.isSupplyPaused,
-                expectedConfig.isBorrowPaused,
-                expectedConfig.isWithdrawPaused,
-                expectedConfig.isRepayPaused,
-                expectedConfig.isLiquidateCollateralPaused,
-                expectedConfig.isLiquidateBorrowPaused,
+        ) = pool.getConfiguration(dai).getParamsMemory();
 
-            ) = morpho.market(aDai);
-
-            assertTrue(
-                isPaused ==
-                    (expectedConfig.isSupplyPaused &&
-                        expectedConfig.isBorrowPaused &&
-                        expectedConfig.isWithdrawPaused &&
-                        expectedConfig.isRepayPaused &&
-                        expectedConfig.isLiquidateCollateralPaused &&
-                        expectedConfig.isLiquidateBorrowPaused)
-            );
-            assertTrue(
-                isPartiallyPaused ==
-                    (expectedConfig.isSupplyPaused && expectedConfig.isBorrowPaused)
-            );
-        }
-
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                ,
-                ,
-                ,
-                uint256 ltv,
-                uint256 liquidationThreshold,
-                uint256 liquidationBonus,
-                uint256 decimals
-            ) = lens.getMarketConfiguration(aDai);
-
-            (
-                uint256 expectedLtv,
-                uint256 expectedLiquidationThreshold,
-                uint256 expectedLiquidationBonus,
-                uint256 expectedDecimals,
-
-            ) = pool.getConfiguration(dai).getParamsMemory();
-
-            assertEq(ltv, expectedLtv);
-            assertEq(liquidationThreshold, expectedLiquidationThreshold);
-            assertEq(liquidationBonus, expectedLiquidationBonus);
-            assertEq(decimals, expectedDecimals);
-        }
+        assertEq(ltv, expectedLtv);
+        assertEq(liquidationThreshold, expectedLiquidationThreshold);
+        assertEq(liquidationBonus, expectedLiquidationBonus);
+        assertEq(decimals, expectedDecimals);
     }
 
     function testGetOutdatedIndexes() public {
@@ -858,6 +807,51 @@ contract TestLens is TestSetup {
         );
     }
 
+    function testGetUpdatedP2PIndexesWithSupplyDelta() public {
+        _createSupplyDelta();
+        hevm.warp(block.timestamp + 365 days);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
+    }
+
+    function testGetUpdatedP2PIndexesWithBorrowDelta() public {
+        _createBorrowDelta();
+        hevm.warp(block.timestamp + 365 days);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
+    }
+
+    function testGetUpdatedP2PSupplyIndex() public {
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
+    }
+
+    function testGetUpdatedP2PSupplyIndexWithDelta() public {
+        _createSupplyDelta();
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+    }
+
+    function testGetUpdatedP2PBorrowIndex() public {
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+    }
+
     function testGetUpdatedIndexesOnStEth() public {
         createMarket(aStEth);
 
@@ -904,51 +898,6 @@ contract TestLens is TestSetup {
             ),
             "pool borrow indexes different"
         );
-    }
-
-    function testGetUpdatedP2PIndexesWithSupplyDelta() public {
-        _createSupplyDelta();
-        hevm.warp(block.timestamp + 365 days);
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
-    }
-
-    function testGetUpdatedP2PIndexesWithBorrowDelta() public {
-        _createBorrowDelta();
-        hevm.warp(block.timestamp + 365 days);
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
-    }
-
-    function testGetUpdatedP2PSupplyIndex() public {
-        hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
-    }
-
-    function testGetUpdatedP2PSupplyIndexWithDelta() public {
-        _createSupplyDelta();
-        hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
-    }
-
-    function testGetUpdatedP2PBorrowIndex() public {
-        hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
@@ -1497,5 +1446,47 @@ contract TestLens is TestSetup {
         assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
         assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
         assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
+    }
+
+    function testBalanceShouldBeReflectedWhenStethSlashed() public {
+        createMarket(aStEth);
+
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+
+        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, totalBalance);
+
+        (uint256 p2pBalanceBefore, uint256 poolBalanceBefore, ) = lens.getCurrentSupplyBalanceInOf(
+            aStEth,
+            address(supplier1)
+        );
+
+        // Update the beacon balance to slash.
+        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
+        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        vm.store(stEth, keccak256("lido.Lido.beaconBalance"), bytes32(beaconBalanceBefore / 10));
+        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        assertEq(beaconBalanceBefore / 10, beaconBalanceAfter);
+
+        (uint256 p2pBalanceAfter, uint256 poolBalanceAfter, ) = lens.getCurrentSupplyBalanceInOf(
+            aStEth,
+            address(supplier1)
+        );
+        assertEq(p2pBalanceBefore, 0, "P2P balance before");
+        assertEq(p2pBalanceAfter, 0, "P2P balance after");
+        assertApproxEqAbs(poolBalanceBefore, totalBalance, 1, "pool balance before");
+        // Not exact because the total assets of stEth includes other variables
+        assertApproxEqAbs(
+            poolBalanceAfter,
+            totalBalance / 10,
+            totalBalance / 50,
+            "pool balance before"
+        );
     }
 }
