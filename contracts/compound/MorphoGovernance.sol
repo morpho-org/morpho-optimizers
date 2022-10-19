@@ -62,7 +62,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when the value of `isP2PDisabled` is set.
     /// @param _poolToken The address of the concerned market.
     /// @param _isP2PDisabled The new value of `_isP2PDisabled` adopted.
-    event IsP2PDisabledSet(address indexed _poolToken, bool _isP2PDisabled);
+    event P2PStatusSet(address indexed _poolToken, bool _isP2PDisabled);
 
     /// @notice Emitted when a supply is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
@@ -101,7 +101,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _isPaused The new claiming rewards status.
-    event IsClaimRewardsPausedSet(bool _isPaused);
+    event ClaimRewardsPauseStatusSet(bool _isPaused);
 
     /// @notice Emitted when a new market is created.
     /// @param _poolToken The address of the market that has been created.
@@ -329,14 +329,14 @@ abstract contract MorphoGovernance is MorphoUtils {
         isMarketCreated(_poolToken)
     {
         p2pDisabled[_poolToken] = _isP2PDisabled;
-        emit IsP2PDisabledSet(_poolToken, _isP2PDisabled);
+        emit P2PStatusSet(_poolToken, _isP2PDisabled);
     }
 
     /// @notice Sets `isClaimRewardsPaused`.
     /// @param _isPaused The new pause status, true to pause the mechanism.
     function setIsClaimRewardsPaused(bool _isPaused) external onlyOwner {
         isClaimRewardsPaused = _isPaused;
-        emit IsClaimRewardsPausedSet(_isPaused);
+        emit ClaimRewardsPauseStatusSet(_isPaused);
     }
 
     /// @notice Sets a market as deprecated (allows liquidation of every positions on this market).
