@@ -248,4 +248,35 @@ contract TestBorrow is TestSetup {
         hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, to6Decimals(amount));
     }
+
+    function testShouldUseRightAmountOfGas() public {
+        uint256 amount = 100 ether;
+        createSigners(30);
+        initContracts();
+        setContractsLabels();
+        uint256 gasUsed1 = getBorrowGasUsage(amount, 1e5);
+        initContracts();
+        setContractsLabels();
+        uint256 gasUsed2 = getBorrowGasUsage(amount, 2e5);
+        assertGt(gasUsed2, gasUsed1 + 1e4);
+    }
+
+    /// @dev Helper for gas usage test
+    function getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
+        // 2 * NMAX suppliers supply suppliedAmount
+        for (uint256 i; i < 30; i++) {
+            suppliers[i].setMorphoAddresses(morpho);
+            suppliers[i].approve(dai, type(uint256).max);
+            suppliers[i].supply(aDai, amount);
+        }
+
+        borrower1.setMorphoAddresses(morpho);
+        borrower1.approve(usdc, to6Decimals(amount * 200));
+        borrower1.supply(aUsdc, to6Decimals(amount * 200));
+
+        uint256 gasLeftBefore = gasleft();
+        borrower1.borrow(aDai, amount * 20, maxGas);
+        uint256 gasLeftAfter = gasleft();
+        gasUsed = gasLeftBefore - gasLeftAfter;
+    }
 }
