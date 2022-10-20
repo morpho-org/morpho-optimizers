@@ -379,11 +379,13 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         // Add unrealized rewards.
         for (uint256 i; i < userAssetBalancesLength; ++i) {
+            unclaimedRewards += localAssetData[_userAssetBalances[i].asset][_reward]
+            .usersData[_user]
+            .accrued;
+
             if (_userAssetBalances[i].balance == 0) continue;
 
-            unclaimedRewards +=
-                _getPendingRewards(_user, _reward, _userAssetBalances[i]) +
-                localAssetData[_userAssetBalances[i].asset][_reward].usersData[_user].accrued;
+            unclaimedRewards += _getPendingRewards(_user, _reward, _userAssetBalances[i]);
         }
     }
 
