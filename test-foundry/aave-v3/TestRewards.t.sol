@@ -469,23 +469,7 @@ contract TestRewards is TestSetup {
         assertEq(unclaimedAmounts[0], balanceAfter - balanceBefore);
     }
 
-    function testCanCallGetAllUserRewardsWithZeroBalance() public {
-        uint256 toSupply = 100 ether;
-        supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
-
-        hevm.warp(block.timestamp + 365 days);
-
-        supplier1.withdraw(aDai, type(uint256).max);
-
-        (address[] memory rewardsList, uint256[] memory unclaimedAmounts) = rewardsManager
-        .getAllUserRewards(aDaiInArray, address(supplier1));
-    }
-
-    function testCanCallGetUserRewards() public {
+    function testCanCallGetUserRewardsWithZeroBalance() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -502,5 +486,29 @@ contract TestRewards is TestSetup {
             address(supplier1),
             rewardToken
         );
+
+        assertGt(unclaimedRewards, 0);
+    }
+
+    function testCanCallGetAllUserRewardsWithZeroBalance() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        (, uint256[] memory unclaimedAmounts) = rewardsManager.getAllUserRewards(
+            aDaiInArray,
+            address(supplier1)
+        );
+
+        for (uint256 i; i < unclaimedAmounts.length; ++i) {
+            assertGt(unclaimedAmounts[i], 0);
+        }
     }
 }
