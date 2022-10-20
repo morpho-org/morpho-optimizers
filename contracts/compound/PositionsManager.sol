@@ -222,7 +222,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         Types.Delta storage delta = deltas[_poolToken];
         SupplyVars memory vars;
-        vars.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.remainingToSupply = _amount;
 
         /// Peer-to-peer supply ///
@@ -280,7 +280,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
             supplierSupplyBalance.onPool += vars.remainingToSupply.div(
-                ICToken(_poolToken).exchangeRateStored() // Exchange rate has already been updated.
+                lastPoolIndexes[_poolToken].lastSupplyPoolIndex // Exchange rate has already been updated.
             ); // In scaled balance.
             _supplyToPool(_poolToken, underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
@@ -317,7 +317,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolToken];
-        uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
+        uint256 poolSupplyIndex = lastPoolIndexes[_poolToken].lastSupplyPoolIndex; // Exchange rate has already been updated.
 
         /// Peer-to-peer borrow ///
 
@@ -376,7 +376,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowerBorrowBalance.onPool += remainingToBorrow.div(
-                ICToken(_poolToken).borrowIndex()
+                lastPoolIndexes[_poolToken].lastBorrowPoolIndex
             ); // In cdUnit.
             _borrowFromPool(_poolToken, remainingToBorrow);
         }
@@ -514,7 +514,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.underlyingToken = _getUnderlying(_poolToken);
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
+        vars.poolSupplyIndex = lastPoolIndexes[_poolToken].lastSupplyPoolIndex; // Exchange rate has already been updated.
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
@@ -630,7 +630,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Increase the peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
-                    ICToken(_poolToken).borrowIndex()
+                    lastPoolIndexes[_poolToken].lastBorrowPoolIndex
                 );
                 emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
             }
@@ -676,7 +676,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
 
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
             _onBehalf
@@ -755,7 +755,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             vars.feeToRepay = CompoundMath.safeSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
                 (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()))
+                    delta.p2pSupplyDelta.mul(lastPoolIndexes[_poolToken].lastSupplyPoolIndex))
             );
 
             if (vars.feeToRepay > 0) {
@@ -804,7 +804,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Increase the peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
-                    ICToken(_poolToken).exchangeRateStored() // Exchange rate has already been updated.
+                    lastPoolIndexes[_poolToken].lastSupplyPoolIndex // Exchange rate has already been updated.
                 );
                 emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
             }

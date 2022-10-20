@@ -201,7 +201,7 @@ abstract contract MatchingEngine is MorphoUtils {
         if (_maxGasForMatching == 0) return (0, 0);
 
         MatchVars memory vars;
-        vars.poolIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolToken];
         address firstPoolBorrower;
         vars.gasLeftAtTheBeginning = gasleft();
@@ -263,7 +263,7 @@ abstract contract MatchingEngine is MorphoUtils {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
-        vars.poolIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolToken];
         address firstP2PBorrower;
         uint256 remainingToUnmatch = _amount;
