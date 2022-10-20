@@ -12,8 +12,7 @@ on:
       - contracts/compound/**
       - "*.lock"
       - remappings.txt
-      - .github/actions/ci-storage-layout/*
-      - .github/workflows/ci-storage-layout-compound.yml
+      - .github/workflows/ci-storage-check-compound.yml
 
 jobs:
   morpho-compound:
@@ -24,19 +23,19 @@ jobs:
         with:
           submodules: recursive
 
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        cache: yarn
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
-      shell: bash
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        shell: bash
 
-    - name: Install Foundry
-      uses: onbjerg/foundry-toolchain@v1
-      with:
-        version: nightly
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Check Morpho storage layout
         uses: Rubilmax/foundry-storage-check@v2
@@ -47,4 +46,3 @@ jobs:
         uses: Rubilmax/foundry-storage-check@v2
         with:
           contract: contracts/compound/RewardsManager.sol:RewardsManager
-
