@@ -514,7 +514,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.underlyingToken = _getUnderlying(_poolToken);
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.poolSupplyIndex = lastPoolIndexes[_poolToken].lastSupplyPoolIndex; // Exchange rate has already been updated.
+        vars.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
@@ -755,7 +755,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             vars.feeToRepay = CompoundMath.safeSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
                 (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.mul(lastPoolIndexes[_poolToken].lastSupplyPoolIndex))
+                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()))
             );
 
             if (vars.feeToRepay > 0) {
@@ -804,7 +804,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Increase the peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
-                    lastPoolIndexes[_poolToken].lastSupplyPoolIndex // Exchange rate has already been updated.
+                    ICToken(_poolToken).exchangeRateStored() // Exchange rate has already been updated.
                 );
                 emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
             }
