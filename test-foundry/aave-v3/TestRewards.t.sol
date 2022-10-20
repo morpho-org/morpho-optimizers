@@ -439,8 +439,6 @@ contract TestRewards is TestSetup {
             rewardToken
         );
 
-        console.log("rewardToken", rewardToken);
-
         supplier1.withdraw(aDai, type(uint256).max);
         uint256 balanceBefore = ERC20(rewardToken).balanceOf(address(supplier1));
         supplier1.claimRewards(aDaiInArray, false);
@@ -469,5 +467,40 @@ contract TestRewards is TestSetup {
         uint256 balanceAfter = ERC20(rewardsList[0]).balanceOf(address(supplier1));
 
         assertEq(unclaimedAmounts[0], balanceAfter - balanceBefore);
+    }
+
+    function testCanCallGetAllUserRewardsWithZeroBalance() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        (address[] memory rewardsList, uint256[] memory unclaimedAmounts) = rewardsManager
+        .getAllUserRewards(aDaiInArray, address(supplier1));
+    }
+
+    function testCanCallGetUserRewards() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        uint256 unclaimedRewards = rewardsManager.getUserRewards(
+            aDaiInArray,
+            address(supplier1),
+            rewardToken
+        );
     }
 }
