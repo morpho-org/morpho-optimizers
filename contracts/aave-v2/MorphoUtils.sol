@@ -278,7 +278,7 @@ abstract contract MorphoUtils is MorphoStorage {
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityStackVars memory vars;
 
-        DataTypes.UserConfigurationMap memory morphoUserConfig = pool.getUserConfiguration(
+        DataTypes.UserConfigurationMap memory morphoPoolConfig = pool.getUserConfiguration(
             address(this)
         );
 
@@ -306,7 +306,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
             // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral.
             if (
-                !morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
+                !morphoPoolConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
             ) {
                 assetData.ltv = 0;
                 assetData.liquidationThreshold = 0;
