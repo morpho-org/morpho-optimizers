@@ -501,7 +501,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Implements increaseP2PDeltas logic.
     /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resupplying it.
     /// In this case, consider calling this function multiple times.
-    /// @param _poolToken The address of the market on which to create deltas.
+    /// @param _poolToken The address of the market on which to increase deltas.
     /// @param _amount The amount to add to the deltas (in underlying).
     function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external {
         _updateP2PIndexes(_poolToken);

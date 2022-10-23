@@ -413,10 +413,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit DeprecatedStatusSet(_poolToken, _isDeprecated);
     }
 
-    /// @notice Creates peer-to-peer deltas, to put some liquidity back on the pool.
+    /// @notice Increases peer-to-peer deltas, to put some liquidity back on the pool.
     /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resuppling it.
     /// In this case, consider calling multiple times this function.
-    /// @param _poolToken The address of the market on which to create deltas.
+    /// @param _poolToken The address of the market on which to increase deltas.
     /// @param _amount The amount to add to the deltas (in underlying).
     function increaseP2PDeltas(address _poolToken, uint256 _amount)
         external
