@@ -254,15 +254,15 @@ contract TestBorrow is TestSetup {
         createSigners(30);
         initContracts();
         setContractsLabels();
-        uint256 gasUsed1 = getBorrowGasUsage(amount, 1e5);
+        uint256 gasUsed1 = _getBorrowGasUsage(amount, 1e5);
         initContracts();
         setContractsLabels();
-        uint256 gasUsed2 = getBorrowGasUsage(amount, 2e5);
+        uint256 gasUsed2 = _getBorrowGasUsage(amount, 2e5);
         assertGt(gasUsed2, gasUsed1 + 1e4);
     }
 
     /// @dev Helper for gas usage test
-    function getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
+    function _getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
         // 2 * NMAX suppliers supply suppliedAmount
         for (uint256 i; i < 30; i++) {
             suppliers[i].setMorphoAddresses(morpho);
