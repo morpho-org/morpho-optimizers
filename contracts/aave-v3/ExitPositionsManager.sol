@@ -296,16 +296,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.Delta storage deltas = deltas[_poolToken];
         Types.Delta memory deltasMem = deltas;
         Types.PoolIndexes memory poolIndexes = poolIndexes[_poolToken];
-        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
-        uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
 
         _amount = Math.min(
             _amount,
             Math.min(
-                deltasMem.p2pSupplyAmount.rayMul(p2pSupplyIndex).zeroFloorSub(
+                deltasMem.p2pSupplyAmount.rayMul(p2pSupplyIndex[_poolToken]).zeroFloorSub(
                     deltasMem.p2pSupplyDelta.rayMul(poolIndexes.poolSupplyIndex)
                 ),
-                deltasMem.p2pBorrowAmount.rayMul(p2pBorrowIndex).zeroFloorSub(
+                deltasMem.p2pBorrowAmount.rayMul(p2pBorrowIndex[_poolToken]).zeroFloorSub(
                     deltasMem.p2pBorrowDelta.rayMul(poolIndexes.poolBorrowIndex)
                 )
             )

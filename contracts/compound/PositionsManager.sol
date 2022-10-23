@@ -509,16 +509,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage deltas = deltas[_poolToken];
         Types.Delta memory deltasMem = deltas;
         Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
-        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
-        uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
 
         _amount = Math.min(
             _amount,
             Math.min(
-                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex).safeSub(
+                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).safeSub(
                     deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex)
                 ),
-                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex).safeSub(
+                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).safeSub(
                     deltasMem.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
                 )
             )
