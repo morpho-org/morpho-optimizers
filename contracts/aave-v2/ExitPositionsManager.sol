@@ -241,12 +241,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             .getParamsMemory();
         }
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         }
 
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowedAddress);
         uint256 collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
         uint256 amountToSeize = ((amountToLiquidate *
