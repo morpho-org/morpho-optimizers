@@ -64,7 +64,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _isP2PDisabled The new value of `_isP2PDisabled` adopted.
     event P2PStatusSet(address indexed _poolToken, bool _isP2PDisabled);
 
-    /// @notice Emitted when a supply is paused or unpaused.
+    /// @notice Emitted when supplying is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsSupplyPausedSet(address indexed _poolToken, bool _isPaused);
@@ -100,7 +100,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     event DeprecatedStatusSet(address indexed _poolToken, bool _isDeprecated);
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
-    /// @param _isPaused The new claiming rewards status.
+    /// @param _isPaused The new pause status.
     event ClaimRewardsPauseStatusSet(bool _isPaused);
 
     /// @notice Emitted when a new market is created.
@@ -339,7 +339,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit ClaimRewardsPauseStatusSet(_isPaused);
     }
 
-    /// @notice Sets a market as deprecated (allows liquidation of every positions on this market).
+    /// @notice Sets a market as deprecated (allows liquidation of every position on this market).
     /// @param _poolToken The address of the market to update.
     /// @param _isDeprecated True to set the market as deprecated.
     function setIsDeprecated(address _poolToken, bool _isDeprecated)
@@ -421,7 +421,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// INTERNAL ///
 
-    /// @notice Sets the different pause status for a given market.
+    /// @notice Sets all pause statuses for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
     function _setPauseStatus(address _poolToken, bool _isPaused) internal {
