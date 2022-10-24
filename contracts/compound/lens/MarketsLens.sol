@@ -103,8 +103,8 @@ abstract contract MarketsLens is RatesLens {
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
     /// @return p2pDisabled Whether user are put in peer-to-peer or not.
-    /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return isPaused Deprecated.
+    /// @return isPartiallyPaused Deprecated.
     /// @return reserveFactor The reserve factor applied to this market.
     /// @return p2pIndexCursor The p2p index cursor applied to this market.
     /// @return collateralFactor The pool collateral factor also used by Morpho.
@@ -127,8 +127,8 @@ abstract contract MarketsLens is RatesLens {
         Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolToken);
         isCreated = marketStatus.isCreated;
         p2pDisabled = morpho.p2pDisabled(_poolToken);
-        isPaused = marketStatus.isPaused;
-        isPartiallyPaused = marketStatus.isPartiallyPaused;
+        isPaused = false;
+        isPartiallyPaused = false;
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
         reserveFactor = marketParams.reserveFactor;

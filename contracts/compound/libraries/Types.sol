@@ -70,8 +70,8 @@ library Types {
 
     struct MarketStatus {
         bool isCreated; // Whether or not this market is created.
-        bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-        bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+        bool isPaused; // Deprecated.
+        bool isPartiallyPaused; // Deprecated.
     }
 
     struct PauseStatus {
