@@ -68,25 +68,19 @@ abstract contract UsersLens is IndexesLens {
         // Not possible to withdraw nor borrow.
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 poolTokenBalance = _poolToken == morpho.cEth()
-            ? _poolToken.balance
-            : ERC20(ICToken(_poolToken).underlying()).balanceOf(_poolToken);
-
-        borrowable = Math.min(
-            poolTokenBalance,
-            (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice)
-        );
-        withdrawable = Math.min(
-            poolTokenBalance,
-            assetData.collateralValue.div(assetData.underlyingPrice)
+        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
+            assetData.underlyingPrice
         );
 
+        withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
         if (assetData.collateralFactor != 0) {
             withdrawable = CompoundMath.min(
                 withdrawable,
-                borrowable.div(assetData.collateralFactor)
+                differenceInUnderlying.div(assetData.collateralFactor)
             );
         }
+
+        borrowable = differenceInUnderlying;
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
@@ -222,10 +216,8 @@ abstract contract UsersLens is IndexesLens {
     {
         (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
 
-        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
-
-        balanceOnPool = supplyBalance.onPool.mul(poolSupplyIndex);
-        balanceInP2P = supplyBalance.inP2P.mul(p2pSupplyIndex);
+        balanceOnPool = morpho.supplyBalanceInOf(_poolToken, _user).onPool.mul(poolSupplyIndex);
+        balanceInP2P = morpho.supplyBalanceInOf(_poolToken, _user).inP2P.mul(p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -247,10 +239,8 @@ abstract contract UsersLens is IndexesLens {
     {
         (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
 
-        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
-
-        balanceOnPool = borrowBalance.onPool.mul(poolBorrowIndex);
-        balanceInP2P = borrowBalance.inP2P.mul(p2pBorrowIndex);
+        balanceOnPool = morpho.borrowBalanceInOf(_poolToken, _user).onPool.mul(poolBorrowIndex);
+        balanceInP2P = morpho.borrowBalanceInOf(_poolToken, _user).inP2P.mul(p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
