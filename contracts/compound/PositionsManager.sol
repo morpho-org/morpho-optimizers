@@ -214,6 +214,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 borrowedPrice;
         uint256 amountToSeize;
         uint256 closeFactor;
+        bool liquidationAllowed;
     }
 
     /// LOGIC ///
@@ -492,12 +493,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenCollateral);
 
         LiquidateVars memory vars;
-        if (borrowPause.isDeprecated)
-            vars.closeFactor = WAD; // Allow liquidation of the whole debt.
-        else {
-            if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
-            vars.closeFactor = comptroller.closeFactorMantissa();
-        }
+        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+            _borrower,
+            borrowPause.isDeprecated
+        );
+        if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
 
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
 
@@ -961,6 +961,25 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (index != length - 1)
                 enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
             enteredMarkets[_user].pop();
+        }
+    }
+
+    /// @dev Checks if the user is liquidatable.
+    /// @param _user The user to check.
+    /// @param _isDeprecated Whether the market is deprecated or not.
+    /// @return closeFactor The close factor to apply.
+    /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    function _liquidationAllowed(address _user, bool _isDeprecated)
+        internal
+        view
+        returns (uint256 closeFactor, bool liquidationAllowed)
+    {
+        if (_isDeprecated) {
+            liquidationAllowed = true;
+            closeFactor = WAD; // Allow liquidation of the whole debt.
+        } else {
+            liquidationAllowed = _isLiquidatable(_user, address(0), 0, 0);
+            if (liquidationAllowed) closeFactor = comptroller.closeFactorMantissa();
         }
     }
 }
