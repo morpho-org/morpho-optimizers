@@ -157,22 +157,22 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     error SameBlockBorrowRepay();
 
     /// @notice Thrown when the supply is paused.
-    error SupplyPaused();
+    error SupplyIsPaused();
 
     /// @notice Thrown when the borrow is paused.
-    error BorrowPaused();
+    error BorrowIsPaused();
 
     /// @notice Thrown when the withdraw is paused.
-    error WithdrawPaused();
+    error WithdrawIsPaused();
 
     /// @notice Thrown when the repay is paused.
-    error RepayPaused();
+    error RepayIsPaused();
 
     /// @notice Thrown when the liquidation on this asset as collateral is paused.
-    error LiquidateCollateralPaused();
+    error LiquidateCollateralIsPaused();
 
     /// @notice Thrown when the liquidation on this asset as debt is paused.
-    error LiquidateBorrowPaused();
+    error LiquidateBorrowIsPaused();
 
     /// STRUCTS ///
 
@@ -234,7 +234,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyPaused();
+        if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
@@ -329,7 +329,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowPaused();
+        if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
@@ -431,7 +431,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawPaused();
+        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -457,7 +457,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isRepayPaused) revert RepayPaused();
+        if (pauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -479,10 +479,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
-            revert LiquidateCollateralPaused();
+            revert LiquidateCollateralIsPaused();
         if (!marketStatus[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
         Types.PauseStatus memory borrowPause = pauseStatus[_poolTokenBorrowed];
-        if (borrowPause.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+        if (borrowPause.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
         if (
             !userMembership[_poolTokenBorrowed][_borrower] ||
             !userMembership[_poolTokenCollateral][_borrower]

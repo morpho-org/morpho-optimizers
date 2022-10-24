@@ -59,10 +59,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     error UnauthorisedBorrow();
 
     /// @notice Thrown when the supply is paused.
-    error SupplyPaused();
+    error SupplyIsPaused();
 
     /// @notice Thrown when the borrow is paused.
-    error BorrowPaused();
+    error BorrowIsPaused();
 
     /// STRUCTS ///
 
@@ -100,7 +100,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isSupplyPaused) revert SupplyPaused();
+        if (market.isSupplyPaused) revert SupplyIsPaused();
         _updateIndexes(_poolToken);
 
         SupplyVars memory vars;
@@ -197,7 +197,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isBorrowPaused) revert BorrowPaused();
+        if (market.isBorrowPaused) revert BorrowIsPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())

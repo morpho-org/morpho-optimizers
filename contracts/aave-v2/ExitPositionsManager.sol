@@ -79,16 +79,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     error UnauthorisedLiquidate();
 
     /// @notice Thrown when the withdraw is paused.
-    error WithdrawPaused();
+    error WithdrawIsPaused();
 
     /// @notice Thrown when the repay is paused.
-    error RepayPaused();
+    error RepayIsPaused();
 
     /// @notice Thrown when the liquidation on this asset as collateral is paused.
-    error LiquidateCollateralPaused();
+    error LiquidateCollateralIsPaused();
 
     /// @notice Thrown when the liquidation on this asset as debt is paused.
-    error LiquidateBorrowPaused();
+    error LiquidateBorrowIsPaused();
 
     /// STRUCTS ///
 
@@ -151,7 +151,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_amount == 0) revert AmountIsZero();
         if (_receiver == address(0)) revert AddressIsZero();
         if (!market[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawPaused();
+        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
@@ -177,7 +177,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!market[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isRepayPaused) revert RepayPaused();
+        if (pauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
@@ -200,10 +200,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreated) revert MarketNotCreated();
         if (pauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
-            revert LiquidateCollateralPaused();
+            revert LiquidateCollateralIsPaused();
         Types.PauseStatus memory borrowPauseStatus = pauseStatus[_poolTokenBorrowed];
         if (!market[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
-        if (borrowPauseStatus.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+        if (borrowPauseStatus.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
 
         if (
             !_isBorrowingAndSupplying(
