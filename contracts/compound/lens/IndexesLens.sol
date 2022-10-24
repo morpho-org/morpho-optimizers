@@ -75,28 +75,29 @@ abstract contract IndexesLens is LensStorage {
                 newPoolSupplyIndex,
                 newPoolBorrowIndex,
                 lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
+                marketParams.p2pIndexCursor
             );
 
             newP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
-                InterestRatesModel.P2PSupplyIndexComputeParams({
-                    poolSupplyGrowthFactor: growthFactors.poolSupplyGrowthFactor,
-                    p2pSupplyGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
-                    lastPoolSupplyIndex: lastPoolIndexes.lastSupplyPoolIndex,
-                    lastP2PSupplyIndex: morpho.p2pSupplyIndex(_poolToken),
-                    p2pSupplyDelta: delta.p2pSupplyDelta,
-                    p2pSupplyAmount: delta.p2pSupplyAmount
+                InterestRatesModel.P2PIndexComputeParams({
+                    poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
+                    p2pGrowthFactor: growthFactors.p2pGrowthFactor,
+                    lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
+                    lastP2PIndex: morpho.p2pSupplyIndex(_poolToken),
+                    p2pDelta: delta.p2pSupplyDelta,
+                    p2pAmount: delta.p2pSupplyAmount,
+                    reserveFactor: marketParams.reserveFactor
                 })
             );
             newP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
-                InterestRatesModel.P2PBorrowIndexComputeParams({
-                    poolBorrowGrowthFactor: growthFactors.poolBorrowGrowthFactor,
-                    p2pBorrowGrowthFactor: growthFactors.p2pBorrowGrowthFactor,
-                    lastPoolBorrowIndex: lastPoolIndexes.lastBorrowPoolIndex,
-                    lastP2PBorrowIndex: morpho.p2pBorrowIndex(_poolToken),
-                    p2pBorrowDelta: delta.p2pBorrowDelta,
-                    p2pBorrowAmount: delta.p2pBorrowAmount
+                InterestRatesModel.P2PIndexComputeParams({
+                    poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
+                    p2pGrowthFactor: growthFactors.p2pGrowthFactor,
+                    lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
+                    lastP2PIndex: morpho.p2pBorrowIndex(_poolToken),
+                    p2pDelta: delta.p2pBorrowDelta,
+                    p2pAmount: delta.p2pBorrowAmount,
+                    reserveFactor: marketParams.reserveFactor
                 })
             );
         }
@@ -173,18 +174,18 @@ abstract contract IndexesLens is LensStorage {
                 currentPoolSupplyIndex,
                 currentPoolBorrowIndex,
                 lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
+                marketParams.p2pIndexCursor
             );
 
             currentP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
-                InterestRatesModel.P2PSupplyIndexComputeParams({
-                    poolSupplyGrowthFactor: growthFactors.poolSupplyGrowthFactor,
-                    p2pSupplyGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
-                    lastPoolSupplyIndex: lastPoolIndexes.lastSupplyPoolIndex,
-                    lastP2PSupplyIndex: morpho.p2pSupplyIndex(_poolToken),
-                    p2pSupplyDelta: delta.p2pSupplyDelta,
-                    p2pSupplyAmount: delta.p2pSupplyAmount
+                InterestRatesModel.P2PIndexComputeParams({
+                    poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
+                    p2pGrowthFactor: growthFactors.p2pGrowthFactor,
+                    lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
+                    lastP2PIndex: morpho.p2pSupplyIndex(_poolToken),
+                    p2pDelta: delta.p2pSupplyDelta,
+                    p2pAmount: delta.p2pSupplyAmount,
+                    reserveFactor: marketParams.reserveFactor
                 })
             );
         }
@@ -218,18 +219,18 @@ abstract contract IndexesLens is LensStorage {
                 currentPoolSupplyIndex,
                 currentPoolBorrowIndex,
                 lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
+                marketParams.p2pIndexCursor
             );
 
             currentP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
-                InterestRatesModel.P2PBorrowIndexComputeParams({
-                    poolBorrowGrowthFactor: growthFactors.poolBorrowGrowthFactor,
-                    p2pBorrowGrowthFactor: growthFactors.p2pBorrowGrowthFactor,
-                    lastPoolBorrowIndex: lastPoolIndexes.lastBorrowPoolIndex,
-                    lastP2PBorrowIndex: morpho.p2pBorrowIndex(_poolToken),
-                    p2pBorrowDelta: delta.p2pBorrowDelta,
-                    p2pBorrowAmount: delta.p2pBorrowAmount
+                InterestRatesModel.P2PIndexComputeParams({
+                    poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
+                    p2pGrowthFactor: growthFactors.p2pGrowthFactor,
+                    lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
+                    lastP2PIndex: morpho.p2pBorrowIndex(_poolToken),
+                    p2pDelta: delta.p2pBorrowDelta,
+                    p2pAmount: delta.p2pBorrowAmount,
+                    reserveFactor: marketParams.reserveFactor
                 })
             );
         }
