@@ -107,10 +107,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         _updateDataMultiple(_rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
-        for (uint256 i; i < _assets.length; ) {
+        for (uint256 i; i < _assets.length; ++i) {
             address asset = _assets[i];
 
-            for (uint256 j; j < rewardsList.length; ) {
+            for (uint256 j; j < rewardsList.length; ++j) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
@@ -119,14 +119,6 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                     claimedAmounts[j] += rewardAmount;
                     localAssetData[asset][rewardsList[j]].usersData[_user].accrued = 0;
                 }
-
-                unchecked {
-                    ++j;
-                }
-            }
-
-            unchecked {
-                ++i;
             }
         }
     }
@@ -159,12 +151,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     ) external view returns (uint256 totalAccrued) {
         uint256 assetsLength = _assets.length;
 
-        for (uint256 i; i < assetsLength; ) {
+        for (uint256 i; i < assetsLength; ++i) {
             totalAccrued += localAssetData[_assets[i]][_reward].usersData[_user].accrued;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -350,7 +338,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _user,
         UserAssetBalance[] memory _userAssetBalances
     ) internal {
-        for (uint256 i; i < _userAssetBalances.length; ) {
+        for (uint256 i; i < _userAssetBalances.length; ++i) {
             _updateData(
                 _rewardsController,
                 _user,
@@ -358,10 +346,6 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 _userAssetBalances[i].balance,
                 _userAssetBalances[i].totalSupply
             );
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
