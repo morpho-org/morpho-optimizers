@@ -709,21 +709,22 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.
-            closeFactor = MAX_BASIS_POINTS;
             liquidationAllowed = true;
+            closeFactor = MAX_BASIS_POINTS;
         } else {
             uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
             address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-
-            closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
-                ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
-                : MAX_LIQUIDATION_CLOSE_FACTOR;
 
             if (priceOracleSentinel != address(0))
                 liquidationAllowed = (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
                     (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
                         healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
             else liquidationAllowed = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+
+            if (liquidationAllowed)
+                closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
+                    ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
+                    : MAX_LIQUIDATION_CLOSE_FACTOR;
         }
     }
 }

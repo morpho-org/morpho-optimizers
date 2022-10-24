@@ -652,12 +652,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.
-            closeFactor = MAX_BASIS_POINTS;
             liquidationAllowed = true;
+            closeFactor = MAX_BASIS_POINTS;
         } else {
-            closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
             liquidationAllowed = (_getUserHealthFactor(_user, address(0), 0) <
                 HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
+            if (liquidationAllowed) closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
         }
     }
 }
