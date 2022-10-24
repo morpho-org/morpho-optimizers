@@ -69,7 +69,7 @@ contract User {
     }
 
     function supply(address _poolToken, uint256 _amount) external {
-        morpho.supply(_poolToken, _amount);
+        morpho.supply(_poolToken, address(this), _amount);
     }
 
     function supply(
@@ -101,11 +101,13 @@ contract User {
         uint256 _amount,
         address _receiver
     ) external {
-        morpho.withdraw(_poolToken, _amount, _receiver);
+        morpho.withdraw(_poolToken, _amount);
+
+        ERC20(IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()).safeTransfer(_receiver, _amount);
     }
 
     function repay(address _poolToken, uint256 _amount) external {
-        morpho.repay(_poolToken, _amount);
+        morpho.repay(_poolToken, address(this), _amount);
     }
 
     function repay(

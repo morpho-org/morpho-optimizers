@@ -9,6 +9,9 @@ import "@contracts/compound/InterestRatesManager.sol";
 contract User {
     using SafeTransferLib for ERC20;
 
+    address public constant C_ETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
     Morpho internal morpho;
     InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
@@ -78,7 +81,7 @@ contract User {
     }
 
     function supply(address _poolToken, uint256 _amount) external {
-        morpho.supply(_poolToken, _amount);
+        morpho.supply(_poolToken, address(this), _amount);
     }
 
     function supply(
@@ -127,11 +130,13 @@ contract User {
         uint256 _amount,
         address _receiver
     ) external {
-        morpho.withdraw(_poolToken, _amount, _receiver);
+        morpho.withdraw(_poolToken, _amount);
+
+        ERC20(_getUnderlying(_poolToken)).safeTransfer(_receiver, _amount);
     }
 
     function repay(address _poolToken, uint256 _amount) external {
-        morpho.repay(_poolToken, _amount);
+        morpho.repay(_poolToken, address(this), _amount);
     }
 
     function repay(
@@ -182,5 +187,9 @@ contract User {
 
     function setPartialPauseStatus(address _poolToken, bool _newStatus) external {
         morpho.setPartialPauseStatus(_poolToken, _newStatus);
+    }
+
+    function _getUnderlying(address _poolToken) internal view returns (address underlying) {
+        return _poolToken == C_ETH ? WETH : ICToken(_poolToken).underlying();
     }
 }
