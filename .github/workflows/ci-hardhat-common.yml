@@ -27,15 +27,15 @@ jobs:
         with:
           submodules: recursive
 
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        cache: yarn
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Run tests
-      run: yarn test
-      env:
-        ALCHEMY_KEY: ${{ secrets.alchemyKey }}
+      - name: Run tests
+        run: yarn test
+        env:
+          ALCHEMY_KEY: ${{ secrets.alchemyKey }}
