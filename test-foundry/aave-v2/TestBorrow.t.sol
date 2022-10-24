@@ -239,11 +239,11 @@ contract TestBorrow is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount * 10);
 
-        // Give morpho enough of a position size
+        // Give Morpho a position on the pool to be able to unset the DAI asset as collateral.
+        // Without this position on the pool, it's not possible to do so.
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(aUsdc, to6Decimals(amount));
 
-        // Cannot disable collateral without some underlying balance that Morpho has
         morpho.setAssetAsCollateral(aDai, false);
 
         hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
