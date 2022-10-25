@@ -124,9 +124,9 @@ abstract contract MarketsLens is RatesLens {
             uint256 decimals
         )
     {
-        underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
-
         Types.Market memory market = morpho.market(_poolToken);
+
+        underlying = market.underlyingToken;
         isCreated = market.isCreated;
         isP2PDisabled = market.isP2PDisabled;
         isPaused = false;
