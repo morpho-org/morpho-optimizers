@@ -71,7 +71,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// GRANULAR PAUSING & DEPRECATED MARKET STORAGE ///
 
-    mapping(address => Types.PauseStatus) public pauseStatus;
+    mapping(address => Types.PauseStatus) public pauseStatus; // The pause and deprecated statuses for the given market.
 
     /// CONSTRUCTOR ///
 
