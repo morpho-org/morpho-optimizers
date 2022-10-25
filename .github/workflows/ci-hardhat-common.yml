@@ -15,8 +15,6 @@ on:
       - foundry.toml
       - remappings.txt
       - .github/workflows/ci-hardhat-common.yml
-    paths-ignore:
-      - test/upgrades/**
 
 jobs:
   morpho-hardhat-tests:
@@ -38,4 +36,5 @@ jobs:
       - name: Run tests
         run: yarn test
         env:
-          ALCHEMY_KEY: ${{ secrets.alchemyKey }}
+          NETWORK: eth-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
