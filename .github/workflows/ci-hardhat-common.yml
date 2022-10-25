@@ -15,8 +15,6 @@ on:
       - foundry.toml
       - remappings.txt
       - .github/workflows/ci-hardhat-common.yml
-    paths-ignore:
-      - test/upgrades/**
 
 jobs:
   morpho-hardhat-tests:
