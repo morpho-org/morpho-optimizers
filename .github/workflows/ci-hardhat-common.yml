@@ -36,4 +36,5 @@ jobs:
       - name: Run tests
         run: yarn test
         env:
-          ALCHEMY_KEY: ${{ secrets.alchemyKey }}
+          NETWORK: eth-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
