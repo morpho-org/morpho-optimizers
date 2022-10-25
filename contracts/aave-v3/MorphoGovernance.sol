@@ -108,7 +108,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a market is set as deprecated or not.
     /// @param _poolToken The address of the concerned market.
     /// @param _isDeprecated The new deprecated status.
-    event DeprecatedStatusSet(address indexed _poolToken, bool _isDeprecated);
+    event IsDeprecatedSet(address indexed _poolToken, bool _isDeprecated);
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
     /// @param _isPaused The new pause status.
@@ -410,7 +410,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         isMarketCreated(_poolToken)
     {
         market[_poolToken].isDeprecated = _isDeprecated;
-        emit DeprecatedStatusSet(_poolToken, _isDeprecated);
+        emit IsDeprecatedSet(_poolToken, _isDeprecated);
     }
 
     /// @notice Creates peer-to-peer deltas, to put some liquidity back on the pool.
