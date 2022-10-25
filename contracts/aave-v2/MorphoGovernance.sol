@@ -78,27 +78,27 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _isPaused The new pause status of the market.
     event IsSupplyPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a borrow is paused or unpaused.
+    /// @notice Emitted when borrowing is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsBorrowPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a withdraw is paused or unpaused.
+    /// @notice Emitted when withdrawing is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsWithdrawPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a repay is paused or unpaused.
+    /// @notice Emitted when repaying is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsRepayPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a liquidate as collateral is paused or unpaused.
+    /// @notice Emitted when liquidating on this market as collateral is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsLiquidateCollateralPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a liquidate as borrow is paused or unpaused.
+    /// @notice Emitted when liquidating on this market as borrow is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsLiquidateBorrowPausedSet(address indexed _poolToken, bool _isPaused);
