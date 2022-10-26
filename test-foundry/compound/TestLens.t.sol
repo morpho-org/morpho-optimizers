@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -1212,11 +1212,12 @@ contract TestLens is TestSetup {
                     address(borrower1),
                     new address[](0)
                 );
-                assertEq(
+                assertApproxEqAbs(
                     collateralValue.div(borrowedPrice).div(
                         comptroller.liquidationIncentiveMantissa()
                     ),
-                    0
+                    0,
+                    1
                 );
                 assertEq(toRepay, 0);
             }
