@@ -143,7 +143,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -165,7 +165,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
         if (toRepay == 0) revert UserNotMemberOfMarket();
 
-        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
+        _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -237,8 +237,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             .percentDiv(vars.liquidationBonus);
         }
 
-        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, amountToLiquidate, 0);
-        _safeWithdrawLogic(_poolTokenCollateral, amountToSeize, _borrower, msg.sender, 0);
+        _unsafeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, amountToLiquidate, 0);
+        _unsafeWithdrawLogic(_poolTokenCollateral, amountToSeize, _borrower, msg.sender, 0);
 
         emit Liquidated(
             msg.sender,
@@ -258,7 +258,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function _safeWithdrawLogic(
+    function _unsafeWithdrawLogic(
         address _poolToken,
         uint256 _amount,
         address _supplier,
@@ -412,7 +412,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function _safeRepayLogic(
+    function _unsafeRepayLogic(
         address _poolToken,
         address _repayer,
         address _onBehalf,

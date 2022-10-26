@@ -11,10 +11,6 @@ inputs:
   network:
     description: The network against which to run the forge test suite.
     required: true
-  gasReport:
-    description: Whether to display gas reports.
-    default: true
-    required: true
 
 runs:
   using: composite
@@ -48,28 +44,9 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }}-${{ inputs.network }} # always keep compiled contracts from base branch
 
     - name: Run tests
-      run: make gas-report | tee ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
+      run: make test
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
         NETWORK: ${{ inputs.network }}
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
-        FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
-
-    - name: Compare gas reports
-      if: inputs.gasReport == 'true'
-      uses: Rubilmax/foundry-gas-diff@v3.9
-      with:
-        report: ${{ inputs.protocol }}.${{ inputs.network }}.gasreport.ansi
-        ignore: test-foundry/**/*
-        header: |
-          # Morpho-${{ inputs.protocol }} gas impacts (${{ inputs.network }})
-      id: gas_diff
-
-    - name: Add gas diff to sticky comment
-      if: inputs.gasReport == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        header: ${{ inputs.protocol }} (${{ inputs.network }})
-        message: ${{ steps.gas_diff.outputs.markdown }}
-        delete: ${{ !steps.gas_diff.outputs.markdown }} # delete the comment in case changes no longer impacts gas costs
