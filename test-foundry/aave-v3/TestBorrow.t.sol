@@ -238,4 +238,21 @@ contract TestBorrow is TestSetup {
         hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, amount);
     }
+
+    function testShouldNotBorrowWithDisabledCollateral() public {
+        uint256 amount = 100 ether;
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, amount * 10);
+
+        // Give Morpho a position on the pool to be able to unset the DAI asset as collateral.
+        // Without this position on the pool, it's not possible to do so.
+        supplier1.approve(usdc, to6Decimals(amount));
+        supplier1.supply(aUsdc, to6Decimals(amount));
+
+        morpho.setAssetAsCollateral(aDai, false);
+
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(aUsdc, to6Decimals(amount));
+    }
 }
