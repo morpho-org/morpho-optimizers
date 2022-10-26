@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GNU AGPLv3
+pragma solidity >=0.5.0;
 
 /************
 @title IPriceOracleGetter interface
