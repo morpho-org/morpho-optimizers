@@ -337,4 +337,46 @@ contract TestGovernance is TestSetup {
     function testFailCallIncreaseP2PDeltasFromImplementation() public {
         exitPositionsManager.increaseP2PDeltasLogic(aDai, 0);
     }
+
+    function testOnlyOwnerShouldDisableSupply() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsSupplyPaused(aDai, true);
+
+        morpho.setIsSupplyPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableBorrow() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsBorrowPaused(aDai, true);
+
+        morpho.setIsBorrowPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableWithdraw() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsWithdrawPaused(aDai, true);
+
+        morpho.setIsWithdrawPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableRepay() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsRepayPaused(aDai, true);
+
+        morpho.setIsRepayPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateCollateralPaused(aDai, true);
+
+        morpho.setIsLiquidateCollateralPaused(aDai, true);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateBorrowPaused(aDai, true);
+
+        morpho.setIsLiquidateBorrowPaused(aDai, true);
+    }
 }
