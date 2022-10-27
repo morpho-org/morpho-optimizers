@@ -279,10 +279,10 @@ contract TestGovernance is TestSetup {
     }
 
     function testIncreaseP2PDeltasMoreThanWhatIsPossibleSupply() public {
-        uint256 supplyAmount = 100 ether;
-        uint256 borrowAmount = 50 ether;
+        uint256 supplyAmount = 101 ether;
+        uint256 borrowAmount = 51 ether;
         uint256 deltaAmount = 25 ether;
-        uint256 increaseDeltaAmount = 80 ether;
+        uint256 increaseDeltaAmount = 81 ether;
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.supply(aUsdc, to6Decimals(supplyAmount));
@@ -316,10 +316,10 @@ contract TestGovernance is TestSetup {
     }
 
     function testIncreaseP2PDeltasMoreThanWhatIsPossibleBorrow() public {
-        uint256 supplyAmount = 100 ether;
-        uint256 borrowAmount = 50 ether;
+        uint256 supplyAmount = 101 ether;
+        uint256 borrowAmount = 51 ether;
         uint256 deltaAmount = 25 ether;
-        uint256 increaseDeltaAmount = 80 ether;
+        uint256 increaseDeltaAmount = 81 ether;
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.supply(aUsdc, to6Decimals(supplyAmount));
@@ -345,7 +345,12 @@ contract TestGovernance is TestSetup {
             1e8,
             "2"
         );
-        assertApproxEqRel(IAToken(aDai).balanceOf(address(morpho)), deltaAmount, 1e8, "3");
+        assertApproxEqRel(
+            IAToken(aDai).balanceOf(address(morpho)),
+            borrowAmount - deltaAmount,
+            1e8,
+            "3"
+        );
         assertApproxEqRel(
             IVariableDebtTokenExtended(variableDebtDai).balanceOf(address(morpho)),
             borrowAmount,
