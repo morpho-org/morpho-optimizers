@@ -217,7 +217,7 @@ contract TestGovernance is TestSetup {
     }
 
     function testShouldNotIncreaseP2PDeltasWhenMarketNotCreated() public {
-        // hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
         morpho.increaseP2PDeltas(address(1), 0);
     }
 
