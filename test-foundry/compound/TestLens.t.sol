@@ -1482,36 +1482,36 @@ contract TestLens is TestSetup {
 
     function testGetMarketPauseStatusesDeprecatedMarket() public {
         morpho.setIsDeprecated(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isDeprecated);
+        assertTrue(lens.getMarketPauseStatus(cDai).isDeprecated);
     }
 
     function testGetMarketPauseStatusesPauseSupply() public {
         morpho.setIsSupplyPaused(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isSupplyPaused);
+        assertTrue(lens.getMarketPauseStatus(cDai).isSupplyPaused);
     }
 
     function testGetMarketPauseStatusesPauseBorrow() public {
         morpho.setIsBorrowPaused(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isBorrowPaused);
+        assertTrue(lens.getMarketPauseStatus(cDai).isBorrowPaused);
     }
 
     function testGetMarketPauseStatusesPauseWithdraw() public {
         morpho.setIsWithdrawPaused(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isWithdrawPaused);
+        assertTrue(lens.getMarketPauseStatus(cDai).isWithdrawPaused);
     }
 
     function testGetMarketPauseStatusesPauseRepay() public {
         morpho.setIsRepayPaused(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isRepayPaused);
+        assertTrue(lens.getMarketPauseStatus(cDai).isRepayPaused);
     }
 
     function testGetMarketPauseStatusesPauseLiquidateOnCollateral() public {
         morpho.setIsLiquidateCollateralPaused(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isLiquidateCollateralPaused);
+        assertTrue(lens.getMarketPauseStatus(cDai).isLiquidateCollateralPaused);
     }
 
     function testGetMarketPauseStatusesPauseLiquidateOnBorrow() public {
         morpho.setIsLiquidateBorrowPaused(cDai, true);
-        assertTrue(lens.getMarketPauseStatuses(cDai).isLiquidateBorrowPaused);
+        assertTrue(lens.getMarketPauseStatus(cDai).isLiquidateBorrowPaused);
     }
 }

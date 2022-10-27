@@ -142,7 +142,7 @@ abstract contract MarketsLens is RatesLens {
     /// @notice Returns market's pause statuses.
     /// @param _poolToken The address of the market of which to get pause statuses.
     /// @return The market status struct.
-    function getMarketPauseStatuses(address _poolToken)
+    function getMarketPauseStatus(address _poolToken)
         external
         view
         returns (Types.PauseStatus memory)

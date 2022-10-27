@@ -93,7 +93,7 @@ interface ILens {
             uint256 collateralFactor
         );
 
-    function getMarketPauseStatuses(address _poolToken)
+    function getMarketPauseStatus(address _poolToken)
         external
         view
         returns (Types.PauseStatus memory);
