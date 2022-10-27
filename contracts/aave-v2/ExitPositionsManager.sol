@@ -217,7 +217,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenCollateral);
 
         LiquidateVars memory vars;
-        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+        (vars.liquidationAllowed, vars.closeFactor) = _liquidationAllowed(
             _borrower,
             borrowPauseStatus.isDeprecated
         );
@@ -644,11 +644,11 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
     /// @param _isDeprecated Whether the market is deprecated or not.
-    /// @return closeFactor The close factor to apply.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    /// @return closeFactor The close factor to apply.
     function _liquidationAllowed(address _user, bool _isDeprecated)
         internal
-        returns (uint256 closeFactor, bool liquidationAllowed)
+        returns (bool liquidationAllowed, uint256 closeFactor)
     {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.

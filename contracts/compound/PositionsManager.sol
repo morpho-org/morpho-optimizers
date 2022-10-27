@@ -493,7 +493,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenCollateral);
 
         LiquidateVars memory vars;
-        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+        (vars.liquidationAllowed, vars.closeFactor) = _liquidationAllowed(
             _borrower,
             borrowPause.isDeprecated
         );
@@ -967,12 +967,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
     /// @param _isDeprecated Whether the market is deprecated or not.
-    /// @return closeFactor The close factor to apply.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    /// @return closeFactor The close factor to apply.
     function _liquidationAllowed(address _user, bool _isDeprecated)
         internal
         view
-        returns (uint256 closeFactor, bool liquidationAllowed)
+        returns (bool liquidationAllowed, uint256 closeFactor)
     {
         if (_isDeprecated) {
             liquidationAllowed = true;
