@@ -74,7 +74,7 @@ library Types {
         bool isPartiallyPaused; // Deprecated.
     }
 
-    struct PauseStatus {
+    struct MarketPauseStatus {
         bool isSupplyPaused; // Whether the supply is paused or not.
         bool isBorrowPaused; // Whether the borrow is paused or not
         bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).

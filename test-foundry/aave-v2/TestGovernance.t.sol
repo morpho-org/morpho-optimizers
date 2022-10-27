@@ -214,78 +214,78 @@ contract TestGovernance is TestSetup {
         morpho.setIsDeprecated(aDai, true);
 
         morpho.setIsDeprecated(aDai, true);
-        (, , , , , , bool isDeprecated) = morpho.pauseStatus(aDai);
+        (, , , , , , bool isDeprecated) = morpho.marketPauseStatus(aDai);
         assertTrue(isDeprecated);
 
         morpho.setIsDeprecated(aDai, false);
-        (, , , , , , isDeprecated) = morpho.pauseStatus(aDai);
+        (, , , , , , isDeprecated) = morpho.marketPauseStatus(aDai);
         assertFalse(isDeprecated);
     }
 
     function testOnlyOwnerShouldDisableSupply() public {
-        (bool isSupplyPaused, , , , , , ) = morpho.pauseStatus(aDai);
+        (bool isSupplyPaused, , , , , , ) = morpho.marketPauseStatus(aDai);
         assertFalse(isSupplyPaused);
 
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsSupplyPaused(aDai, true);
 
         morpho.setIsSupplyPaused(aDai, true);
-        (isSupplyPaused, , , , , , ) = morpho.pauseStatus(aDai);
+        (isSupplyPaused, , , , , , ) = morpho.marketPauseStatus(aDai);
         assertTrue(isSupplyPaused);
     }
 
     function testOnlyOwnerShouldDisableBorrow() public {
-        (, bool isBorrowPaused, , , , , ) = morpho.pauseStatus(aDai);
+        (, bool isBorrowPaused, , , , , ) = morpho.marketPauseStatus(aDai);
         assertFalse(isBorrowPaused);
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsBorrowPaused(aDai, true);
 
         morpho.setIsBorrowPaused(aDai, true);
-        (, isBorrowPaused, , , , , ) = morpho.pauseStatus(aDai);
+        (, isBorrowPaused, , , , , ) = morpho.marketPauseStatus(aDai);
         assertTrue(isBorrowPaused);
     }
 
     function testOnlyOwnerShouldDisableWithdraw() public {
-        (, , bool isWithdrawPaused, , , , ) = morpho.pauseStatus(aDai);
+        (, , bool isWithdrawPaused, , , , ) = morpho.marketPauseStatus(aDai);
         assertFalse(isWithdrawPaused);
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsWithdrawPaused(aDai, true);
 
         morpho.setIsWithdrawPaused(aDai, true);
-        (, , isWithdrawPaused, , , , ) = morpho.pauseStatus(aDai);
+        (, , isWithdrawPaused, , , , ) = morpho.marketPauseStatus(aDai);
         assertTrue(isWithdrawPaused);
     }
 
     function testOnlyOwnerShouldDisableRepay() public {
-        (, , , bool isRepayPaused, , , ) = morpho.pauseStatus(aDai);
+        (, , , bool isRepayPaused, , , ) = morpho.marketPauseStatus(aDai);
         assertFalse(isRepayPaused);
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsRepayPaused(aDai, true);
 
         morpho.setIsRepayPaused(aDai, true);
-        (, , , isRepayPaused, , , ) = morpho.pauseStatus(aDai);
+        (, , , isRepayPaused, , , ) = morpho.marketPauseStatus(aDai);
         assertTrue(isRepayPaused);
     }
 
     function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
-        (, , , , bool isLiquidateCollateralPaused, , ) = morpho.pauseStatus(aDai);
+        (, , , , bool isLiquidateCollateralPaused, , ) = morpho.marketPauseStatus(aDai);
         assertFalse(isLiquidateCollateralPaused);
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsLiquidateCollateralPaused(aDai, true);
 
         morpho.setIsLiquidateCollateralPaused(aDai, true);
-        (, , , , isLiquidateCollateralPaused, , ) = morpho.pauseStatus(aDai);
+        (, , , , isLiquidateCollateralPaused, , ) = morpho.marketPauseStatus(aDai);
         assertTrue(isLiquidateCollateralPaused);
     }
 
     function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
-        (, , , , , bool isLiquidateBorrowPaused, ) = morpho.pauseStatus(aDai);
+        (, , , , , bool isLiquidateBorrowPaused, ) = morpho.marketPauseStatus(aDai);
         assertFalse(isLiquidateBorrowPaused);
         vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setIsLiquidateBorrowPaused(aDai, true);
 
         morpho.setIsLiquidateBorrowPaused(aDai, true);
-        (, , , , , isLiquidateBorrowPaused, ) = morpho.pauseStatus(aDai);
+        (, , , , , isLiquidateBorrowPaused, ) = morpho.marketPauseStatus(aDai);
         assertTrue(isLiquidateBorrowPaused);
     }
 }

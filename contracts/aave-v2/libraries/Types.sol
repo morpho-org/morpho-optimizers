@@ -76,7 +76,7 @@ library Types {
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
     }
 
-    struct PauseStatus {
+    struct MarketPauseStatus {
         bool isSupplyPaused; // Whether the supply is paused or not.
         bool isBorrowPaused; // Whether the borrow is paused or not
         bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).

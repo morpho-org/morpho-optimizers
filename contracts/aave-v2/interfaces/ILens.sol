@@ -94,7 +94,7 @@ interface ILens {
     function getMarketPauseStatus(address _poolToken)
         external
         view
-        returns (Types.PauseStatus memory);
+        returns (Types.MarketPauseStatus memory);
 
     function getTotalMarketSupply(address _poolToken)
         external

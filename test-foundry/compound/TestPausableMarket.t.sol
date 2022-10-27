@@ -22,7 +22,7 @@ contract TestPausableMarket is TestSetup {
                 bool isLiquidateCollateralPaused,
                 bool isLiquidateBorrowPaused,
 
-            ) = morpho.pauseStatus(pools[i]);
+            ) = morpho.marketPauseStatus(pools[i]);
             assertTrue(isSupplyPaused);
             assertTrue(isBorrowPaused);
             assertTrue(isWithdrawPaused);
@@ -42,7 +42,7 @@ contract TestPausableMarket is TestSetup {
                 bool isLiquidateCollateralPaused,
                 bool isLiquidateBorrowPaused,
 
-            ) = morpho.pauseStatus(pools[i]);
+            ) = morpho.marketPauseStatus(pools[i]);
             assertFalse(isSupplyPaused);
             assertFalse(isBorrowPaused);
             assertFalse(isWithdrawPaused);

@@ -145,9 +145,9 @@ abstract contract MarketsLens is RatesLens {
     function getMarketPauseStatus(address _poolToken)
         external
         view
-        returns (Types.PauseStatus memory)
+        returns (Types.MarketPauseStatus memory)
     {
-        return morpho.pauseStatus(_poolToken);
+        return morpho.marketPauseStatus(_poolToken);
     }
 
     /// PUBLIC ///

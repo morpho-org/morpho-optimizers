@@ -65,7 +65,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     mapping(address => uint256) public lastBorrowBlock; // Block number of the last borrow of the user.
     bool public isClaimRewardsPaused; // Whether it's possible to claim rewards or not.
-    mapping(address => Types.PauseStatus) public pauseStatus; // The pause and deprecated statuses for the given market.
+    mapping(address => Types.MarketPauseStatus) public marketPauseStatus; // The pause and deprecated statuses for the given market.
 
     /// CONSTRUCTOR ///
 

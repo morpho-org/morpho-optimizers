@@ -99,7 +99,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
+        if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
         _updateIndexes(_poolToken);
 
         SupplyVars memory vars;
@@ -196,7 +196,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
+        if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())

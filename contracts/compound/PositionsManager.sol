@@ -235,7 +235,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
+        if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
@@ -330,7 +330,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
+        if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
@@ -432,7 +432,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
+        if (marketPauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -458,7 +458,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
+        if (marketPauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -479,10 +479,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount
     ) external {
         if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
-        if (pauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
+        if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
             revert LiquidateCollateralIsPaused();
         if (!marketStatus[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
-        Types.PauseStatus memory borrowPause = pauseStatus[_poolTokenBorrowed];
+        Types.MarketPauseStatus memory borrowPause = marketPauseStatus[_poolTokenBorrowed];
         if (borrowPause.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
         if (
             !userMembership[_poolTokenBorrowed][_borrower] ||

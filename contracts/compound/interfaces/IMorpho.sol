@@ -22,7 +22,7 @@ interface IMorpho {
     function enteredMarkets(address) external view returns (address);
     function deltas(address) external view returns (Types.Delta memory);
     function marketParameters(address) external view returns (Types.MarketParameters memory);
-    function pauseStatus(address) external view returns (Types.PauseStatus memory);
+    function marketPauseStatus(address) external view returns (Types.MarketPauseStatus memory);
     function p2pDisabled(address) external view returns (bool);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
