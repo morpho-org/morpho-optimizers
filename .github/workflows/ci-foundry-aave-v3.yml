@@ -34,7 +34,6 @@ jobs:
   #         alchemyKey: ${{ secrets.ALCHEMY_KEY }}
   #         protocol: aave-v3
   #         network: polygon-mainnet
-  #         gasReport: false
 
   morpho-aave-v3-avalanche-mainnet:
     name: avalanche-mainnet

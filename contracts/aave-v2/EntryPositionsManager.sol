@@ -67,7 +67,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct SupplyVars {
-        bytes32 borrowMask;
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
@@ -100,17 +99,15 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
-        _updateIndexes(_poolToken);
 
-        SupplyVars memory vars;
-        vars.borrowMask = borrowMask[_poolToken];
-        if (!_isSupplying(userMarkets[_onBehalf], vars.borrowMask))
-            _setSupplying(_onBehalf, vars.borrowMask, true);
+        _updateIndexes(_poolToken);
+        _setSupplying(_onBehalf, borrowMask[_poolToken], true);
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
+        SupplyVars memory vars;
         vars.poolBorrowIndex = poolIndexes[_poolToken].poolBorrowIndex;
         vars.remainingToSupply = _amount;
 
@@ -203,10 +200,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolToken);
-
-        bytes32 borrowMask = borrowMask[_poolToken];
-        if (!_isBorrowing(userMarkets[msg.sender], borrowMask))
-            _setBorrowing(msg.sender, borrowMask, true);
+        _setBorrowing(msg.sender, borrowMask[_poolToken], true);
 
         if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 

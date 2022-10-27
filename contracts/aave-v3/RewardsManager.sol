@@ -107,10 +107,10 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         _updateDataMultiple(_rewardsController, _user, _getUserAssetBalances(_assets, _user));
 
-        for (uint256 i; i < _assets.length; ) {
+        for (uint256 i; i < _assets.length; ++i) {
             address asset = _assets[i];
 
-            for (uint256 j; j < rewardsList.length; ) {
+            for (uint256 j; j < rewardsList.length; ++j) {
                 uint256 rewardAmount = localAssetData[asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
@@ -119,14 +119,6 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                     claimedAmounts[j] += rewardAmount;
                     localAssetData[asset][rewardsList[j]].usersData[_user].accrued = 0;
                 }
-
-                unchecked {
-                    ++j;
-                }
-            }
-
-            unchecked {
-                ++i;
             }
         }
     }
@@ -159,12 +151,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     ) external view returns (uint256 totalAccrued) {
         uint256 assetsLength = _assets.length;
 
-        for (uint256 i; i < assetsLength; ) {
+        for (uint256 i; i < assetsLength; ++i) {
             totalAccrued += localAssetData[_assets[i]][_reward].usersData[_user].accrued;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -184,8 +172,8 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         unclaimedAmounts = new uint256[](rewardsListLength);
 
         // Add unrealized rewards from user to unclaimed rewards.
-        for (uint256 i; i < userAssetBalances.length; ) {
-            for (uint256 j; j < rewardsListLength; ) {
+        for (uint256 i; i < userAssetBalances.length; ++i) {
+            for (uint256 j; j < rewardsListLength; ++j) {
                 unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset][rewardsList[j]]
                 .usersData[_user]
                 .accrued;
@@ -197,14 +185,6 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                     rewardsList[j],
                     userAssetBalances[i]
                 );
-
-                unchecked {
-                    ++j;
-                }
-            }
-
-            unchecked {
-                ++i;
             }
         }
     }
@@ -358,7 +338,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         address _user,
         UserAssetBalance[] memory _userAssetBalances
     ) internal {
-        for (uint256 i; i < _userAssetBalances.length; ) {
+        for (uint256 i; i < _userAssetBalances.length; ++i) {
             _updateData(
                 _rewardsController,
                 _user,
@@ -366,10 +346,6 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
                 _userAssetBalances[i].balance,
                 _userAssetBalances[i].totalSupply
             );
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -386,16 +362,14 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
 
         // Add unrealized rewards.
-        for (uint256 i; i < userAssetBalancesLength; ) {
+        for (uint256 i; i < userAssetBalancesLength; ++i) {
+            unclaimedRewards += localAssetData[_userAssetBalances[i].asset][_reward]
+            .usersData[_user]
+            .accrued;
+
             if (_userAssetBalances[i].balance == 0) continue;
 
-            unclaimedRewards +=
-                _getPendingRewards(_user, _reward, _userAssetBalances[i]) +
-                localAssetData[_userAssetBalances[i].asset][_reward].usersData[_user].accrued;
-
-            unchecked {
-                ++i;
-            }
+            unclaimedRewards += _getPendingRewards(_user, _reward, _userAssetBalances[i]);
         }
     }
 
@@ -506,7 +480,7 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 assetsLength = _assets.length;
         userAssetBalances = new UserAssetBalance[](assetsLength);
 
-        for (uint256 i; i < assetsLength; ) {
+        for (uint256 i; i < assetsLength; ++i) {
             address asset = _assets[i];
             userAssetBalances[i].asset = asset;
 
@@ -525,10 +499,6 @@ contract RewardsManager is IRewardsManager, OwnableUpgradeable {
             else revert InvalidAsset();
 
             userAssetBalances[i].totalSupply = IScaledBalanceToken(asset).scaledTotalSupply();
-
-            unchecked {
-                ++i;
-            }
         }
     }
 }

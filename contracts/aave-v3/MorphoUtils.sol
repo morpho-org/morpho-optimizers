@@ -257,7 +257,7 @@ abstract contract MorphoUtils is MorphoStorage {
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityStackVars memory vars;
 
-        DataTypes.UserConfigurationMap memory morphoUserConfig = pool.getUserConfiguration(
+        DataTypes.UserConfigurationMap memory morphoPoolConfig = pool.getUserConfiguration(
             address(this)
         );
         vars.poolTokensLength = marketsCreated.length;
@@ -279,7 +279,7 @@ abstract contract MorphoUtils is MorphoStorage {
             .getParams();
 
             // LTV should be zero if Morpho has not enabled this asset as collateral
-            if (!morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id))
+            if (!morphoPoolConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id))
                 assetData.ltv = 0;
 
             // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
