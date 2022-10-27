@@ -69,7 +69,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     IRewardsManager public rewardsManager;
     address public treasuryVault;
 
-    /// GRANULAR PAUSING & DEPRECATED MARKET STORAGE ///
+    /// APPENDIX STORAGE ///
 
     mapping(address => Types.MarketPauseStatus) public marketPauseStatus; // The pause and deprecated statuses for the given market.
 
