@@ -138,7 +138,7 @@ contract TestSetup is Config, Test {
     function _initMarkets() internal {
         address[] memory createdMarkets = morpho.getAllMarkets();
 
-        for (uint256 i; i < createdMarkets.length; ) {
+        for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
             address underlying = _getUnderlying(poolToken);
 
@@ -176,10 +176,6 @@ contract TestSetup is Config, Test {
                     } else console.log("Zero collateral factor market:", poolToken);
                 } else console.log("Partially paused market:", poolToken);
             } else console.log("Paused market:", poolToken);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 

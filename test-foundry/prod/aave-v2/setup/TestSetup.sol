@@ -157,7 +157,7 @@ contract TestSetup is Config, Test {
     function _initMarkets() internal {
         address[] memory createdMarkets = morpho.getMarketsCreated();
 
-        for (uint256 i; i < createdMarkets.length; ) {
+        for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
             address underlying = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
 
@@ -205,10 +205,6 @@ contract TestSetup is Config, Test {
                     } else console.log("Zero ltv market:", poolToken);
                 } else console.log("Partially paused market:", poolToken);
             } else console.log("Paused market:", poolToken);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 

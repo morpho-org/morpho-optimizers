@@ -86,10 +86,10 @@ contract TestBorrow is TestSetup {
 
         (test.p2pSupplyDelta, , , ) = morpho.deltas(_borrowedMarket.poolToken);
         test.borrowedBalanceBefore = ERC20(_borrowedMarket.underlying).balanceOf(address(user));
-        test.morphoSuppliedOnPoolBefore = IAToken(_borrowedMarket.poolToken).balanceOf(
+        test.morphoSuppliedOnPoolBefore = ERC20(_borrowedMarket.poolToken).balanceOf(
             address(morpho)
         );
-        test.morphoBorrowedOnPoolBefore = IAToken(_borrowedMarket.debtToken).balanceOf(
+        test.morphoBorrowedOnPoolBefore = ERC20(_borrowedMarket.debtToken).balanceOf(
             address(morpho)
         );
         test.morphoBorrowedBalanceBefore = ERC20(_borrowedMarket.underlying).balanceOf(
@@ -171,14 +171,13 @@ contract TestBorrow is TestSetup {
             "unexpected morpho underlying balance"
         );
         assertApproxEqAbs(
-            IAToken(_borrowedMarket.poolToken).balanceOf(address(morpho)) +
-                test.borrowedInP2PBefore,
+            ERC20(_borrowedMarket.poolToken).balanceOf(address(morpho)) + test.borrowedInP2PBefore,
             test.morphoSuppliedOnPoolBefore,
             1,
             "unexpected morpho supply balance on pool"
         );
         assertApproxEqAbs(
-            IAToken(_borrowedMarket.debtToken).balanceOf(address(morpho)),
+            ERC20(_borrowedMarket.debtToken).balanceOf(address(morpho)),
             test.morphoBorrowedOnPoolBefore + test.borrowedOnPoolBefore,
             1,
             "unexpected morpho borrow balance on pool"

@@ -33,7 +33,7 @@ contract TestWithdraw is TestSetup {
         WithdrawTest memory test;
         test.market = _market;
 
-        test.morphoBalanceOnPoolBefore = IAToken(_market.poolToken).balanceOf(address(morpho));
+        test.morphoBalanceOnPoolBefore = ERC20(_market.poolToken).balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
         uint256 amount = bound(
