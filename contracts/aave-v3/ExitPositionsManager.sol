@@ -715,10 +715,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
             address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
 
-            closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
-                ? PercentageMath.HALF_PERCENTAGE_FACTOR
-                : PercentageMath.PERCENTAGE_FACTOR;
-
             if (priceOracleSentinel != address(0))
                 liquidationAllowed = (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
                     (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
@@ -727,8 +723,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             if (liquidationAllowed)
                 closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
-                    ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
-                    : MAX_LIQUIDATION_CLOSE_FACTOR;
+                    ? PercentageMath.HALF_PERCENTAGE_FACTOR
+                    : PercentageMath.PERCENTAGE_FACTOR;
         }
     }
 }

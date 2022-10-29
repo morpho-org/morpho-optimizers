@@ -655,9 +655,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.
-            closeFactor = PercentageMath.PERCENTAGE_FACTOR;
             liquidationAllowed = true;
-            closeFactor = MAX_BASIS_POINTS;
+            closeFactor = PercentageMath.PERCENTAGE_FACTOR;
         } else {
             liquidationAllowed = (_getUserHealthFactor(_user, address(0), 0) <
                 HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
