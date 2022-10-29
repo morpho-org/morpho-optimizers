@@ -517,7 +517,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _amount,
             Math.min(
                 deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).safeSub(
-                    deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex)
+                    deltasMem.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
                 ),
                 deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).safeSub(
                     deltasMem.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
@@ -525,7 +525,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             )
         );
 
-        deltasMem.p2pSupplyDelta += _amount.div(lastPoolIndexes.lastSupplyPoolIndex);
+        deltasMem.p2pSupplyDelta += _amount.div(ICToken(_poolToken).exchangeRateStored());
         deltas.p2pSupplyDelta = deltasMem.p2pSupplyDelta;
         deltasMem.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
         deltas.p2pBorrowDelta = deltasMem.p2pBorrowDelta;
