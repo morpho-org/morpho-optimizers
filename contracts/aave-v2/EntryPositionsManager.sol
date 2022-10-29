@@ -57,10 +57,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
 
-    /// @notice Thrown when the supply is paused.
+    /// @notice Thrown when someone tries to supply but the supply is paused.
     error SupplyIsPaused();
 
-    /// @notice Thrown when the borrow is paused.
+    /// @notice Thrown when someone tries to borrow but the borrow is paused.
     error BorrowIsPaused();
 
     /// STRUCTS ///

@@ -78,16 +78,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
-    /// @notice Thrown when the withdraw is paused.
+    /// @notice Thrown when someone tries to withdraw but the withdraw is paused.
     error WithdrawIsPaused();
 
-    /// @notice Thrown when the repay is paused.
+    /// @notice Thrown when someone tries to repay but the repay is paused.
     error RepayIsPaused();
 
-    /// @notice Thrown when the liquidation on this asset as collateral is paused.
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as collateral is paused.
     error LiquidateCollateralIsPaused();
 
-    /// @notice Thrown when the liquidation on this asset as debt is paused.
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
     error LiquidateBorrowIsPaused();
 
     /// STRUCTS ///
@@ -641,7 +641,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
-    /// @dev Checks if the user is liquidatable.
+    /// @dev Checks if the user is liquidatable, knowing the deprecated status.
     /// @param _user The user to check.
     /// @param _isDeprecated Whether the market is deprecated or not.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.

@@ -156,22 +156,22 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
     error SameBlockBorrowRepay();
 
-    /// @notice Thrown when the supply is paused.
+    /// @notice Thrown when someone tries to supply but the supply is paused.
     error SupplyIsPaused();
 
-    /// @notice Thrown when the borrow is paused.
+    /// @notice Thrown when someone tries to borrow but the borrow is paused.
     error BorrowIsPaused();
 
-    /// @notice Thrown when the withdraw is paused.
+    /// @notice Thrown when someone tries to withdraw but the withdraw is paused.
     error WithdrawIsPaused();
 
-    /// @notice Thrown when the repay is paused.
+    /// @notice Thrown when someone tries to repay but the repay is paused.
     error RepayIsPaused();
 
-    /// @notice Thrown when the liquidation on this asset as collateral is paused.
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as collateral is paused.
     error LiquidateCollateralIsPaused();
 
-    /// @notice Thrown when the liquidation on this asset as debt is paused.
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
     error LiquidateBorrowIsPaused();
 
     /// STRUCTS ///
@@ -964,7 +964,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
     }
 
-    /// @dev Checks if the user is liquidatable.
+    /// @dev Checks if the user is liquidatable, knowing the deprecated status.
     /// @param _user The user to check.
     /// @param _isDeprecated Whether the market is deprecated or not.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.
