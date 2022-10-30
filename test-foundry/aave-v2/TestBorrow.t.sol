@@ -252,11 +252,9 @@ contract TestBorrow is TestSetup {
     function testShouldUseRightAmountOfGas() public {
         uint256 amount = 100 ether;
         createSigners(30);
-        initContracts();
-        setContractsLabels();
+        uint256 snapshotId = vm.snapshot();
         uint256 gasUsed1 = _getBorrowGasUsage(amount, 1e5);
-        initContracts();
-        setContractsLabels();
+        vm.revertTo(snapshotId);
         uint256 gasUsed2 = _getBorrowGasUsage(amount, 2e5);
         assertGt(gasUsed2, gasUsed1 + 1e4);
     }
