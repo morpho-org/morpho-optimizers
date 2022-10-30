@@ -267,27 +267,26 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolToken);
 
         Types.Delta storage deltas = deltas[_poolToken];
-        Types.Delta memory deltasMem = deltas;
         Types.PoolIndexes memory poolIndexes = poolIndexes[_poolToken];
 
         _amount = Math.min(
             _amount,
             Math.min(
-                deltasMem.p2pSupplyAmount.rayMul(p2pSupplyIndex[_poolToken]).zeroFloorSub(
-                    deltasMem.p2pSupplyDelta.rayMul(poolIndexes.poolSupplyIndex)
+                deltas.p2pSupplyAmount.rayMul(p2pSupplyIndex[_poolToken]).zeroFloorSub(
+                    deltas.p2pSupplyDelta.rayMul(poolIndexes.poolSupplyIndex)
                 ),
-                deltasMem.p2pBorrowAmount.rayMul(p2pBorrowIndex[_poolToken]).zeroFloorSub(
-                    deltasMem.p2pBorrowDelta.rayMul(poolIndexes.poolBorrowIndex)
+                deltas.p2pBorrowAmount.rayMul(p2pBorrowIndex[_poolToken]).zeroFloorSub(
+                    deltas.p2pBorrowDelta.rayMul(poolIndexes.poolBorrowIndex)
                 )
             )
         );
 
-        deltasMem.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
-        deltas.p2pSupplyDelta = deltasMem.p2pSupplyDelta;
-        deltasMem.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);
-        deltas.p2pBorrowDelta = deltasMem.p2pBorrowDelta;
-        emit P2PSupplyDeltaUpdated(_poolToken, deltasMem.p2pSupplyDelta);
-        emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
+        deltas.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
+        deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
+        deltas.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);
+        deltas.p2pBorrowDelta = deltas.p2pBorrowDelta;
+        emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
+        emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
 
