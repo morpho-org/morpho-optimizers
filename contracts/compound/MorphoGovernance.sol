@@ -279,7 +279,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resuppling it.
     /// In this case, consider calling multiple times this function.
     /// @param _poolToken The address of the market on which to increase deltas.
-    /// @param _amount The amount to add to the deltas (in underlying).
+    /// @param _amount The maximum amount to add to the deltas (in underlying).
     function increaseP2PDeltas(address _poolToken, uint256 _amount) external onlyOwner {
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
