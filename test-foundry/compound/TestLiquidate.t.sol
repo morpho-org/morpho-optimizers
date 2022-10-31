@@ -27,7 +27,7 @@ contract TestLiquidate is TestSetup {
 
     function testLiquidateWhenMarketDeprecated() public {
         uint256 amount = 10_000 ether;
-        uint256 collateral = to6Decimals(2 * amount);
+        uint256 collateral = to6Decimals(3 * amount);
 
         morpho.setIsDeprecated(cDai, true);
 
