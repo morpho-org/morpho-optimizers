@@ -9,6 +9,7 @@ import "./MorphoUtils.sol";
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
     using SafeTransferLib for ERC20;
+    using DelegateCall for address;
 
     /// EVENTS ///
 
@@ -272,6 +273,21 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setClaimRewardsPauseStatus(bool _newStatus) external onlyOwner {
         isClaimRewardsPaused = _newStatus;
         emit ClaimRewardsPauseStatusSet(_newStatus);
+    }
+
+    /// @notice Increases peer-to-peer deltas, to put some liquidity back on the pool.
+    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resuppling it.
+    /// In this case, consider calling multiple times this function.
+    /// @param _poolToken The address of the market on which to increase deltas.
+    /// @param _amount The maximum amount to add to the deltas (in underlying).
+    function increaseP2PDeltas(address _poolToken, uint256 _amount) external onlyOwner {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                IPositionsManager.increaseP2PDeltasLogic.selector,
+                _poolToken,
+                _amount
+            )
+        );
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.

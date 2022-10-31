@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity >=0.5.0;
 
 interface IPositionsManager {
     function supplyLogic(
@@ -38,4 +38,6 @@ interface IPositionsManager {
         address _borrower,
         uint256 _amount
     ) external;
+
+    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external;
 }

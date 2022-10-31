@@ -95,6 +95,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amountSeized
     );
 
+    /// @notice Emitted when the peer-to-peer deltas are increased by the governance.
+    /// @param _poolToken The address of the market on which the deltas were increased.
+    /// @param _amount The amount that has been added to the deltas (in underlying).
+    event P2PDeltasIncreased(address indexed _poolToken, uint256 _amount);
+
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
     /// @param _poolToken The address of the market.
     /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
@@ -414,7 +419,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (_isLiquidatable(_supplier, _poolToken, toWithdraw, 0)) revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -436,7 +441,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
 
-        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
+        _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -466,7 +471,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
+        _unsafeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateral);
@@ -481,7 +486,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower)
         );
 
-        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
+        _unsafeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
 
         emit Liquidated(
             msg.sender,
@@ -493,6 +498,46 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         );
     }
 
+    /// @notice Implements increaseP2PDeltas logic.
+    /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resupplying it.
+    /// In this case, consider calling this function multiple times.
+    /// @param _poolToken The address of the market on which to increase deltas.
+    /// @param _amount The maximum amount to add to the deltas (in underlying).
+    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount)
+        external
+        isMarketCreated(_poolToken)
+    {
+        _updateP2PIndexes(_poolToken);
+
+        Types.Delta storage deltas = deltas[_poolToken];
+        Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
+
+        uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
+        _amount = Math.min(
+            _amount,
+            Math.min(
+                deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).safeSub(
+                    deltas.p2pSupplyDelta.mul(poolSupplyIndex)
+                ),
+                deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).safeSub(
+                    deltas.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                )
+            )
+        );
+
+        deltas.p2pSupplyDelta += _amount.div(poolSupplyIndex);
+        deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
+        deltas.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
+        deltas.p2pBorrowDelta = deltas.p2pBorrowDelta;
+        emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
+        emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
+
+        _borrowFromPool(_poolToken, _amount);
+        _supplyToPool(_poolToken, _getUnderlying(_poolToken), _amount);
+
+        emit P2PDeltasIncreased(_poolToken, _amount);
+    }
+
     /// INTERNAL ///
 
     /// @dev Implements withdraw logic without security checks.
@@ -501,7 +546,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function _safeWithdrawLogic(
+    function _unsafeWithdrawLogic(
         address _poolToken,
         uint256 _amount,
         address _supplier,
@@ -661,7 +706,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function _safeRepayLogic(
+    function _unsafeRepayLogic(
         address _poolToken,
         address _repayer,
         address _onBehalf,
@@ -754,8 +799,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // No need to subtract p2pBorrowDelta as it is zero.
             vars.feeToRepay = CompoundMath.safeSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
-                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()))
+                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).safeSub(
+                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
+                )
             );
 
             if (vars.feeToRepay > 0) {
