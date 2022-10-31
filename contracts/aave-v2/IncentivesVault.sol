@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice Contract handling Morpho incentives.
 contract IncentivesVault is IIncentivesVault, Ownable {
     using SafeTransferLib for ERC20;
+    using PercentageMath for uint256;
 
     /// STORAGE ///
 
