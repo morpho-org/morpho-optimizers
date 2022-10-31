@@ -57,6 +57,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
 
+    /// @notice Thrown when someone tries to supply but the supply is paused.
+    error SupplyIsPaused();
+
+    /// @notice Thrown when someone tries to borrow but the borrow is paused.
+    error BorrowIsPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -90,11 +96,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
 
         _updateIndexes(_poolToken);
         _setSupplying(_onBehalf, borrowMask[_poolToken], true);
 
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
@@ -122,7 +131,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
-            !market[_poolToken].isP2PDisabled &&
+            !market.isP2PDisabled &&
             borrowersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchBorrowers(
@@ -182,8 +191,11 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
             revert BorrowingNotEnabled();
 
@@ -217,7 +229,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
-            !market[_poolToken].isP2PDisabled &&
+            !market.isP2PDisabled &&
             suppliersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchSuppliers(

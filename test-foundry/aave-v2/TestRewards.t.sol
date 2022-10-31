@@ -8,7 +8,7 @@ contract TestRewards is TestSetup {
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
 
-        morpho.setClaimRewardsPauseStatus(true);
+        morpho.setIsClaimRewardsPaused(true);
 
         hevm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
         morpho.claimRewards(aDaiInArray, false);

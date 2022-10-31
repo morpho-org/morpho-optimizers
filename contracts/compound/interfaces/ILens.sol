@@ -39,10 +39,13 @@ interface ILens {
 
     /// MARKETS ///
 
+    /// @dev Deprecated.
     function isMarketCreated(address _poolToken) external view returns (bool);
 
+    /// @dev Deprecated.
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool);
 
+    /// @dev Deprecated.
     function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
         external
         view
@@ -88,6 +91,11 @@ interface ILens {
             uint16 p2pIndexCursor,
             uint256 collateralFactor
         );
+
+    function getMarketPauseStatus(address _poolToken)
+        external
+        view
+        returns (Types.MarketPauseStatus memory);
 
     function getTotalMarketSupply(address _poolToken)
         external

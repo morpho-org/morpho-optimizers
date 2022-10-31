@@ -20,24 +20,14 @@ abstract contract MarketsLens is RatesLens {
         return morpho.market(_poolToken).isCreated;
     }
 
-    /// @notice Checks if a market is created and not paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused;
+    /// @dev Deprecated.
+    function isMarketCreatedAndNotPaused(address) external pure returns (bool) {
+        return false;
     }
 
-    /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool)
-    {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreated && !market.isPaused && !market.isPartiallyPaused;
+    /// @dev Deprecated.
+    function isMarketCreatedAndNotPausedNorPartiallyPaused(address) external pure returns (bool) {
+        return false;
     }
 
     /// @notice Returns all created markets.
@@ -109,8 +99,8 @@ abstract contract MarketsLens is RatesLens {
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
     /// @return isP2PDisabled Whether user are put in peer-to-peer or not.
-    /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return isPaused Deprecated.
+    /// @return isPartiallyPaused Deprecated.
     /// @return reserveFactor The reserve factor applied to this market.
     /// @return p2pIndexCursor The p2p index cursor applied to this market.
     /// @return loanToValue The ltv of the given market, set by AAVE.
@@ -134,19 +124,30 @@ abstract contract MarketsLens is RatesLens {
             uint256 decimals
         )
     {
-        underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
-
         Types.Market memory market = morpho.market(_poolToken);
+
+        underlying = market.underlyingToken;
         isCreated = market.isCreated;
         isP2PDisabled = market.isP2PDisabled;
-        isPaused = market.isPaused;
-        isPartiallyPaused = market.isPartiallyPaused;
+        isPaused = false;
+        isPartiallyPaused = false;
         reserveFactor = market.reserveFactor;
         p2pIndexCursor = market.p2pIndexCursor;
 
         (loanToValue, liquidationThreshold, liquidationBonus, decimals, ) = pool
         .getConfiguration(underlying)
         .getParamsMemory();
+    }
+
+    /// @notice Returns market's pause statuses.
+    /// @param _poolToken The address of the market of which to get pause statuses.
+    /// @return The market status struct.
+    function getMarketPauseStatus(address _poolToken)
+        external
+        view
+        returns (Types.MarketPauseStatus memory)
+    {
+        return morpho.marketPauseStatus(_poolToken);
     }
 
     /// PUBLIC ///
