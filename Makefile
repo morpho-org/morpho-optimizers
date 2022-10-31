@@ -90,12 +90,12 @@ test:
 	@forge test -vv | tee trace.ansi
 
 coverage:
-	@echo Create coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge coverage
-
-coverage-lcov:
-	@echo Create coverage lcov for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage --report lcov
+
+lcov-html:
+	@echo Transforming the lcov coverage report into html
+	@genhtml lcov.info -o coverage
 
 fuzz:
 	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
@@ -128,4 +128,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry
+.PHONY: test config test-common foundry coverage

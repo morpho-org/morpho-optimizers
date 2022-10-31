@@ -2,15 +2,18 @@ name: Foundry tests
 description: Runs full forge test suite given a protocol and a network
 
 inputs:
-  alchemyKey:
-    description: The Alchemy key giving access to a private RPC.
-    required: true
   protocol:
     description: The protocol against which to run the forge test suite.
     required: true
   network:
     description: The network against which to run the forge test suite.
     required: true
+  alchemyKey:
+    description: The Alchemy key giving access to a private RPC.
+    required: true
+  codecovToken:
+    description: The Codecov token used to upload coverage report.
+    required: false
 
 runs:
   using: composite
@@ -32,7 +35,7 @@ runs:
     - name: Foundry fork cache
       uses: actions/cache@v3
       with:
-        path: "~/.foundry/cache"
+        path: ~/.foundry/cache
         key: foundry-${{ hashFiles('Makefile', 'foundry.toml') }} # where fork block numbers & RPC are stored
 
     - name: Foundry compilation cache
@@ -44,9 +47,27 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }}-${{ inputs.network }} # always keep compiled contracts from base branch
 
     - name: Run tests
+      if: ${{ inputs.codecovToken == '' }}
       run: make test
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
         NETWORK: ${{ inputs.network }}
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
+
+    - name: Generate lcov coverage report
+      if: ${{ inputs.codecovToken != '' }}
+      run: make coverage
+      shell: bash
+      env:
+        PROTOCOL: ${{ inputs.protocol }}
+        NETWORK: ${{ inputs.network }}
+        ALCHEMY_KEY: ${{ inputs.alchemyKey }}
+
+    - name: Upload coverage to Codecov
+      if: ${{ inputs.codecovToken != '' }}
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ inputs.codecovToken }}
+        name: morpho-${{ inputs.protocol }}-${{ inputs.network }}
+        files: lcov.info

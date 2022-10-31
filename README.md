@@ -139,6 +139,25 @@ yarn test
 
 ---
 
+## Test coverage
+
+Test coverage is reported using [foundry](https://github.com/foundry-rs/foundry) coverage with [lcov](https://github.com/linux-test-project/lcov) report formatting (and optionally, [genhtml](https://manpages.ubuntu.com/manpages/xenial/man1/genhtml.1.html) transformer).
+
+To generate the `lcov` report, run:
+
+```bash
+make coverage
+```
+
+The report is then usable either:
+
+- via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
+- via html, using `make lcov-html` to transform the report
+
+:warning: Test coverage is not available on Morpho-AaveV2 nor Morpho-AaveV3 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+
+---
+
 ## Deployment & Upgrades
 
 ### Network mode (default)
