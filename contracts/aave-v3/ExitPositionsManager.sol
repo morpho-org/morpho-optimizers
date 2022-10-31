@@ -84,17 +84,17 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
-    /// @notice Thrown when the withdraw is paused.
-    error WithdrawPaused();
+    /// @notice Thrown when someone tries to withdraw but the withdraw is paused.
+    error WithdrawIsPaused();
 
-    /// @notice Thrown when the repay is paused.
-    error RepayPaused();
+    /// @notice Thrown when someone tries to repay but the repay is paused.
+    error RepayIsPaused();
 
-    /// @notice Thrown when the liquidation on this asset as collateral is paused.
-    error LiquidateCollateralPaused();
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as collateral is paused.
+    error LiquidateCollateralIsPaused();
 
-    /// @notice Thrown when the liquidation on this asset as debt is paused.
-    error LiquidateBorrowPaused();
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
+    error LiquidateBorrowIsPaused();
 
     /// STRUCTS ///
 
@@ -163,7 +163,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_receiver == address(0)) revert AddressIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isWithdrawPaused) revert WithdrawPaused();
+        if (market.isWithdrawPaused) revert WithdrawIsPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
@@ -190,7 +190,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
         if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isRepayPaused) revert RepayPaused();
+        if (market.isRepayPaused) revert RepayIsPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
@@ -212,10 +212,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) external {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreatedMemory()) revert MarketNotCreated();
-        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
+        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralIsPaused();
         Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
         if (!borrowedMarket.isCreatedMemory()) revert MarketNotCreated();
-        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
+        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
 
         if (
             !_isBorrowingAndSupplying(
@@ -229,7 +229,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         _updateIndexes(_poolTokenCollateral);
 
         LiquidateVars memory vars;
-        (vars.closeFactor, vars.liquidationAllowed) = _liquidationAllowed(
+        (vars.liquidationAllowed, vars.closeFactor) = _liquidationAllowed(
             _borrower,
             borrowedMarket.isDeprecated
         );
@@ -239,8 +239,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _amount,
             _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
-
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
         IPool poolMem = pool;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = poolMem
@@ -255,6 +253,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         }
 
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         vars.borrowedTokenPrice = oracle.getAssetPrice(borrowedMarket.underlyingToken);
         vars.collateralPrice = oracle.getAssetPrice(collateralMarket.underlyingToken);
         vars.amountToSeize = ((vars.amountToLiquidate *
@@ -699,32 +698,33 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
-    /// @dev Checks if the user is liquidatable.
+    /// @dev Returns whether a given user is liquidatable and the applicable close factor, given the deprecated status of the borrowed market.
     /// @param _user The user to check.
-    /// @param _isDeprecated Whether the market is deprecated or not.
-    /// @return closeFactor The close factor to apply.
+    /// @param _isDeprecated Whether the borrowed market is deprecated or not.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    /// @return closeFactor The close factor to apply.
     function _liquidationAllowed(address _user, bool _isDeprecated)
         internal
-        returns (uint256 closeFactor, bool liquidationAllowed)
+        returns (bool liquidationAllowed, uint256 closeFactor)
     {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.
-            closeFactor = MAX_BASIS_POINTS;
             liquidationAllowed = true;
+            closeFactor = MAX_BASIS_POINTS;
         } else {
             uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
             address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-
-            closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
-                ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
-                : MAX_LIQUIDATION_CLOSE_FACTOR;
 
             if (priceOracleSentinel != address(0))
                 liquidationAllowed = (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
                     (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
                         healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
             else liquidationAllowed = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+
+            if (liquidationAllowed)
+                closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
+                    ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
+                    : MAX_LIQUIDATION_CLOSE_FACTOR;
         }
     }
 }

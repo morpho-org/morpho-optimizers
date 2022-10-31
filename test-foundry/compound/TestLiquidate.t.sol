@@ -25,6 +25,44 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
     }
 
+    function testLiquidateWhenMarketDeprecated() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = to6Decimals(3 * amount);
+
+        morpho.setIsDeprecated(cDai, true);
+
+        borrower1.approve(usdc, address(morpho), collateral);
+        borrower1.supply(cUsdc, collateral);
+        borrower1.borrow(cDai, amount);
+
+        moveOneBlockForwardBorrowRepay();
+
+        (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+
+        // Liquidate
+        uint256 toRepay = amount; // Full liquidation.
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
+
+        (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+        (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        uint256 collateralPrice = oracle.getUnderlyingPrice(cUsdc);
+        uint256 borrowedPrice = oracle.getUnderlyingPrice(cDai);
+
+        uint256 amountToSeize = toRepay
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(borrowedPrice)
+        .div(collateralPrice);
+
+        uint256 expectedSupplyOnPoolAfter = supplyOnPoolBefore -
+            amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
+
+        assertApproxEqAbs(supplyOnPoolAfter, expectedSupplyOnPoolAfter, 2);
+        assertApproxEqAbs(borrowOnPoolAfter, 0, 1e15);
+    }
+
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
     function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;

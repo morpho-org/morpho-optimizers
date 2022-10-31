@@ -28,7 +28,7 @@ contract TestLiquidate is TestSetup {
 
     function testLiquidateWhenMarketDeprecated() public {
         uint256 amount = 10_000 ether;
-        uint256 collateral = to6Decimals(2 * amount);
+        uint256 collateral = to6Decimals(3 * amount);
 
         morpho.setIsDeprecated(aDai, true);
 
@@ -47,6 +47,7 @@ contract TestLiquidate is TestSetup {
 
         (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
         (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+        assertApproxEqAbs(borrowOnPoolAfter, 0, 1e15);
 
         ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
@@ -54,22 +55,17 @@ contract TestLiquidate is TestSetup {
         .getParams();
         uint256 collateralPrice = oracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+        (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(dai).getParams();
+        uint256 borrowedPrice = oracle.getAssetPrice(dai);
+        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
-        {
-            (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(dai).getParams();
-            uint256 borrowedPrice = oracle.getAssetPrice(dai);
-            vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+        uint256 amountToSeize = (toRepay * borrowedPrice * vars.collateralTokenUnit) /
+            (vars.borrowedTokenUnit * collateralPrice).percentMul(vars.liquidationBonus);
 
-            uint256 amountToSeize = (toRepay * borrowedPrice * vars.collateralTokenUnit) /
-                (vars.borrowedTokenUnit * collateralPrice).percentMul(vars.liquidationBonus);
+        uint256 expectedSupplyOnPoolAfter = supplyOnPoolBefore -
+            amountToSeize.rayDiv(pool.getReserveNormalizedIncome(usdc));
 
-            uint256 expectedSupplyOnPoolAfter = supplyOnPoolBefore -
-                amountToSeize.rayDiv(pool.getReserveNormalizedIncome(usdc));
-
-            assertApproxEqAbs(supplyOnPoolAfter, expectedSupplyOnPoolAfter, 1e15);
-        }
-
-        assertApproxEqAbs(borrowOnPoolAfter, 0, 1e15);
+        assertApproxEqAbs(supplyOnPoolAfter, expectedSupplyOnPoolAfter, 1e15);
     }
 
     // A user liquidates a borrower that has not enough collateral to cover for his debt.

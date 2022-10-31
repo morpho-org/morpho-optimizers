@@ -161,6 +161,24 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
     error SameBlockBorrowRepay();
 
+    /// @notice Thrown when someone tries to supply but the supply is paused.
+    error SupplyIsPaused();
+
+    /// @notice Thrown when someone tries to borrow but the borrow is paused.
+    error BorrowIsPaused();
+
+    /// @notice Thrown when someone tries to withdraw but the withdraw is paused.
+    error WithdrawIsPaused();
+
+    /// @notice Thrown when someone tries to repay but the repay is paused.
+    error RepayIsPaused();
+
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as collateral is paused.
+    error LiquidateCollateralIsPaused();
+
+    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
+    error LiquidateBorrowIsPaused();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -200,6 +218,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 supplyBalance;
         uint256 borrowedPrice;
         uint256 amountToSeize;
+        uint256 closeFactor;
+        bool liquidationAllowed;
     }
 
     /// LOGIC ///
@@ -219,8 +239,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolToken);
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
 
+        _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
         ERC20 underlyingToken = _getUnderlying(_poolToken);
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
@@ -312,8 +334,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolToken);
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
+        _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
         lastBorrowBlock[msg.sender] = block.number;
 
@@ -412,6 +436,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -436,6 +462,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -455,6 +483,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
+        if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
+        if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
+            revert LiquidateCollateralIsPaused();
+        if (!marketStatus[_poolTokenBorrowed].isCreated) revert MarketNotCreated();
+        Types.MarketPauseStatus memory borrowPause = marketPauseStatus[_poolTokenBorrowed];
+        if (borrowPause.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
         if (
             !userMembership[_poolTokenBorrowed][_borrower] ||
             !userMembership[_poolTokenCollateral][_borrower]
@@ -463,12 +497,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenBorrowed);
         _updateP2PIndexes(_poolTokenCollateral);
 
-        if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
-
         LiquidateVars memory vars;
+        (vars.liquidationAllowed, vars.closeFactor) = _liquidationAllowed(
+            _borrower,
+            borrowPause.isDeprecated
+        );
+        if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
+
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
 
-        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
+        if (_amount > vars.borrowBalance.mul(vars.closeFactor))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
         _unsafeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
@@ -969,6 +1007,25 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (index != length - 1)
                 enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
             enteredMarkets[_user].pop();
+        }
+    }
+
+    /// @dev Returns whether a given user is liquidatable and the applicable close factor, given the deprecated status of the borrowed market.
+    /// @param _user The user to check.
+    /// @param _isDeprecated Whether the borrowed market is deprecated or not.
+    /// @return liquidationAllowed Whether the liquidation is allowed or not.
+    /// @return closeFactor The close factor to apply.
+    function _liquidationAllowed(address _user, bool _isDeprecated)
+        internal
+        view
+        returns (bool liquidationAllowed, uint256 closeFactor)
+    {
+        if (_isDeprecated) {
+            liquidationAllowed = true;
+            closeFactor = WAD; // Allow liquidation of the whole debt.
+        } else {
+            liquidationAllowed = _isLiquidatable(_user, address(0), 0, 0);
+            if (liquidationAllowed) closeFactor = comptroller.closeFactorMantissa();
         }
     }
 }

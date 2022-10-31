@@ -75,32 +75,32 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _isP2PDisabled The new value of `_isP2PDisabled` adopted.
     event IsP2PDisabledSet(address indexed _poolToken, bool _isP2PDisabled);
 
-    /// @notice Emitted when a supply is paused or unpaused.
+    /// @notice Emitted when supplying is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsSupplyPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a borrow is paused or unpaused.
+    /// @notice Emitted when borrowing is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsBorrowPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a withdraw is paused or unpaused.
+    /// @notice Emitted when withdrawing is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsWithdrawPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a repay is paused or unpaused.
+    /// @notice Emitted when repaying is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsRepayPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a liquidate as collateral is paused or unpaused.
+    /// @notice Emitted when liquidating on this market as collateral is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsLiquidateCollateralPausedSet(address indexed _poolToken, bool _isPaused);
 
-    /// @notice Emitted when a liquidate as borrow is paused or unpaused.
+    /// @notice Emitted when liquidating on this market as borrow is paused or unpaused.
     /// @param _poolToken The address of the concerned market.
     /// @param _isPaused The new pause status of the market.
     event IsLiquidateBorrowPausedSet(address indexed _poolToken, bool _isPaused);
@@ -108,10 +108,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a market is set as deprecated or not.
     /// @param _poolToken The address of the concerned market.
     /// @param _isDeprecated The new deprecated status.
-    event DeprecatedStatusSet(address indexed _poolToken, bool _isDeprecated);
+    event IsDeprecatedSet(address indexed _poolToken, bool _isDeprecated);
 
     /// @notice Emitted when claiming rewards is paused or unpaused.
-    /// @param _isPaused The new claiming rewards status.
+    /// @param _isPaused The new pause status.
     event IsClaimRewardsPausedSet(bool _isPaused);
 
     /// @notice Emitted when a new market is created.
@@ -401,16 +401,16 @@ abstract contract MorphoGovernance is MorphoUtils {
         pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _assetAsCollateral);
     }
 
-    /// @notice Sets a market as deprecated (allows liquidation of every positions on this market).
+    /// @notice Sets a market as deprecated (allows liquidation of every position on this market).
     /// @param _poolToken The address of the market to update.
-    /// @param _isDeprecated True to set the market as deprecated.
+    /// @param _isDeprecated The new deprecated status, true to deprecate the market.
     function setIsDeprecated(address _poolToken, bool _isDeprecated)
         external
         onlyOwner
         isMarketCreated(_poolToken)
     {
         market[_poolToken].isDeprecated = _isDeprecated;
-        emit DeprecatedStatusSet(_poolToken, _isDeprecated);
+        emit IsDeprecatedSet(_poolToken, _isDeprecated);
     }
 
     /// @notice Increases peer-to-peer deltas, to put some liquidity back on the pool.
@@ -512,7 +512,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// INTERNAL ///
 
-    /// @notice Sets the different pause status for a given market.
+    /// @notice Sets all pause statuses for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
     function _setPauseStatus(address _poolToken, bool _isPaused) internal {
