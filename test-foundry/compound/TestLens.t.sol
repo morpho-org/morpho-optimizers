@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -680,23 +680,13 @@ contract TestLens is TestSetup {
         ) = lens.getMarketConfiguration(cDai);
         assertTrue(underlying == ICToken(cDai).underlying());
 
-        (
-            bool isCreated_,
-            bool isSupplyPaused_,
-            bool isBorrowPaused_,
-            bool isWithdrawPaused_,
-            bool isRepayPaused_,
-            ,
-            ,
-
-        ) = morpho.marketStatus(cDai);
+        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
 
         assertTrue(isCreated == isCreated_);
         assertTrue(p2pDisabled == morpho.p2pDisabled(cDai));
-        assertTrue(
-            isPaused == (isSupplyPaused_ && isBorrowPaused_ && isWithdrawPaused_ && isRepayPaused_)
-        );
-        assertTrue(isPartiallyPaused == (isSupplyPaused_ && isBorrowPaused_));
+
+        assertTrue(isPaused == isPaused_);
+        assertTrue(isPartiallyPaused == isPartiallyPaused_);
         (uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor) = morpho.marketParameters(
             cDai
         );
@@ -1222,11 +1212,12 @@ contract TestLens is TestSetup {
                     address(borrower1),
                     new address[](0)
                 );
-                assertEq(
+                assertApproxEqAbs(
                     collateralValue.div(borrowedPrice).div(
                         comptroller.liquidationIncentiveMantissa()
                     ),
-                    0
+                    0,
+                    1
                 );
                 assertEq(toRepay, 0);
             }

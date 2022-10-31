@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import {Attacker} from "./helpers/Attacker.sol";
 import "./setup/TestSetup.sol";
@@ -31,7 +31,7 @@ contract TestWithdraw is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aUsdc, address(supplier1));
 
         uint256 expectedOnPool = to6Decimals(
-            underlyingToScaledBalance(2 * amount, pool.getReserveNormalizedIncome(usdc))
+            (2 * amount).rayDiv(pool.getReserveNormalizedIncome(usdc))
         );
 
         testEquality(inP2P, 0);
@@ -55,9 +55,7 @@ contract TestWithdraw is TestSetup {
         uint256 balanceBefore = supplier1.balanceOf(usdc);
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aUsdc, address(supplier1));
 
-        uint256 expectedOnPool = to6Decimals(
-            underlyingToScaledBalance(amount, pool.getReserveNormalizedIncome(usdc))
-        );
+        uint256 expectedOnPool = to6Decimals(amount.rayDiv(pool.getReserveNormalizedIncome(usdc)));
 
         testEquality(inP2P, 0);
         testEquality(onPool, expectedOnPool);
@@ -96,10 +94,7 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedOnPool = underlyingToScaledBalance(
-            suppliedAmount / 2,
-            pool.getReserveNormalizedIncome(dai)
-        );
+        uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         testEqualityLarge(onPoolSupplier, expectedOnPool, "supplier on pool 0");
         testEquality(onPoolBorrower1, 0, "borrower on pool 0");
@@ -120,7 +115,7 @@ contract TestWithdraw is TestSetup {
         // Check balances for supplier2
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier2));
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedInP2P = underlyingToP2PUnit(suppliedAmount / 2, p2pSupplyIndex);
+        uint256 expectedInP2P = (suppliedAmount / 2).rayDiv(p2pSupplyIndex);
         testEqualityLarge(onPoolSupplier, expectedOnPool, "supplier on pool 2");
         testEqualityLarge(inP2PSupplier, expectedInP2P, "supplier in P2P 2");
 
@@ -162,10 +157,7 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedOnPool = underlyingToScaledBalance(
-            suppliedAmount / 2,
-            pool.getReserveNormalizedIncome(dai)
-        );
+        uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         testEqualityLarge(onPoolSupplier, expectedOnPool, "supplier on pool");
         testEqualityLarge(onPoolBorrower, 0, "borrower on pool");
@@ -196,10 +188,7 @@ contract TestWithdraw is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            borrowedAmount,
-            morpho.p2pBorrowIndex(aDai)
-        );
+        uint256 expectedBorrowBalanceInP2P = borrowedAmount.rayDiv(morpho.p2pBorrowIndex(aDai));
 
         testEqualityLarge(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
         testEqualityLarge(onPoolBorrower, 0, "borrower on pool");
@@ -212,7 +201,7 @@ contract TestWithdraw is TestSetup {
             if (suppliers[i] == supplier1) continue;
 
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
-            uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            uint256 expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
 
             testEqualityLarge(expectedInP2P, amountPerSupplier, "new supplier in P2P");
             testEqualityLarge(onPool, 0, "new supplier on pool");
@@ -244,10 +233,7 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedOnPool = underlyingToScaledBalance(
-            suppliedAmount / 2,
-            pool.getReserveNormalizedIncome(dai)
-        );
+        uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         testEqualityLarge(onPoolSupplier, expectedOnPool, "supplier on pool");
         testEquality(onPoolBorrower, 0, "borrower on pool");
@@ -260,12 +246,8 @@ contract TestWithdraw is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            borrowedAmount / 2,
-            p2pSupplyIndex
-        );
-        uint256 expectedBorrowBalanceOnPool = underlyingToAdUnit(
-            borrowedAmount / 2,
+        uint256 expectedBorrowBalanceInP2P = (borrowedAmount / 2).rayDiv(p2pSupplyIndex);
+        uint256 expectedBorrowBalanceOnPool = (borrowedAmount / 2).rayDiv(
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
@@ -275,10 +257,7 @@ contract TestWithdraw is TestSetup {
         // Check balances for supplier
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            (25 * suppliedAmount) / 100,
-            p2pSupplyIndex
-        );
+        uint256 expectedSupplyBalanceInP2P = ((25 * suppliedAmount) / 100).rayDiv(p2pSupplyIndex);
 
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
         testEquality(onPoolSupplier, 0);
@@ -319,10 +298,7 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedOnPool = underlyingToScaledBalance(
-            suppliedAmount / 2,
-            pool.getReserveNormalizedIncome(dai)
-        );
+        uint256 expectedOnPool = (suppliedAmount / 2).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         testEqualityLarge(onPoolSupplier, expectedOnPool, "supplier on pool");
         testEquality(onPoolBorrower, 0, "borrower on pool");
@@ -353,12 +329,8 @@ contract TestWithdraw is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            borrowedAmount / 2,
-            p2pSupplyIndex
-        );
-        uint256 expectedBorrowBalanceOnPool = underlyingToAdUnit(
-            borrowedAmount / 2,
+        uint256 expectedBorrowBalanceInP2P = (borrowedAmount / 2).rayDiv(p2pSupplyIndex);
+        uint256 expectedBorrowBalanceOnPool = (borrowedAmount / 2).rayDiv(
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
@@ -373,7 +345,7 @@ contract TestWithdraw is TestSetup {
             if (suppliers[i] == supplier1) continue;
 
             (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
-            uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            uint256 expectedInP2P = inP2P.rayMul(p2pSupplyIndex);
 
             testEqualityLarge(expectedInP2P, amountPerSupplier);
             testEqualityLarge(onPool, 0);
@@ -419,7 +391,7 @@ contract TestWithdraw is TestSetup {
 
         {
             uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-            expectedSupplyBalanceInP2P = underlyingToP2PUnit(suppliedAmount, p2pSupplyIndex);
+            expectedSupplyBalanceInP2P = suppliedAmount.rayDiv(p2pSupplyIndex);
 
             // Check balances after match of supplier1 and borrowers
             (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
@@ -430,10 +402,7 @@ contract TestWithdraw is TestSetup {
             testEqualityLarge(inP2PSupplier, expectedSupplyBalanceInP2P);
 
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
-            uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-                borrowedAmount,
-                p2pBorrowIndex
-            );
+            uint256 expectedBorrowBalanceInP2P = borrowedAmount.rayDiv(p2pBorrowIndex);
 
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
@@ -455,8 +424,7 @@ contract TestWithdraw is TestSetup {
 
             // There should be a delta
             uint256 expectedBorrowP2PDeltaInUnderlying = 10 * borrowedAmount;
-            uint256 expectedBorrowP2PDelta = underlyingToAdUnit(
-                expectedBorrowP2PDeltaInUnderlying,
+            uint256 expectedBorrowP2PDelta = expectedBorrowP2PDeltaInUnderlying.rayDiv(
                 pool.getReserveNormalizedVariableDebt(dai)
             );
 
@@ -472,8 +440,7 @@ contract TestWithdraw is TestSetup {
             supplier2.supply(aDai, expectedBorrowP2PDeltaInUnderlying / 2);
 
             (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier2));
-            expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-                expectedBorrowP2PDeltaInUnderlying / 2,
+            expectedSupplyBalanceInP2P = (expectedBorrowP2PDeltaInUnderlying / 2).rayDiv(
                 p2pSupplyIndex
             );
 
@@ -537,7 +504,7 @@ contract TestWithdraw is TestSetup {
                     address(borrowers[i])
                 );
                 assertApproxEqAbs(
-                    p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
+                    inP2PBorrower.rayMul(newVars.BP2PER),
                     expectedBorrowBalanceInUnderlying,
                     (expectedBorrowBalanceInUnderlying * 2) / 100,
                     "not expected underlying balance"

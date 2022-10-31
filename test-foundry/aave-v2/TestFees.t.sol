@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -78,6 +78,32 @@ contract TestFees is TestSetup {
         uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
 
         _createFeeOnMorpho(0);
+
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
+
+        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore);
+    }
+
+    function testShouldNotClaimFeesIfMarketIsPaused() public {
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
+        _createFeeOnMorpho(1_000);
+
+        // Pause market.
+        morpho.setPauseStatus(aDai, true);
+
+        morpho.claimToTreasury(aDaiArray, maxAmountArray);
+
+        uint256 balanceAfter = ERC20(dai).balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore);
+    }
+
+    function testShouldNotClaimFeesIfMarketIsPartiallyPaused() public {
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(this));
+        _createFeeOnMorpho(1_000);
+
+        // Partially pause market.
+        morpho.setPartialPauseStatus(aDai, true);
 
         morpho.claimToTreasury(aDaiArray, maxAmountArray);
 

@@ -161,24 +161,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
     error SameBlockBorrowRepay();
 
-    /// @notice Thrown when the supply is paused.
-    error SupplyPaused();
-
-    /// @notice Thrown when the borrow is paused.
-    error BorrowPaused();
-
-    /// @notice Thrown when the withdraw is paused.
-    error WithdrawPaused();
-
-    /// @notice Thrown when the repay is paused.
-    error RepayPaused();
-
-    /// @notice Thrown when the liquidation on this asset as collateral is paused.
-    error LiquidateCollateralPaused();
-
-    /// @notice Thrown when the liquidation on this asset as debt is paused.
-    error LiquidateBorrowPaused();
-
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -218,7 +200,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 supplyBalance;
         uint256 borrowedPrice;
         uint256 amountToSeize;
-        uint256 closeFactor;
     }
 
     /// LOGIC ///
@@ -238,11 +219,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
-        Types.MarketStatus memory market = marketStatus[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isSupplyPaused) revert SupplyPaused();
-
         _updateP2PIndexes(_poolToken);
+
         _enterMarketIfNeeded(_poolToken, _onBehalf);
         ERC20 underlyingToken = _getUnderlying(_poolToken);
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
@@ -334,11 +312,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        Types.MarketStatus memory market = marketStatus[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isBorrowPaused) revert BorrowPaused();
-
         _updateP2PIndexes(_poolToken);
+
         _enterMarketIfNeeded(_poolToken, msg.sender);
         lastBorrowBlock[msg.sender] = block.number;
 
@@ -437,9 +412,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        Types.MarketStatus memory market = marketStatus[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isWithdrawPaused) revert WithdrawPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
@@ -447,7 +419,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (_isLiquidatable(_supplier, _poolToken, toWithdraw, 0)) revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -464,15 +436,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        Types.MarketStatus memory market = marketStatus[_poolToken];
-        if (!market.isCreated) revert MarketNotCreated();
-        if (market.isRepayPaused) revert RepayPaused();
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
 
-        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
+        _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -486,13 +455,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
-        Types.MarketStatus memory collateralMarket = marketStatus[_poolTokenCollateral];
-        if (!collateralMarket.isCreated) revert MarketNotCreated();
-        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
-        Types.MarketStatus memory borrowedMarket = marketStatus[_poolTokenBorrowed];
-        if (!borrowedMarket.isCreated) revert MarketNotCreated();
-        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowPaused();
-
         if (
             !userMembership[_poolTokenBorrowed][_borrower] ||
             !userMembership[_poolTokenCollateral][_borrower]
@@ -501,20 +463,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenBorrowed);
         _updateP2PIndexes(_poolTokenCollateral);
 
-        LiquidateVars memory vars;
-        if (borrowedMarket.isDeprecated)
-            vars.closeFactor = WAD; // Allow liquidation of the whole debt.
-        else {
-            if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
-            vars.closeFactor = comptroller.closeFactorMantissa();
-        }
+        if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
 
+        LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower);
 
-        if (_amount > vars.borrowBalance.mul(vars.closeFactor))
+        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
+        _unsafeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateral);
@@ -529,7 +486,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower)
         );
 
-        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
+        _unsafeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
 
         emit Liquidated(
             msg.sender,
@@ -544,35 +501,36 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Implements increaseP2PDeltas logic.
     /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resupplying it.
     /// In this case, consider calling this function multiple times.
-    /// @param _poolToken The address of the market on which to create deltas.
-    /// @param _amount The amount to add to the deltas (in underlying).
-    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount) external {
+    /// @param _poolToken The address of the market on which to increase deltas.
+    /// @param _amount The maximum amount to add to the deltas (in underlying).
+    function increaseP2PDeltasLogic(address _poolToken, uint256 _amount)
+        external
+        isMarketCreated(_poolToken)
+    {
         _updateP2PIndexes(_poolToken);
 
         Types.Delta storage deltas = deltas[_poolToken];
-        Types.Delta memory deltasMem = deltas;
         Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
-        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolToken];
-        uint256 p2pBorrowIndex = p2pBorrowIndex[_poolToken];
 
+        uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
         _amount = Math.min(
             _amount,
             Math.min(
-                deltasMem.p2pSupplyAmount.mul(p2pSupplyIndex).safeSub(
-                    deltasMem.p2pSupplyDelta.mul(lastPoolIndexes.lastSupplyPoolIndex)
+                deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).safeSub(
+                    deltas.p2pSupplyDelta.mul(poolSupplyIndex)
                 ),
-                deltasMem.p2pBorrowAmount.mul(p2pBorrowIndex).safeSub(
-                    deltasMem.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).safeSub(
+                    deltas.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
                 )
             )
         );
 
-        deltasMem.p2pSupplyDelta += _amount.div(lastPoolIndexes.lastSupplyPoolIndex);
-        deltas.p2pSupplyDelta = deltasMem.p2pSupplyDelta;
-        deltasMem.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
-        deltas.p2pBorrowDelta = deltasMem.p2pBorrowDelta;
-        emit P2PSupplyDeltaUpdated(_poolToken, deltasMem.p2pSupplyDelta);
-        emit P2PBorrowDeltaUpdated(_poolToken, deltasMem.p2pBorrowDelta);
+        deltas.p2pSupplyDelta += _amount.div(poolSupplyIndex);
+        deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
+        deltas.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
+        deltas.p2pBorrowDelta = deltas.p2pBorrowDelta;
+        emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
+        emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
         _borrowFromPool(_poolToken, _amount);
         _supplyToPool(_poolToken, _getUnderlying(_poolToken), _amount);
@@ -588,7 +546,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function _safeWithdrawLogic(
+    function _unsafeWithdrawLogic(
         address _poolToken,
         uint256 _amount,
         address _supplier,
@@ -748,7 +706,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function _safeRepayLogic(
+    function _unsafeRepayLogic(
         address _poolToken,
         address _repayer,
         address _onBehalf,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -41,7 +41,7 @@ contract TestRewards is TestSetup {
         address[] memory cDaiInArray = new address[](1);
         cDaiInArray[0] = cDai;
 
-        morpho.setIsClaimRewardsPaused(true);
+        morpho.setClaimRewardsPauseStatus(true);
 
         hevm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
         morpho.claimRewards(cDaiInArray, false);

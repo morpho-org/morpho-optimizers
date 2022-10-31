@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.8.0;
-
+pragma solidity >=0.5.0;
 import "./aave/IPriceOracleGetter.sol";
 import "./aave/ILendingPool.sol";
 import "./IMorpho.sol";

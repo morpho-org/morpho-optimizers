@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -31,7 +31,7 @@ contract TestP2PDisable is TestSetup {
         assertGt(p2pSupplyDelta, 0);
 
         // Disable peer-to-peer.
-        morpho.setIsP2PDisabled(cDai, true);
+        morpho.setP2PDisabled(cDai, true);
 
         // Delta must be reduce to 0.
         borrower1.borrow(cDai, borrowedAmount);
@@ -64,7 +64,7 @@ contract TestP2PDisable is TestSetup {
         assertGt(p2pBorrowDelta, 0);
 
         // Disable peer-to-peer.
-        morpho.setIsP2PDisabled(cUsdc, true);
+        morpho.setP2PDisabled(cUsdc, true);
 
         // Delta must be reduce to 0.
         supplier1.supply(cUsdc, to6Decimals(supplyAmount * 2));

@@ -23,7 +23,6 @@ abstract contract MorphoUtils is MorphoStorage {
     using UserConfiguration for DataTypes.UserConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
-    using MarketLib for Types.Market;
     using DelegateCall for address;
     using WadRayMath for uint256;
     using Math for uint256;
@@ -33,12 +32,33 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
+    /// @notice Thrown when the market is paused.
+    error MarketPaused();
+
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated()) revert MarketNotCreated();
+        if (!market[_poolToken].isCreated) revert MarketNotCreated();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndNotPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isPaused) revert MarketPaused();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
+    /// @param _poolToken The address of the market to check.
+    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) {
+        Types.Market memory market = market[_poolToken];
+        if (!market.isCreated) revert MarketNotCreated();
+        if (market.isPaused || market.isPartiallyPaused) revert MarketPaused();
         _;
     }
 
@@ -258,7 +278,7 @@ abstract contract MorphoUtils is MorphoStorage {
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityStackVars memory vars;
 
-        DataTypes.UserConfigurationMap memory morphoUserConfig = pool.getUserConfiguration(
+        DataTypes.UserConfigurationMap memory morphoPoolConfig = pool.getUserConfiguration(
             address(this)
         );
 
@@ -284,9 +304,9 @@ abstract contract MorphoUtils is MorphoStorage {
                 assetData.tokenUnit = 10**assetData.decimals;
             }
 
-            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral
+            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral.
             if (
-                !morphoUserConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
+                !morphoPoolConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
             ) {
                 assetData.ltv = 0;
                 assetData.liquidationThreshold = 0;

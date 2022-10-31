@@ -427,7 +427,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function _getCurrentSupplyBalanceInOf(address _poolToken, address _user)
-        public
+        internal
         view
         returns (
             address underlyingToken,
@@ -460,7 +460,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function _getCurrentBorrowBalanceInOf(address _poolToken, address _user)
-        public
+        internal
         view
         returns (
             address underlyingToken,

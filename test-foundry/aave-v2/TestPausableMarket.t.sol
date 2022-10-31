@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -8,54 +8,58 @@ contract TestPausableMarket is TestSetup {
     address[] public aAaveArray = [aAave];
     uint256[] public amountArray = [1 ether];
 
+    function testOnlyOwnerShouldTriggerPauseFunction() public {
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setPauseStatus(aDai, true);
+
+        morpho.setPauseStatus(aDai, true);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
+        assertTrue(isPaused, "paused is false");
+    }
+
+    function testOnlyOwnerShouldTriggerPartialPauseFunction() public {
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setPartialPauseStatus(aDai, true);
+
+        morpho.setPartialPauseStatus(aDai, true);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
+        assertTrue(isPartiallyPaused, "partial paused is false");
+    }
+
     function testAllMarketsPauseUnpause() public {
-        morpho.setIsPausedForAllMarkets(true);
+        morpho.setPauseStatusForAllMarkets(true);
 
         for (uint256 i; i < pools.length; ++i) {
-            (
-                ,
-                ,
-                ,
-                ,
-                bool isSupplyPaused,
-                bool isBorrowPaused,
-                bool isWithdrawPaused,
-                bool isRepayPaused,
-                bool isLiquidateCollateralPaused,
-                bool isLiquidateBorrowPaused,
-
-            ) = morpho.market(pools[i]);
-            assertTrue(isSupplyPaused);
-            assertTrue(isBorrowPaused);
-            assertTrue(isWithdrawPaused);
-            assertTrue(isRepayPaused);
-            assertTrue(isLiquidateCollateralPaused);
-            assertTrue(isLiquidateBorrowPaused);
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
+            assertTrue(isPaused, "paused is false");
         }
 
-        morpho.setIsPausedForAllMarkets(false);
+        morpho.setPauseStatusForAllMarkets(false);
 
         for (uint256 i; i < pools.length; ++i) {
-            (
-                ,
-                ,
-                ,
-                ,
-                bool isSupplyPaused,
-                bool isBorrowPaused,
-                bool isWithdrawPaused,
-                bool isRepayPaused,
-                bool isLiquidateCollateralPaused,
-                bool isLiquidateBorrowPaused,
-
-            ) = morpho.market(pools[i]);
-            assertFalse(isSupplyPaused);
-            assertFalse(isBorrowPaused);
-            assertFalse(isWithdrawPaused);
-            assertFalse(isRepayPaused);
-            assertFalse(isLiquidateCollateralPaused);
-            assertFalse(isLiquidateBorrowPaused);
+            (, , , , bool isPaused, , ) = morpho.market(pools[i]);
+            assertFalse(isPaused, "paused is true");
         }
+    }
+
+    function testPauseUnpause() public {
+        morpho.setPauseStatus(aDai, true);
+        (, , , , bool isPaused, , ) = morpho.market(aDai);
+        assertTrue(isPaused, "paused is false");
+
+        morpho.setPauseStatus(aDai, false);
+        (, , , , isPaused, , ) = morpho.market(aDai);
+        assertFalse(isPaused, "paused is true");
+    }
+
+    function testPartialPausePartialUnpause() public {
+        morpho.setPartialPauseStatus(aDai, true);
+        (, , , , , bool isPartiallyPaused, ) = morpho.market(aDai);
+        assertTrue(isPartiallyPaused, "partial paused is false");
+
+        morpho.setPartialPauseStatus(aDai, false);
+        (, , , , , isPartiallyPaused, ) = morpho.market(aDai);
+        assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
     function testShouldTriggerFunctionsWhenNotPaused() public {
@@ -88,107 +92,143 @@ contract TestPausableMarket is TestSetup {
     }
 
     function testShouldDisableAllMarketsWhenGloballyPaused() public {
-        morpho.setIsPausedForAllMarkets(true);
+        morpho.setPauseStatusForAllMarkets(true);
 
         uint256 poolsLength = pools.length;
         for (uint256 i; i < poolsLength; ++i) {
-            vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
             supplier1.supply(pools[i], 1);
 
-            vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
             supplier1.borrow(pools[i], 1);
 
-            vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
             supplier1.withdraw(pools[i], 1);
 
-            vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
             supplier1.repay(pools[i], 1);
 
-            vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
             supplier1.liquidate(pools[i], pools[0], address(supplier1), 1);
+
+            hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+            supplier1.liquidate(pools[0], pools[i], address(supplier1), 1);
         }
     }
 
-    function testPauseSupply() public {
+    function testShouldDisableMarketWhenPaused() public {
         uint256 amount = 10_000 ether;
-        morpho.setIsSupplyPaused(aDai, true);
 
-        vm.expectRevert(abi.encodeWithSignature("SupplyPaused()"));
+        supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, amount);
+
+        (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
+        supplier1.borrow(aUsdc, toBorrow);
+
+        morpho.setPauseStatus(aDai, true);
+        morpho.setPauseStatus(aUsdc, true);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.supply(aDai, amount);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.borrow(aUsdc, 1);
+
+        supplier1.approve(usdc, toBorrow);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.repay(aUsdc, toBorrow);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.withdraw(aDai, 1);
+
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
+
+        uint256 toLiquidate = toBorrow / 2;
+        User liquidator = borrower3;
+        liquidator.approve(usdc, toLiquidate);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
+
+        morpho.claimToTreasury(aDaiArray, amountArray);
+
+        // Functions on other markets should still be enabled.
+        amount = 10 ether;
+        toBorrow = to6Decimals(amount / 2);
+
+        supplier1.approve(aave, amount);
+        supplier1.supply(aAave, amount);
+
+        supplier1.borrow(aUsdt, toBorrow);
+
+        supplier1.approve(usdt, toBorrow);
+        supplier1.repay(aUsdt, toBorrow / 2);
+
+        toLiquidate = 1_000;
+        liquidator.approve(usdt, toLiquidate);
+        hevm.expectRevert(ExitPositionsManager.UnauthorisedLiquidate.selector);
+        liquidator.liquidate(aUsdt, aAave, address(supplier1), toLiquidate);
+
+        supplier1.withdraw(aAave, 1 ether);
+
+        morpho.claimToTreasury(aAaveArray, amountArray);
     }
 
-    function testPauseBorrow() public {
+    function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
         uint256 amount = 10_000 ether;
-        morpho.setIsBorrowPaused(aDai, true);
 
-        vm.expectRevert(abi.encodeWithSignature("BorrowPaused()"));
-        supplier1.borrow(aDai, amount);
-    }
+        supplier1.approve(dai, 2 * amount);
+        supplier1.supply(aDai, amount);
 
-    function testPauseWithdraw() public {
-        uint256 amount = 10_000 ether;
-        morpho.setIsWithdrawPaused(aDai, true);
+        (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
+        supplier1.borrow(aUsdc, toBorrow);
 
-        vm.expectRevert(abi.encodeWithSignature("WithdrawPaused()"));
-        supplier1.withdraw(aDai, amount);
-    }
+        morpho.setPartialPauseStatus(aDai, true);
+        morpho.setPartialPauseStatus(aUsdc, true);
 
-    function testPauseRepay() public {
-        uint256 amount = 10_000 ether;
-        morpho.setIsRepayPaused(aDai, true);
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.supply(aDai, amount);
 
-        vm.expectRevert(abi.encodeWithSignature("RepayPaused()"));
-        supplier1.repay(aDai, amount);
-    }
+        hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
+        supplier1.borrow(aUsdc, 1);
 
-    function testPauseLiquidateCollateral() public {
-        uint256 amount = 10_000 ether;
-        morpho.setIsLiquidateCollateralPaused(aDai, true);
+        supplier1.approve(usdc, toBorrow);
+        supplier1.repay(aUsdc, 1e6);
+        supplier1.withdraw(aDai, 1 ether);
 
-        vm.expectRevert(abi.encodeWithSignature("LiquidateCollateralPaused()"));
-        supplier1.liquidate(aUsdc, aDai, address(supplier2), amount);
-    }
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
 
-    function testPauseLiquidateBorrow() public {
-        uint256 amount = 10_000 ether;
-        morpho.setIsLiquidateBorrowPaused(aDai, true);
+        uint256 toLiquidate = toBorrow / 3;
+        User liquidator = borrower3;
+        liquidator.approve(usdc, toLiquidate);
+        liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
-        vm.expectRevert(abi.encodeWithSignature("LiquidateBorrowPaused()"));
-        supplier1.liquidate(aDai, aUsdc, address(supplier2), amount);
-    }
+        morpho.claimToTreasury(aDaiArray, amountArray);
 
-    function testShouldNotPauseSupplyOnMarketNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsSupplyPaused(address(1), true);
-    }
+        // Functions on other markets should still be enabled.
+        amount = 10 ether;
+        toBorrow = to6Decimals(amount / 2);
 
-    function testShouldNotPauseBorrowOnMarketNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsBorrowPaused(address(1), true);
-    }
+        supplier1.approve(aave, amount);
+        supplier1.supply(aAave, amount);
 
-    function testShouldNotPauseWithdrawOnMarketNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsWithdrawPaused(address(1), true);
-    }
+        supplier1.borrow(aUsdt, toBorrow);
 
-    function testShouldNotPauseRepayMarketNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsRepayPaused(address(1), true);
-    }
+        supplier1.approve(usdt, toBorrow);
+        supplier1.repay(aUsdt, toBorrow / 2);
 
-    function testShouldNotPauseLiquidateCollateralOnMarketNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsLiquidateCollateralPaused(address(1), true);
-    }
+        customOracle.setDirectPrice(aave, (oracle.getAssetPrice(aave) * 97) / 100);
 
-    function testShouldNotPauseLiquidateBorrowOnMarketNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsLiquidateBorrowPaused(address(1), true);
-    }
+        toLiquidate = 10_000;
+        liquidator.approve(usdt, toLiquidate);
+        hevm.expectRevert(ExitPositionsManager.UnauthorisedLiquidate.selector);
+        liquidator.liquidate(aUsdt, aAave, address(supplier1), toLiquidate);
 
-    function testShouldNotDeprecatedMarketWhenNotCreated() public {
-        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.setIsDeprecated(address(1), true);
+        supplier1.withdraw(aAave, 1 ether);
+
+        morpho.claimToTreasury(aAaveArray, amountArray);
     }
 }

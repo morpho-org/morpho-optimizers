@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 import "./helpers/FlashLoan.sol";
 
 contract TestSupply is TestSetup {
+    using WadRayMath for uint256;
+
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply1() public {
         uint256 amount = 10_000 ether;
@@ -13,7 +15,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
 
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
+        uint256 expectedOnPool = amount.rayDiv(normalizedIncome);
 
         testEquality(IERC20(aDai).balanceOf(address(morpho)), amount);
 
@@ -41,7 +43,7 @@ contract TestSupply is TestSetup {
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
         uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
+        uint256 expectedSupplyBalanceInP2P = amount.rayDiv(p2pSupplyIndex);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
@@ -72,10 +74,10 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, 2 * amount);
 
         uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
+        uint256 expectedSupplyBalanceInP2P = amount.rayDiv(p2pSupplyIndex);
 
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
-        uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
+        uint256 expectedSupplyBalanceOnPool = amount.rayDiv(normalizedIncome);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
@@ -127,14 +129,14 @@ contract TestSupply is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2PInUnderlying = inP2P.rayMul(p2pSupplyIndex);
 
             testEqualityLarge(expectedInP2PInUnderlying, amountPerBorrower, "amount per borrower");
             testEqualityLarge(onPool, 0, "on pool per borrower");
         }
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        uint256 expectedInP2P = underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai));
+        uint256 expectedInP2P = amount.rayDiv(morpho.p2pBorrowIndex(aDai));
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, 0);
@@ -169,27 +171,23 @@ contract TestSupply is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 expectedInP2PInUnderlying;
+        uint256 inP2PInUnderlying;
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
-        for (uint256 i = 0; i < NMAX; i++) {
+        for (uint256 i; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pBorrowIndex);
+            inP2PInUnderlying = inP2P.rayMul(p2pBorrowIndex);
 
-            testEqualityLarge(
-                expectedInP2PInUnderlying,
-                amountPerBorrower,
-                "borrower in peer-to-peer"
-            );
+            testEqualityLarge(inP2PInUnderlying, amountPerBorrower, "borrower in peer-to-peer");
             testEqualityLarge(onPool, 0);
         }
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pSupplyIndex(aDai));
-        uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
+        uint256 expectedInP2P = (amount / 2).rayDiv(morpho.p2pSupplyIndex(aDai));
+        uint256 expectedOnPool = (amount / 2).rayDiv(normalizedIncome);
 
         testEqualityLarge(inP2P, expectedInP2P, "in peer-to-peer");
         testEqualityLarge(onPool, expectedOnPool, "in pool");
@@ -204,7 +202,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
 
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
+        uint256 expectedOnPool = (2 * amount).rayDiv(normalizedIncome);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         testEqualityLarge(onPool, expectedOnPool);
@@ -241,7 +239,7 @@ contract TestSupply is TestSetup {
         morpho.supply(aDai, address(supplier2), amount);
 
         uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(amount, poolSupplyIndex);
+        uint256 expectedOnPool = amount.rayDiv(poolSupplyIndex);
 
         assertEq(ERC20(aDai).balanceOf(address(morpho)), amount, "balance of aToken");
 

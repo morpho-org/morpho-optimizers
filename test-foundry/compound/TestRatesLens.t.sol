@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -501,7 +501,7 @@ contract TestRatesLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        morpho.setIsP2PDisabled(cDai, true);
+        morpho.setP2PDisabled(cDai, true);
 
         (
             uint256 supplyRatePerBlock,
@@ -540,7 +540,7 @@ contract TestRatesLens is TestSetup {
 
         hevm.roll(block.number + 1000);
 
-        morpho.setIsP2PDisabled(cDai, true);
+        morpho.setP2PDisabled(cDai, true);
 
         (
             uint256 borrowRatePerBlock,
