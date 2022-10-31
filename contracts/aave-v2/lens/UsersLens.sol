@@ -106,9 +106,9 @@ abstract contract UsersLens is IndexesLens {
                     assetData.liquidationThreshold
                 ) * assetData.tokenUnit) / assetData.underlyingPrice
             );
-        Types.Market memory market = morpho.market(_poolToken);
-        if (market.isBorrowPaused) borrowable = 0;
-        if (market.isWithdrawPaused) withdrawable = 0;
+        Types.MarketPauseStatus memory marketPauseStatus = morpho.marketPauseStatus(_poolToken);
+        if (marketPauseStatus.isBorrowPaused) borrowable = 0;
+        if (marketPauseStatus.isWithdrawPaused) withdrawable = 0;
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
@@ -142,7 +142,7 @@ abstract contract UsersLens is IndexesLens {
         uint256 borrowedPrice = oracle.getAssetPrice(borrowedToken);
         uint256 collateralPrice = oracle.getAssetPrice(collateralToken);
 
-        uint256 closeFactor = morpho.market(_poolTokenBorrowedAddress).isDeprecated
+        uint256 closeFactor = morpho.marketPauseStatus(_poolTokenBorrowedAddress).isDeprecated
             ? PercentageMath.PERCENTAGE_FACTOR
             : PercentageMath.HALF_PERCENTAGE_FACTOR;
 
@@ -242,14 +242,16 @@ abstract contract UsersLens is IndexesLens {
 
                 if (_poolToken == poolToken) {
                     if (_borrowedAmount > 0) {
-                        if (morpho.market(_poolToken).isBorrowPaused) revert BorrowPaused();
+                        if (morpho.marketPauseStatus(_poolToken).isBorrowPaused)
+                            revert BorrowPaused();
                         liquidityData.debt += (_borrowedAmount * assetData.underlyingPrice).divUp(
                             assetData.tokenUnit
                         );
                     }
 
                     if (_withdrawnAmount > 0) {
-                        if (morpho.market(_poolToken).isWithdrawPaused) revert WithdrawPaused();
+                        if (morpho.marketPauseStatus(_poolToken).isWithdrawPaused)
+                            revert WithdrawPaused();
                         uint256 assetCollateral = (_withdrawnAmount * assetData.underlyingPrice) /
                             assetData.tokenUnit;
 
@@ -381,7 +383,7 @@ abstract contract UsersLens is IndexesLens {
         for (uint256 i; i < nbCreatedMarkets; ) {
             if (
                 _isBorrowing(userMarkets, createdMarkets[i]) &&
-                morpho.market(createdMarkets[i]).isDeprecated
+                morpho.marketPauseStatus(createdMarkets[i]).isDeprecated
             ) {
                 return true;
             }
