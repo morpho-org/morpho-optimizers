@@ -148,10 +148,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
                 ERC20(reward).safeTransferFrom(msg.sender, incentivesTreasuryVault, claimedAmount);
 
                 // Add a bonus on MORPHO rewards.
-                amountOut += PercentageMath.percentMul(
-                    oracle.consult(claimedAmount, reward),
-                    (PercentageMath.PERCENTAGE_FACTOR + bonus)
-                );
+                amountOut += oracle.consult(claimedAmount, reward).percentAdd(bonus);
             }
 
             unchecked {

@@ -144,10 +144,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         );
 
         // Add a bonus on MORPHO rewards.
-        uint256 amountOut = PercentageMath.percentMul(
-            oracle.consult(_amount),
-            (PercentageMath.PERCENTAGE_FACTOR + bonus)
-        );
+        uint256 amountOut = oracle.consult(_amount).percentAdd(bonus);
         morphoToken.safeTransfer(_receiver, amountOut);
 
         emit CompTokensTraded(_receiver, _amount, amountOut);
