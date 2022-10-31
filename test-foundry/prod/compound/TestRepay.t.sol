@@ -59,7 +59,7 @@ contract TestRepay is TestSetup {
 
         user.borrow(_borrowedMarket.poolToken, test.borrowedAmount);
 
-        vm.roll(block.number + 100_000);
+        _forward(100_000);
 
         morpho.updateP2PIndexes(_borrowedMarket.poolToken);
 
@@ -127,8 +127,7 @@ contract TestRepay is TestSetup {
                 borrowedMarketIndex < borrowableMarkets.length;
                 ++borrowedMarketIndex
             ) {
-                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-                snapshotId = vm.snapshot();
+                _revert();
 
                 _testShouldRepayMarketP2PAndFromPool(
                     collateralMarkets[collateralMarketIndex],

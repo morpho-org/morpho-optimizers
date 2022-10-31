@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/libraries/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
+import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";

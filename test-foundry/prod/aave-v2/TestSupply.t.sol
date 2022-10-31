@@ -120,7 +120,7 @@ contract TestSupply is TestSetup {
         assertApproxEqAbs(
             ERC20(_market.debtToken).balanceOf(address(morpho)) + test.underlyingInP2PBefore,
             test.morphoBorrowedOnPoolBefore,
-            1,
+            10,
             "unexpected morpho borrow balance on pool"
         );
 
@@ -138,49 +138,48 @@ contract TestSupply is TestSetup {
                 "expected p2p borrow delta full match"
             );
 
-        vm.roll(block.number + 500);
-        vm.warp(block.timestamp + 1.5 hours);
+        uint256 forecastBlocks = 1_000;
+        _forward(forecastBlocks / 2);
 
         morpho.updateIndexes(_market.poolToken);
 
-        vm.roll(block.number + 500);
-        vm.warp(block.timestamp + 1.5 hours);
+        _forward(forecastBlocks / 2);
 
         (test.underlyingInP2PAfter, test.underlyingOnPoolAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
 
         uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.rayMul(
-            1e27 + (test.poolSupplyRatePerYear * 3 hours) / 365 days
+            1e27 + (test.poolSupplyRatePerYear * forecastBlocks * 12) / 365 days
         );
         uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.rayMul(
-            1e27 + (test.p2pSupplyRatePerYear * 3 hours) / 365 days
+            1e27 + (test.p2pSupplyRatePerYear * forecastBlocks * 12) / 365 days
         );
         uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.rayMul(
-            1e27 + (test.supplyRatePerYear * 3 hours) / 365 days
+            1e27 + (test.supplyRatePerYear * forecastBlocks * 12) / 365 days
         );
 
         assertApproxEqAbs(
             test.underlyingOnPoolAfter,
             expectedUnderlyingOnPoolAfter,
-            test.underlyingOnPoolAfter / 1e7 + 1e4,
+            test.underlyingOnPoolAfter / 1e9 + 1e4,
             "unexpected pool underlying amount"
         );
         assertApproxEqAbs(
             test.underlyingInP2PAfter,
             expectedUnderlyingInP2PAfter,
-            test.underlyingInP2PAfter / 1e7 + 1e4,
+            test.underlyingInP2PAfter / 1e9 + 1e4,
             "unexpected p2p underlying amount"
         );
         assertApproxEqAbs(
             test.totalUnderlyingAfter,
             expectedTotalUnderlyingAfter,
-            test.totalUnderlyingAfter / 1e7 + 1e4,
+            test.totalUnderlyingAfter / 1e9 + 1e4,
             "unexpected total underlying amount from avg supply rate"
         );
         assertApproxEqAbs(
             test.totalUnderlyingAfter,
             expectedUnderlyingOnPoolAfter + expectedUnderlyingInP2PAfter,
-            test.totalUnderlyingBefore / 1e7 + 1e4,
+            test.totalUnderlyingBefore / 1e9 + 1e4,
             "unexpected total underlying amount"
         );
         if (
@@ -197,8 +196,7 @@ contract TestSupply is TestSetup {
 
     function testShouldSupplyAllMarketsP2PAndOnPool(uint96 _amount) public {
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-            snapshotId = vm.snapshot();
+            _revert();
 
             _testShouldSupplyMarketP2PAndOnPool(activeMarkets[marketIndex], _amount);
         }

@@ -138,23 +138,24 @@ contract TestSupply is TestSetup {
                 "expected full match"
             );
 
-        vm.roll(block.number + 500);
+        uint256 forecastBlocks = 1_000;
+        _forward(forecastBlocks / 2);
 
         morpho.updateP2PIndexes(_market.poolToken);
 
-        vm.roll(block.number + 500);
+        _forward(forecastBlocks / 2);
 
         (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
         .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
 
         uint256 expectedUnderlyingOnPoolAfter = test.underlyingOnPoolBefore.mul(
-            1e18 + test.poolSupplyRatePerBlock * 1_000
+            1e18 + test.poolSupplyRatePerBlock * forecastBlocks
         );
         uint256 expectedUnderlyingInP2PAfter = test.underlyingInP2PBefore.mul(
-            1e18 + test.p2pSupplyRatePerBlock * 1_000
+            1e18 + test.p2pSupplyRatePerBlock * forecastBlocks
         );
         uint256 expectedTotalUnderlyingAfter = test.totalUnderlyingBefore.mul(
-            1e18 + test.supplyRatePerBlock * 1_000
+            1e18 + test.supplyRatePerBlock * forecastBlocks
         );
 
         assertApproxEqAbs(
@@ -195,8 +196,7 @@ contract TestSupply is TestSetup {
 
     function testShouldSupplyAllMarketsP2PAndOnPool(uint96 _amount) public {
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-            snapshotId = vm.snapshot();
+            _revert();
 
             _testShouldSupplyMarketP2PAndOnPool(activeMarkets[marketIndex], _amount);
         }

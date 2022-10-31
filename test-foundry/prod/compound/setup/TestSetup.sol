@@ -223,4 +223,16 @@ contract TestSetup is Config, Test {
 
         ERC20(_underlying).safeTransfer(_user, _amount);
     }
+
+    /// @dev Rolls & warps `_blocks` blocks forward the blockchain.
+    function _forward(uint256 _blocks) internal {
+        vm.roll(block.number + _blocks);
+        vm.warp(block.timestamp + _blocks * 12);
+    }
+
+    /// @dev Reverts the fork to its initial fork state.
+    function _revert() internal {
+        if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+    }
 }

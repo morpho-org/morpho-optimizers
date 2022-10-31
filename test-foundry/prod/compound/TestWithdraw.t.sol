@@ -49,7 +49,7 @@ contract TestWithdraw is TestSetup {
         user.approve(_market.underlying, amount);
         user.supply(_market.poolToken, address(user), amount);
 
-        vm.roll(block.number + 100_000);
+        _forward(100_000);
 
         morpho.updateP2PIndexes(_market.poolToken);
 
@@ -83,8 +83,7 @@ contract TestWithdraw is TestSetup {
 
     function testShouldWithdrawAllMarketsP2PAndOnPool(uint96 _amount) public {
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-            snapshotId = vm.snapshot();
+            _revert();
 
             _testShouldWithdrawMarketP2PAndOnPool(activeMarkets[marketIndex], _amount);
         }

@@ -77,7 +77,7 @@ contract TestBorrow is TestSetup {
             user.supply(_collateralMarket.poolToken, address(user), test.collateralAmount);
         }
 
-        vm.roll(block.number + 100_000);
+        _forward(100_000);
 
         morpho.updateP2PIndexes(_borrowedMarket.poolToken);
 
@@ -103,7 +103,7 @@ contract TestBorrow is TestSetup {
             _collateralMarket,
             _borrowedMarket,
             _amount,
-            1.001 ether // Inflate collateral amount to compensate for compound rounding errors.
+            1.001 ether // Inflate collateral amount to compensate for rounding errors.
         );
 
         user.borrow(_borrowedMarket.poolToken, test.borrowedAmount);
@@ -198,23 +198,24 @@ contract TestBorrow is TestSetup {
                 "expected full match"
             );
 
-        vm.roll(block.number + 500);
+        uint256 forecastBlocks = 1_000;
+        _forward(forecastBlocks / 2);
 
         morpho.updateP2PIndexes(_borrowedMarket.poolToken);
 
-        vm.roll(block.number + 500);
+        _forward(forecastBlocks / 2);
 
         (test.borrowedOnPoolAfter, test.borrowedInP2PAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(_borrowedMarket.poolToken, address(user));
 
         uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.mul(
-            1e18 + test.poolBorrowRatePerBlock * 1_000
+            1e18 + test.poolBorrowRatePerBlock * forecastBlocks
         );
         uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.mul(
-            1e18 + test.p2pBorrowRatePerBlock * 1_000
+            1e18 + test.p2pBorrowRatePerBlock * forecastBlocks
         );
         uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.mul(
-            1e18 + test.borrowRatePerBlock * 1_000
+            1e18 + test.borrowRatePerBlock * forecastBlocks
         );
 
         assertApproxEqAbs(
@@ -264,8 +265,7 @@ contract TestBorrow is TestSetup {
                 borrowedMarketIndex < borrowableMarkets.length;
                 ++borrowedMarketIndex
             ) {
-                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-                snapshotId = vm.snapshot();
+                _revert();
 
                 _testShouldBorrowMarketP2PAndFromPool(
                     collateralMarkets[collateralMarketIndex],
@@ -296,8 +296,7 @@ contract TestBorrow is TestSetup {
                 borrowedMarketIndex < borrowableMarkets.length;
                 ++borrowedMarketIndex
             ) {
-                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-                snapshotId = vm.snapshot();
+                _revert();
 
                 BorrowTest memory test = _setUpBorrowTest(
                     collateralMarkets[collateralMarketIndex],

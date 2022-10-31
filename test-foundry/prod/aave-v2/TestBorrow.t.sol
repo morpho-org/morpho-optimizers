@@ -79,8 +79,7 @@ contract TestBorrow is TestSetup {
             user.supply(_collateralMarket.poolToken, address(user), test.collateralAmount);
         }
 
-        vm.roll(block.number + 100_000);
-        vm.warp(block.timestamp + 2 weeks);
+        _forward(100_000);
 
         morpho.updateIndexes(_borrowedMarket.poolToken);
 
@@ -106,7 +105,7 @@ contract TestBorrow is TestSetup {
             _collateralMarket,
             _borrowedMarket,
             _amount,
-            1.001 ether // Inflate collateral amount to compensate for compound rounding errors.
+            1.001 ether // Inflate collateral amount to compensate for rounding errors.
         );
 
         user.borrow(_borrowedMarket.poolToken, test.borrowedAmount);
@@ -197,25 +196,24 @@ contract TestBorrow is TestSetup {
                 "expected p2p supply delta full match"
             );
 
-        vm.roll(block.number + 500);
-        vm.warp(block.timestamp + 1.5 hours);
+        uint256 forecastBlocks = 1_000;
+        _forward(forecastBlocks / 2);
 
         morpho.updateIndexes(_borrowedMarket.poolToken);
 
-        vm.roll(block.number + 500);
-        vm.warp(block.timestamp + 1.5 hours);
+        _forward(forecastBlocks / 2);
 
         (test.borrowedInP2PAfter, test.borrowedOnPoolAfter, test.totalBorrowedAfter) = lens
         .getCurrentBorrowBalanceInOf(_borrowedMarket.poolToken, address(user));
 
         uint256 expectedBorrowedOnPoolAfter = test.borrowedOnPoolBefore.rayMul(
-            1e27 + (test.poolBorrowRatePerYear * 3 hours) / 365 days
+            1e27 + (test.poolBorrowRatePerYear * forecastBlocks * 12) / 365 days
         );
         uint256 expectedBorrowedInP2PAfter = test.borrowedInP2PBefore.rayMul(
-            1e27 + (test.p2pBorrowRatePerYear * 3 hours) / 365 days
+            1e27 + (test.p2pBorrowRatePerYear * forecastBlocks * 12) / 365 days
         );
         uint256 expectedTotalBorrowedAfter = test.totalBorrowedBefore.rayMul(
-            1e27 + (test.borrowRatePerYear * 3 hours) / 365 days
+            1e27 + (test.borrowRatePerYear * forecastBlocks * 12) / 365 days
         );
 
         assertApproxEqAbs(
@@ -265,8 +263,7 @@ contract TestBorrow is TestSetup {
                 borrowedMarketIndex < borrowableMarkets.length;
                 ++borrowedMarketIndex
             ) {
-                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-                snapshotId = vm.snapshot();
+                _revert();
 
                 _testShouldBorrowMarketP2PAndFromPool(
                     collateralMarkets[collateralMarketIndex],
@@ -297,8 +294,7 @@ contract TestBorrow is TestSetup {
                 borrowedMarketIndex < borrowableMarkets.length;
                 ++borrowedMarketIndex
             ) {
-                if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
-                snapshotId = vm.snapshot();
+                _revert();
 
                 BorrowTest memory test = _setUpBorrowTest(
                     collateralMarkets[collateralMarketIndex],
