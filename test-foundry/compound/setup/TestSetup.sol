@@ -8,7 +8,6 @@ import "@contracts/compound/libraries/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";

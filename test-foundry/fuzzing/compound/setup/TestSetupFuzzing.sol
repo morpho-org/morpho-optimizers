@@ -19,7 +19,6 @@ import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/Lens.sol";
 
 import "../../../common/helpers/MorphoToken.sol";
-import "../../../common/helpers/Chains.sol";
 import "../../../compound/helpers/SimplePriceOracle.sol";
 import "../../../compound/helpers/DumbOracle.sol";
 import {User} from "../../../compound/helpers/User.sol";
