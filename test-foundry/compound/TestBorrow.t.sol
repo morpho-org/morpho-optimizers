@@ -255,12 +255,12 @@ contract TestBorrow is TestSetup {
         uint256 borrowedAmount = 20 * suppliedAmount;
         uint256 collateral = 100 * borrowedAmount;
 
-        // borrower1 and 100 suppliers are matched for borrowedAmount.
+        // borrower1 and 20 suppliers are matched for borrowedAmount.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, borrowedAmount);
 
-        createSigners(30);
+        createSigners(20);
 
         // 2 * NMAX suppliers supply suppliedAmount.
         for (uint256 i = 0; i < 20; i++) {
@@ -271,7 +271,7 @@ contract TestBorrow is TestSetup {
         _setDefaultMaxGasForMatching(0, 0, 0, 0);
 
         vm.roll(block.number + 1);
-        // Deltas should be created
+        // Delta should be created.
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
 
