@@ -4,6 +4,69 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
+    /// REWARDS MANAGER GETTERS ///
+    function testGetMorpho() public {
+        assertEq(address(rewardsManager.morpho()), address(morpho));
+    }
+
+    function testGetPool() public {
+        assertEq(address(rewardsManager.pool()), address(pool));
+    }
+
+    function testGetUserAccruedRewards() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+        uint256 unclaimedRewards = rewardsManager.getUserAccruedRewards(
+            aDaiInArray,
+            address(supplier1),
+            rewardToken
+        );
+        uint256 userIndexBefore = rewardsManager.getUserAssetIndex(
+            address(supplier1),
+            aDai,
+            rewardToken
+        );
+
+        (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
+
+        assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
+
+        hevm.warp(block.timestamp + 365 days);
+        supplier1.withdraw(aDai, type(uint256).max);
+        unclaimedRewards = rewardsManager.getUserAccruedRewards(
+            aDaiInArray,
+            address(supplier1),
+            rewardToken
+        );
+
+        (uint256 index, , , ) = IRewardsController(rewardsControllerAddress).getRewardsData(
+            aDai,
+            rewardToken
+        );
+
+        uint256 expectedClaimed = (onPool * (index - userIndexBefore)) / 1e18;
+        assertEq(unclaimedRewards, expectedClaimed);
+    }
+
+    function testGetUserAssetIndex() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        (uint256 index, , , ) = IRewardsController(rewardsControllerAddress).getRewardsData(
+            aDai,
+            rewardToken
+        );
+
+        uint256 userIndex = rewardsManager.getUserAssetIndex(address(supplier1), aDai, rewardToken);
+
+        assertEq(userIndex, index, "user index wrong");
+    }
+
     function testShouldRevertWhenClaimRewardsIsPaused() public {
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;

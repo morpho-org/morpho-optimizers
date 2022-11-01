@@ -4,8 +4,6 @@ pragma solidity 0.8.10;
 import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/aave/IPoolToken.sol";
-import "./interfaces/aave/IPool.sol";
-import "./interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
