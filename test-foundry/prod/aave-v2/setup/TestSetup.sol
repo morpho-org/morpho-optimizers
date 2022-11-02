@@ -23,7 +23,6 @@ import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.so
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
-import "../../../common/helpers/Chains.sol";
 import {User} from "../../../aave-v2/helpers/User.sol";
 import {Utils} from "../../../aave-v2/setup/Utils.sol";
 import "@config/Config.sol";

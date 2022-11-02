@@ -123,9 +123,12 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
-        if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
+        if (
+            block.chainid == stdChains.Mainnet.chainId ||
+            block.chainid == stdChains.Avalanche.chainId
+        ) {
             rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
+        } else if (block.chainid == stdChains.Polygon.chainId) {
             rewardsManagerImplV1 = new RewardsManagerOnPolygon();
         }
 
