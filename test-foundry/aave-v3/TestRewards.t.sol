@@ -57,14 +57,44 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
-        (uint256 index, , , ) = IRewardsController(rewardsControllerAddress).getRewardsData(
+        (uint256 rewardIndexBefore, , , ) = IRewardsController(rewardsControllerAddress)
+        .getRewardsData(aDai, rewardToken);
+        uint256 userIndex1 = rewardsManager.getUserAssetIndex(
+            address(supplier1),
             aDai,
             rewardToken
         );
 
-        uint256 userIndex = rewardsManager.getUserAssetIndex(address(supplier1), aDai, rewardToken);
+        vm.warp(block.timestamp + 10 days);
+        // user's index after time passes but before claiming
+        uint256 userIndex2 = rewardsManager.getUserAssetIndex(
+            address(supplier1),
+            aDai,
+            rewardToken
+        );
 
-        assertEq(userIndex, index, "user index wrong");
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+        supplier1.claimRewards(aDaiInArray, false);
+
+        (uint256 rewardIndexAfter, , , ) = IRewardsController(rewardsControllerAddress)
+        .getRewardsData(aDai, rewardToken);
+
+        uint256 userIndex3 = rewardsManager.getUserAssetIndex(
+            address(supplier1),
+            aDai,
+            rewardToken
+        );
+
+        console.log(userIndex1);
+        console.log(userIndex2);
+        console.log(userIndex3);
+        console.log(rewardIndexBefore);
+        console.log(rewardIndexAfter);
+        assertEq(userIndex1, rewardIndexBefore, "userIndex1 = rewardIndexBefore");
+        assertEq(userIndex2, rewardIndexBefore, "userIndex2 = rewardIndexBefore");
+        assertGt(userIndex3, userIndex2, "userIndex3 > userIndex2");
+        assertEq(userIndex3, rewardIndexAfter, "userIndex3 = rewardIndexAfter");
     }
 
     function testShouldRevertWhenClaimRewardsIsPaused() public {
