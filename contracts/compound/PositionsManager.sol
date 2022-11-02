@@ -1010,9 +1010,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
     }
 
-    /// @dev Checks if the user is liquidatable, knowing the deprecated status.
+    /// @dev Returns whether a given user is liquidatable and the applicable close factor, given the deprecated status of the borrowed market.
     /// @param _user The user to check.
-    /// @param _isDeprecated Whether the market is deprecated or not.
+    /// @param _isDeprecated Whether the borrowed market is deprecated or not.
     /// @return liquidationAllowed Whether the liquidation is allowed or not.
     /// @return closeFactor The close factor to apply.
     function _liquidationAllowed(address _user, bool _isDeprecated)

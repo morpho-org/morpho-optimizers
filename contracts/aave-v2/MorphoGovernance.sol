@@ -391,7 +391,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets a market as deprecated (allows liquidation of every position on this market).
     /// @param _poolToken The address of the market to update.
-    /// @param _isDeprecated True to set the market as deprecated.
+    /// @param _isDeprecated The new deprecated status, true to deprecate the market.
     function setIsDeprecated(address _poolToken, bool _isDeprecated)
         external
         onlyOwner

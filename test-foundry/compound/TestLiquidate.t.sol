@@ -27,7 +27,7 @@ contract TestLiquidate is TestSetup {
 
     function testLiquidateWhenMarketDeprecated() public {
         uint256 amount = 10_000 ether;
-        uint256 collateral = to6Decimals(2 * amount);
+        uint256 collateral = to6Decimals(3 * amount);
 
         morpho.setIsDeprecated(cDai, true);
 
@@ -396,6 +396,25 @@ contract TestLiquidate is TestSetup {
             assertGt(usdtPoolSupplyIndexAfter, vars.usdtPoolSupplyIndexBefore);
             assertGt(usdtPoolBorrowIndexAfter, vars.usdtPoolBorrowIndexBefore);
         }
+    }
+
+    function testCannotLiquidateMoreThanCloseFactor() public {
+        uint256 amount = 10_000 ether;
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setUnderlyingPrice(cUsdc, oracle.getUnderlyingPrice(cDai) * 1e12);
+
+        borrower1.approve(usdc, type(uint256).max);
+        borrower1.supply(cUsdc, to6Decimals(amount * 2));
+        borrower1.borrow(cDai, amount);
+
+        oracle.setUnderlyingPrice(cUsdc, oracle.getUnderlyingPrice(cUsdc) / 2);
+        vm.roll(block.number + 1);
+
+        borrower2.approve(dai, amount);
+        hevm.prank(address(borrower2));
+        hevm.expectRevert(abi.encodeWithSignature("AmountAboveWhatAllowedToRepay()"));
+        morpho.liquidate(cDai, cUsdc, address(borrower1), (amount * 3) / 4);
     }
 
     function testCannotBorrowLiquidateInSameBlock() public {

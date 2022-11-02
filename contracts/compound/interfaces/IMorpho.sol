@@ -58,18 +58,12 @@ interface IMorpho {
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
     function setIsPausedForAllMarkets(bool _isPaused) external;
     function setIsClaimRewardsPaused(bool _isPaused) external;
-    function setIsSupplyPaused(address _poolToken, bool _isPaused)
-        external;
-    function setIsBorrowPaused(address _poolToken, bool _isPaused)
-        external;
-    function setIsWithdrawPaused(address _poolToken, bool _isPaused)
-        external;
-    function setIsRepayPaused(address _poolToken, bool _isPaused)
-        external;
-    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused)
-        external;
-    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
-        external;
+    function setIsSupplyPaused(address _poolToken, bool _isPaused) external;
+    function setIsBorrowPaused(address _poolToken, bool _isPaused) external;
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external;
+    function setIsRepayPaused(address _poolToken, bool _isPaused) external;
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external;
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external;
     function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;
     function createMarket(address _poolToken, Types.MarketParameters calldata _params) external;
 
