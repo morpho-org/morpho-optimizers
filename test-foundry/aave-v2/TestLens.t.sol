@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
+
+import "@contracts/aave-v2/interfaces/lido/ILido.sol";
 
 import "./setup/TestSetup.sol";
 
@@ -694,105 +696,54 @@ contract TestLens is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
-        {
-            (
-                address underlying,
-                bool isCreated,
-                bool isP2PDisabled,
-                ,
-                ,
-                uint16 reserveFactor,
-                uint16 p2pIndexCursor,
-                ,
-                ,
-                ,
+        (
+            address underlying,
+            bool isCreated,
+            bool isP2PDisabled,
+            bool isPaused,
+            bool isPartiallyPaused,
+            uint16 reserveFactor,
+            uint16 p2pIndexCursor,
+            uint256 ltv,
+            uint256 liquidationThreshold,
+            uint256 liquidationBonus,
+            uint256 decimals
+        ) = lens.getMarketConfiguration(aDai);
+        assertEq(underlying, dai);
 
-            ) = lens.getMarketConfiguration(aDai);
-            assertEq(underlying, dai);
+        (
+            ,
+            ,
+            ,
+            bool isCreated_,
+            bool isPaused_,
+            bool isPartiallyPaused_,
+            bool isP2PDisabled_
+        ) = morpho.market(aDai);
 
-            Types.Market memory expectedConfig;
-            (
-                expectedConfig.underlyingToken,
-                expectedConfig.reserveFactor,
-                expectedConfig.p2pIndexCursor,
-                expectedConfig.isP2PDisabled,
-                ,
-                ,
-                ,
-                ,
-                ,
-                ,
+        assertEq(isCreated, isCreated_);
+        assertEq(isP2PDisabled, isP2PDisabled_);
 
-            ) = morpho.market(aDai);
+        assertEq(isPaused, isPaused_);
+        assertEq(isPartiallyPaused, isPartiallyPaused_);
+        (, uint16 expectedReserveFactor, uint16 expectedP2PIndexCursor, , , , ) = morpho.market(
+            aDai
+        );
+        assertEq(reserveFactor, expectedReserveFactor);
+        assertEq(p2pIndexCursor, expectedP2PIndexCursor);
 
-            assertTrue(isCreated == (expectedConfig.underlyingToken != address(0)));
-            assertTrue(isP2PDisabled == expectedConfig.isP2PDisabled);
-            assertEq(reserveFactor, expectedConfig.reserveFactor);
-            assertEq(p2pIndexCursor, expectedConfig.p2pIndexCursor);
-        }
-        {
-            (address underlying, , , bool isPaused, bool isPartiallyPaused, , , , , , ) = lens
-            .getMarketConfiguration(aDai);
-            assertEq(underlying, dai);
+        (
+            uint256 expectedLtv,
+            uint256 expectedLiquidationThreshold,
+            uint256 expectedLiquidationBonus,
+            uint256 expectedDecimals,
 
-            Types.Market memory expectedConfig;
-            (
-                ,
-                ,
-                ,
-                ,
-                expectedConfig.isSupplyPaused,
-                expectedConfig.isBorrowPaused,
-                expectedConfig.isWithdrawPaused,
-                expectedConfig.isRepayPaused,
-                expectedConfig.isLiquidateCollateralPaused,
-                expectedConfig.isLiquidateBorrowPaused,
+        ) = pool.getConfiguration(dai).getParamsMemory();
 
-            ) = morpho.market(aDai);
-
-            assertTrue(
-                isPaused ==
-                    (expectedConfig.isSupplyPaused &&
-                        expectedConfig.isBorrowPaused &&
-                        expectedConfig.isWithdrawPaused &&
-                        expectedConfig.isRepayPaused &&
-                        expectedConfig.isLiquidateCollateralPaused &&
-                        expectedConfig.isLiquidateBorrowPaused)
-            );
-            assertTrue(
-                isPartiallyPaused ==
-                    (expectedConfig.isSupplyPaused && expectedConfig.isBorrowPaused)
-            );
-        }
-
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                ,
-                ,
-                ,
-                uint256 ltv,
-                uint256 liquidationThreshold,
-                uint256 liquidationBonus,
-                uint256 decimals
-            ) = lens.getMarketConfiguration(aDai);
-
-            (
-                uint256 expectedLtv,
-                uint256 expectedLiquidationThreshold,
-                uint256 expectedLiquidationBonus,
-                uint256 expectedDecimals,
-
-            ) = pool.getConfiguration(dai).getParamsMemory();
-
-            assertEq(ltv, expectedLtv);
-            assertEq(liquidationThreshold, expectedLiquidationThreshold);
-            assertEq(liquidationBonus, expectedLiquidationBonus);
-            assertEq(decimals, expectedDecimals);
-        }
+        assertEq(ltv, expectedLtv);
+        assertEq(liquidationThreshold, expectedLiquidationThreshold);
+        assertEq(liquidationBonus, expectedLiquidationBonus);
+        assertEq(decimals, expectedDecimals);
     }
 
     function testGetOutdatedIndexes() public {
@@ -899,6 +850,54 @@ contract TestLens is TestSetup {
 
         morpho.updateIndexes(aDai);
         assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+    }
+
+    function testGetUpdatedIndexesOnStEth() public {
+        createMarket(aStEth);
+
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+
+        // Handle roundings.
+        vm.prank(address(supplier1));
+        ERC20(stEth).transfer(address(morpho), 100);
+
+        uint256 amount = ERC20(stEth).balanceOf(address(supplier1));
+
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, amount);
+
+        vm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.warp(block.timestamp + 1);
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aStEth);
+
+        morpho.updateIndexes(aStEth);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aStEth), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aStEth), "p2p borrow indexes different");
+
+        uint256 rebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
+        uint256 baseRebaseIndex = interestRatesManager.ST_ETH_BASE_REBASE_INDEX();
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(stEth).rayMul(rebaseIndex).rayDiv(baseRebaseIndex),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(stEth).rayMul(rebaseIndex).rayDiv(
+                baseRebaseIndex
+            ),
+            "pool borrow indexes different"
+        );
     }
 
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
@@ -1447,5 +1446,82 @@ contract TestLens is TestSetup {
         assertEq(amounts.ethP2PBorrow, 0, "unexpected eth p2p borrow");
         assertEq(amounts.ethPoolSupply, expectedEthUSDOnPool / 2, "unexpected eth pool supply");
         assertEq(amounts.ethPoolBorrow, 0, "unexpected eth pool borrow");
+    }
+
+    function testBalanceShouldBeReflectedWhenStethSlashed() public {
+        createMarket(aStEth);
+
+        deal(address(supplier1), 1_000 ether);
+        uint256 totalEthBalance = address(supplier1).balance;
+        uint256 totalBalance = totalEthBalance / 2;
+        vm.prank(address(supplier1));
+        ILido(stEth).submit{value: totalBalance}(address(0));
+
+        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+
+        supplier1.approve(stEth, type(uint256).max);
+        supplier1.supply(aStEth, totalBalance);
+
+        (uint256 p2pBalanceBefore, uint256 poolBalanceBefore, ) = lens.getCurrentSupplyBalanceInOf(
+            aStEth,
+            address(supplier1)
+        );
+
+        // Update the beacon balance to slash.
+        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
+        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        vm.store(stEth, keccak256("lido.Lido.beaconBalance"), bytes32(beaconBalanceBefore / 10));
+        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
+        assertEq(beaconBalanceBefore / 10, beaconBalanceAfter);
+
+        (uint256 p2pBalanceAfter, uint256 poolBalanceAfter, ) = lens.getCurrentSupplyBalanceInOf(
+            aStEth,
+            address(supplier1)
+        );
+        assertEq(p2pBalanceBefore, 0, "P2P balance before");
+        assertEq(p2pBalanceAfter, 0, "P2P balance after");
+        assertApproxEqAbs(poolBalanceBefore, totalBalance, 1, "pool balance before");
+        // Not exact because the total assets of stEth includes other variables
+        assertApproxEqAbs(
+            poolBalanceAfter,
+            totalBalance / 10,
+            totalBalance / 50,
+            "pool balance before"
+        );
+    }
+
+    function testGetMarketPauseStatusesDeprecatedMarket() public {
+        morpho.setIsDeprecated(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isDeprecated);
+    }
+
+    function testGetMarketPauseStatusesPauseSupply() public {
+        morpho.setIsSupplyPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isSupplyPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseBorrow() public {
+        morpho.setIsBorrowPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isBorrowPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseWithdraw() public {
+        morpho.setIsWithdrawPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isWithdrawPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseRepay() public {
+        morpho.setIsRepayPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isRepayPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseLiquidateOnCollateral() public {
+        morpho.setIsLiquidateCollateralPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isLiquidateCollateralPaused);
+    }
+
+    function testGetMarketPauseStatusesPauseLiquidateOnBorrow() public {
+        morpho.setIsLiquidateBorrowPaused(aDai, true);
+        assertTrue(lens.getMarketPauseStatus(aDai).isLiquidateBorrowPaused);
     }
 }

@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-library MarketLib {
-    function isCreated(Types.Market storage _market) internal view returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
-
-    function isCreatedMemory(Types.Market memory _market) internal pure returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
-}
-
 /// @title Types.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
@@ -72,19 +62,25 @@ library Types {
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct PoolIndexes {
         uint32 lastUpdateTimestamp; // The last time the local pool and peer-to-peer indexes were updated.
-        uint112 poolSupplyIndex; // Last pool supply index.
-        uint112 poolBorrowIndex; // Last pool borrow index.
+        uint112 poolSupplyIndex; // Last pool supply index. Note that for the stEth market, the pool supply index is tweaked to take into account the staking rewards.
+        uint112 poolBorrowIndex; // Last pool borrow index. Note that for the stEth market, the pool borrow index is tweaked to take into account the staking rewards.
     }
 
     struct Market {
         address underlyingToken; // The underlying address of the market.
         uint16 reserveFactor; // Proportion of the additional interest earned being matched peer-to-peer on Morpho compared to being on the pool. It is sent to the DAO for each market. The default value is 0. In basis point (100% = 10 000).
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
+        bool isCreated; // Whether or not this market is created.
+        bool isPaused; // Deprecated.
+        bool isPartiallyPaused; // Deprecated.
         bool isP2PDisabled; // Whether the market's peer-to-peer is open or not.
+    }
+
+    struct MarketPauseStatus {
         bool isSupplyPaused; // Whether the supply is paused or not.
         bool isBorrowPaused; // Whether the borrow is paused or not
         bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).
-        bool isRepayPaused; // Whether the repay is paused or not.
+        bool isRepayPaused; // Whether the repay is paused or not. Note that a "repay" is still possible using a liquidation (if not paused).
         bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
         bool isDeprecated; // Whether a market is deprecated or not.

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.8.0;
-
+pragma solidity >=0.5.0;
 import "./IInterestRatesManager.sol";
 import "./IPositionsManager.sol";
 import "./IRewardsManager.sol";
@@ -22,6 +21,7 @@ interface IMorpho {
     function enteredMarkets(address) external view returns (address);
     function deltas(address) external view returns (Types.Delta memory);
     function marketParameters(address) external view returns (Types.MarketParameters memory);
+    function marketPauseStatus(address) external view returns (Types.MarketPauseStatus memory);
     function p2pDisabled(address) external view returns (bool);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
@@ -38,7 +38,6 @@ interface IMorpho {
 
     /// GETTERS ///
 
-    function updateP2PIndexes(address _poolToken) external;
     function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolToken, Types.PositionType _positionType) external view returns (address head);
@@ -50,17 +49,21 @@ interface IMorpho {
     function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
+    function setPositionsManager(IPositionsManager _positionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
     function setTreasuryVault(address _treasuryVault) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setIsP2PDisabled(address _poolToken, bool _p2pDisabled) external;
+    function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled) external;
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
     function setIsPausedForAllMarkets(bool _isPaused) external;
-    function setPauseStatus(address _poolToken, bool _isPaused) external;
-    function setPartialPauseStatus(address _poolToken, bool _isPaused) external;
-    function setPauseStatus(address _poolToken) external;
-    function setPartialPauseStatus(address _poolToken) external;
+    function setIsClaimRewardsPaused(bool _isPaused) external;
+    function setIsSupplyPaused(address _poolToken, bool _isPaused) external;
+    function setIsBorrowPaused(address _poolToken, bool _isPaused) external;
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external;
+    function setIsRepayPaused(address _poolToken, bool _isPaused) external;
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external;
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external;
     function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;
     function createMarket(address _poolToken, Types.MarketParameters calldata _params) external;
 

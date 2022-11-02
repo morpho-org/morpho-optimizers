@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -373,7 +373,7 @@ contract TestRewards is TestSetup {
         supplier3.borrow(aUsdc, toBorrow);
     }
 
-    function testShouldClaimRewardsAndTradeForMorpkoTokens() public {
+    function testShouldClaimRewardsAndTradeForMorphoTokens() public {
         // 10% bonus.
         incentivesVault.setBonus(1_000);
 
@@ -421,5 +421,94 @@ contract TestRewards is TestSetup {
 
         // User tries to claim its rewards on Morpho.
         supplier1.claimRewards(markets, false);
+    }
+
+    function testGetUserRewards() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        uint256 unclaimedRewards = rewardsManager.getUserRewards(
+            aDaiInArray,
+            address(supplier1),
+            rewardToken
+        );
+
+        supplier1.withdraw(aDai, type(uint256).max);
+        uint256 balanceBefore = ERC20(rewardToken).balanceOf(address(supplier1));
+        supplier1.claimRewards(aDaiInArray, false);
+        uint256 balanceAfter = ERC20(rewardToken).balanceOf(address(supplier1));
+
+        assertEq(unclaimedRewards, balanceAfter - balanceBefore);
+    }
+
+    function testGetAllUserRewards() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        (address[] memory rewardsList, uint256[] memory unclaimedAmounts) = rewardsManager
+        .getAllUserRewards(aDaiInArray, address(supplier1));
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        uint256 balanceBefore = ERC20(rewardsList[0]).balanceOf(address(supplier1));
+        supplier1.claimRewards(aDaiInArray, false);
+        uint256 balanceAfter = ERC20(rewardsList[0]).balanceOf(address(supplier1));
+
+        assertEq(unclaimedAmounts[0], balanceAfter - balanceBefore);
+    }
+
+    function testCanCallGetUserRewardsWithZeroBalance() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        uint256 unclaimedRewards = rewardsManager.getUserRewards(
+            aDaiInArray,
+            address(supplier1),
+            rewardToken
+        );
+
+        assertGt(unclaimedRewards, 0);
+    }
+
+    function testCanCallGetAllUserRewardsWithZeroBalance() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        (, uint256[] memory unclaimedAmounts) = rewardsManager.getAllUserRewards(
+            aDaiInArray,
+            address(supplier1)
+        );
+
+        for (uint256 i; i < unclaimedAmounts.length; ++i) {
+            assertGt(unclaimedAmounts[i], 0);
+        }
     }
 }

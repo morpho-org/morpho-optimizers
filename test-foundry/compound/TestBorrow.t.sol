@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -246,5 +246,41 @@ contract TestBorrow is TestSetup {
             amountBorrowed,
             "borrow balance"
         );
+    }
+
+    function testBorrowLargerThanDeltaShouldClearDelta() public {
+        // Allows only 10 unmatch suppliers.
+
+        uint256 suppliedAmount = 1 ether;
+        uint256 borrowedAmount = 20 * suppliedAmount;
+        uint256 collateral = 100 * borrowedAmount;
+
+        // borrower1 and 20 suppliers are matched for borrowedAmount.
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+        borrower1.borrow(cDai, borrowedAmount);
+
+        createSigners(20);
+
+        // 2 * NMAX suppliers supply suppliedAmount.
+        for (uint256 i = 0; i < 20; i++) {
+            suppliers[i].approve(dai, suppliedAmount);
+            suppliers[i].supply(cDai, suppliedAmount);
+        }
+
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+
+        vm.roll(block.number + 1);
+        // Delta should be created.
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(cDai, type(uint256).max);
+
+        vm.roll(block.number + 1);
+        (uint256 p2pSupplyDeltaBefore, , , ) = morpho.deltas(cDai);
+        borrower1.borrow(cDai, borrowedAmount * 2);
+        (uint256 p2pSupplyDeltaAfter, , , ) = morpho.deltas(cDai);
+
+        assertGt(p2pSupplyDeltaBefore, 0);
+        assertEq(p2pSupplyDeltaAfter, 0);
     }
 }

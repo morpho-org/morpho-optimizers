@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -77,7 +77,7 @@ contract TestGovernance is TestSetup {
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
         morpho.createMarket(cAave, marketParams);
 
-        (bool isCreated, , , , , , , ) = morpho.marketStatus(cAave);
+        (bool isCreated, , ) = morpho.marketStatus(cAave);
 
         assertTrue(isCreated);
         assertEq(
@@ -187,6 +187,15 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
     }
 
+    function testOnlyOwnerShouldSetDustThreshold() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setDustThreshold(1e8);
+
+        morpho.setDustThreshold(1e8);
+        assertEq(morpho.dustThreshold(), 1e8);
+    }
+
     function testOnlyOwnerShouldSetTreasuryVault() public {
         address treasuryVaultV2 = address(2);
 
@@ -207,12 +216,97 @@ contract TestGovernance is TestSetup {
         assertTrue(morpho.isClaimRewardsPaused());
     }
 
+    function testSetP2PIndexCursor() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setP2PIndexCursor(cDai, 5000);
+
+        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        morpho.setP2PIndexCursor(cDai, 10001);
+
+        morpho.setP2PIndexCursor(cDai, 6969);
+        (, uint16 p2pIndexCursor) = morpho.marketParameters(cDai);
+        assertEq(p2pIndexCursor, 6969);
+    }
+
+    function testOnlyOwnerShouldDisableSupply() public {
+        (bool isSupplyPaused, , , , , , ) = morpho.marketPauseStatus(cDai);
+        assertFalse(isSupplyPaused);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsSupplyPaused(cDai, true);
+
+        morpho.setIsSupplyPaused(cDai, true);
+        (isSupplyPaused, , , , , , ) = morpho.marketPauseStatus(cDai);
+        assertTrue(isSupplyPaused);
+    }
+
+    function testOnlyOwnerShouldDisableBorrow() public {
+        (, bool isBorrowPaused, , , , , ) = morpho.marketPauseStatus(cDai);
+        assertFalse(isBorrowPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsBorrowPaused(cDai, true);
+
+        morpho.setIsBorrowPaused(cDai, true);
+        (, isBorrowPaused, , , , , ) = morpho.marketPauseStatus(cDai);
+        assertTrue(isBorrowPaused);
+    }
+
+    function testOnlyOwnerShouldDisableWithdraw() public {
+        (, , bool isWithdrawPaused, , , , ) = morpho.marketPauseStatus(cDai);
+        assertFalse(isWithdrawPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsWithdrawPaused(cDai, true);
+
+        morpho.setIsWithdrawPaused(cDai, true);
+        (, , isWithdrawPaused, , , , ) = morpho.marketPauseStatus(cDai);
+        assertTrue(isWithdrawPaused);
+    }
+
+    function testOnlyOwnerShouldDisableRepay() public {
+        (, , , bool isRepayPaused, , , ) = morpho.marketPauseStatus(cDai);
+        assertFalse(isRepayPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsRepayPaused(cDai, true);
+
+        morpho.setIsRepayPaused(cDai, true);
+        (, , , isRepayPaused, , , ) = morpho.marketPauseStatus(cDai);
+        assertTrue(isRepayPaused);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+        (, , , , bool isLiquidateCollateralPaused, , ) = morpho.marketPauseStatus(cDai);
+        assertFalse(isLiquidateCollateralPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateCollateralPaused(cDai, true);
+
+        morpho.setIsLiquidateCollateralPaused(cDai, true);
+        (, , , , isLiquidateCollateralPaused, , ) = morpho.marketPauseStatus(cDai);
+        assertTrue(isLiquidateCollateralPaused);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+        (, , , , , bool isLiquidateBorrowPaused, ) = morpho.marketPauseStatus(cDai);
+        assertFalse(isLiquidateBorrowPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateBorrowPaused(cDai, true);
+
+        morpho.setIsLiquidateBorrowPaused(cDai, true);
+        (, , , , , isLiquidateBorrowPaused, ) = morpho.marketPauseStatus(cDai);
+        assertTrue(isLiquidateBorrowPaused);
+    }
+
     function testOnlyOwnerCanIncreaseP2PDeltas() public {
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.increaseP2PDeltas(cDai, 0);
 
         morpho.increaseP2PDeltas(cDai, 0);
+    }
+
+    function testShouldNotIncreaseP2PDeltasWhenMarketNotCreated() public {
+        hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.increaseP2PDeltas(address(1), 0);
     }
 
     function testIncreaseP2PDeltas() public {

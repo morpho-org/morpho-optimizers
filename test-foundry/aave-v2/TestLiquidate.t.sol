@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -28,7 +28,7 @@ contract TestLiquidate is TestSetup {
 
     function testLiquidateWhenMarketDeprecated() public {
         uint256 amount = 10_000 ether;
-        uint256 collateral = to6Decimals(2 * amount);
+        uint256 collateral = to6Decimals(3 * amount);
 
         morpho.setIsDeprecated(aDai, true);
 
@@ -37,19 +37,36 @@ contract TestLiquidate is TestSetup {
         borrower1.borrow(aDai, amount);
 
         (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
-        (, uint256 borrowOnPoolbefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+        (, uint256 borrowOnPoolBefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         // Liquidate
-        uint256 toRepay = amount / 2;
+        uint256 toRepay = borrowOnPoolBefore.rayMul(pool.getReserveNormalizedVariableDebt(dai)); // Full liquidation.
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
 
         (, uint256 supplyOnPoolAfter) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
         (, uint256 borrowOnPoolAfter) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+        assertEq(borrowOnPoolAfter, 0);
 
-        assertLt(borrowOnPoolAfter, borrowOnPoolbefore);
-        assertLt(supplyOnPoolAfter, supplyOnPoolBefore);
+        ExitPositionsManager.LiquidateVars memory vars;
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = pool
+        .getConfiguration(usdc)
+        .getParamsMemory();
+        uint256 collateralPrice = oracle.getAssetPrice(usdc);
+        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+
+        (, , , vars.borrowedReserveDecimals, ) = pool.getConfiguration(dai).getParamsMemory();
+        uint256 borrowedPrice = oracle.getAssetPrice(dai);
+        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+
+        uint256 amountToSeize = (toRepay * borrowedPrice * vars.collateralTokenUnit) /
+            (vars.borrowedTokenUnit * collateralPrice).percentMul(vars.liquidationBonus);
+
+        uint256 expectedSupplyOnPoolAfter = supplyOnPoolBefore -
+            amountToSeize.rayDiv(pool.getReserveNormalizedIncome(usdc));
+
+        assertApproxEqAbs(supplyOnPoolAfter, expectedSupplyOnPoolAfter, 1e10);
     }
 
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
@@ -79,8 +96,7 @@ contract TestLiquidate is TestSetup {
             aDai,
             address(borrower1)
         );
-        uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
-            onPoolBorrower,
+        uint256 expectedBorrowBalanceOnPool = onPoolBorrower.rayMul(
             pool.getReserveNormalizedVariableDebt(dai)
         );
         testEquality(expectedBorrowBalanceOnPool, toRepay);
@@ -108,8 +124,7 @@ contract TestLiquidate is TestSetup {
                 vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
             uint256 normalizedIncome = pool.getReserveNormalizedIncome(usdc);
-            uint256 expectedOnPool = collateralOnPool -
-                underlyingToScaledBalance(amountToSeize, normalizedIncome);
+            uint256 expectedOnPool = collateralOnPool - amountToSeize.rayDiv(normalizedIncome);
 
             testEquality(onPoolBorrower, expectedOnPool);
             assertEq(inP2PBorrower, 0);
@@ -154,16 +169,15 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowBalanceInP2P = aDUnitToUnderlying(
-            onPoolUsdc,
+        uint256 expectedBorrowBalanceInP2P = onPoolUsdc.rayMul(
             pool.getReserveNormalizedVariableDebt(usdc)
         ) +
-            p2pUnitToUnderlying(inP2PUsdc, morpho.p2pBorrowIndex(aUsdc)) -
+            inP2PUsdc.rayMul(morpho.p2pBorrowIndex(aUsdc)) -
             toRepay;
 
         assertApproxEqAbs(onPoolBorrower, 0, 1, "borrower borrow on pool");
         assertApproxEqAbs(
-            p2pUnitToUnderlying(inP2PBorrower, morpho.p2pBorrowIndex(aUsdc)),
+            inP2PBorrower.rayMul(morpho.p2pBorrowIndex(aUsdc)),
             expectedBorrowBalanceInP2P,
             1,
             "borrower borrow in peer-to-peer"
@@ -190,8 +204,7 @@ contract TestLiquidate is TestSetup {
 
         assertApproxEqAbs(
             onPoolBorrower,
-            onPoolDai -
-                underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
+            onPoolDai - amountToSeize.rayDiv(pool.getReserveNormalizedIncome(dai)),
             1,
             "borrower supply on pool"
         );
@@ -236,13 +249,12 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
-            onPoolUsdc,
+        uint256 expectedBorrowBalanceOnPool = onPoolUsdc.rayMul(
             pool.getReserveNormalizedVariableDebt(usdc)
         ) - toRepay;
 
         assertApproxEqAbs(
-            aDUnitToUnderlying(onPoolBorrower, pool.getReserveNormalizedVariableDebt(usdc)),
+            onPoolBorrower.rayMul(pool.getReserveNormalizedVariableDebt(usdc)),
             expectedBorrowBalanceOnPool,
             1,
             "borrower borrow on pool"
@@ -271,8 +283,7 @@ contract TestLiquidate is TestSetup {
 
         testEquality(
             onPoolBorrower,
-            onPoolDai -
-                underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
+            onPoolDai - amountToSeize.rayDiv(pool.getReserveNormalizedIncome(dai)),
             "borrower supply on pool"
         );
         assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");

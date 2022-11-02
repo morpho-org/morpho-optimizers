@@ -1,0 +1,40 @@
+name: Hardhat tests (Common contracts)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    paths:
+      - lib/**
+      - contracts/common/**
+      - test/**
+      - "*.lock"
+      - Makefile
+      - foundry.toml
+      - remappings.txt
+      - .github/workflows/ci-hardhat-common.yml
+
+jobs:
+  morpho-hardhat-tests:
+    name: eth-mainnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run tests
+        run: yarn test
+        env:
+          NETWORK: eth-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}

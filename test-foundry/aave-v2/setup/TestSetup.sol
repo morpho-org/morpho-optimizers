@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
 import "@contracts/aave-v2/interfaces/IMorpho.sol";
+import "@contracts/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -92,12 +93,7 @@ contract TestSetup is Config, Utils {
         morpho.setTreasuryVault(address(treasuryVault));
         morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
-        if (block.chainid == Chains.ETH_MAINNET || block.chainid == Chains.AVALANCHE_MAINNET) {
-            rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            rewardsManagerImplV1 = new RewardsManagerOnPolygon();
-        }
-
+        rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
         rewardsManagerProxy = new TransparentUpgradeableProxy(
             address(rewardsManagerImplV1),
             address(proxyAdmin),
@@ -261,9 +257,7 @@ contract TestSetup is Config, Utils {
 
         uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
-        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , , , , , ) = morpho.market(
-            _poolToken
-        );
+        (, uint16 reserveFactor, uint256 p2pIndexCursor, , , , ) = morpho.market(_poolToken);
 
         // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

@@ -19,30 +19,14 @@ abstract contract MarketsLens is RatesLens {
         return morpho.marketStatus(_poolToken).isCreated;
     }
 
-    /// @notice Checks if a market is created and not paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolToken);
-        return
-            marketStatus.isCreated &&
-            !(marketStatus.isSupplyPaused &&
-                marketStatus.isBorrowPaused &&
-                marketStatus.isWithdrawPaused &&
-                marketStatus.isRepayPaused);
+    /// @dev Deprecated.
+    function isMarketCreatedAndNotPaused(address) external pure returns (bool) {
+        return false;
     }
 
-    /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool)
-    {
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolToken);
-        return
-            marketStatus.isCreated && !(marketStatus.isSupplyPaused && marketStatus.isBorrowPaused);
+    /// @dev Deprecated.
+    function isMarketCreatedAndNotPausedNorPartiallyPaused(address) external pure returns (bool) {
+        return false;
     }
 
     /// @notice Returns all created markets.
@@ -119,8 +103,8 @@ abstract contract MarketsLens is RatesLens {
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
     /// @return p2pDisabled Whether user are put in peer-to-peer or not.
-    /// @return isPaused Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return isPaused Deprecated.
+    /// @return isPartiallyPaused Deprecated.
     /// @return reserveFactor The reserve factor applied to this market.
     /// @return p2pIndexCursor The p2p index cursor applied to this market.
     /// @return collateralFactor The pool collateral factor also used by Morpho.
@@ -143,18 +127,25 @@ abstract contract MarketsLens is RatesLens {
         Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolToken);
         isCreated = marketStatus.isCreated;
         p2pDisabled = morpho.p2pDisabled(_poolToken);
-        isPaused =
-            marketStatus.isSupplyPaused &&
-            marketStatus.isBorrowPaused &&
-            marketStatus.isWithdrawPaused &&
-            marketStatus.isRepayPaused;
-        isPartiallyPaused = marketStatus.isSupplyPaused && marketStatus.isBorrowPaused;
+        isPaused = false;
+        isPartiallyPaused = false;
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
         reserveFactor = marketParams.reserveFactor;
         p2pIndexCursor = marketParams.p2pIndexCursor;
 
         (, collateralFactor, ) = comptroller.markets(_poolToken);
+    }
+
+    /// @notice Returns market's pause statuses.
+    /// @param _poolToken The address of the market of which to get pause statuses.
+    /// @return The market status struct.
+    function getMarketPauseStatus(address _poolToken)
+        external
+        view
+        returns (Types.MarketPauseStatus memory)
+    {
+        return morpho.marketPauseStatus(_poolToken);
     }
 
     /// PUBLIC ///

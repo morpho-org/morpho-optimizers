@@ -25,6 +25,9 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
+    /// @notice Thrown when the market is paused.
+    error MarketPaused();
+
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.

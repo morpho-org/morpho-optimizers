@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -241,6 +241,11 @@ contract TestGovernance is TestSetup {
         morpho.increaseP2PDeltas(aDai, 1 ether);
     }
 
+    function testShouldNotIncreaseP2PDeltasWhenMarketNotCreated() public {
+        hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        morpho.increaseP2PDeltas(address(1), 0);
+    }
+
     function testIncreaseP2PDeltas() public {
         uint256 supplyAmount = 100 ether;
         uint256 borrowAmount = 50 ether;
@@ -274,10 +279,10 @@ contract TestGovernance is TestSetup {
     }
 
     function testIncreaseP2PDeltasMoreThanWhatIsPossibleSupply() public {
-        uint256 supplyAmount = 100 ether;
-        uint256 borrowAmount = 50 ether;
+        uint256 supplyAmount = 101 ether;
+        uint256 borrowAmount = 51 ether;
         uint256 deltaAmount = 25 ether;
-        uint256 increaseDeltaAmount = 80 ether;
+        uint256 increaseDeltaAmount = 81 ether;
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.supply(aUsdc, to6Decimals(supplyAmount));
@@ -311,10 +316,10 @@ contract TestGovernance is TestSetup {
     }
 
     function testIncreaseP2PDeltasMoreThanWhatIsPossibleBorrow() public {
-        uint256 supplyAmount = 100 ether;
-        uint256 borrowAmount = 50 ether;
+        uint256 supplyAmount = 101 ether;
+        uint256 borrowAmount = 51 ether;
         uint256 deltaAmount = 25 ether;
-        uint256 increaseDeltaAmount = 80 ether;
+        uint256 increaseDeltaAmount = 81 ether;
 
         supplier1.approve(usdc, type(uint256).max);
         supplier1.supply(aUsdc, to6Decimals(supplyAmount));
@@ -340,7 +345,12 @@ contract TestGovernance is TestSetup {
             1e8,
             "2"
         );
-        assertApproxEqRel(IAToken(aDai).balanceOf(address(morpho)), deltaAmount, 1e8, "3");
+        assertApproxEqRel(
+            IAToken(aDai).balanceOf(address(morpho)),
+            borrowAmount - deltaAmount,
+            1e8,
+            "3"
+        );
         assertApproxEqRel(
             IVariableDebtTokenExtended(variableDebtDai).balanceOf(address(morpho)),
             borrowAmount,
@@ -351,5 +361,72 @@ contract TestGovernance is TestSetup {
 
     function testFailCallIncreaseP2PDeltasFromImplementation() public {
         exitPositionsManager.increaseP2PDeltasLogic(aDai, 0);
+    }
+
+    function testOnlyOwnerShouldDisableSupply() public {
+        (, , , , bool isSupplyPaused, , , , , , ) = morpho.market(aDai);
+        assertFalse(isSupplyPaused);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsSupplyPaused(aDai, true);
+
+        morpho.setIsSupplyPaused(aDai, true);
+        (, , , , isSupplyPaused, , , , , , ) = morpho.market(aDai);
+        assertTrue(isSupplyPaused);
+    }
+
+    function testOnlyOwnerShouldDisableBorrow() public {
+        (, , , , , bool isBorrowPaused, , , , , ) = morpho.market(aDai);
+        assertFalse(isBorrowPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsBorrowPaused(aDai, true);
+
+        morpho.setIsBorrowPaused(aDai, true);
+        (, , , , , isBorrowPaused, , , , , ) = morpho.market(aDai);
+        assertTrue(isBorrowPaused);
+    }
+
+    function testOnlyOwnerShouldDisableWithdraw() public {
+        (, , , , , , bool isWithdrawPaused, , , , ) = morpho.market(aDai);
+        assertFalse(isWithdrawPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsWithdrawPaused(aDai, true);
+
+        morpho.setIsWithdrawPaused(aDai, true);
+        (, , , , , , isWithdrawPaused, , , , ) = morpho.market(aDai);
+        assertTrue(isWithdrawPaused);
+    }
+
+    function testOnlyOwnerShouldDisableRepay() public {
+        (, , , , , , , bool isRepayPaused, , , ) = morpho.market(aDai);
+        assertFalse(isRepayPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsRepayPaused(aDai, true);
+
+        morpho.setIsRepayPaused(aDai, true);
+        (, , , , , , , isRepayPaused, , , ) = morpho.market(aDai);
+        assertTrue(isRepayPaused);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnCollateral() public {
+        (, , , , , , , , bool isLiquidateCollateralPaused, , ) = morpho.market(aDai);
+        assertFalse(isLiquidateCollateralPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateCollateralPaused(aDai, true);
+
+        morpho.setIsLiquidateCollateralPaused(aDai, true);
+        (, , , , , , , , isLiquidateCollateralPaused, , ) = morpho.market(aDai);
+        assertTrue(isLiquidateCollateralPaused);
+    }
+
+    function testOnlyOwnerShouldDisableLiquidateOnBorrow() public {
+        (, , , , , , , , , bool isLiquidateBorrowPaused, ) = morpho.market(aDai);
+        assertFalse(isLiquidateBorrowPaused);
+        vm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setIsLiquidateBorrowPaused(aDai, true);
+
+        morpho.setIsLiquidateBorrowPaused(aDai, true);
+        (, , , , , , , , , isLiquidateBorrowPaused, ) = morpho.market(aDai);
+        assertTrue(isLiquidateBorrowPaused);
     }
 }

@@ -25,6 +25,7 @@ contract Config is BaseConfig {
     address constant aUsdt = 0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811;
     address constant aWbtc = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
     address constant aWeth = 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e;
+    address constant aStEth = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
 
     address constant wrappedNativeToken = wEth;
     address constant aWrappedNativeToken = aWeth;
@@ -48,7 +49,7 @@ contract Config is BaseConfig {
     ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
 
     TransparentUpgradeableProxy public lensProxy =
-        TransparentUpgradeableProxy(payable(0x8706256509684E9cD93B7F19254775CE9324c226));
+        TransparentUpgradeableProxy(payable(0x507fA343d0A90786d86C7cd885f5C49263A91FF4));
     TransparentUpgradeableProxy public morphoProxy =
         TransparentUpgradeableProxy(payable(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0));
     TransparentUpgradeableProxy public rewardsManagerProxy;

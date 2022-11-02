@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 import {DumbOracle} from "./helpers/DumbOracle.sol";
 import "@contracts/aave-v3/IncentivesVault.sol";
@@ -48,7 +49,7 @@ contract TestIncentivesVault is Test, Config {
     }
 
     function testShouldNotSetBonusAboveMaxBasisPoints() public {
-        uint256 moreThanMaxBasisPoints = incentivesVault.MAX_BASIS_POINTS() + 1;
+        uint256 moreThanMaxBasisPoints = PercentageMath.PERCENTAGE_FACTOR + 1;
         hevm.expectRevert(abi.encodeWithSelector(IncentivesVault.ExceedsMaxBasisPoints.selector));
         incentivesVault.setBonus(moreThanMaxBasisPoints);
     }

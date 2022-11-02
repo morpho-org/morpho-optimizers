@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity >=0.8.0;
-
+pragma solidity >=0.5.0;
 import "./IOracle.sol";
 
 interface IIncentivesVault {
     function isPaused() external view returns (bool);
 
     function bonus() external view returns (uint256);
-
-    function MAX_BASIS_POINTS() external view returns (uint256);
 
     function incentivesTreasuryVault() external view returns (address);
 

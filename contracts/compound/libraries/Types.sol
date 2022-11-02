@@ -70,10 +70,15 @@ library Types {
 
     struct MarketStatus {
         bool isCreated; // Whether or not this market is created.
+        bool isPaused; // Deprecated.
+        bool isPartiallyPaused; // Deprecated.
+    }
+
+    struct MarketPauseStatus {
         bool isSupplyPaused; // Whether the supply is paused or not.
         bool isBorrowPaused; // Whether the borrow is paused or not
         bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).
-        bool isRepayPaused; // Whether the repay is paused or not.
+        bool isRepayPaused; // Whether the repay is paused or not. Note that a "repay" is still possible using a liquidation (if not paused).
         bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
         bool isDeprecated; // Whether a market is deprecated or not.

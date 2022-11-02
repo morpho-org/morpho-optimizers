@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 contract TestIncentivesVault is TestSetup {
     using SafeTransferLib for ERC20;
 
     function testShouldNotSetBonusAboveMaxBasisPoints() public {
-        uint256 moreThanMaxBasisPoints = incentivesVault.MAX_BASIS_POINTS() + 1;
+        uint256 moreThanMaxBasisPoints = PercentageMath.PERCENTAGE_FACTOR + 1;
         hevm.expectRevert(abi.encodeWithSelector(IncentivesVault.ExceedsMaxBasisPoints.selector));
         incentivesVault.setBonus(moreThanMaxBasisPoints);
     }
