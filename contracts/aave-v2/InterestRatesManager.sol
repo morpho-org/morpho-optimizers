@@ -19,13 +19,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
+    /// CONSTANTS & IMMUTABLES ///
+
     address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-
-    uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
-
-    constructor() {
-        ST_ETH_BASE_REBASE_INDEX = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
-    }
+    uint256 public constant ST_ETH_BASE_REBASE_INDEX = 1_086492192583716523804482274;
 
     /// STRUCTS ///
 
