@@ -220,7 +220,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(_poolToken, true);
 
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
 
@@ -245,7 +245,7 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(_poolToken, true);
 
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
 

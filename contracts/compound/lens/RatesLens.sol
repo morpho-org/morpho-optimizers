@@ -48,11 +48,10 @@ abstract contract RatesLens is UsersLens {
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
 
         Indexes memory indexes;
-        (
-            indexes.p2pSupplyIndex,
-            indexes.poolSupplyIndex,
-            indexes.poolBorrowIndex
-        ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (indexes.p2pSupplyIndex, , indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getIndexes(
+            _poolToken,
+            true
+        );
 
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolToken);
@@ -124,11 +123,10 @@ abstract contract RatesLens is UsersLens {
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
 
         Indexes memory indexes;
-        (
-            indexes.p2pBorrowIndex,
-            indexes.poolSupplyIndex,
-            indexes.poolBorrowIndex
-        ) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, indexes.p2pBorrowIndex, indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getIndexes(
+            _poolToken,
+            true
+        );
 
         if (_amount > 0) {
             Types.Delta memory delta = morpho.deltas(_poolToken);
@@ -194,7 +192,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = cToken.supplyRatePerBlock();
         uint256 poolBorrowRate = cToken.borrowRatePerBlock();
 
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (uint256 p2pSupplyIndex, , uint256 poolSupplyIndex, ) = getIndexes(_poolToken, true);
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
         // Do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
@@ -246,7 +244,7 @@ abstract contract RatesLens is UsersLens {
         uint256 poolSupplyRate = cToken.supplyRatePerBlock();
         uint256 poolBorrowRate = cToken.borrowRatePerBlock();
 
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = getIndexes(_poolToken, true);
 
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
         // Do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
