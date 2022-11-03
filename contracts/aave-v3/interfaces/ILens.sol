@@ -8,6 +8,8 @@ import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 interface ILens {
     /// STORAGE ///
 
+    function DEFAULT_LIQUIDATION_CLOSE_FACTOR() external view returns (uint16);
+
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
 
     function morpho() external view returns (IMorpho);
