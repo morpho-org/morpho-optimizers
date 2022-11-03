@@ -103,6 +103,7 @@ contract TestSetup is Config, Test {
         deal(usdp, address(this), type(uint256).max);
         deal(sushi, address(this), type(uint256).max);
         deal(crv, address(this), type(uint256).max);
+        deal(frax, address(this), type(uint256).max);
 
         deal(stEth, type(uint256).max);
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(this)).checked_write(
@@ -142,6 +143,7 @@ contract TestSetup is Config, Test {
         vm.label(address(sushi), "SUSHI");
         vm.label(address(crv), "CRV");
         vm.label(address(stEth), "stETH");
+        vm.label(address(frax), "FRAX");
 
         vm.label(address(aAave), "aAAVE");
         vm.label(address(aDai), "aDAI");
@@ -152,6 +154,7 @@ contract TestSetup is Config, Test {
         vm.label(address(aDai), "aDAI");
         vm.label(address(aCrv), "aCrv");
         vm.label(address(aStEth), "astETH");
+        vm.label(address(aFrax), "aFRAX");
     }
 
     function _initMarkets() internal {
