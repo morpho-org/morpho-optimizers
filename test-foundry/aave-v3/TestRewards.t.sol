@@ -86,11 +86,6 @@ contract TestRewards is TestSetup {
             rewardToken
         );
 
-        console.log(userIndex1);
-        console.log(userIndex2);
-        console.log(userIndex3);
-        console.log(rewardIndexBefore);
-        console.log(rewardIndexAfter);
         assertEq(userIndex1, rewardIndexBefore, "userIndex1 = rewardIndexBefore");
         assertEq(userIndex2, rewardIndexBefore, "userIndex2 = rewardIndexBefore");
         assertGt(userIndex3, userIndex2, "userIndex3 > userIndex2");
