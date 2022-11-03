@@ -140,7 +140,7 @@ abstract contract UsersLens is IndexesLens {
                 ((totalCollateralBalance * collateralPrice * 10**ERC20(borrowedToken).decimals()) /
                     (borrowedPrice * 10**collateralReserveDecimals))
                     .percentDiv(liquidationBonus),
-                totalBorrowBalance.percentMul(PercentageMath.HALF_PERCENTAGE_FACTOR)
+                totalBorrowBalance.percentMul(DEFAULT_LIQUIDATION_CLOSE_FACTOR)
             );
     }
 

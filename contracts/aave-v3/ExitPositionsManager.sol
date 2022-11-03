@@ -710,7 +710,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_isDeprecated) {
             // Allow liquidation of the whole debt.
             liquidationAllowed = true;
-            closeFactor = PercentageMath.PERCENTAGE_FACTOR;
+            closeFactor = MAX_BASIS_POINTS;
         } else {
             uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
             address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
@@ -723,8 +723,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             if (liquidationAllowed)
                 closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
-                    ? PercentageMath.HALF_PERCENTAGE_FACTOR
-                    : PercentageMath.PERCENTAGE_FACTOR;
+                    ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
+                    : MAX_BASIS_POINTS;
         }
     }
 }

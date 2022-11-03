@@ -20,6 +20,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     /// STORAGE ///
 
+    uint256 public constant MAX_BASIS_POINTS = 10_000;
+
     IMorpho public immutable morpho; // The address of the main Morpho contract.
     ERC20 public immutable morphoToken; // The MORPHO token.
 
@@ -105,7 +107,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Sets the reward bonus.
     /// @param _newBonus The new reward bonus.
     function setBonus(uint256 _newBonus) external onlyOwner {
-        if (_newBonus > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
+        if (_newBonus > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
 
         bonus = _newBonus;
         emit BonusSet(_newBonus);

@@ -23,6 +23,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// GLOBAL STORAGE ///
 
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint256 public constant WAD = 1e18;
 
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
