@@ -32,12 +32,12 @@ contract TestInterestRates is InterestRatesManager, Test {
         uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(_params.lastPoolBorrowIndex);
         uint256 p2pGrowthFactor = (poolSupplyGrowthFactor.percentMul(MAX_BASIS_POINTS - _params.p2pIndexCursor) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor));
         uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
-            ? (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex)).rayDiv(
-                _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex))
+            ? (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
+                _params.delta.p2pSupplyAmount.rayMul(_params.lastP2PSupplyIndex))
             : 0;
         uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex)).rayDiv(
-                _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex))
+            ? (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolBorrowIndex)).rayDiv(
+                _params.delta.p2pBorrowAmount.rayMul(_params.lastP2PBorrowIndex))
             : 0;
         if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
             uint256 p2pSupplyGrowthFactor = p2pGrowthFactor - _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
