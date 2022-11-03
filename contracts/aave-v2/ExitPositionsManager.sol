@@ -707,7 +707,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         } else {
             liquidationAllowed = (_getUserHealthFactor(_user, address(0), 0) <
                 HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
-            if (liquidationAllowed) closeFactor = PercentageMath.HALF_PERCENTAGE_FACTOR;
+            if (liquidationAllowed) closeFactor = DEFAULT_LIQUIDATION_CLOSE_FACTOR;
         }
     }
 }

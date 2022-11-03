@@ -724,7 +724,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (liquidationAllowed)
                 closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
                     ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
-                    : MAX_BASIS_POINTS;
+                    : MAX_LIQUIDATION_CLOSE_FACTOR;
         }
     }
 }
