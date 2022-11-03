@@ -216,10 +216,9 @@ abstract contract IndexesLens is LensStorage {
 
         if (_underlyingToken == ST_ETH) {
             uint256 rebaseIndex = ILido(ST_ETH).getPooledEthByShares(WadRayMath.RAY);
-            uint256 baseRebaseIndex = morpho.interestRatesManager().ST_ETH_BASE_REBASE_INDEX();
 
-            poolSupplyIndex = poolSupplyIndex.rayMul(rebaseIndex).rayDiv(baseRebaseIndex);
-            poolBorrowIndex = poolBorrowIndex.rayMul(rebaseIndex).rayDiv(baseRebaseIndex);
+            poolSupplyIndex = poolSupplyIndex.rayMul(rebaseIndex).rayDiv(ST_ETH_BASE_REBASE_INDEX);
+            poolBorrowIndex = poolBorrowIndex.rayMul(rebaseIndex).rayDiv(ST_ETH_BASE_REBASE_INDEX);
         }
     }
 }

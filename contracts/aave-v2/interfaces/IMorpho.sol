@@ -24,6 +24,9 @@ interface IMorpho {
     function BORROWING_MASK() external view returns(bytes32);
     function ONE() external view returns(bytes32);
 
+    function ST_ETH() external view returns (address);
+    function ST_ETH_BASE_REBASE_INDEX() external view returns (uint256);
+
     function isClaimRewardsPaused() external view returns (bool);
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function maxSortedUsers() external view returns (uint256);

@@ -282,7 +282,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aStEth, totalBalance / 2);
 
         // deposited may be lower than totalBalance / 2 in the case the current block number is lower than
-        // the block number at which InterestRatesManager.ST_ETH_BASE_REBASE_INDEX was defined
+        // the block number at which Morpho.ST_ETH_BASE_REBASE_INDEX was defined
         (, , uint256 deposited) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
         // Update the beacon balance to accrue rewards on the stETH token.
