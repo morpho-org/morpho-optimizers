@@ -21,10 +21,10 @@ contract TestRatesLens is TestSetup {
         uint256 expectedPoolSupplyRate = reserve.currentLiquidityRate;
         uint256 expectedPoolBorrowRate = reserve.currentVariableBorrowRate;
 
-        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
-        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
-        assertEq(poolSupplyRate, expectedPoolSupplyRate);
-        assertEq(poolBorrowRate, expectedPoolBorrowRate);
+        assertApproxEqAbs(p2pSupplyRate, expectedP2PSupplyRate, 1);
+        assertApproxEqAbs(p2pBorrowRate, expectedP2PBorrowRate, 1);
+        assertApproxEqAbs(poolSupplyRate, expectedPoolSupplyRate, 1);
+        assertApproxEqAbs(poolBorrowRate, expectedPoolBorrowRate, 1);
     }
 
     function testSupplyRateShouldEqual0WhenNoSupply() public {
