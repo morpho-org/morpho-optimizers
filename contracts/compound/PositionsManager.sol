@@ -285,7 +285,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
             supplierSupplyBalance.onPool += vars.remainingToSupply.div(
-                lastPoolIndexes[_poolToken].lastSupplyPoolIndex // Exchange rate has already been updated.
+                ICToken(_poolToken).exchangeRateStored() // Exchange rate has already been updated.
             ); // In scaled balance.
             _supplyToPool(_poolToken, underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
@@ -322,7 +322,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolToken];
-        uint256 poolSupplyIndex = lastPoolIndexes[_poolToken].lastSupplyPoolIndex; // Exchange rate has already been updated.
+        uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
 
         /// Peer-to-peer borrow ///
 
