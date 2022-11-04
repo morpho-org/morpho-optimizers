@@ -10,7 +10,6 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 
 import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";

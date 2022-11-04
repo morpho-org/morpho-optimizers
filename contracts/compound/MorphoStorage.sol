@@ -10,8 +10,6 @@ import "./interfaces/IInterestRatesManager.sol";
 import "./libraries/DoubleLinkedList.sol";
 import "./libraries/Types.sol";
 
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
