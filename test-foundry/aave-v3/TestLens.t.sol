@@ -1145,41 +1145,21 @@ contract TestLens is TestSetup {
         assertEq(lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc), 0);
     }
 
-    function testLiquidationShouldNotBeAboveCloseFactor() public {
-        uint256 amount = 10_000 ether;
-
-        createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) * 2));
-
-        borrower1.approve(usdc, to6Decimals(amount));
-        borrower1.supply(aUsdc, to6Decimals(amount));
-        borrower1.borrow(aDai, amount);
-
-        createAndSetCustomPriceOracle().setDirectPrice(
-            usdc,
-            ((oracle.getAssetPrice(dai) * 79) / 100)
-        );
-
-        assertApproxEqAbs(
-            lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
-            amount.percentMul(DEFAULT_LIQUIDATION_CLOSE_FACTOR),
-            1
-        );
-    }
-
-    function testLiquidationShouldBeHalfWhenPriceIsHalf() public {
+    function testIsLiquidatable() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
+        (bool liquidatable, uint256 closeFactor) = lens.isLiquidatable(address(borrower1));
+        assertFalse(liquidatable, "liquidatable before");
+        assertEq(closeFactor, 0, "close factor before");
 
         createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) / 2));
 
-        assertApproxEqAbs(
-            lens.computeLiquidationRepayAmount(address(borrower1), aDai, aUsdc),
-            amount / 2,
-            1
-        );
+        (liquidatable, closeFactor) = lens.isLiquidatable(address(borrower1));
+        assertTrue(liquidatable, "liquidatable after");
+        assertEq(closeFactor, PercentageMath.PERCENTAGE_FACTOR, "close factor after");
     }
 
     function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
@@ -1212,6 +1192,7 @@ contract TestLens is TestSetup {
 
         if (toRepay != 0) {
             supplier1.approve(usdc, type(uint256).max);
+            (bool liquidatable, ) = lens.isLiquidatable(address(borrower1));
 
             do {
                 supplier1.liquidate(aUsdc, aDai, address(borrower1), toRepay);
@@ -1222,11 +1203,13 @@ contract TestLens is TestSetup {
                 );
 
                 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
-            } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
+                (liquidatable, ) = lens.isLiquidatable(address(borrower1));
+            } while (liquidatable && toRepay > 0);
 
             // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationBonus] threshold and returned to a solvent position
             if (states.collateral.percentDiv(liquidationBonus) > states.debt) {
-                assertFalse(lens.isLiquidatable(address(borrower1)), "borrower1 liquidatable");
+                (liquidatable, ) = lens.isLiquidatable(address(borrower1));
+                assertFalse(liquidatable, "borrower1 liquidatable");
             } else {
                 // or the liquidator has drained all the collateral
                 states = lens.getUserBalanceStates(address(borrower1));

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {IPriceOracleSentinel} from "@aave/core-v3/contracts/interfaces/IPriceOracleSentinel.sol";
 
 import "./IndexesLens.sol";
 
@@ -121,7 +122,8 @@ abstract contract UsersLens is IndexesLens {
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress
     ) external view returns (uint256) {
-        if (!isLiquidatable(_user)) return 0;
+        (bool liquidatable, uint256 closeFactor) = isLiquidatable(_user);
+        if (!liquidatable) return 0;
 
         (
             address collateralToken,
@@ -141,10 +143,6 @@ abstract contract UsersLens is IndexesLens {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 borrowedPrice = oracle.getAssetPrice(borrowedToken);
         uint256 collateralPrice = oracle.getAssetPrice(collateralToken);
-
-        uint256 closeFactor = morpho.market(_poolTokenBorrowedAddress).isDeprecated
-            ? PercentageMath.PERCENTAGE_FACTOR
-            : DEFAULT_LIQUIDATION_CLOSE_FACTOR;
 
         return
             Math.min(
@@ -374,11 +372,15 @@ abstract contract UsersLens is IndexesLens {
 
     /// @dev Checks whether a liquidation can be performed on a given user.
     /// @param _user The user to check.
-    /// @return whether or not the user is liquidatable.
-    function isLiquidatable(address _user) public view returns (bool) {
+    /// @return liquidationAllowed Whether or not the user is liquidatable.
+    /// @return closeFactor The close factor of the liquidation.
+    function isLiquidatable(address _user)
+        public
+        view
+        returns (bool liquidationAllowed, uint256 closeFactor)
+    {
         address[] memory createdMarkets = morpho.getMarketsCreated();
         uint256 nbCreatedMarkets = createdMarkets.length;
-
         bytes32 userMarkets = morpho.userMarkets(_user);
 
         for (uint256 i; i < nbCreatedMarkets; ) {
@@ -386,14 +388,25 @@ abstract contract UsersLens is IndexesLens {
                 _isBorrowing(userMarkets, createdMarkets[i]) &&
                 morpho.market(createdMarkets[i]).isDeprecated
             ) {
-                return true;
+                return (true, PercentageMath.PERCENTAGE_FACTOR);
             }
 
             unchecked {
                 ++i;
             }
         }
-        return getUserHealthFactor(_user) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        uint256 healthFactor = getUserHealthFactor(_user);
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (priceOracleSentinel != address(0))
+            liquidationAllowed = (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
+                (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
+                    healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
+        else liquidationAllowed = healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        if (liquidationAllowed) {
+            closeFactor = healthFactor > MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD
+                ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
+                : PercentageMath.PERCENTAGE_FACTOR;
+        }
     }
 
     /// INTERNAL ///

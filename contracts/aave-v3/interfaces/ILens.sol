@@ -12,6 +12,8 @@ interface ILens {
 
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
 
+    function MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
+
     function morpho() external view returns (IMorpho);
 
     function addressesProvider() external view returns (IPoolAddressesProvider);
@@ -178,7 +180,10 @@ interface ILens {
         IPriceOracleGetter _oracle
     ) external view returns (Types.AssetLiquidityData memory assetData);
 
-    function isLiquidatable(address _user) external view returns (bool);
+    function isLiquidatable(address _user)
+        external
+        view
+        returns (bool liquidationAllowed, uint256 closeFactor);
 
     function computeLiquidationRepayAmount(
         address _user,
