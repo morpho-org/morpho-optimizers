@@ -217,41 +217,76 @@ contract TestLens is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
+    struct MaxCapacitiesTestStruct {
+        uint256 withdrawableBefore;
+        uint256 borrowableBefore;
+        uint256 withdrawableAfter;
+        uint256 borrowableAfter;
+    }
+
     function testMaxCapacitiesWithSupplyAndBorrow() public {
         uint256 amount = 100 ether;
+
+        MaxCapacitiesTestStruct memory aaveCapacities;
+        MaxCapacitiesTestStruct memory daiCapacities;
 
         borrower1.approve(aave, amount);
         borrower1.supply(aAave, amount);
 
-        (uint256 withdrawableAaveBefore, uint256 borrowableAaveBefore) = lens
+        (aaveCapacities.withdrawableBefore, aaveCapacities.borrowableBefore) = lens
         .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
-        (uint256 withdrawableDaiBefore, uint256 borrowableDaiBefore) = lens
+        (daiCapacities.withdrawableBefore, daiCapacities.borrowableBefore) = lens
         .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        borrower1.borrow(aDai, borrowableDaiBefore / 2);
+        borrower1.borrow(aDai, daiCapacities.borrowableBefore / 2);
 
-        (uint256 withdrawableAaveAfter, uint256 borrowableAaveAfter) = lens
+        (aaveCapacities.withdrawableAfter, aaveCapacities.borrowableAfter) = lens
         .getUserMaxCapacitiesForAsset(address(borrower1), aAave);
-        (uint256 withdrawableDaiAfter, uint256 borrowableDaiAfter) = lens
+        (daiCapacities.withdrawableAfter, daiCapacities.borrowableAfter) = lens
         .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        (uint256 ltvAave, , , , , ) = pool.getConfiguration(aave).getParams();
+        (uint256 ltvAave, uint256 ltAave, , , , ) = pool.getConfiguration(aave).getParams();
 
-        assertEq(withdrawableAaveBefore, amount, "cannot withdraw all AAVE");
-        assertEq(borrowableAaveBefore, amount.percentMul(ltvAave), "cannot borrow all AAVE");
-        assertEq(withdrawableDaiBefore, 0, "can withdraw DAI not supplied");
+        assertEq(aaveCapacities.withdrawableBefore, amount, "cannot withdraw all AAVE");
+        assertEq(
+            aaveCapacities.borrowableBefore,
+            amount.percentMul(ltvAave),
+            "cannot borrow all AAVE"
+        );
+        assertEq(daiCapacities.withdrawableBefore, 0, "can withdraw DAI not supplied");
         assertApproxEqAbs(
-            borrowableDaiBefore,
+            daiCapacities.borrowableBefore,
             amount.percentMul(ltvAave).wadMul(
                 oracle.getAssetPrice(aave).wadDiv(oracle.getAssetPrice(dai))
             ),
             1e3,
             "cannot borrow all DAI"
         );
-        assertEq(withdrawableAaveAfter, withdrawableAaveBefore / 2, "cannot withdraw half AAVE");
-        assertEq(borrowableAaveAfter, borrowableAaveBefore / 2, "cannot borrow half AAVE");
-        assertEq(withdrawableDaiAfter, withdrawableDaiBefore / 2, "cannot withdraw half DAI");
-        assertEq(borrowableDaiAfter, borrowableDaiBefore / 2, "cannot borrow half DAI");
+        /// Note: Borrowing half your capacity does not necessarily mean you can withdraw half your capacity.
+        assertApproxEqAbs(
+            aaveCapacities.withdrawableAfter,
+            (aaveCapacities.withdrawableBefore * (ltAave - (ltvAave / 2))) / ltAave,
+            1e8,
+            "cannot withdraw half AAVE"
+        );
+        assertEq(
+            aaveCapacities.borrowableAfter,
+            aaveCapacities.borrowableBefore / 2,
+            "cannot borrow half AAVE"
+        );
+        assertEq(
+            daiCapacities.withdrawableAfter,
+            daiCapacities.withdrawableBefore / 2,
+            "cannot withdraw half DAI"
+        );
+        assertEq(
+            daiCapacities.borrowableAfter,
+            daiCapacities.borrowableBefore / 2,
+            "cannot borrow half DAI"
+        );
+
+        vm.expectRevert(ExitPositionsManager.UnauthorisedWithdraw.selector);
+        borrower1.withdraw(aAave, aaveCapacities.withdrawableAfter + 1e8);
     }
 
     function testUserBalanceWithoutMatching() public {

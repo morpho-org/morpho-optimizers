@@ -99,13 +99,13 @@ abstract contract UsersLens is IndexesLens {
             (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice
         );
 
-        if (assetData.ltv > 0)
+        if (assetData.liquidationThreshold > 0)
             withdrawable = Math.min(
                 withdrawable,
-                ((liquidityData.maxDebt - liquidityData.debt).percentDiv(assetData.ltv) *
-                    assetData.tokenUnit) / assetData.underlyingPrice
+                ((liquidityData.liquidationThreshold - liquidityData.debt).percentDiv(
+                    assetData.liquidationThreshold
+                ) * assetData.tokenUnit) / assetData.underlyingPrice
             );
-
         Types.Market memory market = morpho.market(_poolToken);
         if (market.isBorrowPaused) borrowable = 0;
         if (market.isWithdrawPaused) withdrawable = 0;
@@ -430,7 +430,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function _getCurrentSupplyBalanceInOf(address _poolToken, address _user)
-        public
+        internal
         view
         returns (
             address underlyingToken,
@@ -463,7 +463,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function _getCurrentBorrowBalanceInOf(address _poolToken, address _user)
-        public
+        internal
         view
         returns (
             address underlyingToken,

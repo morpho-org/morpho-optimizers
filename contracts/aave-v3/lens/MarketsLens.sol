@@ -21,26 +21,6 @@ abstract contract MarketsLens is RatesLens {
         return morpho.market(_poolToken).isCreatedMemory();
     }
 
-    /// @notice Checks if a market is created and not paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created and not paused, otherwise false.
-    function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool) {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreatedMemory() && !market.isPausedMemory();
-    }
-
-    /// @notice Checks if a market is created and not paused or partially paused.
-    /// @param _poolToken The address of the market to check.
-    /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool)
-    {
-        Types.Market memory market = morpho.market(_poolToken);
-        return market.isCreatedMemory() && !market.isPartiallyPausedMemory();
-    }
-
     /// @notice Returns all created markets.
     /// @return marketsCreated The list of market addresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated) {
