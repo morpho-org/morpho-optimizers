@@ -25,7 +25,7 @@ abstract contract LensStorage {
 
     address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     // stETH is a rebasing token, so the rebase index's value when the astEth market was created is stored
-    // and used for internal calculations to convert `stEth.balanceOf` into an amount of shares.
+    // and used for internal calculations to convert `stEth.balanceOf` into an amount in scaled units.
     uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
 
     IMorpho public immutable morpho;
