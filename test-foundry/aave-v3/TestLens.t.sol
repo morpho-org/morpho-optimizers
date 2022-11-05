@@ -1152,14 +1152,27 @@ contract TestLens is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
         (bool liquidatable, uint256 closeFactor) = lens.isLiquidatable(address(borrower1));
-        assertFalse(liquidatable, "liquidatable before");
-        assertEq(closeFactor, 0, "close factor before");
+        assertFalse(liquidatable, "liquidatable 1");
+        assertEq(closeFactor, 0, "close factor 1");
+        assertGt(lens.getUserHealthFactor(address(borrower1)), 1e18);
+
+        (, , , , , , , , uint256 lt, , ) = lens.getMarketConfiguration(aUsdc);
+        createAndSetCustomPriceOracle().setDirectPrice(
+            usdc,
+            ((oracle.getAssetPrice(dai) * 9_999) / lt / 2)
+        );
+        assertLt(lens.getUserHealthFactor(address(borrower1)), 1e18);
+        assertGt(lens.getUserHealthFactor(address(borrower1)), 0.95e18);
+        (liquidatable, closeFactor) = lens.isLiquidatable(address(borrower1));
+        assertTrue(liquidatable, "liquidatable 2");
+        assertEq(closeFactor, PercentageMath.HALF_PERCENTAGE_FACTOR);
 
         createAndSetCustomPriceOracle().setDirectPrice(usdc, (oracle.getAssetPrice(dai) / 2));
+        assertLt(lens.getUserHealthFactor(address(borrower1)), 0.95e18);
 
         (liquidatable, closeFactor) = lens.isLiquidatable(address(borrower1));
-        assertTrue(liquidatable, "liquidatable after");
-        assertEq(closeFactor, PercentageMath.PERCENTAGE_FACTOR, "close factor after");
+        assertTrue(liquidatable, "liquidatable 3");
+        assertEq(closeFactor, PercentageMath.PERCENTAGE_FACTOR, "close factor 3");
     }
 
     function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
