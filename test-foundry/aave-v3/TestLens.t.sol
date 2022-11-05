@@ -1135,6 +1135,43 @@ contract TestLens is TestSetup {
         );
     }
 
+    function testLiquidationShouldHandleCloseFactor() public {
+        uint256 amount = 10_000 ether;
+
+        // Half the price of a dollar
+        uint256 halfDollar = 0.5e18;
+
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(aDai, 2 * amount);
+        borrower1.borrow(aUsdc, to6Decimals(amount));
+
+        SimplePriceOracle oracle = createAndSetCustomPriceOracle();
+        oracle.setDirectPrice(usdc, 1e18);
+        (, , , , , , , , uint256 lt, , ) = lens.getMarketConfiguration(aDai);
+        console2.log(lt);
+
+        oracle.setDirectPrice(dai, halfDollar.percentDiv(lt).percentMul(10200));
+        assertEq(
+            lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai),
+            0,
+            "Close factor 0"
+        );
+
+        oracle.setDirectPrice(dai, halfDollar.percentDiv(lt).percentMul(9800));
+        assertEq(
+            lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai),
+            to6Decimals(amount) / 2,
+            "Close factor 50%"
+        );
+
+        oracle.setDirectPrice(dai, halfDollar.percentDiv(lt).percentMul(9300));
+        assertEq(
+            lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai),
+            to6Decimals(amount),
+            "Close factor 100%"
+        );
+    }
+
     function testLiquidationShouldBeNullWhenNotLiquidatable() public {
         uint256 amount = 10_000 ether;
 
