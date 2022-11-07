@@ -591,8 +591,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        if (_amount == 0) revert AmountIsZero();
-
         WithdrawVars memory vars;
         vars.underlyingToken = _getUnderlying(_poolToken);
         vars.remainingToWithdraw = _amount;
