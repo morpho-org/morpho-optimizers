@@ -23,6 +23,11 @@ runs:
         node-version: 16
         cache: yarn
 
+    - name: Install lcov
+      if: ${{ inputs.codecovToken != '' }}
+      run: sudo apt-get install -y lcov
+      shell: bash
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
       shell: bash
