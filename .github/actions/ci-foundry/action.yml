@@ -66,7 +66,7 @@ runs:
 
     - name: Check coverage threshold
       if: ${{ inputs.codecovToken != '' }}
-      run: npx lcov-total lcov.info --gte=83
+      run: npx lcov-total lcov.info --gte=90.32
       shell: bash
 
     - name: Upload coverage to Codecov
