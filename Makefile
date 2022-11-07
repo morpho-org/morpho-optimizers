@@ -92,6 +92,7 @@ test:
 coverage:
 	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage --report lcov
+	@lcov --remove lcov.info -o lcov.info "test-foundry/*"
 
 lcov-html:
 	@echo Transforming the lcov coverage report into html
