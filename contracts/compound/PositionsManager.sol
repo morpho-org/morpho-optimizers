@@ -249,7 +249,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         Types.Delta storage delta = deltas[_poolToken];
         SupplyVars memory vars;
-        vars.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.remainingToSupply = _amount;
 
         /// Peer-to-peer supply ///
@@ -405,7 +405,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowerBorrowBalance.onPool += remainingToBorrow.div(
-                ICToken(_poolToken).borrowIndex()
+                lastPoolIndexes[_poolToken].lastBorrowPoolIndex
             ); // In cdUnit.
             _borrowFromPool(_poolToken, remainingToBorrow);
         }
@@ -711,7 +711,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Increase the peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
-                    ICToken(_poolToken).borrowIndex()
+                    lastPoolIndexes[_poolToken].lastBorrowPoolIndex
                 );
                 emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
             }
@@ -757,7 +757,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
 
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
             _onBehalf

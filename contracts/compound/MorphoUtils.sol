@@ -209,7 +209,7 @@ abstract contract MorphoUtils is MorphoStorage {
         Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
         return
             userBorrowBalance.inP2P.mul(p2pBorrowIndex[_poolToken]) +
-            userBorrowBalance.onPool.mul(ICToken(_poolToken).borrowIndex());
+            userBorrowBalance.onPool.mul(lastPoolIndexes[_poolToken].lastBorrowPoolIndex);
     }
 
     /// @dev Returns the underlying ERC20 token related to the pool token.
