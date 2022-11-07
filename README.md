@@ -152,7 +152,7 @@ make coverage
 The report is then usable either:
 
 - via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
-- via html, using `make lcov-html` to transform the report
+- via html, using `make lcov-html` to transform the report and opening `coverage/index.html`
 
 :warning: Test coverage is not available on Morpho-AaveV2 nor Morpho-AaveV3 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
 
