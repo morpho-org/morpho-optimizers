@@ -25,7 +25,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     {
         uint256 poolSupplyGrowthFactor = ((_params.poolSupplyIndex * WAD) / _params.lastPoolSupplyIndex);
         uint256 poolBorrowGrowthFactor = ((_params.poolBorrowIndex * WAD) / _params.lastPoolBorrowIndex);
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) * poolSupplyGrowthFactor + _params.p2pIndexCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 p2pGrowthFactor = ((PercentageMath.PERCENTAGE_FACTOR - _params.p2pIndexCursor) * poolSupplyGrowthFactor + _params.p2pIndexCursor * poolBorrowGrowthFactor) / PercentageMath.PERCENTAGE_FACTOR;
         uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
             ? (((_params.delta.p2pSupplyDelta * _params.lastPoolSupplyIndex) / WAD) * WAD) /
                 ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / WAD)
@@ -35,8 +35,8 @@ contract TestInterestRates is InterestRatesManager, Test {
                 ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / WAD)
             : 0;
         if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
-            uint256 p2pSupplyGrowthFactor = (p2pGrowthFactor - (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor) / MAX_BASIS_POINTS));
-            uint256 p2pBorrowGrowthFactor = (p2pGrowthFactor + (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor) / MAX_BASIS_POINTS));
+            uint256 p2pSupplyGrowthFactor = (p2pGrowthFactor - (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor) / PercentageMath.PERCENTAGE_FACTOR));
+            uint256 p2pBorrowGrowthFactor = (p2pGrowthFactor + (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor) / PercentageMath.PERCENTAGE_FACTOR));
             p2pSupplyIndex_ =
                 _params.lastP2PSupplyIndex *
                     ((WAD - shareOfTheSupplyDelta) * p2pSupplyGrowthFactor / WAD +

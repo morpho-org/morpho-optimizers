@@ -12,6 +12,9 @@ interface IMorpho {
 
     /// STORAGE ///
 
+    function CTOKEN_DECIMALS() external view returns (uint8);
+    function MAX_BASIS_POINTS() external view returns (uint16);
+    function WAD() external view returns (uint256);
     function isClaimRewardsPaused() external view returns (bool);
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function maxSortedUsers() external view returns (uint256);
