@@ -5,6 +5,7 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IMorpho.sol";
 
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -15,6 +16,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice Contract handling Morpho incentives.
 contract IncentivesVault is IIncentivesVault, Ownable {
     using SafeTransferLib for ERC20;
+    using PercentageMath for uint256;
 
     /// STORAGE ///
 
@@ -145,8 +147,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         );
 
         // Add a bonus on MORPHO rewards.
-        uint256 amountOut = (oracle.consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
-            MAX_BASIS_POINTS;
+        uint256 amountOut = oracle.consult(_amount).percentAdd(bonus);
         morphoToken.safeTransfer(_receiver, amountOut);
 
         emit CompTokensTraded(_receiver, _amount, amountOut);

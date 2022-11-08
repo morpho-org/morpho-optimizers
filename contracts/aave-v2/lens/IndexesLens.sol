@@ -196,13 +196,10 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
     {
-        IInterestRatesManager interestRatesManager = morpho.interestRatesManager();
         (poolSupplyIndex, poolBorrowIndex) = InterestRatesModel.getPoolIndexes(
             pool,
             _underlying,
-            _underlying == interestRatesManager.ST_ETH()
-                ? interestRatesManager.ST_ETH_BASE_REBASE_INDEX()
-                : 0
+            _underlying == ST_ETH ? ST_ETH_BASE_REBASE_INDEX : 0
         );
     }
 }

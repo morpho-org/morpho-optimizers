@@ -8,12 +8,8 @@ import {IInterestRatesManager} from "@contracts/compound/interfaces/IInterestRat
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 import {RewardsManager} from "@contracts/compound/RewardsManager.sol";
-import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
-import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
-import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
 import {Lens} from "@contracts/compound/lens/Lens.sol";
 import {Morpho} from "@contracts/compound/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";

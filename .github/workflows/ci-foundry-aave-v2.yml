@@ -31,6 +31,6 @@ jobs:
 
       - uses: ./.github/actions/ci-foundry
         with:
-          alchemyKey: ${{ secrets.ALCHEMY_KEY }}
           protocol: aave-v2
           network: eth-mainnet
+          alchemyKey: ${{ secrets.ALCHEMY_KEY }}

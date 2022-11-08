@@ -87,35 +87,33 @@ abstract contract MatchingEngine is MorphoUtils {
             ];
             vars.inUnderlying = firstPoolSupplierBalance.onPool.mul(vars.poolIndex);
 
-            uint256 newPoolSupplyBalance;
-            uint256 newP2PSupplyBalance;
+            uint256 poolSupplyBalance;
+            uint256 p2pSupplyBalance;
             uint256 maxToMatch = _amount - matched;
 
             if (vars.inUnderlying <= maxToMatch) {
-                // newPoolSupplyBalance is 0.
-                newP2PSupplyBalance =
+                // poolSupplyBalance is 0.
+                p2pSupplyBalance =
                     firstPoolSupplierBalance.inP2P +
                     vars.inUnderlying.div(vars.p2pIndex);
                 matched += vars.inUnderlying;
             } else {
-                newPoolSupplyBalance =
+                poolSupplyBalance =
                     firstPoolSupplierBalance.onPool -
                     maxToMatch.div(vars.poolIndex);
-                newP2PSupplyBalance =
-                    firstPoolSupplierBalance.inP2P +
-                    maxToMatch.div(vars.p2pIndex);
+                p2pSupplyBalance = firstPoolSupplierBalance.inP2P + maxToMatch.div(vars.p2pIndex);
                 matched = _amount;
             }
 
-            firstPoolSupplierBalance.onPool = newPoolSupplyBalance;
-            firstPoolSupplierBalance.inP2P = newP2PSupplyBalance;
+            firstPoolSupplierBalance.onPool = poolSupplyBalance;
+            firstPoolSupplierBalance.inP2P = p2pSupplyBalance;
             _updateSupplierInDS(_poolToken, firstPoolSupplier);
 
             emit SupplierPositionUpdated(
                 firstPoolSupplier,
                 _poolToken,
-                newPoolSupplyBalance,
-                newP2PSupplyBalance
+                poolSupplyBalance,
+                p2pSupplyBalance
             );
         }
 
@@ -152,34 +150,34 @@ abstract contract MatchingEngine is MorphoUtils {
             ];
             vars.inUnderlying = firstP2PSupplierBalance.inP2P.mul(vars.p2pIndex);
 
-            uint256 newPoolSupplyBalance;
-            uint256 newP2PSupplyBalance;
+            uint256 poolSupplyBalance;
+            uint256 p2pSupplyBalance;
 
             if (vars.inUnderlying <= remainingToUnmatch) {
-                // newP2PSupplyBalance is 0.
-                newPoolSupplyBalance =
+                // p2pSupplyBalance is 0.
+                poolSupplyBalance =
                     firstP2PSupplierBalance.onPool +
                     vars.inUnderlying.div(vars.poolIndex);
                 remainingToUnmatch -= vars.inUnderlying;
             } else {
-                newPoolSupplyBalance =
+                poolSupplyBalance =
                     firstP2PSupplierBalance.onPool +
                     remainingToUnmatch.div(vars.poolIndex);
-                newP2PSupplyBalance =
+                p2pSupplyBalance =
                     firstP2PSupplierBalance.inP2P -
                     remainingToUnmatch.div(vars.p2pIndex);
                 remainingToUnmatch = 0;
             }
 
-            firstP2PSupplierBalance.onPool = newPoolSupplyBalance;
-            firstP2PSupplierBalance.inP2P = newP2PSupplyBalance;
+            firstP2PSupplierBalance.onPool = poolSupplyBalance;
+            firstP2PSupplierBalance.inP2P = p2pSupplyBalance;
             _updateSupplierInDS(_poolToken, firstP2PSupplier);
 
             emit SupplierPositionUpdated(
                 firstP2PSupplier,
                 _poolToken,
-                newPoolSupplyBalance,
-                newP2PSupplyBalance
+                poolSupplyBalance,
+                p2pSupplyBalance
             );
         }
 
@@ -201,7 +199,7 @@ abstract contract MatchingEngine is MorphoUtils {
         if (_maxGasForMatching == 0) return (0, 0);
 
         MatchVars memory vars;
-        vars.poolIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolToken];
         address firstPoolBorrower;
         vars.gasLeftAtTheBeginning = gasleft();
@@ -263,7 +261,7 @@ abstract contract MatchingEngine is MorphoUtils {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
-        vars.poolIndex = ICToken(_poolToken).borrowIndex();
+        vars.poolIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolToken];
         address firstP2PBorrower;
         uint256 remainingToUnmatch = _amount;

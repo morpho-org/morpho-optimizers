@@ -70,6 +70,24 @@ abstract contract RewardsLens is MarketsLens {
     }
 
     /// @notice Returns the accrued COMP rewards of a user since the last update.
+    /// @param _supplier The address of the supplier.
+    /// @param _poolToken The cToken address.
+    /// @return The accrued COMP rewards.
+    function getAccruedSupplierComp(address _supplier, address _poolToken)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 supplyIndex = getCurrentCompSupplyIndex(_poolToken);
+        uint256 supplierIndex = rewardsManager.compSupplierIndex(_poolToken, _supplier);
+
+        if (supplierIndex == 0) return 0;
+        return
+            (morpho.supplyBalanceInOf(_poolToken, _supplier).onPool *
+                (supplyIndex - supplierIndex)) / 1e36;
+    }
+
+    /// @notice Returns the accrued COMP rewards of a user since the last update.
     /// @param _borrower The address of the borrower.
     /// @param _poolToken The cToken address.
     /// @param _balance The user balance of tokens in the distribution.
@@ -84,6 +102,24 @@ abstract contract RewardsLens is MarketsLens {
 
         if (borrowerIndex == 0) return 0;
         return (_balance * (borrowIndex - borrowerIndex)) / 1e36;
+    }
+
+    /// @notice Returns the accrued COMP rewards of a user since the last update.
+    /// @param _borrower The address of the borrower.
+    /// @param _poolToken The cToken address.
+    /// @return The accrued COMP rewards.
+    function getAccruedBorrowerComp(address _borrower, address _poolToken)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 borrowIndex = getCurrentCompBorrowIndex(_poolToken);
+        uint256 borrowerIndex = rewardsManager.compBorrowerIndex(_poolToken, _borrower);
+
+        if (borrowerIndex == 0) return 0;
+        return
+            (morpho.borrowBalanceInOf(_poolToken, _borrower).onPool *
+                (borrowIndex - borrowerIndex)) / 1e36;
     }
 
     /// @notice Returns the updated COMP supply index.

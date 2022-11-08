@@ -2,8 +2,14 @@
 pragma solidity >=0.5.0;
 
 import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
+import "./IMorpho.sol";
+import "./aave/IPool.sol";
 
 interface IRewardsManager {
+    function morpho() external view returns (IMorpho);
+
+    function pool() external view returns (IPool);
+
     function initialize(address _morpho) external;
 
     function getUserAccruedRewards(

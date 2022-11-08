@@ -278,9 +278,12 @@ contract TestSupply is TestSetup {
         vm.prank(address(supplier1));
         ERC20(stEth).transfer(address(morpho), 100);
 
-        uint256 deposited = totalBalance / 2;
         supplier1.approve(stEth, type(uint256).max);
-        supplier1.supply(aStEth, deposited);
+        supplier1.supply(aStEth, totalBalance / 2);
+
+        // deposited may be lower than totalBalance / 2 in the case the current block number is lower than
+        // the block number at which Morpho.ST_ETH_BASE_REBASE_INDEX was defined
+        (, , uint256 deposited) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
         // Update the beacon balance to accrue rewards on the stETH token.
         // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
@@ -297,13 +300,10 @@ contract TestSupply is TestSetup {
         vm.warp(block.timestamp + 1);
 
         uint256 balanceBeforeWithdraw = ERC20(stEth).balanceOf(address(supplier1));
-        uint256 aTokenBalance = ERC20(aStEth).balanceOf(address(morpho));
         supplier1.withdraw(aStEth, type(uint256).max);
-        uint256 balanceAfterWithdraw = ERC20(stEth).balanceOf(address(supplier1));
-        uint256 withdrawn = balanceAfterWithdraw - balanceBeforeWithdraw;
+        uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBeforeWithdraw;
 
-        // Rewards should accrue on stETH even if there's is no supply interest rate on Aave.
+        // Staking rewards should accrue on stETH even if there's is no supply interest rate on Aave.
         assertGt(withdrawn, deposited);
-        assertApproxEqAbs(withdrawn, aTokenBalance, 1);
     }
 }

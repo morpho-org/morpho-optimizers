@@ -886,7 +886,7 @@ contract TestLens is TestSetup {
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aStEth), "p2p borrow indexes different");
 
         uint256 rebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
-        uint256 baseRebaseIndex = interestRatesManager.ST_ETH_BASE_REBASE_INDEX();
+        uint256 baseRebaseIndex = morpho.ST_ETH_BASE_REBASE_INDEX();
 
         assertEq(
             newPoolSupplyIndex,

@@ -187,6 +187,15 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
     }
 
+    function testOnlyOwnerShouldSetDustThreshold() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setDustThreshold(1e8);
+
+        morpho.setDustThreshold(1e8);
+        assertEq(morpho.dustThreshold(), 1e8);
+    }
+
     function testOnlyOwnerShouldSetTreasuryVault() public {
         address treasuryVaultV2 = address(2);
 
@@ -205,6 +214,19 @@ contract TestGovernance is TestSetup {
 
         morpho.setIsClaimRewardsPaused(true);
         assertTrue(morpho.isClaimRewardsPaused());
+    }
+
+    function testSetP2PIndexCursor() public {
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setP2PIndexCursor(cDai, 5000);
+
+        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        morpho.setP2PIndexCursor(cDai, 10001);
+
+        morpho.setP2PIndexCursor(cDai, 6969);
+        (, uint16 p2pIndexCursor) = morpho.marketParameters(cDai);
+        assertEq(p2pIndexCursor, 6969);
     }
 
     function testOnlyOwnerShouldDisableSupply() public {

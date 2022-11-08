@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/libraries/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
+import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
@@ -15,6 +18,7 @@ import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
 import "@forge-std/console.sol";
+import "@forge-std/console2.sol";
 import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Utils {

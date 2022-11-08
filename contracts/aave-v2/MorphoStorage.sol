@@ -32,6 +32,11 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     bytes32 public constant ONE =
         0x0000000000000000000000000000000000000000000000000000000000000001;
 
+    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    // stETH is a rebasing token, so the rebase index's value when the astEth market was created is stored
+    // and used for internal calculations to convert `stEth.balanceOf` into an amount in scaled units.
+    uint256 public constant ST_ETH_BASE_REBASE_INDEX = 1_086492192583716523804482274;
+
     bool public isClaimRewardsPaused; // Whether claiming rewards is paused or not.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.

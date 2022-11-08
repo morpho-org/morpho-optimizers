@@ -13,7 +13,7 @@ FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
 
 ifdef FOUNDRY_ETH_RPC_URL
   FOUNDRY_TEST=test-foundry/prod/${PROTOCOL}/
-  FOUNDRY_FUZZ_RUNS=4096
+  FOUNDRY_FUZZ_RUNS=256
   FOUNDRY_FUZZ_MAX_LOCAL_REJECTS=16384
   FOUNDRY_FUZZ_MAX_GLOBAL_REJECTS=1048576
 else
@@ -90,12 +90,13 @@ test:
 	@forge test -vv | tee trace.ansi
 
 coverage:
-	@echo Create coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge coverage
-
-coverage-lcov:
-	@echo Create coverage lcov for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage --report lcov
+	@lcov --remove lcov.info -o lcov.info "test-foundry/*"
+
+lcov-html:
+	@echo Transforming the lcov coverage report into html
+	@genhtml lcov.info -o coverage
 
 fuzz:
 	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
@@ -116,7 +117,7 @@ contract-% c-%:
 
 single-% s-%:
 	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvv --match-test $* | tee trace.ansi
+	@forge test -vvvv --match-test $* | tee trace.ansi
 
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
@@ -131,4 +132,4 @@ build:
 	@forge build --force --sizes
 
 
-.PHONY: test config test-common foundry
+.PHONY: test config test-common foundry coverage

@@ -21,10 +21,15 @@ import "../libraries/InterestRatesModel.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
 abstract contract LensStorage {
-    /// STORAGE ///
+    /// CONSTANTS & IMMUTABLES ///
 
     uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
+
+    address public constant ST_ETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    // stETH is a rebasing token, so the rebase index's value when the astEth market was created is stored
+    // and used for internal calculations to convert `stEth.balanceOf` into an amount in scaled units.
+    uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
 
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
@@ -38,5 +43,6 @@ abstract contract LensStorage {
         morpho = IMorpho(_morpho);
         pool = ILendingPool(morpho.pool());
         addressesProvider = ILendingPoolAddressesProvider(morpho.addressesProvider());
+        ST_ETH_BASE_REBASE_INDEX = morpho.ST_ETH_BASE_REBASE_INDEX();
     }
 }
