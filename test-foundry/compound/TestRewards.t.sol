@@ -550,20 +550,17 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier1.supply(cDai, toSupply);
 
-        uint256 balanceBefore = supplier1.balanceOf(comp);
+        hevm.roll(block.number + 1_000);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
-
-        hevm.roll(block.number + 1_000);
-
-        uint256 unclaimedRewards1 = lens.getAccruedSupplierComp(cDai, address(supplier1));
-        uint256 unclaimedRewards2 = lens.getAccruedSupplierComp(cDai, address(supplier1), onPool);
-
-        uint256 index = comptroller.compSupplyState(cDai).index;
+        uint256 unclaimedRewards1 = lens.getAccruedSupplierComp(address(supplier1), cDai);
+        uint256 unclaimedRewards2 = lens.getAccruedSupplierComp(address(supplier1), cDai, onPool);
+        uint256 index = lens.getCurrentCompSupplyIndex(cDai);
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
 
+        assertGt(unclaimedRewards1, 0);
         assertEq(unclaimedRewards1, unclaimedRewards2, "not same supply accrued amt");
         assertEq(unclaimedRewards1, expectedClaimed, "unexpected supply accrued amount");
     }
@@ -574,20 +571,20 @@ contract TestRewards is TestSetup {
         supplier1.supply(cDai, toSupply);
         supplier1.borrow(cUsdc, to6Decimals(50 ether));
 
-        uint256 balanceBefore = supplier1.balanceOf(comp);
+        hevm.roll(block.number + 1_000);
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(cUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
+        uint256 unclaimedRewards1 = lens.getAccruedBorrowerComp(address(supplier1), cUsdc);
+        uint256 unclaimedRewards2 = lens.getAccruedBorrowerComp(address(supplier1), cUsdc, onPool);
+        uint256 index = lens.getCurrentCompBorrowIndex(cUsdc);
 
-        hevm.roll(block.number + 1_000);
-
-        uint256 unclaimedRewards1 = lens.getAccruedBorrowerComp(cDai, address(supplier1));
-        uint256 unclaimedRewards2 = lens.getAccruedBorrowerComp(cDai, address(supplier1), onPool);
-
-        uint256 index = comptroller.compBorrowState(cUsdc).index;
-
+        console2.log(onPool);
+        console2.log(index);
+        console2.log(userIndex);
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
 
+        assertGt(unclaimedRewards1, 0);
         assertEq(unclaimedRewards1, unclaimedRewards2, "not same borrow accrued amt");
         assertEq(unclaimedRewards1, expectedClaimed, "unexpected borrow accrued amount");
     }
