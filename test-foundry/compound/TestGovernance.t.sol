@@ -229,6 +229,24 @@ contract TestGovernance is TestSetup {
         assertEq(p2pIndexCursor, 6969);
     }
 
+    function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        morpho.setIsDeprecated(cDai, true);
+        (, , , , , , bool isDeprecated) = morpho.marketPauseStatus(cDai);
+        assertTrue(isDeprecated);
+
+        morpho.setIsDeprecated(cDai, false);
+        (, , , , , , isDeprecated) = morpho.marketPauseStatus(cDai);
+        assertFalse(isDeprecated);
+    }
+
     function testOnlyOwnerShouldDisableSupply() public {
         (bool isSupplyPaused, , , , , , ) = morpho.marketPauseStatus(cDai);
         assertFalse(isSupplyPaused);

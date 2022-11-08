@@ -232,6 +232,20 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
     }
 
+    function testShouldNotAllowUSDTCollateral() public {
+        uint256 amount = 1e8;
+        // Give morpho enough of a position size
+        supplier1.approve(usdc, amount * 10);
+        supplier1.supply(aUsdc, amount * 10);
+
+        // Add large usdt supply
+        borrower1.approve(usdt, type(uint256).max);
+        borrower1.supply(aUsdt, amount * 10);
+
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(aUsdc, amount);
+    }
+
     function testShouldNotBorrowWithDisabledCollateral() public {
         uint256 amount = 100 ether;
 
