@@ -256,13 +256,16 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aUsdc, to6Decimals(amount));
     }
 
-    function testShouldUseRightAmountOfGas() public {
+    function testShouldMatchBorrowWithCorrectAmountOfGas() public {
         uint256 amount = 100 ether;
         createSigners(30);
+
         uint256 snapshotId = vm.snapshot();
         uint256 gasUsed1 = _getBorrowGasUsage(amount, 1e5);
+
         vm.revertTo(snapshotId);
         uint256 gasUsed2 = _getBorrowGasUsage(amount, 2e5);
+
         assertGt(gasUsed2, gasUsed1 + 1e4);
     }
 
@@ -281,7 +284,7 @@ contract TestBorrow is TestSetup {
 
         uint256 gasLeftBefore = gasleft();
         borrower1.borrow(aDai, amount * 20, maxGas);
-        uint256 gasLeftAfter = gasleft();
-        gasUsed = gasLeftBefore - gasLeftAfter;
+
+        gasUsed = gasLeftBefore - gasleft();
     }
 }
