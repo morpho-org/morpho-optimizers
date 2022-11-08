@@ -7,12 +7,15 @@ import "../helpers/compound/specs/SymbolicOracle.spec"
 import "../helpers/compound/specs/SymbolicComptroller.spec"
 
 // allows us to reference the poolToken in the spec
-using DummyPoolTokenA as tokenA // for referencing specific tokens 
-using DummyPoolTokenB as tokenB 
+using DummyPoolTokenA as poolTokenA // for referencing specific tokens 
+using DummyERC20A as tokenA
+using DummyPoolTokenB as poolTokenB 
+using DummyERC20B as tokenB
+using DummyCEth as cEth
+using DummyWeth as wEth
 using DummyPoolTokenImpl as poolToken // for summarization
 using SymbolicOracle as oracle
 using SymbolicComptroller as comptroller
-using DummyWeth as Weth
 
 methods {
     supplyLogic(address, address, address, uint256, uint256)
@@ -45,6 +48,9 @@ methods {
     _unmatchBorrowers(address, uint256, uint256) returns (uint256)          => NONDET
     _unmatchSuppliers(address, uint256, uint256) returns (uint256)          => NONDET
 
+    // Utils functions
+    _getUnderlying(address) returns (address) envfree
+
     // IWETH functions, set to NONDET at the moment but we can change that to the dummy implementation
     withdraw(uint256) => NONDET
     deposit(uint256) => NONDET
@@ -68,6 +74,12 @@ ghost _div(uint256, uint256) returns uint256;
     //     y1 > y2 => _div(x1, y1) < _div(x1, y2)) ||
     //     y1 == 1 => _div(x1, y1) == x1;
 // }
+
+function safeAssumptions() {
+    require _getUnderlying(poolTokenA) == tokenA;
+    require _getUnderlying(poolTokenB) == tokenB;
+    require _getUnderlying(cEth) == wEth;
+}
 
 rule sanity(method f)
 {
@@ -166,6 +178,7 @@ rule supplyIncreasesBalance(address _poolToken, address _supplier, address _onBe
     uint256 inP2P; uint256 onPool;
 
     require _amount > 0;
+    safeAssumptions();
 
     supplyLogic(e, _poolToken, _supplier, _onBehalf, _amount, _maxGasForMatching);
 

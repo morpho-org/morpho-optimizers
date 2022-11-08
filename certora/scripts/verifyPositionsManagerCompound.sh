@@ -8,10 +8,13 @@ certoraRun \
     certora/munged/compound/RewardsManager.sol \
     certora/munged/compound/InterestRatesManager.sol \
     certora/helpers/compound/contracts/DummyPoolTokenImpl.sol \
+    certora/helpers/compound/contracts/DummyCEth.sol \
     certora/helpers/compound/contracts/DummyPoolTokenA.sol \
     certora/helpers/compound/contracts/DummyPoolTokenB.sol \
     certora/helpers/compound/contracts/SymbolicOracle.sol \
     certora/helpers/compound/contracts/SymbolicComptroller.sol \
+    certora/helpers/DummyERC20A.sol \
+    certora/helpers/DummyERC20B.sol \
     certora/helpers/DummyWeth.sol \
     --packages @morpho-labs/morpho-utils/=lib/morpho-utils/src/ \
                @rari-capital/solmate/=lib/solmate/ \
