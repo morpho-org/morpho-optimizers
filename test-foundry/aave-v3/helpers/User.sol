@@ -18,10 +18,7 @@ contract User is Test {
     uint256 tm = 1;
 
     constructor(Morpho _morpho) {
-        morpho = _morpho;
-        rewardsManager = _morpho.rewardsManager();
-        pool = _morpho.pool();
-        rewardsController = _morpho.rewardsController();
+        setMorphoAddresses(_morpho);
     }
 
     receive() external payable {}
@@ -164,5 +161,12 @@ contract User is Test {
 
     function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external {
         morpho.setIsLiquidateBorrowPaused(_poolToken, _isPaused);
+    }
+
+    function setMorphoAddresses(Morpho _morpho) public {
+        morpho = _morpho;
+        rewardsManager = _morpho.rewardsManager();
+        pool = _morpho.pool();
+        rewardsController = _morpho.rewardsController();
     }
 }

@@ -89,8 +89,7 @@ contract TestBorrow is TestSetup {
             morpho.p2pBorrowIndex(cDai)
         );
         uint256 expectedBorrowOnPool = (borrowAmount -
-            getBalanceOnCompound(amount, cDaiSupplyIndex))
-        .div(ICToken(cDai).borrowIndex());
+            getBalanceOnCompound(amount, cDaiSupplyIndex)).div(ICToken(cDai).borrowIndex());
 
         testEquality(inP2P, expectedBorrowInP2P, "Borrower1 in peer-to-peer");
         testEquality(onPool, expectedBorrowOnPool, "Borrower1 on pool");
@@ -282,5 +281,34 @@ contract TestBorrow is TestSetup {
 
         assertGt(p2pSupplyDeltaBefore, 0);
         assertEq(p2pSupplyDeltaAfter, 0);
+    }
+
+    function testShouldUseRightAmountOfGas() public {
+        uint256 amount = 100 ether;
+        createSigners(30);
+        uint256 snapshotId = vm.snapshot();
+        uint256 gasUsed1 = _getBorrowGasUsage(amount, 1e5);
+        vm.revertTo(snapshotId);
+        uint256 gasUsed2 = _getBorrowGasUsage(amount, 2e5);
+        assertGt(gasUsed2, gasUsed1 + 1e4);
+    }
+
+    /// @dev Helper for gas usage test
+    function _getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
+        // 2 * NMAX suppliers supply suppliedAmount
+        for (uint256 i; i < 30; i++) {
+            suppliers[i].setMorphoAddresses(morpho);
+            suppliers[i].approve(dai, type(uint256).max);
+            suppliers[i].supply(cDai, amount);
+        }
+
+        borrower1.setMorphoAddresses(morpho);
+        borrower1.approve(usdc, to6Decimals(amount * 200));
+        borrower1.supply(cUsdc, to6Decimals(amount * 200));
+
+        uint256 gasLeftBefore = gasleft();
+        borrower1.borrow(cDai, amount * 20, maxGas);
+        uint256 gasLeftAfter = gasleft();
+        gasUsed = gasLeftBefore - gasLeftAfter;
     }
 }
