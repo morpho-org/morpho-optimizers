@@ -698,6 +698,9 @@ contract TestLens is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
+        // Need to have some pool interaction so that the market is enabled as collateral
+        supplier1.approve(dai, 100 ether);
+        supplier1.supply(aDai, 100 ether);
         (
             address underlying,
             bool isCreated,
@@ -1564,6 +1567,10 @@ contract TestLens is TestSetup {
     function testBalanceShouldBeReflectedWhenStethSlashed() public {
         createMarket(aStEth);
 
+        // The rebase index used in morpho is incorrect for the test block, so we need to scale the expected values.
+        uint256 lensRebaseIndex = lens.ST_ETH_BASE_REBASE_INDEX();
+        uint256 currentRebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
+
         deal(address(supplier1), 1_000 ether);
         uint256 totalEthBalance = address(supplier1).balance;
         uint256 totalBalance = totalEthBalance / 2;
@@ -1593,7 +1600,12 @@ contract TestLens is TestSetup {
         );
         assertEq(p2pBalanceBefore, 0, "P2P balance before");
         assertEq(p2pBalanceAfter, 0, "P2P balance after");
-        assertApproxEqAbs(poolBalanceBefore, totalBalance, 1, "pool balance before");
+        assertApproxEqAbs(
+            poolBalanceBefore,
+            totalBalance.rayMul(currentRebaseIndex).rayDiv(lensRebaseIndex),
+            1,
+            "pool balance before"
+        );
         // Not exact because the total assets of stEth includes other variables
         assertApproxEqAbs(
             poolBalanceAfter,
