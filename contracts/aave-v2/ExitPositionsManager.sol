@@ -318,7 +318,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
-
         _borrowFromPool(underlyingToken, _amount);
         _supplyToPool(underlyingToken, _amount);
 
