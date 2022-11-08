@@ -16,6 +16,14 @@ munged:  $(wildcard $(CONTRACTS_DIR)/*.sol) $(PATCH)
 record:
 	diff -ruN $(CONTRACTS_DIR) $(MUNGED_DIR) | sed 's+\.\./contracts/++g' | sed 's+munged/++g' > $(PATCH)
 
+munged-rewards: $(wildcard $(CONTRACTS_DIR)/*.sol) applyHarnessRewards.patch
+	rm -rf munged-rewards
+	cp -r $(CONTRACTS_DIR) $@
+	patch -p0 -d $@ < applyHarnessRewards
+
+record-rewards:
+	diff -ruN $(CONTRACTS_DIR) munged-rewards | sed 's+\.\./contracts/++g' | sed 's+munged-rewards/++g' > applyHarnessRewards.patch
+
 clean:
 	git clean -fdX
 	touch $(PATCH)

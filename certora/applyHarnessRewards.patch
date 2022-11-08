@@ -1,0 +1,53 @@
+diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
+--- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTree.sol	2022-11-08 18:25:52.119449550 +0100
+@@ -0,0 +1,43 @@
++// SPDX-License-Identifier: GNU AGPLv3
++pragma solidity ^0.8.0;
++
++library MerkleTree {
++    struct Node {
++        address left;
++        address right;
++        bytes32 hashNode;
++    }
++
++    struct Tree {
++        mapping(address => Node) nodes;
++        address root;
++    }
++
++    function _isValidNode(address root, mapping(address => Node) storage nodes)
++        private
++        view
++        returns (bool)
++    {
++        Node memory rootNode = nodes[root];
++        if (root == address(0) || rootNode.hashNode == bytes32(0)) return false;
++
++        bool leftValid = true;
++        bool rightValid = true;
++        if (rootNode.left != address(0)) leftValid = _isValidNode(rootNode.left, nodes);
++        if (rootNode.right != address(0)) rightValid = _isValidNode(rootNode.right, nodes);
++
++        bool pairSorted = true;
++        bytes32 leftHash = nodes[rootNode.left].hashNode;
++        bytes32 rightHash = nodes[rootNode.right].hashNode;
++        if (rootNode.left != address(0) && rootNode.right != address(0))
++            pairSorted = leftHash <= rightHash;
++
++        bool hashedNode = rootNode.hashNode == keccak256(abi.encode(leftHash, rightHash));
++
++        return leftValid && rightValid && pairSorted && hashedNode;
++    }
++
++    function isValidTree(Tree storage t) internal view returns (bool) {
++        return _isValidNode(t.root, t.nodes);
++    }
++}
+diff -ruN .gitignore .gitignore
+--- .gitignore	1970-01-01 01:00:00.000000000 +0100
++++ .gitignore	2022-11-08 18:33:02.384507529 +0100
+@@ -0,0 +1,2 @@
++*
++!.gitignore
