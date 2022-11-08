@@ -579,9 +579,6 @@ contract TestRewards is TestSetup {
         uint256 unclaimedRewards2 = lens.getAccruedBorrowerComp(address(supplier1), cUsdc, onPool);
         uint256 index = lens.getCurrentCompBorrowIndex(cUsdc);
 
-        console2.log(onPool);
-        console2.log(index);
-        console2.log(userIndex);
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
 
         assertGt(unclaimedRewards1, 0);
