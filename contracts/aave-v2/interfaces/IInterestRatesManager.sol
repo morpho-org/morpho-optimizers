@@ -2,9 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface IInterestRatesManager {
-    function ST_ETH() external view returns (address);
-
-    function ST_ETH_BASE_REBASE_INDEX() external view returns (uint256);
-
     function updateIndexes(address _marketAddress) external;
 }
