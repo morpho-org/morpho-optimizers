@@ -544,4 +544,45 @@ contract TestRewards is TestSetup {
         supplier3.claimRewards(cUsdtArray, false);
         supplier2.claimRewards(cUsdcArray, false);
     }
+
+    function testGetAccruedSupplyComp() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(cDai, toSupply);
+
+        hevm.roll(block.number + 1_000);
+
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
+        uint256 unclaimedRewards1 = lens.getAccruedSupplierComp(address(supplier1), cDai);
+        uint256 unclaimedRewards2 = lens.getAccruedSupplierComp(address(supplier1), cDai, onPool);
+        uint256 index = lens.getCurrentCompSupplyIndex(cDai);
+
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+
+        assertGt(unclaimedRewards1, 0);
+        assertEq(unclaimedRewards1, unclaimedRewards2, "not same supply accrued amt");
+        assertEq(unclaimedRewards1, expectedClaimed, "unexpected supply accrued amount");
+    }
+
+    function testGetAccruedBorrowComp() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(cDai, toSupply);
+        supplier1.borrow(cUsdc, to6Decimals(50 ether));
+
+        hevm.roll(block.number + 1_000);
+
+        (, uint256 onPool) = morpho.borrowBalanceInOf(cUsdc, address(supplier1));
+        uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
+        uint256 unclaimedRewards1 = lens.getAccruedBorrowerComp(address(supplier1), cUsdc);
+        uint256 unclaimedRewards2 = lens.getAccruedBorrowerComp(address(supplier1), cUsdc, onPool);
+        uint256 index = lens.getCurrentCompBorrowIndex(cUsdc);
+
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+
+        assertGt(unclaimedRewards1, 0);
+        assertEq(unclaimedRewards1, unclaimedRewards2, "not same borrow accrued amt");
+        assertEq(unclaimedRewards1, expectedClaimed, "unexpected borrow accrued amount");
+    }
 }
