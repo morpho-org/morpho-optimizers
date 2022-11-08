@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity >=0.5.0;
+
 import "./compound/ICompound.sol";
 
 interface IRewardsManager {
