@@ -142,7 +142,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     _params.delta.p2pSupplyAmount.rayMul(_params.lastP2PSupplyIndex)
-                ),
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -160,7 +160,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             uint256 shareOfTheDelta = Math.min(
                 (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolBorrowIndex)).rayDiv(
                     _params.delta.p2pBorrowAmount.rayMul(_params.lastP2PBorrowIndex)
-                ),
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 

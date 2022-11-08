@@ -95,7 +95,7 @@ library InterestRatesModel {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.rayMul(_params.lastPoolIndex).rayDiv(
                     _params.p2pAmount.rayMul(_params.lastP2PIndex)
-                ),
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -120,7 +120,7 @@ library InterestRatesModel {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.rayMul(_params.lastPoolIndex).rayDiv(
                     _params.p2pAmount.rayMul(_params.lastP2PIndex)
-                ),
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -147,7 +147,7 @@ library InterestRatesModel {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.rayMul(_params.poolIndex).rayDiv(
                     _params.p2pAmount.rayMul(_params.p2pIndex)
-                ),
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -173,7 +173,7 @@ library InterestRatesModel {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.rayMul(_params.poolIndex).rayDiv(
                     _params.p2pAmount.rayMul(_params.p2pIndex)
-                ),
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
