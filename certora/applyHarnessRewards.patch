@@ -1,6 +1,6 @@
 diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
 --- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-11-08 18:25:52.119449550 +0100
++++ common/rewards-distribution/MerkleTree.sol	2022-11-08 19:10:18.940152537 +0100
 @@ -0,0 +1,43 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -47,7 +47,6 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-11-08 18:33:02.384507529 +0100
-@@ -0,0 +1,2 @@
++++ .gitignore	2022-11-08 19:10:33.089997069 +0100
+@@ -0,0 +1 @@
 +*
-+!.gitignore

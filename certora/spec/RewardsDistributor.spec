@@ -1,13 +1,13 @@
 methods {
-    function claim(address, uint256, bytes32[]) envfree
+    claim(address, uint256, bytes32[]) envfree
 }
 
-rule noMultipleDistribute(address _account, bytes32[] _proof) {
+rule noMultipleDistribute(address _account, uint256 _claimable, bytes32[] _proof) {
     env e; 
 
-    claim(_account, _proof);
+    claim(_account, _claimable, _proof);
 
-    claim@withrevert(_account, _proof);
+    claim@withrevert(_account, _claimable, _proof);
 
     assert lastReverted;
 }

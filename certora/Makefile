@@ -19,7 +19,7 @@ record:
 munged-rewards: $(wildcard $(CONTRACTS_DIR)/*.sol) applyHarnessRewards.patch
 	rm -rf munged-rewards
 	cp -r $(CONTRACTS_DIR) $@
-	patch -p0 -d $@ < applyHarnessRewards
+	patch -p0 -d $@ < applyHarnessRewards.patch
 
 record-rewards:
 	diff -ruN $(CONTRACTS_DIR) munged-rewards | sed 's+\.\./contracts/++g' | sed 's+munged-rewards/++g' > applyHarnessRewards.patch
