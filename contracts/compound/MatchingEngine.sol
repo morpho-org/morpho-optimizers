@@ -185,7 +185,7 @@ abstract contract MatchingEngine is MorphoUtils {
     }
 
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
-    /// @dev Note: This function expects peer-to-peer indexes to have been updated..
+    /// @dev Note: This function expects peer-to-peer indexes to have been updated.
     /// @param _poolToken The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
@@ -311,7 +311,7 @@ abstract contract MatchingEngine is MorphoUtils {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Updates `_user` in the supplier data structures.
+    /// @notice Updates the given `_user`'s position in the supplier data structures.
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolToken, address _user) internal {
@@ -347,7 +347,7 @@ abstract contract MatchingEngine is MorphoUtils {
             rewardsManager.accrueUserSupplyUnclaimedRewards(_user, _poolToken, formerValueOnPool);
     }
 
-    /// @notice Updates `_user` in the borrower data structures.
+    /// @notice Updates the given `_user`'s position in the borrower data structures.
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {
