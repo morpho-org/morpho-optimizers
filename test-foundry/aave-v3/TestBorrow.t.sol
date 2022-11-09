@@ -273,12 +273,10 @@ contract TestBorrow is TestSetup {
     function _getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
         // 2 * NMAX suppliers supply suppliedAmount
         for (uint256 i; i < 30; i++) {
-            suppliers[i].setMorphoAddresses(morpho);
             suppliers[i].approve(dai, type(uint256).max);
             suppliers[i].supply(aDai, amount);
         }
 
-        borrower1.setMorphoAddresses(morpho);
         borrower1.approve(usdc, to6Decimals(amount * 200));
         borrower1.supply(aUsdc, to6Decimals(amount * 200));
 
