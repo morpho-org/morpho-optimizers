@@ -21,11 +21,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
 
-    /// @notice Emitted the address of the `treasuryVault` is set.
+    /// @notice Emitted when the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted the address of the `incentivesVault` is set.
+    /// @notice Emitted when the address of the `incentivesVault` is set.
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
@@ -121,6 +121,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
+    /// @notice Thrown when trying to set the max sorted users to 0.
+    error MaxSortedUsersCannotBeZero();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
@@ -148,6 +151,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         address _cEth,
         address _wEth
     ) external initializer {
+        if (_maxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
+
         __ReentrancyGuard_init();
         __Ownable_init();
 
@@ -168,6 +173,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
+        if (_newMaxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
@@ -185,6 +191,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the `positionsManager`.
     /// @param _positionsManager The new `positionsManager`.
     function setPositionsManager(IPositionsManager _positionsManager) external onlyOwner {
+        if (address(_positionsManager) == address(0)) revert ZeroAddress();
         positionsManager = _positionsManager;
         emit PositionsManagerSet(address(_positionsManager));
     }
@@ -195,6 +202,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
+        if (address(_interestRatesManager) == address(0)) revert ZeroAddress();
         interestRatesManager = _interestRatesManager;
         emit InterestRatesSet(address(_interestRatesManager));
     }
