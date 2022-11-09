@@ -309,6 +309,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 )
             )
         );
+        if (_amount == 0) revert AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
         deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
@@ -318,11 +319,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
-        // If _amount == 0, calls to pool will revert.
-        if (_amount > 0) {
-            _borrowFromPool(underlyingToken, _amount);
-            _supplyToPool(underlyingToken, _amount);
-        }
+        _borrowFromPool(underlyingToken, _amount);
+        _supplyToPool(underlyingToken, _amount);
 
         emit P2PDeltasIncreased(_poolToken, _amount);
     }

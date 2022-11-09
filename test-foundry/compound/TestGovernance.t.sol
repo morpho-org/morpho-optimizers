@@ -436,6 +436,7 @@ contract TestGovernance is TestSetup {
 
         hevm.roll(block.number + 1000);
 
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
         morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
     }
 

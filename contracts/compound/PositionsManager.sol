@@ -562,6 +562,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 )
             )
         );
+        if (_amount == 0) revert AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.div(poolSupplyIndex);
         deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
