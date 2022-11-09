@@ -140,9 +140,11 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            vars.toRepay += matched;
-            vars.remainingToSupply -= matched;
-            delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
+            if (matched > 0) {
+                vars.toRepay += matched;
+                vars.remainingToSupply -= matched;
+                delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
+            }
         }
 
         Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
@@ -194,6 +196,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
+        if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
@@ -201,8 +204,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         _updateIndexes(_poolToken);
         _setBorrowing(msg.sender, borrowMask[_poolToken], true);
-
-        if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
@@ -238,9 +239,11 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            toWithdraw += matched;
-            remainingToBorrow -= matched;
-            delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
+            if (matched > 0) {
+                toWithdraw += matched;
+                remainingToBorrow -= matched;
+                delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
+            }
         }
 
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
@@ -254,7 +257,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-            _withdrawFromPool(underlyingToken, _poolToken, toWithdraw); // Reverts on error.
+            if (toWithdraw.rayDiv(poolSupplyIndex > 0))
+                _withdrawFromPool(underlyingToken, _poolToken, toWithdraw); // Reverts on error.
         }
 
         /// Pool borrow ///

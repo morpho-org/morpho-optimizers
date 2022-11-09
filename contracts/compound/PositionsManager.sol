@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IWETH.sol";
+import {Math as MorphoMath} from "@morpho-dao/morpho-utils/math/Math.sol";
 
 import "./MatchingEngine.sol";
 
@@ -14,6 +15,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+    using MorphoMath for uint256;
 
     /// EVENTS ///
 
@@ -249,23 +251,23 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         Types.Delta storage delta = deltas[_poolToken];
         SupplyVars memory vars;
-        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
+        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].poolBorrowIndex;
         vars.remainingToSupply = _amount;
 
         /// Peer-to-peer supply ///
 
         // Match the peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
-            uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
-            if (deltaInUnderlying > vars.remainingToSupply) {
-                vars.toRepay += vars.remainingToSupply;
-                delta.p2pBorrowDelta -= vars.remainingToSupply.div(vars.poolBorrowIndex);
-                vars.remainingToSupply = 0;
-            } else {
-                vars.toRepay += deltaInUnderlying;
-                delta.p2pBorrowDelta = 0;
-                vars.remainingToSupply -= deltaInUnderlying;
-            }
+            uint256 matchedDelta = CompoundMath.min(
+                delta.p2pBorrowDelta.mul(vars.poolBorrowIndex),
+                vars.remainingToSupply
+            );
+
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToSupply.div(vars.poolBorrowIndex)
+            );
+            vars.toRepay += matchedDelta;
+            vars.remainingToSupply -= matchedDelta;
             emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
         }
 
@@ -337,12 +339,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
-        _updateP2PIndexes(_poolToken);
-        _enterMarketIfNeeded(_poolToken, msg.sender);
         lastBorrowBlock[msg.sender] = block.number;
 
-        if (_isLiquidatable(msg.sender, _poolToken, 0, _amount)) revert UnauthorisedBorrow();
         ERC20 underlyingToken = _getUnderlying(_poolToken);
+
+        _updateP2PIndexes(_poolToken);
+        _enterMarketIfNeeded(_poolToken, msg.sender);
+        if (_isLiquidatable(msg.sender, _poolToken, 0, _amount)) revert UnauthorisedBorrow();
+
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolToken];
@@ -352,17 +356,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         // Match the peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
-            uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
-            if (deltaInUnderlying > remainingToBorrow) {
-                toWithdraw += remainingToBorrow;
-                delta.p2pSupplyDelta -= remainingToBorrow.div(poolSupplyIndex);
-                remainingToBorrow = 0;
-            } else {
-                toWithdraw += deltaInUnderlying;
-                delta.p2pSupplyDelta = 0;
-                remainingToBorrow -= deltaInUnderlying;
-            }
+            uint256 matchedDelta = CompoundMath.min(
+                delta.p2pSupplyDelta.mul(poolSupplyIndex),
+                remainingToBorrow
+            ); // In underlying.
 
+            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
+                remainingToBorrow.div(poolSupplyIndex)
+            );
+            toWithdraw += matchedDelta;
+            remainingToBorrow -= matchedDelta;
             emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
         }
 
@@ -392,7 +395,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
-            deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
+            delta.p2pBorrowAmount += toAddInP2P;
             borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
@@ -405,7 +408,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Borrow on pool.
         if (remainingToBorrow > 0) {
             borrowerBorrowBalance.onPool += remainingToBorrow.div(
-                lastPoolIndexes[_poolToken].lastBorrowPoolIndex
+                lastPoolIndexes[_poolToken].poolBorrowIndex
             ); // In cdUnit.
             _borrowFromPool(_poolToken, remainingToBorrow);
         }
@@ -442,7 +445,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
-        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
+
+        uint256 toWithdraw = CompoundMath.min(
+            _getUserSupplyBalanceInOf(_poolToken, _supplier),
+            _amount
+        );
 
         if (_isLiquidatable(_supplier, _poolToken, toWithdraw, 0)) revert UnauthorisedWithdraw();
 
@@ -468,7 +475,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
+        uint256 toRepay = CompoundMath.min(
+            _getUserBorrowBalanceInOf(_poolToken, _onBehalf),
+            _amount
+        );
 
         _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
@@ -518,7 +528,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
         // Compute the amount of collateral tokens to seize. This is the minimum between the repaid value plus the liquidation incentive and the available supply.
-        vars.amountToSeize = Math.min(
+        vars.amountToSeize = CompoundMath.min(
             _amount.mul(comptroller.liquidationIncentiveMantissa()).mul(vars.borrowedPrice).div(
                 vars.collateralPrice
             ),
@@ -549,24 +559,24 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolToken);
 
         Types.Delta storage deltas = deltas[_poolToken];
-        Types.LastPoolIndexes memory lastPoolIndexes = lastPoolIndexes[_poolToken];
+        Types.LastPoolIndexes memory poolIndexes = lastPoolIndexes[_poolToken];
 
         uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
-        _amount = Math.min(
+        _amount = CompoundMath.min(
             _amount,
-            Math.min(
+            CompoundMath.min(
                 deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).safeSub(
                     deltas.p2pSupplyDelta.mul(poolSupplyIndex)
                 ),
                 deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).safeSub(
-                    deltas.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                    deltas.p2pBorrowDelta.mul(poolIndexes.poolBorrowIndex)
                 )
             )
         );
         if (_amount == 0) revert AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.div(poolSupplyIndex);
-        deltas.p2pBorrowDelta += _amount.div(lastPoolIndexes.lastBorrowPoolIndex);
+        deltas.p2pBorrowDelta += _amount.div(poolIndexes.poolBorrowIndex);
         emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
         emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
@@ -608,17 +618,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Withdraw supply on pool.
         uint256 onPoolSupply = supplierSupplyBalance.onPool;
         if (onPoolSupply > 0) {
-            uint256 maxToWithdrawOnPool = onPoolSupply.mul(vars.poolSupplyIndex);
+            vars.toWithdraw = CompoundMath.min(
+                onPoolSupply.mul(vars.poolSupplyIndex),
+                vars.remainingToWithdraw
+            );
+            vars.remainingToWithdraw -= vars.toWithdraw;
 
-            if (maxToWithdrawOnPool > vars.remainingToWithdraw) {
-                vars.toWithdraw = vars.remainingToWithdraw;
-                vars.remainingToWithdraw = 0;
-                supplierSupplyBalance.onPool -= vars.toWithdraw.div(vars.poolSupplyIndex);
-            } else {
-                vars.toWithdraw = maxToWithdrawOnPool;
-                vars.remainingToWithdraw -= maxToWithdrawOnPool;
-                supplierSupplyBalance.onPool = 0;
-            }
+            supplierSupplyBalance.onPool -= CompoundMath.min(
+                onPoolSupply,
+                vars.toWithdraw.div(vars.poolSupplyIndex)
+            );
 
             if (vars.remainingToWithdraw == 0) {
                 _updateSupplierInDS(_poolToken, _supplier);
@@ -653,20 +662,17 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         // Reduce the peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
-            uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
+            uint256 matchedDelta = CompoundMath.min(
+                delta.p2pSupplyDelta.mul(vars.poolSupplyIndex),
+                vars.remainingToWithdraw
+            ); // In underlying.
 
-            if (deltaInUnderlying > vars.remainingToWithdraw) {
-                delta.p2pSupplyDelta -= vars.remainingToWithdraw.div(vars.poolSupplyIndex);
-                delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
-                vars.toWithdraw += vars.remainingToWithdraw;
-                vars.remainingToWithdraw = 0;
-            } else {
-                delta.p2pSupplyDelta = 0;
-                delta.p2pSupplyAmount -= deltaInUnderlying.div(vars.p2pSupplyIndex);
-                vars.toWithdraw += deltaInUnderlying;
-                vars.remainingToWithdraw -= deltaInUnderlying;
-            }
-
+            delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
+                vars.remainingToWithdraw.div(vars.poolSupplyIndex)
+            );
+            delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
+            vars.toWithdraw += matchedDelta;
+            vars.remainingToWithdraw -= matchedDelta;
             emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
@@ -711,13 +717,19 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Increase the peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
-                    lastPoolIndexes[_poolToken].lastBorrowPoolIndex
+                    lastPoolIndexes[_poolToken].poolBorrowIndex
                 );
                 emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
             }
 
-            delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
-            delta.p2pBorrowAmount -= unmatched.div(p2pBorrowIndex[_poolToken]);
+            delta.p2pSupplyAmount -= CompoundMath.min(
+                delta.p2pSupplyAmount,
+                vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
+            );
+            delta.p2pBorrowAmount -= CompoundMath.min(
+                delta.p2pBorrowAmount,
+                unmatched.div(p2pBorrowIndex[_poolToken])
+            );
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _borrowFromPool(_poolToken, vars.remainingToWithdraw); // Reverts on error.
@@ -757,7 +769,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
-        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
+        vars.poolBorrowIndex = lastPoolIndexes[_poolToken].poolBorrowIndex;
 
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
             _onBehalf
@@ -768,17 +780,19 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Repay borrow on pool.
         vars.borrowedOnPool = borrowerBorrowBalance.onPool;
         if (vars.borrowedOnPool > 0) {
-            vars.maxToRepayOnPool = vars.borrowedOnPool.mul(vars.poolBorrowIndex);
+            vars.toRepay = CompoundMath.min(
+                vars.borrowedOnPool.mul(vars.poolBorrowIndex),
+                vars.remainingToRepay
+            );
+            vars.remainingToRepay -= vars.toRepay;
 
-            if (vars.maxToRepayOnPool > vars.remainingToRepay) {
-                vars.toRepay = vars.remainingToRepay;
+            borrowerBorrowBalance.onPool -= CompoundMath.min(
+                vars.borrowedOnPool,
+                vars.toRepay.div(vars.poolBorrowIndex)
+            ); // In cdUnit.
 
-                borrowerBorrowBalance.onPool -= CompoundMath.min(
-                    vars.borrowedOnPool,
-                    vars.toRepay.div(vars.poolBorrowIndex)
-                ); // In cdUnit.
+            if (vars.remainingToRepay == 0) {
                 _updateBorrowerInDS(_poolToken, _onBehalf);
-
                 _repayToPool(_poolToken, underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarketIfNeeded(_poolToken, _onBehalf);
 
@@ -790,13 +804,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     borrowerBorrowBalance.onPool,
                     borrowerBorrowBalance.inP2P
                 );
-
                 return;
-            } else {
-                vars.toRepay = vars.maxToRepayOnPool;
-                vars.remainingToRepay -= vars.toRepay;
-
-                borrowerBorrowBalance.onPool = 0;
             }
         }
 
@@ -812,19 +820,17 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         // Reduce the peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
-            uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
-            if (deltaInUnderlying > vars.remainingToRepay) {
-                delta.p2pBorrowDelta -= vars.remainingToRepay.div(vars.poolBorrowIndex);
-                delta.p2pBorrowAmount -= vars.remainingToRepay.div(vars.p2pBorrowIndex);
-                vars.toRepay += vars.remainingToRepay;
-                vars.remainingToRepay = 0;
-            } else {
-                delta.p2pBorrowDelta = 0;
-                delta.p2pBorrowAmount -= deltaInUnderlying.div(vars.p2pBorrowIndex);
-                vars.toRepay += deltaInUnderlying;
-                vars.remainingToRepay -= deltaInUnderlying;
-            }
+            uint256 matchedDelta = CompoundMath.min(
+                delta.p2pBorrowDelta.mul(vars.poolBorrowIndex),
+                vars.remainingToRepay
+            ); // In underlying.
 
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToRepay.div(vars.poolBorrowIndex)
+            );
+            delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
+            vars.toRepay += matchedDelta;
+            vars.remainingToRepay -= matchedDelta;
             emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
@@ -833,7 +839,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
             // No need to subtract p2pBorrowDelta as it is zero.
-            vars.feeToRepay = CompoundMath.safeSub(
+            vars.feeToRepay = MorphoMath.zeroFloorSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
                 delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).safeSub(
                     delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
@@ -956,7 +962,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount
     ) internal {
         // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-        _amount = Math.min(
+        _amount = CompoundMath.min(
             _amount,
             ICToken(_poolToken).borrowBalanceCurrent(address(this)) // The debt of the contract.
         );

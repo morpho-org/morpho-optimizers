@@ -162,10 +162,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_receiver == address(0)) revert AddressIsZero();
         if (!market[_poolToken].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
-
-        _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
         if (toWithdraw == 0) revert UserNotMemberOfMarket();
+
+        _updateIndexes(_poolToken);
 
         if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
 
@@ -340,8 +340,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
         WithdrawVars memory vars;
+        ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
@@ -431,8 +431,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching = 0;
             else vars.remainingGasForMatching -= gasConsumedInMatching;
 
-            vars.remainingToWithdraw -= matched;
-            vars.toWithdraw += matched;
+            if (matched > 0) {
+                vars.remainingToWithdraw -= matched;
+                vars.toWithdraw += matched;
+            }
         }
 
         if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
@@ -497,6 +499,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) internal {
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
+
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
@@ -546,6 +549,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolToken];
         vars.poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
+
         borrowerBorrowBalance.inP2P -= Math.min(
             borrowerBorrowBalance.inP2P,
             vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex)
@@ -605,8 +609,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching = 0;
             else vars.remainingGasForMatching -= gasConsumedInMatching;
 
-            vars.remainingToRepay -= matched;
-            vars.toRepay += matched;
+            if (matched > 0) {
+                vars.remainingToRepay -= matched;
+                vars.toRepay += matched;
+            }
         }
 
         _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.

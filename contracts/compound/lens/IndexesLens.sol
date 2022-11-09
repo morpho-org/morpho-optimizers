@@ -83,7 +83,7 @@ abstract contract IndexesLens is LensStorage {
                 InterestRatesModel.P2PSupplyIndexComputeParams({
                     poolSupplyGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                     p2pSupplyGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
-                    lastPoolSupplyIndex: lastPoolIndexes.lastSupplyPoolIndex,
+                    lastPoolSupplyIndex: lastPoolIndexes.poolSupplyIndex,
                     lastP2PSupplyIndex: morpho.p2pSupplyIndex(_poolToken),
                     p2pSupplyDelta: delta.p2pSupplyDelta,
                     p2pSupplyAmount: delta.p2pSupplyAmount
@@ -93,7 +93,7 @@ abstract contract IndexesLens is LensStorage {
                 InterestRatesModel.P2PBorrowIndexComputeParams({
                     poolBorrowGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                     p2pBorrowGrowthFactor: growthFactors.p2pBorrowGrowthFactor,
-                    lastPoolBorrowIndex: lastPoolIndexes.lastBorrowPoolIndex,
+                    lastPoolBorrowIndex: lastPoolIndexes.poolBorrowIndex,
                     lastP2PBorrowIndex: morpho.p2pBorrowIndex(_poolToken),
                     p2pBorrowDelta: delta.p2pBorrowDelta,
                     p2pBorrowAmount: delta.p2pBorrowAmount
@@ -181,7 +181,7 @@ abstract contract IndexesLens is LensStorage {
                 InterestRatesModel.P2PSupplyIndexComputeParams({
                     poolSupplyGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                     p2pSupplyGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
-                    lastPoolSupplyIndex: lastPoolIndexes.lastSupplyPoolIndex,
+                    lastPoolSupplyIndex: lastPoolIndexes.poolSupplyIndex,
                     lastP2PSupplyIndex: morpho.p2pSupplyIndex(_poolToken),
                     p2pSupplyDelta: delta.p2pSupplyDelta,
                     p2pSupplyAmount: delta.p2pSupplyAmount
@@ -226,7 +226,7 @@ abstract contract IndexesLens is LensStorage {
                 InterestRatesModel.P2PBorrowIndexComputeParams({
                     poolBorrowGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                     p2pBorrowGrowthFactor: growthFactors.p2pBorrowGrowthFactor,
-                    lastPoolBorrowIndex: lastPoolIndexes.lastBorrowPoolIndex,
+                    lastPoolBorrowIndex: lastPoolIndexes.poolBorrowIndex,
                     lastP2PBorrowIndex: morpho.p2pBorrowIndex(_poolToken),
                     p2pBorrowDelta: delta.p2pBorrowDelta,
                     p2pBorrowAmount: delta.p2pBorrowAmount

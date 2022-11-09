@@ -64,10 +64,10 @@ library InterestRatesModel {
         uint256 _reserveFactor
     ) internal pure returns (GrowthFactors memory growthFactors_) {
         growthFactors_.poolSupplyGrowthFactor = _newPoolSupplyIndex.div(
-            _lastPoolIndexes.lastSupplyPoolIndex
+            _lastPoolIndexes.poolSupplyIndex
         );
         growthFactors_.poolBorrowGrowthFactor = _newPoolBorrowIndex.div(
-            _lastPoolIndexes.lastBorrowPoolIndex
+            _lastPoolIndexes.poolBorrowIndex
         );
 
         if (growthFactors_.poolSupplyGrowthFactor <= growthFactors_.poolBorrowGrowthFactor) {

@@ -452,8 +452,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolToken];
 
         poolIndexes.lastUpdateBlockNumber = uint32(block.number);
-        poolIndexes.lastSupplyPoolIndex = uint112(ICToken(_poolToken).exchangeRateCurrent());
-        poolIndexes.lastBorrowPoolIndex = uint112(ICToken(_poolToken).borrowIndex());
+        poolIndexes.poolSupplyIndex = uint112(ICToken(_poolToken).exchangeRateCurrent());
+        poolIndexes.poolBorrowIndex = uint112(ICToken(_poolToken).borrowIndex());
 
         marketParameters[_poolToken] = _marketParams;
 
