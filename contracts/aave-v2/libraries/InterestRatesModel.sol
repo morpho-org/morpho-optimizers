@@ -22,7 +22,7 @@ library InterestRatesModel {
 
     struct P2PIndexComputeParams {
         uint256 poolGrowthFactor; // The pool's index growth factor (in ray).
-        uint256 p2pGrowthFactor; // Morpho peer-to-peer's median index growth factor (in ray).
+        uint256 p2pGrowthFactor; // Morpho's peer-to-peer median index growth factor (in ray).
         uint256 lastPoolIndex; // The pool's last stored index (in ray).
         uint256 lastP2PIndex; // Morpho's last stored peer-to-peer index (in ray).
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
