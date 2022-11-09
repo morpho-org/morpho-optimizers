@@ -312,9 +312,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_amount == 0) revert AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
-        deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
         deltas.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);
-        deltas.p2pBorrowDelta = deltas.p2pBorrowDelta;
         emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
         emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
