@@ -15,7 +15,10 @@ contract User {
     IAaveIncentivesController public aaveIncentivesController;
 
     constructor(Morpho _morpho) {
-        setMorphoAddresses(_morpho);
+        morpho = _morpho;
+        rewardsManager = _morpho.rewardsManager();
+        pool = _morpho.pool();
+        aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 
     receive() external payable {}
@@ -178,12 +181,5 @@ contract User {
 
     function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external {
         morpho.setIsLiquidateBorrowPaused(_poolToken, _isPaused);
-    }
-
-    function setMorphoAddresses(Morpho _morpho) public {
-        morpho = _morpho;
-        rewardsManager = _morpho.rewardsManager();
-        pool = _morpho.pool();
-        aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 }
