@@ -67,7 +67,7 @@ contract TestPausableMarket is TestSetup {
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 76) / 90);
 
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;

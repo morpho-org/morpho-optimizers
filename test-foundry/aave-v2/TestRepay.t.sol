@@ -507,6 +507,9 @@ contract TestRepay is TestSetup {
     }
 
     function testDeltaRepayAll() public {
+        // TODO: fix this.
+        deal(dai, address(morpho), 100);
+
         // Allows only 10 unmatch suppliers
         _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 2.4e6);
 

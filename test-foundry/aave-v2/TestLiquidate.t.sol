@@ -73,6 +73,9 @@ contract TestLiquidate is TestSetup {
     function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;
 
+        supplier1.approve(usdc, address(morpho), to6Decimals(collateral));
+        supplier1.supply(aUsdc, to6Decimals(collateral));
+
         borrower1.approve(usdc, address(morpho), to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
@@ -155,7 +158,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 76) / 90);
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 2);
@@ -235,7 +238,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 76) / 90);
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 4);

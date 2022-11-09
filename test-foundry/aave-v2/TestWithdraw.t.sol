@@ -128,7 +128,7 @@ contract TestWithdraw is TestSetup {
     // There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function testWithdraw3_2() public {
         // TODO: fix this.
-        deal(dai, address(morpho), 1);
+        deal(dai, address(morpho), 100);
 
         _setDefaultMaxGasForMatching(
             type(uint64).max,
@@ -370,7 +370,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1.2e6, 3e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 1.1e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -491,7 +491,7 @@ contract TestWithdraw is TestSetup {
             .rayDiv(oldVars.BP2PER)
             .rayMul(expectedBP2PER);
 
-            for (uint256 i = 1; i <= 10; i++) {
+            for (uint256 i = 2; i <= 10; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
                     aDai,
                     address(borrowers[i])

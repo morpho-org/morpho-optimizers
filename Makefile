@@ -22,6 +22,10 @@ else
   ifeq (${NETWORK}, eth-mainnet)
     FOUNDRY_CHAIN_ID=1
     FOUNDRY_FORK_BLOCK_NUMBER?=14292587
+
+	ifeq (${PROTOCOL}, aave-v2)
+      FOUNDRY_FORK_BLOCK_NUMBER?=15581371
+    endif
   endif
 
   ifeq (${NETWORK}, eth-ropsten)
@@ -87,7 +91,7 @@ script-%:
 
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv | tee trace.ansi
+	@forge test -vvv | tee trace.ansi
 
 coverage:
 	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
