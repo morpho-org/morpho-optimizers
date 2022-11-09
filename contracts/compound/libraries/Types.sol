@@ -19,7 +19,7 @@ library Types {
 
     struct SupplyBalance {
         uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
-        uint256 onPool; // In pool suply unit. Multiply by the pool supply index to get the underlying amount.
+        uint256 onPool; // In pool supply unit. Multiply by the pool supply index to get the underlying amount.
     }
 
     struct BorrowBalance {
