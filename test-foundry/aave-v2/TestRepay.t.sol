@@ -507,35 +507,90 @@ contract TestRepay is TestSetup {
     }
 
     function testDeltaRepayAll() public {
-        // Allows only 10 unmatch suppliers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 2.4e6);
+        // Allows only 10 unmatch suppliers.
+        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
 
         uint256 suppliedAmount = 1 ether;
-        uint256 borrowedAmount = 20 * suppliedAmount;
+        uint256 borrowedAmount = 20 * suppliedAmount + 1e12;
         uint256 collateral = 2 * borrowedAmount;
 
-        // borrower1 and 100 suppliers are matched for borrowedAmount
+        // borrower1 and 100 suppliers are matched for borrowedAmount.
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
         createSigners(30);
 
-        // 2 * NMAX suppliers supply suppliedAmount
+        // 2 * NMAX suppliers supply suppliedAmount.
         for (uint256 i = 0; i < 20; i++) {
-            suppliers[i].approve(dai, suppliedAmount);
-            suppliers[i].supply(aDai, suppliedAmount);
+            suppliers[i].approve(dai, suppliedAmount + i);
+            suppliers[i].supply(aDai, suppliedAmount + i);
         }
 
-        // Borrower repays max
-        // Should create a delta on suppliers side
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
+            assertEq(inP2P, (suppliedAmount + i).rayDiv(morpho.p2pSupplyIndex(aDai)), "inP2P");
+            assertEq(onPool, 0, "onPool");
+        }
+
+        // Borrower repays max.
+        // Should create a delta on suppliers side.
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
-        hevm.warp(block.timestamp + (365 days));
+        for (uint256 i = 10; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
+            assertEq(inP2P, 0, string.concat("inP2P", Strings.toString(i)));
+            assertApproxEqAbs(
+                onPool,
+                (suppliedAmount + i).rayDiv(pool.getReserveNormalizedIncome(dai)),
+                1e2,
+                string.concat("onPool", Strings.toString(i))
+            );
+        }
+        for (uint256 i = 0; i < 10; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
+            assertApproxEqAbs(
+                inP2P,
+                (suppliedAmount + i).rayDiv(morpho.p2pSupplyIndex(aDai)),
+                1e4,
+                string.concat("inP2P", Strings.toString(i))
+            );
+            assertEq(onPool, 0, string.concat("onPool", Strings.toString(i)));
+        }
+
+        (
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
+        ) = morpho.deltas(aDai);
+
+        assertApproxEqAbs(
+            p2pSupplyDelta,
+            (10 * suppliedAmount).rayDiv(pool.getReserveNormalizedIncome(dai)),
+            1e2,
+            "p2pSupplyDelta"
+        );
+        assertEq(p2pBorrowDelta, 0, "p2pBorrowDelta");
+        assertApproxEqAbs(
+            p2pSupplyAmount,
+            (10 * suppliedAmount).rayDiv(morpho.p2pSupplyIndex(aDai)),
+            1e2,
+            "p2pSupplyAmount"
+        );
+        assertApproxEqAbs(p2pBorrowAmount, 0, 1, "p2pBorrowAmount");
+
+        hevm.warp(block.timestamp + (1 days));
+
+        for (uint256 i; i < 20; i++) {
+            suppliers[i].withdraw(aDai, type(uint256).max);
+        }
 
         for (uint256 i = 0; i < 20; i++) {
-            suppliers[i].withdraw(aDai, type(uint256).max);
+            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
+            assertEq(inP2P, 0, "inP2P");
+            assertEq(onPool, 0, "onPool");
         }
     }
 
