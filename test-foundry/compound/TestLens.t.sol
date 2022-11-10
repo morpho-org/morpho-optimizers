@@ -181,7 +181,7 @@ contract TestLens is TestSetup {
         assertEq(assetDataCDai.debtValue, 0, "debtValueDai");
     }
 
-    function testMaxCapicitiesWithNothing() public {
+    function testMaxCapacitiesWithNothing() public {
         (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cDai
