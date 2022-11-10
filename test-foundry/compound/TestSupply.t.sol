@@ -207,6 +207,7 @@ contract TestSupply is TestSetup {
     }
 
     function testFailSupplyZero() public {
+        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
         morpho.supply(cDai, msg.sender, 0, type(uint256).max);
     }
 
