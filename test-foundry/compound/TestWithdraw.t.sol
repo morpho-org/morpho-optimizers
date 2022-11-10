@@ -555,7 +555,7 @@ contract TestWithdraw is TestSetup {
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount;
+        uint256 suppliedAmount = 20 * borrowedAmount + 1e12;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount.
         supplier1.approve(dai, suppliedAmount);
@@ -567,12 +567,12 @@ contract TestWithdraw is TestSetup {
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(cUsdc, to6Decimals(collateral));
-            borrowers[i].borrow(cDai, borrowedAmount, type(uint64).max);
+            borrowers[i].borrow(cDai, borrowedAmount + i, type(uint64).max);
         }
 
         for (uint256 i = 0; i < 20; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
-            assertEq(inP2P, borrowedAmount.div(morpho.p2pBorrowIndex(cDai)), "inP2P");
+            assertEq(inP2P, (borrowedAmount + i).div(morpho.p2pBorrowIndex(cDai)), "inP2P");
             assertEq(onPool, 0, "onPool");
         }
 
@@ -582,18 +582,22 @@ contract TestWithdraw is TestSetup {
 
         for (uint256 i = 0; i < 10; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
-            assertEq(inP2P, 0, "inP2P");
+            assertEq(inP2P, 0, string.concat("inP2P", Strings.toString(i)));
             assertApproxEqAbs(
                 onPool,
-                borrowedAmount.div(ICToken(cDai).borrowIndex()),
-                10000000000,
-                "onPool"
+                (borrowedAmount + i).div(ICToken(cDai).borrowIndex()),
+                1e8,
+                string.concat("onPool", Strings.toString(i))
             );
         }
         for (uint256 i = 10; i < 20; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
-            assertEq(inP2P, borrowedAmount.div(morpho.p2pBorrowIndex(cDai)), "inP2P");
-            assertEq(onPool, 0, "onPool");
+            assertEq(
+                inP2P,
+                (borrowedAmount + i).div(morpho.p2pBorrowIndex(cDai)),
+                string.concat("inP2P", Strings.toString(i))
+            );
+            assertEq(onPool, 0, string.concat("onPool", Strings.toString(i)));
         }
 
         (
@@ -607,14 +611,14 @@ contract TestWithdraw is TestSetup {
         assertApproxEqAbs(
             p2pBorrowDelta,
             (10 * borrowedAmount).div(ICToken(cDai).borrowIndex()),
-            10000000000,
+            1e9,
             "p2pBorrowDelta"
         );
         assertApproxEqAbs(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
         assertApproxEqAbs(
             p2pBorrowAmount,
             (10 * borrowedAmount).div(morpho.p2pBorrowIndex(cDai)),
-            10,
+            1e2,
             "p2pBorrowAmount"
         );
 
@@ -679,7 +683,8 @@ contract TestWithdraw is TestSetup {
         supplier1.withdraw(cDai, toSupply);
     }
 
-    function testFailWithdrawZero() public {
+    function testShouldNotWithdrawZero() public {
+        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
         morpho.withdraw(cDai, 0);
     }
 

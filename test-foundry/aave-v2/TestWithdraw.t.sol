@@ -526,11 +526,11 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 2.6e6, 3e6);
+        _setDefaultMaxGasForMatching(3e6, 3e6, 1.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+        uint256 suppliedAmount = 20 * borrowedAmount + 1e12;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount
         supplier1.approve(dai, suppliedAmount);
@@ -542,19 +542,73 @@ contract TestWithdraw is TestSetup {
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
-            borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
+            borrowers[i].borrow(aDai, borrowedAmount + i, type(uint64).max);
+        }
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertEq(inP2P, (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)), "inP2P");
+            assertEq(onPool, 0, "onPool");
         }
 
         // Supplier withdraws max
         // Should create a delta on borrowers side
         supplier1.withdraw(aDai, type(uint256).max);
 
-        hevm.warp(block.timestamp + (365 days));
+        for (uint256 i = 10; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertEq(inP2P, 0, string.concat("inP2P", Strings.toString(i)));
+            assertApproxEqAbs(
+                onPool,
+                (borrowedAmount + i).rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
+                10,
+                string.concat("onPool", Strings.toString(i))
+            );
+        }
+        for (uint256 i = 0; i < 10; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertEq(
+                inP2P,
+                (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)),
+                string.concat("inP2P", Strings.toString(i))
+            );
+            assertEq(onPool, 0, string.concat("onPool", Strings.toString(i)));
+        }
+
+        (
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
+        ) = morpho.deltas(aDai);
+
+        assertEq(p2pSupplyDelta, 0, "p2pSupplyDelta");
+        assertApproxEqAbs(
+            p2pBorrowDelta,
+            (10 * borrowedAmount).rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
+            1e2,
+            "p2pBorrowDelta"
+        );
+        assertApproxEqAbs(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
+        assertApproxEqAbs(
+            p2pBorrowAmount,
+            (10 * borrowedAmount).rayDiv(morpho.p2pBorrowIndex(aDai)),
+            1e2,
+            "p2pBorrowAmount"
+        );
+
+        hevm.warp(block.timestamp + (1 days));
 
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(dai, type(uint64).max);
             borrowers[i].repay(aDai, type(uint64).max);
             borrowers[i].withdraw(aUsdc, type(uint64).max);
+        }
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertEq(inP2P, 0, "inP2P");
+            assertEq(onPool, 0, "onPool");
         }
     }
 
@@ -604,7 +658,8 @@ contract TestWithdraw is TestSetup {
         supplier1.withdraw(aDai, toSupply);
     }
 
-    function testFailWithdrawZero() public {
+    function testShouldNotWithdrawZero() public {
+        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.withdraw(aDai, 0);
     }
 
