@@ -258,7 +258,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             borrowerBorrowBalance.inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-            if (toWithdraw.rayDiv(poolSupplyIndex > 0))
+            if (toWithdraw.rayDiv(poolSupplyIndex) > 0)
                 _withdrawFromPool(underlyingToken, _poolToken, toWithdraw); // Reverts on error.
         }
 
