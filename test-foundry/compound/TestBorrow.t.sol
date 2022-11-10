@@ -89,7 +89,8 @@ contract TestBorrow is TestSetup {
             morpho.p2pBorrowIndex(cDai)
         );
         uint256 expectedBorrowOnPool = (borrowAmount -
-            getBalanceOnCompound(amount, cDaiSupplyIndex)).div(ICToken(cDai).borrowIndex());
+            getBalanceOnCompound(amount, cDaiSupplyIndex))
+        .div(ICToken(cDai).borrowIndex());
 
         testEquality(inP2P, expectedBorrowInP2P, "Borrower1 in peer-to-peer");
         testEquality(onPool, expectedBorrowOnPool, "Borrower1 on pool");
@@ -227,6 +228,11 @@ contract TestBorrow is TestSetup {
 
         uint256 expectedOnPool = (2 * amount).div(ICToken(cDai).borrowIndex());
         testEquality(onPool, expectedOnPool);
+    }
+
+    function testShouldNotBorrowZero() public {
+        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
+        morpho.borrow(cDai, 0, type(uint256).max);
     }
 
     function testBorrowOnPoolThreshold() public {
