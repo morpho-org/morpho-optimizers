@@ -162,10 +162,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (_receiver == address(0)) revert AddressIsZero();
         if (!market[_poolToken].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
-        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
-        if (toWithdraw == 0) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolToken);
+        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
+        if (toWithdraw == 0) revert UserNotMemberOfMarket();
 
         if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
 

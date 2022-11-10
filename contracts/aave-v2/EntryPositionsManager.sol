@@ -196,7 +196,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         Types.Market memory market = market[_poolToken];
         if (!market.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
-        if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
@@ -204,6 +203,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         _updateIndexes(_poolToken);
         _setBorrowing(msg.sender, borrowMask[_poolToken], true);
+
+        if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
