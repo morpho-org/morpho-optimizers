@@ -696,6 +696,39 @@ contract TestLens is TestSetup {
         assertTrue(collateralFactor == expectedCollateralFactor);
     }
 
+    function testGetOutdatedIndexesBuggy() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, amount);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+        (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = lens.getIndexes(cDai, false);
+
+        hevm.roll(block.number + 31 days / 15); // about one block per 15 seconds
+
+        borrower2.compoundSupply(cDai, amount); // update pool indexes
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(cDai, false);
+
+        uint256 poolSupplyGrowthFactor = newPoolSupplyIndex.div(poolSupplyIndex);
+        uint256 poolBorrowGrowthFactor = newPoolBorrowIndex.div(poolBorrowIndex);
+        uint256 p2pSupplyGrowthFactor = newP2PSupplyIndex.div(p2pSupplyIndex);
+        uint256 p2pBorrowGrowthFactor = newP2PBorrowIndex.div(p2pBorrowIndex);
+
+        assertLe(poolSupplyGrowthFactor, p2pSupplyGrowthFactor, "supply: pool vs p2p");
+        assertLe(p2pSupplyGrowthFactor, p2pBorrowGrowthFactor, "p2p: supply vs borrow");
+        assertLe(p2pBorrowGrowthFactor, poolBorrowGrowthFactor, "borrow: p2p vs pool");
+    }
+
     function testGetOutdatedIndexes() public {
         uint256 amount = 10_000 ether;
 
