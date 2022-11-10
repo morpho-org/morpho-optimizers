@@ -295,7 +295,7 @@ abstract contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Updates `_user` positions in the supplier data structures.
+    /// @notice Updates the given `_user`'s position in the supplier data structures.
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolToken, address _user) internal {
@@ -321,7 +321,7 @@ abstract contract MatchingEngine is MorphoUtils {
             );
     }
 
-    /// @notice Updates `_user` positions in the borrower data structures.
+    /// @notice Updates the given `_user`'s position in the borrower data structures.
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {

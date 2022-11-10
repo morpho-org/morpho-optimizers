@@ -226,13 +226,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @dev Implements supply logic.
     /// @param _poolToken The address of the pool token the user wants to interact with.
-    /// @param _supplier The address of the account sending funds.
+    /// @param _from The address of the account sending funds.
     /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supplyLogic(
         address _poolToken,
-        address _supplier,
+        address _from,
         address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
@@ -245,7 +245,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
         ERC20 underlyingToken = _getUnderlying(_poolToken);
-        underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
+        underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
         SupplyVars memory vars;
@@ -254,7 +254,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Peer-to-peer supply ///
 
-        // Match peer-to-peer borrow delta.
+        // Match the peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
             if (deltaInUnderlying > vars.remainingToSupply) {
@@ -315,7 +315,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateSupplierInDS(_poolToken, _onBehalf);
 
         emit Supplied(
-            _supplier,
+            _from,
             _onBehalf,
             _poolToken,
             _amount,
@@ -350,7 +350,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Peer-to-peer borrow ///
 
-        // Match peer-to-peer supply delta.
+        // Match the peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
             if (deltaInUnderlying > remainingToBorrow) {
@@ -436,6 +436,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (_receiver == address(0)) revert AddressIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isWithdrawPaused) revert WithdrawIsPaused();
         if (!userMembership[_poolToken][_supplier]) revert UserNotMemberOfMarket();
@@ -647,10 +648,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         supplierSupplyBalance.inP2P -= CompoundMath.min(
             supplierSupplyBalance.inP2P,
             vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
-        ); // In peer-to-peer unit
+        ); // In peer-to-peer supply unit.
         _updateSupplierInDS(_poolToken, _supplier);
 
-        // Reduce peer-to-peer supply delta.
+        // Reduce the peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
 
@@ -806,10 +807,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         borrowerBorrowBalance.inP2P -= CompoundMath.min(
             borrowerBorrowBalance.inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
-        ); // In peer-to-peer unit.
+        ); // In peer-to-peer borrow unit.
         _updateBorrowerInDS(_poolToken, _onBehalf);
 
-        // Reduce peer-to-peer borrow delta.
+        // Reduce the peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
             if (deltaInUnderlying > vars.remainingToRepay) {
@@ -874,7 +875,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Breaking repay ///
 
-        // Demote peer-to-peer suppliers.
+        // Unmote peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolToken,

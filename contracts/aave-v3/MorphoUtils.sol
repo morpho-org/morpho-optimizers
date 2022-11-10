@@ -65,8 +65,8 @@ abstract contract MorphoUtils is MorphoStorage {
             head = suppliersOnPool[_poolToken].getHead();
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             head = borrowersInP2P[_poolToken].getHead();
-        else head = borrowersOnPool[_poolToken].getHead();
-        // Borrowers on pool.
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
+            head = borrowersOnPool[_poolToken].getHead();
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
@@ -87,8 +87,8 @@ abstract contract MorphoUtils is MorphoStorage {
             next = suppliersOnPool[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             next = borrowersInP2P[_poolToken].getNext(_user);
-        else next = borrowersOnPool[_poolToken].getNext(_user);
-        // Borrowers on pool.
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
+            next = borrowersOnPool[_poolToken].getNext(_user);
     }
 
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
