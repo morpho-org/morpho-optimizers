@@ -55,7 +55,7 @@ library InterestRatesModel {
     /// @param _lastPoolIndexes The pool's last stored indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
-    /// @return growthFactors_ The market's indexes growth factor (in wad).
+    /// @return growthFactors_ The indexes growth factor (in wad).
     function computeGrowthFactors(
         uint256 _newPoolSupplyIndex,
         uint256 _newPoolBorrowIndex,

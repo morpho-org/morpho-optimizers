@@ -417,7 +417,7 @@ abstract contract UsersLens is IndexesLens {
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _poolToken The market where to get the supply amount.
     /// @param _user The address of the user.
     /// @param _p2pSupplyIndex The peer-to-peer supply index of the given market (in ray).

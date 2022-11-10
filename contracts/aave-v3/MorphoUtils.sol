@@ -183,7 +183,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _user The address of the user.
     /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
@@ -199,7 +199,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _user The address of the user.
     /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
