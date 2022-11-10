@@ -169,6 +169,7 @@ contract TestSetup is Config, Utils {
     function fillUserBalances(User _user) internal {
         deal(dai, address(_user), INITIAL_BALANCE * WAD);
         deal(wEth, address(_user), INITIAL_BALANCE * WAD);
+        deal(bat, address(_user), INITIAL_BALANCE * WAD);
         deal(usdt, address(_user), INITIAL_BALANCE * 1e6);
         deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }

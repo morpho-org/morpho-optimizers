@@ -852,6 +852,15 @@ contract TestLens is TestSetup {
         assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
     }
 
+    function testGetUpdatedP2PBorrowIndexWithDelta() public {
+        _createBorrowDelta();
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
+    }
+
     function testGetUpdatedIndexesOnStEth() public {
         createMarket(aStEth);
 
@@ -900,22 +909,15 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testGetUpdatedP2PBorrowIndexWithDelta() public {
-        _createBorrowDelta();
-        hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-    }
-
     function _createSupplyDelta() public {
         uint256 amount = 1 ether;
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, amount);
+
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
+
         _setDefaultMaxGasForMatching(0, 0, 0, 0);
         borrower1.repay(aDai, type(uint256).max);
     }
@@ -924,9 +926,11 @@ contract TestLens is TestSetup {
         uint256 amount = 1 ether;
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, amount);
+
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
+
         _setDefaultMaxGasForMatching(0, 0, 0, 0);
         supplier1.withdraw(aDai, type(uint256).max);
     }
