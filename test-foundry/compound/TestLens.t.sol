@@ -257,12 +257,12 @@ contract TestLens is TestSetup {
 
         (, uint256 batCollateralFactor, ) = comptroller.markets(cBat);
 
-        assertApproxEqAbs(withdrawableBatBefore, amount, 1e9, "cannot withdraw all AAVE");
+        assertApproxEqAbs(withdrawableBatBefore, amount, 1e9, "cannot withdraw all BAT");
         assertApproxEqAbs(
             borrowableBatBefore,
             amount.mul(batCollateralFactor),
             1e8,
-            "cannot borrow all AAVE"
+            "cannot borrow all BAT"
         );
         assertEq(withdrawableDaiBefore, 0, "can withdraw DAI not supplied");
         assertApproxEqAbs(
@@ -277,7 +277,7 @@ contract TestLens is TestSetup {
             borrowableBatAfter,
             borrowableBatBefore / 2,
             10,
-            "cannot borrow half AAVE"
+            "cannot borrow half BAT"
         );
         assertEq(withdrawableDaiAfter, 0, "unexpected withdrawable DAI");
         assertApproxEqAbs(borrowableDaiAfter, borrowableDaiBefore / 2, 1, "cannot borrow half DAI");
@@ -800,7 +800,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PIndexesWithSupplyDelta() public {
         _createSupplyDelta();
-        hevm.warp(block.timestamp + (365 * 24 * 60 * 4));
+        hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
@@ -810,7 +810,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PIndexesWithBorrowDelta() public {
         _createBorrowDelta();
-        hevm.warp(block.timestamp + (365 * 24 * 60 * 4));
+        hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
