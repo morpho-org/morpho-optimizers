@@ -70,8 +70,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @dev Beware that this function does not give the next account susceptible to get matched,
-    ///      nor the next account with highest liquidity. Use it only to go through every account.
+    /// @dev Beware that this function does not give the account with the highest liquidity.
     /// @param _poolToken The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.

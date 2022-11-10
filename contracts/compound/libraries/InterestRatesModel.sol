@@ -15,14 +15,14 @@ library InterestRatesModel {
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
+        uint256 poolBorrowGrowthFactor; // The pool borrow index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
         uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
     }
 
     struct P2PSupplyIndexComputeParams {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // The peer-to-peer supply index growth factor (in wad).
         uint256 lastP2PSupplyIndex; // The last stored peer-to-peer supply index (in wad).
         uint256 lastPoolSupplyIndex; // The last stored pool supply index (in wad).
