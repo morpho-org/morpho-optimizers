@@ -880,8 +880,13 @@ contract TestLens is TestSetup {
 
         moveOneBlockForwardBorrowRepay();
 
+        (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
+        .defaultMaxGasForMatching();
+
         _setDefaultMaxGasForMatching(0, 0, 0, 0);
         borrower1.repay(cDai, type(uint256).max);
+
+        _setDefaultMaxGasForMatching(supply, borrow, withdraw, repay);
     }
 
     function _createBorrowDelta() public {
@@ -893,8 +898,13 @@ contract TestLens is TestSetup {
         borrower1.supply(cDai, amount / 2);
         borrower1.borrow(cDai, amount / 4);
 
+        (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
+        .defaultMaxGasForMatching();
+
         _setDefaultMaxGasForMatching(0, 0, 0, 0);
         supplier1.withdraw(cDai, type(uint256).max);
+
+        _setDefaultMaxGasForMatching(supply, borrow, withdraw, repay);
     }
 
     function testGetAllMarkets() public {
