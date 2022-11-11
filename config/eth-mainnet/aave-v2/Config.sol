@@ -53,7 +53,6 @@ contract Config is BaseConfig {
         TransparentUpgradeableProxy(payable(0x507fA343d0A90786d86C7cd885f5C49263A91FF4));
     TransparentUpgradeableProxy public morphoProxy =
         TransparentUpgradeableProxy(payable(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0));
-    TransparentUpgradeableProxy public rewardsManagerProxy;
 
     Lens public lensImplV1;
     Morpho public morphoImplV1;
