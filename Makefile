@@ -98,11 +98,6 @@ lcov-html:
 	@echo Transforming the lcov coverage report into html
 	@genhtml lcov.info -o coverage
 
-fuzz:
-	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
-	@echo Running all Morpho-${PROTOCOL} fuzzing tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv
-
 gas-report:
 	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test --gas-report
