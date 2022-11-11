@@ -94,7 +94,7 @@ contract TestSupply is TestSetup {
 
     // There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function testSupply4() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -142,7 +142,7 @@ contract TestSupply is TestSetup {
 
     // The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
     function testSupply5() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,

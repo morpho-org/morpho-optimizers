@@ -20,7 +20,7 @@ contract TestP2PDisable is TestSetup {
         }
 
         // Create delta.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 0);
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
@@ -53,7 +53,7 @@ contract TestP2PDisable is TestSetup {
         }
 
         // Create delta.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 3e6);
         supplier1.withdraw(aUsdc, to6Decimals(supplyAmount));
 
         // Delta must be greater than 0.

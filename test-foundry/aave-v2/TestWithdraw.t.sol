@@ -130,7 +130,7 @@ contract TestWithdraw is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -271,7 +271,7 @@ contract TestWithdraw is TestSetup {
         // TODO: fix that.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -370,7 +370,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1.2e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -526,7 +526,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1.2e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;

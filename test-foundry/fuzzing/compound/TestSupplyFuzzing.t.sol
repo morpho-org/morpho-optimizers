@@ -117,7 +117,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
         assumeBorrowAmountIsCorrect(vars.suppliedCToken, NMAX * amountPerBorrower);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -162,7 +162,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
         assumeBorrowAmountIsCorrect(vars.suppliedCToken, NMAX * amountPerBorrower);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,

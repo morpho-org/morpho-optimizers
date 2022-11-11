@@ -883,10 +883,10 @@ contract TestLens is TestSetup {
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
 
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         borrower1.repay(cDai, type(uint256).max);
 
-        _setDefaultMaxGasForMatching(supply, borrow, withdraw, repay);
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
     function _createBorrowDelta() public {
@@ -901,10 +901,10 @@ contract TestLens is TestSetup {
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
 
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(cDai, type(uint256).max);
 
-        _setDefaultMaxGasForMatching(supply, borrow, withdraw, repay);
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
     function testGetAllMarkets() public {
@@ -1415,7 +1415,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
         indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();
@@ -1504,7 +1504,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
         indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();

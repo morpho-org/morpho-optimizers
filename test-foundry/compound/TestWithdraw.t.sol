@@ -126,7 +126,7 @@ contract TestWithdraw is TestSetup {
 
     // There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function testWithdraw3_2() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -266,7 +266,7 @@ contract TestWithdraw is TestSetup {
 
     // The supplier is matched to 2 x NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`. Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     function testWithdraw3_4() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -390,7 +390,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 9e5, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 9e5, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -551,7 +551,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 9e5, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 9e5, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;

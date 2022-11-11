@@ -106,7 +106,7 @@ contract TestRepay is TestSetup {
 
     // There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity. First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
     function testRepay2_2() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -251,7 +251,7 @@ contract TestRepay is TestSetup {
 
     // The borrower is matched to 2 x NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`. Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
     function testRepay2_4() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -347,7 +347,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -508,7 +508,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepayAll() public {
         // Allows only 10 unmatch suppliers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1.2e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount + 1e12;
@@ -673,7 +673,7 @@ contract TestRepay is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, supplyAmount);
         supplier1.borrow(aDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, borrowAmount); // Creates a 100% peer-to-peer borrow delta.
 
         hevm.warp(block.timestamp + 1000);

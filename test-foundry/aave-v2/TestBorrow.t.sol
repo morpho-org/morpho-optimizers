@@ -88,7 +88,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -141,7 +141,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -284,7 +284,7 @@ contract TestBorrow is TestSetup {
             suppliers[i].supply(aDai, suppliedAmount);
         }
 
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
 
         vm.roll(block.number + 1);
         // Delta should be created.
