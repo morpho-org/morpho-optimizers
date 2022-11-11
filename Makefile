@@ -21,7 +21,7 @@ else
 
   ifeq (${NETWORK}, eth-mainnet)
     FOUNDRY_CHAIN_ID=1
-    FOUNDRY_FORK_BLOCK_NUMBER?=14292587
+    FOUNDRY_FORK_BLOCK_NUMBER?=15581371 # Block number when the Aave's V2 IRM was updated for the stETH.
   endif
 
   ifeq (${NETWORK}, eth-ropsten)
