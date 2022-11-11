@@ -115,10 +115,10 @@ single-% s-%:
 	@forge test -vvvv --match-test $* | tee trace.ansi
 
 storage-layout-generate:
-	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho Lens
 
 storage-layout-check:
-	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho Lens
 
 config:
 	@forge config
