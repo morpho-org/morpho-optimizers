@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 
 import "@contracts/aave-v2/Morpho.sol";
 
@@ -10,7 +9,6 @@ contract User {
     using SafeTransferLib for ERC20;
 
     Morpho internal morpho;
-    IRewardsManager internal rewardsManager;
     ILendingPool public pool;
     IAaveIncentivesController public aaveIncentivesController;
 
@@ -182,7 +180,6 @@ contract User {
 
     function setMorphoAddresses(Morpho _morpho) public {
         morpho = _morpho;
-        rewardsManager = _morpho.rewardsManager();
         pool = _morpho.pool();
         aaveIncentivesController = _morpho.aaveIncentivesController();
     }

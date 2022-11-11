@@ -9,7 +9,6 @@ import {IIncentivesVault} from "@contracts/aave-v2/interfaces/IIncentivesVault.s
 import {IEntryPositionsManager} from "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
 import {IExitPositionsManager} from "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
 import {IInterestRatesManager} from "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import {IRewardsManager} from "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -58,11 +57,9 @@ contract Config is BaseConfig {
 
     Lens public lensImplV1;
     Morpho public morphoImplV1;
-    IRewardsManager public rewardsManagerImplV1;
 
     Lens public lens;
     Morpho public morpho;
-    IRewardsManager public rewardsManager;
     IIncentivesVault public incentivesVault;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;

@@ -48,52 +48,6 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgradeAndCall(morphoProxy, address(morphoImplV2), "");
     }
 
-    function testUpgradeRewardsManager() public {
-        IRewardsManager rewardsManagerImplV2 = new RewardsManagerOnPolygon();
-
-        hevm.record();
-        proxyAdmin.upgrade(rewardsManagerProxy, address(rewardsManagerImplV2));
-        (, bytes32[] memory writes) = hevm.accesses(address(rewardsManager));
-
-        // 1 write for the implemention.
-        assertEq(writes.length, 1);
-        address newImplem = bytes32ToAddress(
-            hevm.load(
-                address(rewardsManagerProxy),
-                bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
-            )
-        );
-        assertEq(newImplem, address(rewardsManagerImplV2));
-    }
-
-    function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
-        IRewardsManager rewardsManagerImplV2 = new RewardsManagerOnPolygon();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgrade(rewardsManagerProxy, address(rewardsManagerImplV2));
-
-        proxyAdmin.upgrade(rewardsManagerProxy, address(rewardsManagerImplV2));
-    }
-
-    function testOnlyProxyOwnerCanUpgradeAndCallRewardsManager() public {
-        IRewardsManager rewardsManagerImplV2 = new RewardsManagerOnPolygon();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(rewardsManagerProxy, payable(address(rewardsManagerImplV2)), "");
-
-        // Revert for wrong data not wrong caller.
-        hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(rewardsManagerProxy, payable(address(rewardsManagerImplV2)), "");
-    }
-
-    function testRewardsManagerImplementationsShouldBeInitialized() public {
-        // Test for RewardsManagerOnPolygon Implementation.
-        hevm.expectRevert("Initializable: contract is already initialized");
-        rewardsManagerImplV1.initialize(address(morpho));
-    }
-
     function testPositionsManagerImplementationsShouldBeInitialized() public {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,

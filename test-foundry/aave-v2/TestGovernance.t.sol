@@ -138,14 +138,12 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetRewardsManager() public {
-        IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche();
-
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setRewardsManager(rewardsManagerV2);
+        morpho.setRewardsManager(IRewardsManager(address(1)));
 
-        morpho.setRewardsManager(rewardsManagerV2);
-        assertEq(address(morpho.rewardsManager()), address(rewardsManagerV2));
+        morpho.setRewardsManager(IRewardsManager(address(1)));
+        assertEq(address(morpho.rewardsManager()), address(1));
     }
 
     function testOnlyOwnerShouldSetInterestRatesManager() public {

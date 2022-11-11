@@ -13,8 +13,6 @@ import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
@@ -94,15 +92,6 @@ contract TestSetup is Config, Utils {
         morpho.setTreasuryVault(address(treasuryVault));
         morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
-        rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
-        rewardsManagerProxy = new TransparentUpgradeableProxy(
-            address(rewardsManagerImplV1),
-            address(proxyAdmin),
-            ""
-        );
-        rewardsManager = IRewardsManager(address(rewardsManagerProxy));
-        rewardsManager.initialize(address(morpho));
-
         /// Create markets ///
 
         createMarket(aDai);
@@ -126,8 +115,6 @@ contract TestSetup is Config, Utils {
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
         morpho.setIncentivesVault(incentivesVault);
-
-        morpho.setRewardsManager(rewardsManager);
 
         lensImplV1 = new Lens(address(morpho));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
@@ -183,7 +170,6 @@ contract TestSetup is Config, Utils {
 
     function setContractsLabels() internal {
         hevm.label(address(morpho), "Morpho");
-        hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(aaveIncentivesController), "AaveIncentivesController");
         hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
