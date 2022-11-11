@@ -83,7 +83,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 95) / 100);
 
         // Liquidate
         uint256 toRepay = amount / 2;
@@ -155,7 +155,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 80) / 100);
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 2);
@@ -235,7 +235,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 93) / 100);
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 80) / 100);
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 4);

@@ -141,7 +141,7 @@ contract TestRatesLens is TestSetup {
 
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 1);
+        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 100);
     }
 
     function testBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
