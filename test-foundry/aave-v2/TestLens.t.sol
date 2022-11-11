@@ -918,7 +918,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
 
-        (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
 
         _setDefaultMaxGasForMatching(0, 0, 0, 0);
@@ -936,7 +936,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
 
-        (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
 
         _setDefaultMaxGasForMatching(0, 0, 0, 0);

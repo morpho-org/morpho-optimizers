@@ -14,7 +14,7 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.pool()), poolAddressesProvider.getLendingPool());
         assertEq(morpho.maxSortedUsers(), 20);
 
-        (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
         assertEq(supply, 3e6);
         assertEq(borrow, 3e6);
