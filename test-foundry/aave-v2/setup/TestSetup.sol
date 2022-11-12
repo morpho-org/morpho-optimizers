@@ -20,6 +20,7 @@ import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
+import {PositionsManagerUtils} from "@contracts/aave-v2/PositionsManagerUtils.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -220,7 +221,7 @@ contract TestSetup is Config, Utils {
         return customOracle;
     }
 
-    function _setDefaultMaxGasForMatching(
+    function setDefaultMaxGasForMatchingHelper(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,

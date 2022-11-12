@@ -14,7 +14,7 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.pool()), poolAddressesProvider.getLendingPool());
         assertEq(morpho.maxSortedUsers(), 20);
 
-        (uint256 supply, uint256 borrow, uint256 withdraw, uint256 repay) = morpho
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
         assertEq(supply, 3e6);
         assertEq(borrow, 3e6);
@@ -349,7 +349,7 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, supplyAmount);
         supplier1.borrow(aDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         hevm.roll(block.number + 1);
         supplier1.repay(aDai, deltaAmount); // Creates a peer-to-peer supply delta.
 
@@ -386,7 +386,7 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(aDai, supplyAmount);
         supplier1.borrow(aDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, supplyAmount - borrowAmount + deltaAmount); // Creates a peer-to-peer borrow delta.
 
         morpho.increaseP2PDeltas(aDai, increaseDeltaAmount);
@@ -430,7 +430,7 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(aDai, supplyAmount);
         supplier1.borrow(aDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, type(uint256).max); // Creates a 100% peer-to-peer borrow delta.
 
         hevm.warp(block.timestamp + 5 days);

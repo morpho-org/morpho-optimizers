@@ -132,7 +132,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -154,7 +154,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -620,7 +620,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -660,7 +660,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -701,7 +701,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -752,7 +752,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -808,7 +808,7 @@ contract TestRatesLens is TestSetup {
         borrower2.supply(aAave, amount);
         borrower2.borrow(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -984,7 +984,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(aUsdc, to6Decimals(amount));
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -1007,7 +1007,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
