@@ -120,6 +120,12 @@ storage-layout-generate:
 storage-layout-check:
 	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho Lens
 
+storage-layout-generate-no-rewards:
+	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho Lens
+
+storage-layout-check-no-rewards:
+	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho Lens
+
 config:
 	@forge config
 
