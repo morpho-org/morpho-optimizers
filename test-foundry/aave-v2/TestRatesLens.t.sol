@@ -1041,6 +1041,34 @@ contract TestRatesLens is TestSetup {
         assertEq(p2pBorrowRate, poolBorrowRate);
     }
 
+    function testInvertedSpreadDelta() public {
+        // Full p2p on the DAI market, with a 50% supply delta.
+        uint256 supplyAmount = 1 ether;
+        uint256 repayAmount = 0.5 ether;
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
+        borrower1.approve(aave, supplyAmount);
+        borrower1.supply(aAave, supplyAmount);
+        borrower1.borrow(aDai, supplyAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        borrower1.approve(dai, repayAmount);
+        borrower1.repay(aDai, repayAmount);
+        (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
+        assertEq(p2pSupplyDelta, repayAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
+
+        // Invert spreads on DAI.
+        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertSpreadOnDai();
+
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertApproxEqAbs(avgSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
+        assertEq(avgBorrowRate, poolBorrowRate);
+        assertApproxEqAbs(p2pSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
+        assertEq(p2pBorrowRate, poolBorrowRate);
+    }
+
     function _invertSpreadOnDai() public returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
         uint256 amount = 100_000_000 ether;
         uint256 amountStable = 10_000_000 ether;
@@ -1055,7 +1083,7 @@ contract TestRatesLens is TestSetup {
         pool.borrow(dai, amount, VARIABLE_RATE, 0, address(1));
         vm.stopPrank();
 
-        for (uint160 i = 1; i <= 10; i++) {
+        for (uint160 i = 2; i <= 10; i++) {
             deal(usdc, address(i), to6Decimals(2 * amountStable));
 
             vm.startPrank(address(i));
