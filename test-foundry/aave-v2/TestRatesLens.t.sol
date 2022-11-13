@@ -1070,19 +1070,22 @@ contract TestRatesLens is TestSetup {
     }
 
     function _invertSpreadOnDai() public returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
-        uint256 amount = 100_000_000 ether;
-        uint256 amountStable = 10_000_000 ether;
         uint256 VARIABLE_RATE = 2;
         uint256 FIXED_RATE = 1;
 
+        // Borrow variable.
+        uint256 amount = 100_000_000 ether;
         deal(usdc, address(1), to6Decimals(2 * amount));
-
         vm.startPrank(address(1));
         ERC20(usdc).safeApprove(address(pool), type(uint256).max);
         pool.deposit(usdc, to6Decimals(2 * amount), address(1), 0);
         pool.borrow(dai, amount, VARIABLE_RATE, 0, address(1));
         vm.stopPrank();
 
+        // Borrow stable.
+        // We do it with multiple borrowers, because the stable borrow is capped
+        // (by users) in Aave, by a given percentage of the available liquidity.
+        uint256 amountStable = 10_000_000 ether;
         for (uint160 i = 2; i <= 10; i++) {
             deal(usdc, address(i), to6Decimals(2 * amountStable));
 
@@ -1095,6 +1098,7 @@ contract TestRatesLens is TestSetup {
             vm.stopPrank();
         }
 
+        // Repay variable.
         vm.startPrank(address(1));
         ERC20(dai).safeApprove(address(pool), type(uint256).max);
         pool.repay(dai, amount, VARIABLE_RATE, address(1));
