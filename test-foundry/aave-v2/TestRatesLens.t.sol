@@ -1029,7 +1029,7 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(aDai, 1 ether);
 
         // Invert spreads on DAI.
-        (, uint256 poolBorrowRate) = _invertSpreadOnDai2();
+        (, uint256 poolBorrowRate) = _invertSpreadOnDai();
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
@@ -1117,9 +1117,16 @@ contract TestRatesLens is TestSetup {
     function _invertSpreadOnDai2() public returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
         poolSupplyRate = reserve.currentLiquidityRate;
+        // Make the borrow rate less than the supply rate
         poolBorrowRate = poolSupplyRate / 2;
         uint256 newRate = (poolBorrowRate << 128) | poolSupplyRate;
+        // Slot of the mapping _reserves is 53 to take into account 52 storage slots of VersionedInitializable plus the ILendingPoolAddressesProvider slot.
+        // Offset in the ReserveData struct is 2.
         bytes32 rateSlot = bytes32(uint256(keccak256(abi.encode(address(dai), 53))) + uint256(2));
         vm.store(address(pool), rateSlot, bytes32(newRate));
+
+        reserve = pool.getReserveData(dai);
+        // Rates must be inverted.
+        assertGt(reserve.currentLiquidityRate, reserve.currentVariableBorrowRate);
     }
 }
