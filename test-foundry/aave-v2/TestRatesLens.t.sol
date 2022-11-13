@@ -13,7 +13,7 @@ contract TestRatesLens is TestSetup {
             uint256 p2pBorrowRate,
             uint256 poolSupplyRate,
             uint256 poolBorrowRate
-        ) = lens.getRatesPerYear(aDai);
+        ) = lens.getRatesPerYear(aUsdt);
 
         (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(aDai);
 
@@ -839,7 +839,7 @@ contract TestRatesLens is TestSetup {
 
     function testAverageSupplyRateShouldEqual0WhenNoSupply() public {
         (uint256 supplyRatePerYear, uint256 p2pSupplyAmount, uint256 poolSupplyAmount) = lens
-        .getAverageSupplyRatePerYear(aDai);
+        .getAverageSupplyRatePerYear(aUsdt);
 
         assertEq(supplyRatePerYear, 0);
         assertEq(p2pSupplyAmount, 0);
