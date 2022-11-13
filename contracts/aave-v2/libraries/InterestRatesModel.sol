@@ -139,9 +139,16 @@ library InterestRatesModel {
         pure
         returns (uint256 p2pSupplyRate)
     {
-        p2pSupplyRate =
-            _params.p2pRate -
-            (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
+        // When poolSupplyRate > poolBorrowRate, the p2pRate is equal to the
+        // poolBorrowRate. In this case, the p2pSupplyRate is set to the
+        // p2pRate (= poolBorrowRate), because there is no rate spread.
+        if (_params.p2pRate < _params.poolRate) {
+            p2pSupplyRate = _params.p2pRate;
+        } else {
+            p2pSupplyRate =
+                _params.p2pRate -
+                (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
+        }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = Math.min(

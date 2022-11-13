@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestRatesLens is TestSetup {
     using WadRayMath for uint256;
+    using SafeTransferLib for ERC20;
 
     function testGetRatesPerYear() public {
         hevm.roll(block.number + 1_000);
@@ -1017,5 +1018,99 @@ contract TestRatesLens is TestSetup {
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
 
         assertApproxEqAbs(avgBorrowRate, reserve.currentVariableBorrowRate, 1);
+    }
+
+    function testInvertedSpread() public {
+        // Full p2p on the DAI market.
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(aDai, 1 ether);
+        borrower1.approve(aave, 1 ether);
+        borrower1.supply(aAave, 1 ether);
+        borrower1.borrow(aDai, 1 ether);
+
+        // Invert spreads on DAI.
+        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertSpreadOnDai();
+
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertEq(avgSupplyRate, poolBorrowRate);
+        assertEq(avgBorrowRate, poolBorrowRate);
+        assertEq(p2pSupplyRate, poolBorrowRate);
+        assertEq(p2pBorrowRate, poolBorrowRate);
+    }
+
+    function testInvertedSpreadDelta() public {
+        // Full p2p on the DAI market, with a 50% supply delta.
+        uint256 supplyAmount = 1 ether;
+        uint256 repayAmount = 0.5 ether;
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
+        borrower1.approve(aave, supplyAmount);
+        borrower1.supply(aAave, supplyAmount);
+        borrower1.borrow(aDai, supplyAmount);
+        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        borrower1.approve(dai, repayAmount);
+        borrower1.repay(aDai, repayAmount);
+        (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
+        assertEq(p2pSupplyDelta, repayAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
+
+        // Invert spreads on DAI.
+        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertSpreadOnDai();
+
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertApproxEqAbs(avgSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
+        assertEq(avgBorrowRate, poolBorrowRate);
+        assertApproxEqAbs(p2pSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
+        assertEq(p2pBorrowRate, poolBorrowRate);
+    }
+
+    function _invertSpreadOnDai() public returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
+        uint256 VARIABLE_RATE = 2;
+        uint256 FIXED_RATE = 1;
+
+        // Borrow variable.
+        uint256 amount = 100_000_000 ether;
+        deal(usdc, address(1), to6Decimals(2 * amount));
+        vm.startPrank(address(1));
+        ERC20(usdc).safeApprove(address(pool), type(uint256).max);
+        pool.deposit(usdc, to6Decimals(2 * amount), address(1), 0);
+        pool.borrow(dai, amount, VARIABLE_RATE, 0, address(1));
+        vm.stopPrank();
+
+        // Borrow stable.
+        // We do it with multiple borrowers, because the stable borrow is capped
+        // (by users) in Aave, by a given percentage of the available liquidity.
+        uint256 amountStable = 10_000_000 ether;
+        for (uint160 i = 2; i <= 10; i++) {
+            deal(usdc, address(i), to6Decimals(2 * amountStable));
+
+            vm.startPrank(address(i));
+
+            ERC20(usdc).safeApprove(address(pool), type(uint256).max);
+            pool.deposit(usdc, to6Decimals(2 * amountStable), address(i), 0);
+            pool.borrow(dai, amountStable, FIXED_RATE, 0, address(i));
+
+            vm.stopPrank();
+        }
+
+        // Repay variable.
+        vm.startPrank(address(1));
+        ERC20(dai).safeApprove(address(pool), type(uint256).max);
+        pool.repay(dai, amount, VARIABLE_RATE, address(1));
+        vm.stopPrank();
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+
+        // Return values.
+        poolSupplyRate = reserve.currentLiquidityRate;
+        poolBorrowRate = reserve.currentVariableBorrowRate;
+
+        // Rates must be inverted.
+        assertGt(poolSupplyRate, poolBorrowRate);
     }
 }
