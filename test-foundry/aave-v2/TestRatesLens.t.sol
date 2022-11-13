@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestRatesLens is TestSetup {
     using WadRayMath for uint256;
+    using SafeTransferLib for ERC20;
 
     function testGetRatesPerYear() public {
         hevm.roll(block.number + 1_000);
@@ -1017,5 +1018,67 @@ contract TestRatesLens is TestSetup {
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
 
         assertApproxEqAbs(avgBorrowRate, reserve.currentVariableBorrowRate, 1);
+    }
+
+    function testInvertedSpread() public {
+        // Full p2p on the DAI market.
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(aDai, 1 ether);
+        borrower1.approve(aave, 1 ether);
+        borrower1.supply(aAave, 1 ether);
+        borrower1.borrow(aDai, 1 ether);
+
+        // Invert spreads on DAI.
+        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertSpreadOnDai();
+
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertEq(avgSupplyRate, poolBorrowRate);
+        assertEq(avgBorrowRate, poolBorrowRate);
+        assertEq(p2pSupplyRate, poolBorrowRate);
+        assertEq(p2pBorrowRate, poolBorrowRate);
+    }
+
+    function _invertSpreadOnDai() public returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
+        uint256 amount = 100_000_000 ether;
+        uint256 amountStable = 10_000_000 ether;
+        uint256 VARIABLE_RATE = 2;
+        uint256 FIXED_RATE = 1;
+
+        deal(usdc, address(1), to6Decimals(2 * amount));
+
+        vm.startPrank(address(1));
+        ERC20(usdc).safeApprove(address(pool), type(uint256).max);
+        pool.deposit(usdc, to6Decimals(2 * amount), address(1), 0);
+        pool.borrow(dai, amount, VARIABLE_RATE, 0, address(1));
+        vm.stopPrank();
+
+        for (uint160 i = 1; i <= 10; i++) {
+            deal(usdc, address(i), to6Decimals(2 * amountStable));
+
+            vm.startPrank(address(i));
+
+            ERC20(usdc).safeApprove(address(pool), type(uint256).max);
+            pool.deposit(usdc, to6Decimals(2 * amountStable), address(i), 0);
+            pool.borrow(dai, amountStable, FIXED_RATE, 0, address(i));
+
+            vm.stopPrank();
+        }
+
+        vm.startPrank(address(1));
+        ERC20(dai).safeApprove(address(pool), type(uint256).max);
+        pool.repay(dai, amount, VARIABLE_RATE, address(1));
+        vm.stopPrank();
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+
+        // Return values.
+        poolSupplyRate = reserve.currentLiquidityRate;
+        poolBorrowRate = reserve.currentVariableBorrowRate;
+
+        // Rates must be inverted.
+        assertGt(poolSupplyRate, poolBorrowRate);
     }
 }
