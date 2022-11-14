@@ -1118,17 +1118,21 @@ contract TestRatesLens is TestSetup {
         public
         returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
     {
-        poolSupplyRate = pool.getReserveData(dai).currentLiquidityRate;
+        // Keep the current supply rate.
+        uint256 newPoolSupplyRate = pool.getReserveData(dai).currentLiquidityRate;
         // Make the borrow rate less than the supply rate.
-        poolBorrowRate = poolSupplyRate / 2;
-        uint256 newRate = (poolBorrowRate << 128) | poolSupplyRate;
+        uint256 newPoolBorrowRate = newPoolSupplyRate / 2;
+        // Rates are packed in the _reserves struct.
+        uint256 newRates = (newPoolBorrowRate << 128) | newPoolSupplyRate;
         // Slot of the mapping _reserves is 53 to take into account 52 storage slots of VersionedInitializable plus the ILendingPoolAddressesProvider slot.
         // Offset in the ReserveData struct is 2.
         bytes32 rateSlot = bytes32(uint256(keccak256(abi.encode(address(dai), 53))) + uint256(2));
-        vm.store(address(pool), rateSlot, bytes32(newRate));
+        vm.store(address(pool), rateSlot, bytes32(newRates));
 
-        // Rates must be inverted.
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
-        assertGt(reserve.currentLiquidityRate, reserve.currentVariableBorrowRate);
+        poolSupplyRate = reserve.currentLiquidityRate;
+        poolBorrowRate = reserve.currentVariableBorrowRate;
+        // Rates must be inverted.
+        assertGt(poolSupplyRate, poolBorrowRate);
     }
 }
