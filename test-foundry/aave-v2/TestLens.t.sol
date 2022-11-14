@@ -178,7 +178,7 @@ contract TestLens is TestSetup {
         assertEq(assetDataDai.debt, 0, "debtDai");
     }
 
-    function testMaxCapicitiesWithNothing() public {
+    function testMaxCapacitiesWithNothing() public {
         (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
@@ -852,6 +852,15 @@ contract TestLens is TestSetup {
         assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
     }
 
+    function testGetUpdatedP2PBorrowIndexWithDelta() public {
+        _createBorrowDelta();
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
+    }
+
     function testGetUpdatedIndexesOnStEth() public {
         createMarket(aStEth);
 
@@ -900,35 +909,40 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testGetUpdatedP2PBorrowIndexWithDelta() public {
-        _createBorrowDelta();
-        hevm.warp(block.timestamp + 365 days);
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(aDai);
-
-        morpho.updateIndexes(aDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
-    }
-
     function _createSupplyDelta() public {
         uint256 amount = 1 ether;
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, amount);
+
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
+
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         borrower1.repay(aDai, type(uint256).max);
+
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
     function _createBorrowDelta() public {
         uint256 amount = 1 ether;
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, amount);
+
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
+
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, type(uint256).max);
+
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
     function testGetAllMarkets() public {
@@ -1266,7 +1280,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
         indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(aave);
@@ -1355,7 +1369,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
         indexes.ethPoolSupplyIndexBefore = pool.getReserveNormalizedIncome(aave);

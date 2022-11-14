@@ -12,8 +12,6 @@ import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
@@ -76,8 +74,6 @@ contract TestSetup is Config, Test {
         entryPositionsManager = morpho.entryPositionsManager();
         exitPositionsManager = morpho.exitPositionsManager();
         interestRatesManager = morpho.interestRatesManager();
-
-        rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
     }
 
     function initUsers() internal {
@@ -119,7 +115,6 @@ contract TestSetup is Config, Test {
         vm.label(address(morphoImplV1), "MorphoImplV1");
         vm.label(address(morpho), "Morpho");
         vm.label(address(interestRatesManager), "InterestRatesManager");
-        vm.label(address(rewardsManager), "RewardsManager");
         vm.label(address(oracle), "Oracle");
         vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");

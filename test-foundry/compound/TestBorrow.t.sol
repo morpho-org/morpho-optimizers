@@ -98,7 +98,7 @@ contract TestBorrow is TestSetup {
 
     // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
     function testBorrow5() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -157,7 +157,7 @@ contract TestBorrow is TestSetup {
 
     // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
     function testBorrow6() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -230,6 +230,11 @@ contract TestBorrow is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
+    function testShouldNotBorrowZero() public {
+        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
+        morpho.borrow(cDai, 0, type(uint256).max);
+    }
+
     function testBorrowOnPoolThreshold() public {
         uint256 amountBorrowed = 1;
 
@@ -268,7 +273,7 @@ contract TestBorrow is TestSetup {
             suppliers[i].supply(cDai, suppliedAmount);
         }
 
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
 
         vm.roll(block.number + 1);
         // Delta should be created.

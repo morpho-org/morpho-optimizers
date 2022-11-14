@@ -181,7 +181,7 @@ contract TestLens is TestSetup {
         assertEq(assetDataCDai.debtValue, 0, "debtValueDai");
     }
 
-    function testGetterUserWithNothing() public {
+    function testMaxCapacitiesWithNothing() public {
         (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cDai
@@ -235,6 +235,55 @@ contract TestLens is TestSetup {
 
         assertEq(withdrawable, 0, "withdrawable DAI");
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
+    }
+
+    function testMaxCapacitiesWithSupplyAndBorrow() public {
+        uint256 amount = 100 ether;
+
+        borrower1.approve(bat, amount);
+        borrower1.supply(cBat, amount);
+
+        (uint256 withdrawableBatBefore, uint256 borrowableBatBefore) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), cBat);
+        (uint256 withdrawableDaiBefore, uint256 borrowableDaiBefore) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+
+        borrower1.borrow(cDai, borrowableDaiBefore / 2);
+
+        (uint256 withdrawableBatAfter, uint256 borrowableBatAfter) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), cBat);
+        (uint256 withdrawableDaiAfter, uint256 borrowableDaiAfter) = lens
+        .getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+
+        (, uint256 batCollateralFactor, ) = comptroller.markets(cBat);
+
+        assertApproxEqAbs(withdrawableBatBefore, amount, 1e9, "cannot withdraw all BAT");
+        assertApproxEqAbs(
+            borrowableBatBefore,
+            amount.mul(batCollateralFactor),
+            1e8,
+            "cannot borrow all BAT"
+        );
+        assertEq(withdrawableDaiBefore, 0, "can withdraw DAI not supplied");
+        assertApproxEqAbs(
+            borrowableDaiBefore,
+            amount.mul(batCollateralFactor).mul(
+                oracle.getUnderlyingPrice(cBat).div(oracle.getUnderlyingPrice(cDai))
+            ),
+            1e8,
+            "cannot borrow all DAI"
+        );
+        assertApproxEqAbs(
+            borrowableBatAfter,
+            borrowableBatBefore / 2,
+            10,
+            "cannot borrow half BAT"
+        );
+        assertEq(withdrawableDaiAfter, 0, "unexpected withdrawable DAI");
+        assertApproxEqAbs(borrowableDaiAfter, borrowableDaiBefore / 2, 1, "cannot borrow half DAI");
+
+        vm.expectRevert(PositionsManager.UnauthorisedWithdraw.selector);
+        borrower1.withdraw(cBat, withdrawableBatAfter + 1e8);
     }
 
     function testUserBalanceWithoutMatching() public {
@@ -749,6 +798,51 @@ contract TestLens is TestSetup {
         assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
     }
 
+    function testGetUpdatedP2PIndexesWithSupplyDelta() public {
+        _createSupplyDelta();
+        hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(cDai, true);
+
+        morpho.updateP2PIndexes(cDai);
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), 1);
+    }
+
+    function testGetUpdatedP2PIndexesWithBorrowDelta() public {
+        _createBorrowDelta();
+        hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(cDai, true);
+
+        morpho.updateP2PIndexes(cDai);
+        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), 1);
+        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), 1);
+    }
+
+    function testGetUpdatedP2PSupplyIndex() public {
+        hevm.roll(block.number + (24 * 60 * 4));
+        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
+
+        morpho.updateP2PIndexes(cDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
+    }
+
+    function testGetUpdatedP2PBorrowIndex() public {
+        hevm.roll(block.number + (24 * 60 * 4));
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
+
+        morpho.updateP2PIndexes(cDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
+    }
+
+    function testGetUpdatedP2PBorrowIndexWithDelta() public {
+        _createBorrowDelta();
+        hevm.roll(block.number + (365 * 24 * 60 * 4));
+        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
+
+        morpho.updateP2PIndexes(cDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
+    }
+
     function testGetUpdatedIndexesWithTransferToCTokenContract() public {
         hevm.roll(block.number + (31 * 24 * 60 * 4));
 
@@ -775,20 +869,42 @@ contract TestLens is TestSetup {
         assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
     }
 
-    function testGetUpdatedP2PSupplyIndex() public {
-        hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
+    function _createSupplyDelta() public {
+        uint256 amount = 1 ether;
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
 
-        morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, amount / 2);
+        borrower1.borrow(cDai, amount / 4);
+
+        moveOneBlockForwardBorrowRepay();
+
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
+
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        borrower1.repay(cDai, type(uint256).max);
+
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
-    function testGetUpdatedP2PBorrowIndex() public {
-        hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
+    function _createBorrowDelta() public {
+        uint256 amount = 1 ether;
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
 
-        morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, amount / 2);
+        borrower1.borrow(cDai, amount / 4);
+
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
+
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        supplier1.withdraw(cDai, type(uint256).max);
+
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
     function testGetAllMarkets() public {
@@ -1299,7 +1415,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
         indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();
@@ -1388,7 +1504,7 @@ contract TestLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         SupplyBorrowIndexes memory indexes;
         indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();

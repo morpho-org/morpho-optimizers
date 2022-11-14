@@ -114,7 +114,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         /// Peer-to-peer supply ///
 
-        // Match peer-to-peer borrow delta.
+        // Match the peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
@@ -212,7 +212,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         /// Peer-to-peer borrow ///
 
-        // Match peer-to-peer supply delta.
+        // Match the peer-to-peer supply delta.
         if (delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
@@ -290,15 +290,13 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolToken,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        {
-            // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
-            // In response, Morpho mirrors this behavior.
-            address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-            if (
-                priceOracleSentinel != address(0) &&
-                !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
-            ) return false;
-        }
+        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
+        // In response, Morpho mirrors this behavior.
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (
+            priceOracleSentinel != address(0) &&
+            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+        ) return false;
 
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, 0, _borrowedAmount);
         return values.debt <= values.maxDebt;

@@ -41,8 +41,3 @@ jobs:
         uses: Rubilmax/foundry-storage-check@v2.1
         with:
           contract: contracts/aave-v2/Morpho.sol:Morpho
-
-      - name: Check RewardsManager storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1
-        with:
-          contract: contracts/aave-v2/RewardsManager.sol:RewardsManager
