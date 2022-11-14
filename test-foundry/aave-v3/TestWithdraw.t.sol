@@ -367,7 +367,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers
-        if (block.chainid == Chains.POLYGON_MAINNET)
+        if (block.chainid == stdChains.Polygon.chainId)
             setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
         else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
 
@@ -477,10 +477,9 @@ contract TestWithdraw is TestSetup {
 
             uint256 shareOfTheDelta = newVars
             .BP2PD
-            .wadToRay()
             .rayMul(newVars.NVD)
             .rayDiv(oldVars.BP2PER)
-            .rayDiv(newVars.BP2PA.wadToRay());
+            .rayDiv(newVars.BP2PA);
 
             uint256 expectedBP2PER = oldVars.BP2PER.rayMul(
                 computeCompoundedInterest(oldVars.APR, 365 days).rayMul(RAY - shareOfTheDelta) +

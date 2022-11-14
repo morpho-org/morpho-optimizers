@@ -13,7 +13,9 @@ contract User {
     IAaveIncentivesController public aaveIncentivesController;
 
     constructor(Morpho _morpho) {
-        setMorphoAddresses(_morpho);
+        morpho = _morpho;
+        pool = _morpho.pool();
+        aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 
     receive() external payable {}

@@ -93,9 +93,9 @@ library InterestRatesModel {
             newP2PSupplyIndex = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                _params.p2pDelta.wadToRay().rayMul(_params.lastPoolIndex).rayDiv(
-                    _params.p2pAmount.wadToRay().rayMul(_params.lastP2PIndex)
-                ),
+                _params.p2pDelta.rayMul(_params.lastPoolIndex).rayDiv(
+                    _params.p2pAmount.rayMul(_params.lastP2PIndex)
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -118,9 +118,9 @@ library InterestRatesModel {
             newP2PBorrowIndex = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                _params.p2pDelta.wadToRay().rayMul(_params.lastPoolIndex).rayDiv(
-                    _params.p2pAmount.wadToRay().rayMul(_params.lastP2PIndex)
-                ),
+                _params.p2pDelta.rayMul(_params.lastPoolIndex).rayDiv(
+                    _params.p2pAmount.rayMul(_params.lastP2PIndex)
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -139,15 +139,22 @@ library InterestRatesModel {
         pure
         returns (uint256 p2pSupplyRate)
     {
-        p2pSupplyRate =
-            _params.p2pRate -
-            (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
+        // When poolSupplyRate > poolBorrowRate, the p2pRate is equal to the
+        // poolBorrowRate. In this case, the p2pSupplyRate is set to the
+        // p2pRate (= poolBorrowRate), because there is no rate spread.
+        if (_params.p2pRate < _params.poolRate) {
+            p2pSupplyRate = _params.p2pRate;
+        } else {
+            p2pSupplyRate =
+                _params.p2pRate -
+                (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
+        }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = Math.min(
-                _params.p2pDelta.wadToRay().rayMul(_params.poolIndex).rayDiv(
-                    _params.p2pAmount.wadToRay().rayMul(_params.p2pIndex)
-                ),
+                _params.p2pDelta.rayMul(_params.poolIndex).rayDiv(
+                    _params.p2pAmount.rayMul(_params.p2pIndex)
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
@@ -171,9 +178,9 @@ library InterestRatesModel {
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = Math.min(
-                _params.p2pDelta.wadToRay().rayMul(_params.poolIndex).rayDiv(
-                    _params.p2pAmount.wadToRay().rayMul(_params.p2pIndex)
-                ),
+                _params.p2pDelta.rayMul(_params.poolIndex).rayDiv(
+                    _params.p2pAmount.rayMul(_params.p2pIndex)
+                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 

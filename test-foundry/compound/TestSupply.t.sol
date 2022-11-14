@@ -308,4 +308,34 @@ contract TestSupply is TestSetup {
         assertEq(usdcPoolSupplyIndexAfter, usdcPoolSupplyIndexBefore);
         assertEq(usdcPoolBorrowIndexAfter, usdcPoolBorrowIndexBefore);
     }
+
+    function testShouldMatchSupplyWithCorrectAmountOfGas() public {
+        uint256 amount = 100 ether;
+        createSigners(30);
+
+        uint256 snapshotId = vm.snapshot();
+        uint256 gasUsed1 = _getSupplyGasUsage(amount, 1e5);
+
+        vm.revertTo(snapshotId);
+        uint256 gasUsed2 = _getSupplyGasUsage(amount, 2e5);
+
+        assertGt(gasUsed2, gasUsed1 + 5e4);
+    }
+
+    /// @dev Helper for gas usage test
+    function _getSupplyGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
+        // 2 * NMAX borrowers borrow amount
+        for (uint256 i; i < 30; i++) {
+            borrowers[i].approve(usdc, type(uint256).max);
+            borrowers[i].supply(cUsdc, to6Decimals(amount * 3));
+            borrowers[i].borrow(cDai, amount);
+        }
+
+        supplier1.approve(dai, amount * 20);
+
+        uint256 gasLeftBefore = gasleft();
+        supplier1.supply(cDai, amount * 20, maxGas);
+
+        gasUsed = gasLeftBefore - gasleft();
+    }
 }
