@@ -1020,7 +1020,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(avgBorrowRate, reserve.currentVariableBorrowRate, 1);
     }
 
-    function testInvertedSpread() public {
+    function testRatesWithInvertedSpread() public {
         // Full p2p on the DAI market.
         supplier1.approve(dai, 1 ether);
         supplier1.supply(aDai, 1 ether);
@@ -1041,7 +1041,7 @@ contract TestRatesLens is TestSetup {
         assertEq(p2pBorrowRate, poolBorrowRate);
     }
 
-    function testInvertedSpreadDelta() public {
+    function testRatesWithInvertedSpreadAndHalfSupplyDelta() public {
         // Full p2p on the DAI market, with a 50% supply delta.
         uint256 supplyAmount = 1 ether;
         uint256 repayAmount = 0.5 ether;

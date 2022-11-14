@@ -909,6 +909,67 @@ contract TestLens is TestSetup {
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
     }
 
+    function testGetUpdatedIndexesWithInvertedSpread() public {
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(aDai, 1 ether);
+        borrower1.approve(aave, 1 ether);
+        borrower1.supply(aAave, 1 ether);
+        borrower1.borrow(aDai, 1 ether);
+
+        _invertPoolSpread(dai);
+
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(dai),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
+    }
+
+    function testGetUpdatedIndexesWithInvertedSpreadAndSupplyDelta() public {
+        _createSupplyDelta();
+        _invertPoolSpread(dai);
+
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(dai),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
+    }
+
     function _createSupplyDelta() public {
         uint256 amount = 1 ether;
         supplier1.approve(dai, type(uint256).max);
