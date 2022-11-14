@@ -761,4 +761,28 @@ contract TestWithdraw is TestSetup {
 
         assertEq(ERC20(dai).balanceOf(address(supplier2)), balanceBefore + amount);
     }
+
+    function testShouldPreventWithdrawWhenBorrowCapReached() public {
+        createMarket(cUni);
+
+        uint256 compoundCollateralAmount = 50_000_000 ether;
+        deal(uni, address(borrower1), compoundCollateralAmount);
+        borrower1.compoundSupply(cUni, compoundCollateralAmount);
+        borrower1.compoundBorrow(
+            cUni,
+            morpho.comptroller().borrowCaps(cUni) - ICToken(cUni).totalBorrows() - 1 ether
+        );
+
+        deal(uni, address(supplier1), 110 ether);
+        supplier1.approve(uni, 110 ether);
+        supplier1.supply(cUni, 110 ether);
+
+        deal(dai, address(borrower2), 100_000 ether);
+        borrower2.approve(dai, 100_000 ether);
+        borrower2.supply(cDai, 100_000 ether);
+        borrower2.borrow(cUni, 100 ether);
+
+        vm.expectRevert("market borrow cap reached");
+        supplier1.withdraw(cUni, type(uint256).max);
+    }
 }
