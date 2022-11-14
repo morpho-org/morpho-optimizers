@@ -128,7 +128,7 @@ contract TestWithdraw is TestSetup {
     // There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function testWithdraw3_2() public {
         // TODO: fix this.
-        deal(dai, address(morpho), 1);
+        deal(dai, address(morpho), 10);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -370,11 +370,11 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0.75e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+        uint256 suppliedAmount = 20 * borrowedAmount + 20;
         uint256 expectedSupplyBalanceInP2P;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount
@@ -399,8 +399,8 @@ contract TestWithdraw is TestSetup {
                 aDai,
                 address(supplier1)
             );
-            testEquality(onPoolSupplier, 0);
-            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+            testEquality(onPoolSupplier, 0, "on pool supplier");
+            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
 
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
             uint256 expectedBorrowBalanceInP2P = borrowedAmount.rayDiv(p2pBorrowIndex);
@@ -526,7 +526,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.2e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0.8e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -547,8 +547,13 @@ contract TestWithdraw is TestSetup {
 
         for (uint256 i = 0; i < 20; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
-            assertEq(inP2P, (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)), "inP2P");
-            assertEq(onPool, 0, "onPool");
+            assertApproxEqAbs(
+                inP2P,
+                (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)),
+                1e4,
+                "inP2P"
+            );
+            assertApproxEqAbs(onPool, 0, 1e4, "onPool");
         }
 
         // Supplier withdraws max
@@ -565,14 +570,15 @@ contract TestWithdraw is TestSetup {
                 string.concat("onPool", Strings.toString(i))
             );
         }
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i; i < 10; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
-            assertEq(
+            assertApproxEqAbs(
                 inP2P,
                 (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)),
+                1e2,
                 string.concat("inP2P", Strings.toString(i))
             );
-            assertEq(onPool, 0, string.concat("onPool", Strings.toString(i)));
+            assertApproxEqAbs(onPool, 0, 1e2, string.concat("onPool", Strings.toString(i)));
         }
 
         (
@@ -586,14 +592,14 @@ contract TestWithdraw is TestSetup {
         assertApproxEqAbs(
             p2pBorrowDelta,
             (10 * borrowedAmount).rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
-            1e2,
+            1e3,
             "p2pBorrowDelta"
         );
         assertApproxEqAbs(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
         assertApproxEqAbs(
             p2pBorrowAmount,
             (10 * borrowedAmount).rayDiv(morpho.p2pBorrowIndex(aDai)),
-            1e2,
+            1e3,
             "p2pBorrowAmount"
         );
 
