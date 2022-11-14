@@ -1115,7 +1115,7 @@ contract TestRatesLens is TestSetup {
     }
 
     function _invertSpreadOnDaiWithStorageManipulation()
-        public
+        internal
         returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
     {
         // Keep the current supply rate.
