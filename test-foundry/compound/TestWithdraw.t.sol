@@ -782,8 +782,6 @@ contract TestWithdraw is TestSetup {
         borrower2.supply(cDai, 100_000 ether);
         borrower2.borrow(cUni, 100 ether);
 
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
-
         vm.expectRevert("market borrow cap reached");
         supplier1.withdraw(cUni, type(uint256).max);
     }
