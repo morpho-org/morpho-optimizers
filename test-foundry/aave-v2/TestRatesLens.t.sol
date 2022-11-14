@@ -1029,7 +1029,7 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(aDai, 1 ether);
 
         // Invert spreads on DAI.
-        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertSpreadOnDai();
+        (, uint256 poolBorrowRate) = _invertSpreadOnDai();
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
@@ -1110,6 +1110,28 @@ contract TestRatesLens is TestSetup {
         poolSupplyRate = reserve.currentLiquidityRate;
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
+        // Rates must be inverted.
+        assertGt(poolSupplyRate, poolBorrowRate);
+    }
+
+    function _invertSpreadOnDaiWithStorageManipulation()
+        internal
+        returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
+    {
+        // Keep the current supply rate.
+        uint256 newPoolSupplyRate = pool.getReserveData(dai).currentLiquidityRate;
+        // Make the borrow rate less than the supply rate.
+        uint256 newPoolBorrowRate = newPoolSupplyRate / 2;
+        // Rates are packed in the _reserves struct.
+        uint256 newRates = (newPoolBorrowRate << 128) | newPoolSupplyRate;
+        // Slot of the mapping _reserves is 53 to take into account 52 storage slots of VersionedInitializable plus the ILendingPoolAddressesProvider slot.
+        // Offset in the ReserveData struct is 2.
+        bytes32 rateSlot = bytes32(uint256(keccak256(abi.encode(address(dai), 53))) + uint256(2));
+        vm.store(address(pool), rateSlot, bytes32(newRates));
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+        poolSupplyRate = reserve.currentLiquidityRate;
+        poolBorrowRate = reserve.currentVariableBorrowRate;
         // Rates must be inverted.
         assertGt(poolSupplyRate, poolBorrowRate);
     }
