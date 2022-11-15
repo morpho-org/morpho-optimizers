@@ -5,6 +5,8 @@ import "@contracts/aave-v3/interfaces/aave/IPool.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 contract FlashLoan {
+    using SafeTransferLib for ERC20;
+
     IPool public pool;
 
     constructor(IPool _pool) {
@@ -35,7 +37,7 @@ contract FlashLoan {
     ) external returns (bool) {
         for (uint256 i = 0; i < assets.length; i++) {
             uint256 amountOwing = amounts[i] + premiums[i];
-            ERC20(assets[i]).approve(address(pool), amountOwing);
+            ERC20(assets[i]).safeApprove(address(pool), amountOwing);
         }
 
         return true;
