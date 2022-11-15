@@ -753,7 +753,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        hevm.roll(block.number + 31 days / 12);
         (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
@@ -783,7 +783,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        hevm.roll(block.number + 31 days / 12);
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,
@@ -870,7 +870,7 @@ contract TestLens is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, amount);
 
-        vm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + 31 days / 12);
         vm.warp(block.timestamp + 1);
         (
             uint256 newP2PSupplyIndex,
@@ -918,7 +918,7 @@ contract TestLens is TestSetup {
 
         _invertPoolSpread(dai);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        hevm.roll(block.number + 31 days / 12);
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,
@@ -946,7 +946,7 @@ contract TestLens is TestSetup {
         _createSupplyDelta();
         _invertPoolSpread(dai);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        hevm.roll(block.number + 31 days / 12);
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,

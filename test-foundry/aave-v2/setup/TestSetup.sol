@@ -233,6 +233,9 @@ contract TestSetup is Config, Utils {
         morpho.setDefaultMaxGasForMatching(newMaxGas);
     }
 
+    /// @notice Inverts the pool's spread between supply & variable borrow rates.
+    /// @dev This could be achieved natively by borrowing 90%+ of the available pool liquidity at a fixed rate,
+    ///      but is more efficient with storage manipulation.
     function _invertPoolSpread(address _underlying)
         internal
         returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
