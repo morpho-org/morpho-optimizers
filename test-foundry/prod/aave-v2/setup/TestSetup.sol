@@ -215,7 +215,7 @@ contract TestSetup is Config, Test {
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         return
             bound(
                 _amount,
