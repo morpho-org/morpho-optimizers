@@ -319,7 +319,11 @@ contract TestGovernance is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.increaseP2PDeltas(cDai, 0);
 
-        morpho.increaseP2PDeltas(cDai, 0);
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, 1_000 ether);
+        supplier1.borrow(cDai, 2 ether);
+
+        morpho.increaseP2PDeltas(cDai, 1 ether);
     }
 
     function testShouldNotIncreaseP2PDeltasWhenMarketNotCreated() public {

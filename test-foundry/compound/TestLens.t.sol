@@ -136,7 +136,6 @@ contract TestLens is TestSetup {
 
         // Avoid stack too deep error.
         Types.AssetLiquidityData memory expectedDataCUsdc;
-        (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedDataCUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
         expectedDataCUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
@@ -165,7 +164,11 @@ contract TestLens is TestSetup {
             expectedDataCDai.collateralFactor
         );
 
-        assertEq(assetDataCDai.collateralFactor, collateralFactor, "collateralFactor");
+        assertEq(
+            assetDataCDai.collateralFactor,
+            expectedDataCDai.collateralFactor,
+            "collateralFactor"
+        );
         assertEq(
             assetDataCDai.underlyingPrice,
             expectedDataCDai.underlyingPrice,
@@ -280,7 +283,12 @@ contract TestLens is TestSetup {
             "cannot borrow half BAT"
         );
         assertEq(withdrawableDaiAfter, 0, "unexpected withdrawable DAI");
-        assertApproxEqAbs(borrowableDaiAfter, borrowableDaiBefore / 2, 1, "cannot borrow half DAI");
+        assertApproxEqAbs(
+            borrowableDaiAfter,
+            borrowableDaiBefore / 2,
+            10,
+            "cannot borrow half DAI"
+        );
 
         vm.expectRevert(PositionsManager.UnauthorisedWithdraw.selector);
         borrower1.withdraw(cBat, withdrawableBatAfter + 1e8);
@@ -573,7 +581,7 @@ contract TestLens is TestSetup {
         // USDT
         expectedStates.debtValue += getBalanceOnCompound(
             to6Decimals(toBorrow),
-            ICToken(cBat).borrowIndex()
+            ICToken(cUsdt).borrowIndex()
         ).mul(oracle.getUnderlyingPrice(cUsdt));
 
         (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
@@ -963,7 +971,7 @@ contract TestLens is TestSetup {
         borrower1.borrow(cDai, amount);
 
         SimplePriceOracle oracle = createAndSetCustomPriceOracle();
-        oracle.setUnderlyingPrice(cUsdc, 0.6e30);
+        oracle.setUnderlyingPrice(cUsdc, 0.5e30);
         oracle.setUnderlyingPrice(cDai, 1e18);
 
         bool isLiquidatable = lens.isLiquidatable(address(borrower1), new address[](0));
@@ -1236,7 +1244,7 @@ contract TestLens is TestSetup {
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(cUsdc, to6Decimals(amount));
-        borrower1.borrow(cDai, amount.mul(collateralFactor) - 10 ether);
+        borrower1.borrow(cDai, amount.mul(collateralFactor) - 5 ether);
 
         address[] memory updatedMarkets = new address[](2);
         assertFalse(
@@ -1462,7 +1470,7 @@ contract TestLens is TestSetup {
             expectedEthUSDOnPool + expectedDaiUSDInP2P + expectedDaiUSDOnPool,
             "unexpected total supply"
         );
-        assertApproxEqAbs(amounts.totalBorrow, expectedDaiUSDInP2P, 1e8, "unexpected total borrow");
+        assertApproxEqAbs(amounts.totalBorrow, expectedDaiUSDInP2P, 1e9, "unexpected total borrow");
 
         assertEq(amounts.totalP2PSupply, expectedDaiUSDInP2P, "unexpected total p2p supply");
         assertEq(
@@ -1473,7 +1481,7 @@ contract TestLens is TestSetup {
         assertApproxEqAbs(
             amounts.totalP2PBorrow,
             expectedDaiUSDInP2P,
-            1e8,
+            1e9,
             "unexpected total p2p borrow"
         );
         assertEq(amounts.totalPoolBorrow, 0, "unexpected total pool borrow");
@@ -1482,7 +1490,7 @@ contract TestLens is TestSetup {
         assertApproxEqAbs(
             amounts.daiP2PBorrow,
             expectedDaiUSDInP2P,
-            1e8,
+            1e9,
             "unexpected dai p2p borrow"
         );
         assertEq(amounts.daiPoolSupply, expectedDaiUSDOnPool, "unexpected dai pool supply");

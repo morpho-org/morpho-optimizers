@@ -625,7 +625,7 @@ contract TestRatesLens is TestSetup {
             1,
             "unexpected borrow rate per block"
         );
-        assertApproxEqAbs(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding errors
+        assertApproxEqAbs(balanceOnPool, 0, 1e9, "unexpected pool balance"); // compound rounding errors
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1e9, "unexpected p2p balance");
         assertApproxEqAbs(totalBalance, expectedBalanceInP2P, 1e9, "unexpected total balance");
     }
@@ -932,7 +932,7 @@ contract TestRatesLens is TestSetup {
         .getAverageSupplyRatePerBlock(cDai);
 
         assertApproxEqAbs(supplyRatePerBlock, ICToken(cDai).supplyRatePerBlock(), 1);
-        assertApproxEqAbs(poolSupplyAmount, amount, 1e7);
+        assertApproxEqAbs(poolSupplyAmount, amount, 1e9);
         assertEq(p2pSupplyAmount, 0);
     }
 
@@ -973,7 +973,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(supplyRatePerBlock, p2pSupplyRate, 1, "unexpected supply rate");
         assertApproxEqAbs(borrowRatePerBlock, p2pBorrowRate, 1, "unexpected borrow rate");
         assertApproxEqAbs(poolSupplyAmount, poolBorrowAmount, 1e9);
-        assertApproxEqAbs(poolBorrowAmount, 0, 1e7);
+        assertApproxEqAbs(poolBorrowAmount, 0, 1e9);
         assertEq(p2pSupplyAmount, p2pBorrowAmount);
         assertApproxEqAbs(p2pBorrowAmount, amount, 1e9);
     }

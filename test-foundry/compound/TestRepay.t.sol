@@ -449,7 +449,7 @@ contract TestRepay is TestSetup {
                 cDai,
                 address(borrower1)
             );
-            assertApproxEqAbs(onPoolBorrower, 0, 10, "borrower on pool");
+            assertApproxEqAbs(onPoolBorrower, 0, 20, "borrower on pool");
             testEqualityLarge(
                 inP2PBorrower,
                 expectedBorrowBalanceInP2P,
