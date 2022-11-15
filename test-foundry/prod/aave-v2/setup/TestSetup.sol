@@ -35,6 +35,7 @@ contract TestSetup is Config, Test {
     using stdStorage for StdStorage;
 
     uint256 MIN_ETH_AMOUNT = 0.005 ether;
+    uint256 MAX_ETH_AMOUNT = 10_000_000 ether;
 
     User public user;
 
@@ -223,7 +224,10 @@ contract TestSetup is Config, Test {
             bound(
                 _amount,
                 (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
-                ERC20(_market.underlying).balanceOf(_market.poolToken)
+                Math.min(
+                    ERC20(_market.underlying).balanceOf(_market.poolToken),
+                    (MAX_ETH_AMOUNT * 10**_market.decimals) / _price
+                )
             );
     }
 

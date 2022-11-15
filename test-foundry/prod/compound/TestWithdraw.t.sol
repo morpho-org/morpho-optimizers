@@ -42,7 +42,7 @@ contract TestWithdraw is TestSetup {
             2**96 / (10**(18 - _market.decimals)) // ~8 billion underlying
         );
         if (_market.underlying == uni || _market.underlying == comp)
-            amount = uint96(uint80(amount)); // avoids overflows
+            amount = uint96(uint80(amount)); // avoids overflow
 
         _tip(_market.underlying, address(user), amount);
 
