@@ -40,11 +40,11 @@ library LibIndexes {
         uint256 _poolBorrowIndex
     );
 
-    function m() internal pure returns (MorphoStorage.MarketsLayout storage m) {
+    function m() internal pure returns (S.MarketsLayout storage m) {
         return S.marketsLayout();
     }
 
-    function c() internal pure returns (MorphoStorage.ContractsLayout storage c) {
+    function c() internal pure returns (S.ContractsLayout storage c) {
         return S.contractsLayout();
     }
 
@@ -62,15 +62,15 @@ library LibIndexes {
         uint256 newPoolBorrowIndex = c().pool.getReserveNormalizedVariableDebt(underlyingToken);
 
         Params memory params = Params(
-            p2pSupplyIndex[_poolToken],
-            p2pBorrowIndex[_poolToken],
+            m().p2pSupplyIndex[_poolToken],
+            m().p2pBorrowIndex[_poolToken],
             newPoolSupplyIndex,
             newPoolBorrowIndex,
             marketPoolIndexes.poolSupplyIndex,
             marketPoolIndexes.poolBorrowIndex,
             market.reserveFactor,
             market.p2pIndexCursor,
-            deltas[_poolToken]
+            m().deltas[_poolToken]
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = computeP2PIndexes(params);

@@ -2,16 +2,17 @@
 pragma solidity 0.8.10;
 
 import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
-import {EventsAndErrors as E} from "./EventsAndErrors.sol";
+import {EventsAndErrors as E, Types, Math, ERC20} from "./Libraries.sol";
 import {LibIndexes} from "./LibIndexes.sol";
+import {LibPositions} from "./LibPositions.sol";
 
 library LibMarkets {
-    function m() internal pure returns (MorphoStorage.MarketsLayout storage m) {
+    function m() internal pure returns (S.MarketsLayout storage m) {
         return S.marketsLayout();
     }
 
-    function isMarketCreated(address _poolToken) internal view returns (bool) {
-        return m().market[_poolToken].underlyingToken != address(0);
+    function isMarketCreated(Types.Market memory _market) internal pure returns (bool) {
+        return _market.underlyingToken != address(0);
     }
 
     /// @notice Sets all pause statuses for a given market.
@@ -64,8 +65,8 @@ library LibMarkets {
         emit E.P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(m().market[_poolToken].underlyingToken);
-        _borrowFromPool(underlyingToken, _amount);
-        _supplyToPool(underlyingToken, _amount);
+        LibPositions.borrowFromPool(underlyingToken, _amount);
+        LibPositions.supplyToPool(underlyingToken, _amount);
 
         emit E.P2PDeltasIncreased(_poolToken, _amount);
     }

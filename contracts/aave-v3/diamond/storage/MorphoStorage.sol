@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {HeapOrdering} from "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
 import {IPoolAddressesProvider, IRewardsController, IPool, IIncentivesVault, IRewardsManager} from "../interfaces/Interfaces.sol";
+import {Types} from "../libraries/Libraries.sol";
 
 library MorphoStorage {
     /// CONSTANTS ///
@@ -38,7 +39,7 @@ library MorphoStorage {
         bool isClaimRewardsPaused;
     }
 
-    struct ContractLayout {
+    struct ContractsLayout {
         IPoolAddressesProvider addressesProvider;
         IRewardsController rewardsController;
         IPool pool;
@@ -57,7 +58,7 @@ library MorphoStorage {
         mapping(address => bytes32) userMarkets;
     }
 
-    struct MarketLayout {
+    struct MarketsLayout {
         address[] marketsCreated;
         mapping(address => uint256) p2pSupplyIndex;
         mapping(address => uint256) p2pBorrowIndex;
@@ -76,7 +77,7 @@ library MorphoStorage {
         }
     }
 
-    function contractLayout() internal pure returns (ContractLayout storage l) {
+    function contractsLayout() internal pure returns (ContractsLayout storage l) {
         bytes32 slot = MORPHO_CONTRACTS_STORAGE_POSITION;
         assembly {
             l.slot := slot

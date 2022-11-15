@@ -2,19 +2,118 @@
 pragma solidity 0.8.10;
 
 import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
+import {Types, Math, ERC20, EventsAndErrors as E} from "./Libraries.sol";
 import {IAToken, IVariableDebtToken} from "../interfaces/Interfaces.sol";
-import {Math} from "./Libraries.sol";
+import {LibIndexes} from "./LibIndexes.sol";
+import {LibMarkets} from "./LibMarkets.sol";
+import {LibUsers} from "./LibUsers.sol";
 
 library LibPositions {
-    function c() internal pure returns (MorphoStorage.ContractsLayout storage c) {
-        return S.contractsLayout();
+    function c() internal pure returns (S.ContractsLayout storage c) {
+        c = S.contractsLayout();
+    }
+
+    function m() internal pure returns (S.MarketsLayout storage m) {
+        m = S.marketsLayout();
+    }
+
+    function p() internal pure returns (S.PositionsLayout storage p) {
+        p = S.positionsLayout();
+    }
+
+    struct SupplyVars {
+        uint256 remainingToSupply;
+        uint256 poolBorrowIndex;
+        uint256 toRepay;
+    }
+
+    function supply(
+        address _poolToken,
+        address _from,
+        address _onBehalf,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) internal {
+        SupplyVars memory vars;
+
+        Types.Market memory market = m().market[_poolToken];
+        Types.Delta storage delta = m().deltas[_poolToken];
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
+
+        validateSupply(market, _from, _onBehalf, _amount);
+        LibIndexes.updateIndexes(_poolToken);
+        LibUsers.setSupplying(_onBehalf, p().borrowMask[_poolToken], true);
+
+        underlyingToken.safeTransferFrom(_from, address(this), _amount);
+
+        vars.poolBorrowIndex = m().poolIndexes[_poolToken].poolBorrowIndex;
+        vars.remainingToSupply = _amount;
+    }
+
+    function supplyP2P(Types.Delta storage delta, SupplyVars memory vars)
+        internal
+        view
+        returns (SupplyVars memory)
+    {
+        if (delta.p2pBorrowDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
+                vars.remainingToSupply
+            ); // In underlying.
+
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToSupply.rayDiv(vars.poolBorrowIndex)
+            );
+            vars.toRepay += matchedDelta;
+            vars.remainingToSupply -= matchedDelta;
+            emit E.P2PBorrowDeltaUpdated(address(0), delta.p2pBorrowDelta);
+        }
+        return vars;
+    }
+
+    function matchP2PBorrowDelta(Types.Delta storage delta, SupplyVars memory vars)
+        internal
+        view
+        returns (SupplyVars memory)
+    {
+        if (delta.p2pBorrowDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
+                vars.remainingToSupply
+            ); // In underlying.
+
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
+                vars.remainingToSupply.rayDiv(vars.poolBorrowIndex)
+            );
+            vars.toRepay += matchedDelta;
+            vars.remainingToSupply -= matchedDelta;
+            emit E.P2PBorrowDeltaUpdated(address(0), delta.p2pBorrowDelta);
+        }
+        return vars;
+    }
+
+    function promotePoolBorrowers(SupplyVars memory vars, Types.Market memory market)
+        internal
+        view
+    {}
+
+    function validateSupply(
+        Types.Market memory _market,
+        address _from,
+        address _onBehalf,
+        uint256 _amount
+    ) internal view returns (bool) {
+        if (_onBehalf == address(0)) revert E.AddressIsZero();
+        if (_amount == 0) revert E.AmountIsZero();
+        if (LibMarkets.isMarketCreated(_market)) revert E.MarketNotCreated();
+        if (_market.isSupplyPaused) revert E.SupplyIsPaused();
     }
 
     /// @dev Supplies underlying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
     function supplyToPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        c().pool.supply(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        c().pool.supply(address(_underlyingToken), _amount, address(this), S.NO_REFERRAL_CODE);
     }
 
     /// @dev Withdraws underlying tokens from Aave.

@@ -2,7 +2,8 @@
 pragma solidity 0.8.10;
 
 import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
-import {Math, WadRayMath, PercentageMath, LibIndexes, ReserveConfiguration, UserConfiguration, Types, EventsAndErrors as E} from "../libraries/Libraries.sol";
+import {LibIndexes} from "./LibIndexes.sol";
+import {Math, WadRayMath, PercentageMath, DataTypes, ReserveConfiguration, UserConfiguration, Types, EventsAndErrors as E} from "../libraries/Libraries.sol";
 import {IPriceOracleGetter} from "../interfaces/Interfaces.sol";
 
 library LibUsers {
@@ -12,15 +13,15 @@ library LibUsers {
     using WadRayMath for uint256;
     using Math for uint256;
 
-    function c() internal pure returns (MorphoStorage.ContractsLayout storage c) {
+    function c() internal pure returns (S.ContractsLayout storage c) {
         return S.contractsLayout();
     }
 
-    function m() internal pure returns (MorphoStorage.MarketsLayout storage m) {
+    function m() internal pure returns (S.MarketsLayout storage m) {
         return S.marketsLayout();
     }
 
-    function p() internal pure returns (MorphoStorage.PositionsLayout storage p) {
+    function p() internal pure returns (S.PositionsLayout storage p) {
         return S.positionsLayout();
     }
 
@@ -138,7 +139,8 @@ library LibUsers {
 
             if (vars.poolToken != _poolToken) LibIndexes.updateIndexes(vars.poolToken);
 
-            (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = pool
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, , ) = c()
+            .pool
             .getConfiguration(vars.underlyingToken)
             .getParams();
 

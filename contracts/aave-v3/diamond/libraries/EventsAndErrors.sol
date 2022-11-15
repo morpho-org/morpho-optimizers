@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
+import {Types} from "./Libraries.sol";
+
 library EventsAndErrors {
     /// @notice Emitted when a supply happens.
     /// @param _from The address of the account sending funds.

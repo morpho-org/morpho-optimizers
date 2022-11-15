@@ -2,14 +2,18 @@
 pragma solidity 0.8.10;
 
 import {Modifiers} from "../abstract/Modifiers.sol";
-import {Math, LibMarkets, LibIndexes, EventsAndErrors as E} from "../libraries/Libraries.sol";
+import {LibMarkets} from "../libraries/LibMarkets.sol";
+import {LibIndexes} from "../libraries/LibIndexes.sol";
+import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
+import {Math, WadRayMath, EventsAndErrors as E, Types, ERC20} from "../libraries/Libraries.sol";
+import {IRewardsManager, IIncentivesVault, IRewardsController} from "../interfaces/Interfaces.sol";
 
 contract MorphoGovernance is Modifiers {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
         if (_newMaxSortedUsers == 0) revert E.MaxSortedUsersCannotBeZero();
-        maxSortedUsers = _newMaxSortedUsers;
+        g().maxSortedUsers = _newMaxSortedUsers;
         emit E.MaxSortedUsersSet(_newMaxSortedUsers);
     }
 
@@ -26,7 +30,7 @@ contract MorphoGovernance is Modifiers {
     /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManager The new `rewardsManager`.
     function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
-        rewardsManager = _rewardsManager;
+        c().rewardsManager = _rewardsManager;
         emit E.RewardsManagerSet(address(_rewardsManager));
     }
 
@@ -59,11 +63,11 @@ contract MorphoGovernance is Modifiers {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert E.ExceedsMaxBasisPoints();
+        if (_newReserveFactor > S.MAX_BASIS_POINTS) revert E.ExceedsMaxBasisPoints();
         LibIndexes.updateIndexes(_poolToken);
 
         m().market[_poolToken].reserveFactor = _newReserveFactor;
-        emit ReserveFactorSet(_poolToken, _newReserveFactor);
+        emit E.ReserveFactorSet(_poolToken, _newReserveFactor);
     }
 
     /// @notice Sets a new peer-to-peer cursor.
@@ -74,7 +78,7 @@ contract MorphoGovernance is Modifiers {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert E.ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > S.MAX_BASIS_POINTS) revert E.ExceedsMaxBasisPoints();
         LibIndexes.updateIndexes(_poolToken);
 
         m().market[_poolToken].p2pIndexCursor = _p2pIndexCursor;
@@ -229,15 +233,15 @@ contract MorphoGovernance is Modifiers {
         external
         onlyOwner
     {
-        if (treasuryVault == address(0)) revert ZeroAddress();
+        if (c().treasuryVault == address(0)) revert E.ZeroAddress();
 
         uint256 numberOfMarkets = _poolTokens.length;
 
         for (uint256 i; i < numberOfMarkets; ++i) {
             address poolToken = _poolTokens[i];
 
-            Types.Market memory market = market[poolToken];
-            if (!LibMarkets.isMarketCreated(_poolToken)) continue;
+            Types.Market memory market = m().market[poolToken];
+            if (!LibMarkets.isMarketCreated(poolToken)) continue;
 
             ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
@@ -246,8 +250,8 @@ contract MorphoGovernance is Modifiers {
 
             uint256 toClaim = Math.min(_amounts[i], underlyingBalance);
 
-            underlyingToken.safeTransfer(treasuryVault, toClaim);
-            emit ReserveFeeClaimed(poolToken, toClaim);
+            underlyingToken.safeTransfer(c().treasuryVault, toClaim);
+            emit E.ReserveFeeClaimed(poolToken, toClaim);
         }
     }
 
@@ -260,29 +264,32 @@ contract MorphoGovernance is Modifiers {
         uint16 _reserveFactor,
         uint16 _p2pIndexCursor
     ) external onlyOwner {
-        if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
-        if (_underlyingToken == address(0)) revert ZeroAddress();
-        if (_p2pIndexCursor > MAX_BASIS_POINTS || _reserveFactor > MAX_BASIS_POINTS)
-            revert ExceedsMaxBasisPoints();
+        if (m().marketsCreated.length >= S.MAX_NB_OF_MARKETS) revert E.MaxNumberOfMarkets();
+        if (_underlyingToken == address(0)) revert E.ZeroAddress();
+        if (_p2pIndexCursor > S.MAX_BASIS_POINTS || _reserveFactor > S.MAX_BASIS_POINTS)
+            revert E.ExceedsMaxBasisPoints();
 
-        if (!pool.getConfiguration(_underlyingToken).getActive()) revert MarketIsNotListedOnAave();
+        if (!c().pool.getConfiguration(_underlyingToken).getActive())
+            revert E.MarketIsNotListedOnAave();
 
-        address poolToken = pool.getReserveData(_underlyingToken).aTokenAddress;
+        address poolToken = c().pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (market[poolToken].isCreated()) revert MarketAlreadyCreated();
+        if (m().market[poolToken].isCreated()) revert E.MarketAlreadyCreated();
 
-        p2pSupplyIndex[poolToken] = WadRayMath.RAY;
-        p2pBorrowIndex[poolToken] = WadRayMath.RAY;
+        m().p2pSupplyIndex[poolToken] = WadRayMath.RAY;
+        m().p2pBorrowIndex[poolToken] = WadRayMath.RAY;
 
-        Types.PoolIndexes storage poolIndexes = poolIndexes[poolToken];
+        Types.PoolIndexes storage poolIndexes = m().poolIndexes[poolToken];
 
         poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-        poolIndexes.poolSupplyIndex = uint112(pool.getReserveNormalizedIncome(_underlyingToken));
+        poolIndexes.poolSupplyIndex = uint112(
+            c().pool.getReserveNormalizedIncome(_underlyingToken)
+        );
         poolIndexes.poolBorrowIndex = uint112(
-            pool.getReserveNormalizedVariableDebt(_underlyingToken)
+            c().pool.getReserveNormalizedVariableDebt(_underlyingToken)
         );
 
-        market[poolToken] = Types.Market({
+        m().market[poolToken] = Types.Market({
             underlyingToken: _underlyingToken,
             reserveFactor: _reserveFactor,
             p2pIndexCursor: _p2pIndexCursor,
@@ -296,13 +303,11 @@ contract MorphoGovernance is Modifiers {
             isDeprecated: false
         });
 
-        borrowMask[poolToken] = ONE << (marketsCreated.length << 1);
-        marketsCreated.push(poolToken);
+        m().borrowMask[poolToken] = S.ONE << (m().marketsCreated.length << 1);
+        m().marketsCreated.push(poolToken);
 
-        ERC20(_underlyingToken).safeApprove(address(pool), type(uint256).max);
+        ERC20(_underlyingToken).safeApprove(address(c().pool), type(uint256).max);
 
-        emit MarketCreated(poolToken, _reserveFactor, _p2pIndexCursor);
+        emit E.MarketCreated(poolToken, _reserveFactor, _p2pIndexCursor);
     }
-
-    /// INTERNAL ///
 }
