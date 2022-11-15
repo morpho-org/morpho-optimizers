@@ -85,9 +85,12 @@ script-%:
 	@echo Running script $* of Morpho-${PROTOCOL} on "${NETWORK}" with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
+ci:
+	@forge test -vv
+
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv
+	@forge test -vv | tee trace.ansi
 
 coverage:
 	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
@@ -105,19 +108,19 @@ fuzz:
 
 gas-report:
 	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test --gas-report
+	@forge test --gas-report | tee trace.ansi
 
 test-common:
 	@echo Running all common tests on "${NETWORK}"
-	@FOUNDRY_TEST=test-foundry/common forge test -vvv
+	@FOUNDRY_TEST=test-foundry/common forge test -vvv | tee trace.ansi
 
 contract-% c-%:
 	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvv --match-contract $*
+	@forge test -vvv --match-contract $* | tee trace.ansi
 
 single-% s-%:
 	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvvv --match-test $*
+	@forge test -vvvv --match-test $* | tee trace.ansi
 
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
