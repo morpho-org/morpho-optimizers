@@ -87,7 +87,7 @@ script-%:
 
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv | tee trace.ansi
+	@forge test -vv
 
 coverage:
 	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
@@ -113,11 +113,11 @@ test-common:
 
 contract-% c-%:
 	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvv --match-contract $* | tee trace.ansi
+	@forge test -vvv --match-contract $*
 
 single-% s-%:
 	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvv --match-test $* | tee trace.ansi
+	@forge test -vvvv --match-test $*
 
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
