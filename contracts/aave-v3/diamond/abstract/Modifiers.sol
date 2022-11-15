@@ -18,7 +18,7 @@ abstract contract Modifiers is StorageGetters {
     /// @notice Prevents updating a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!LibMarkets.isMarketCreated(_poolToken)) revert E.MarketNotCreated();
+        if (!LibMarkets.isMarketCreated(m().market[_poolToken])) revert E.MarketNotCreated();
         _;
     }
 

@@ -7,11 +7,12 @@ import {LibIndexes} from "./LibIndexes.sol";
 import {LibMarkets} from "./LibMarkets.sol";
 import {LibUsers} from "./LibUsers.sol";
 
-import {HeapOrdering, Types} from "./Libraries.sol";
+import {HeapOrdering, Types, Math, EventsAndErrors as E, WadRayMath} from "./Libraries.sol";
 import {IScaledBalanceToken} from "../interfaces/Interfaces.sol";
 
 library LibMatching {
     using HeapOrdering for HeapOrdering.HeapArray;
+    using WadRayMath for uint256;
 
     function g() internal pure returns (S.GlobalLayout storage g) {
         g = S.globalLayout();
@@ -54,21 +55,30 @@ library LibMatching {
 
         while (
             vars.remainingToMatch > 0 &&
-            (firstPoolSupplier = p().suppliersOnPool[_poolToken].getHead()) != address(0)
+            (vars.firstPoolSupplier = p().suppliersOnPool[_poolToken].getHead()) != address(0)
         ) {
             // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
             unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+                if (vars.gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            vars = matchSupplierSingle(vars, supplyBalanceInOf[_poolToken][firstPoolSupplier]);
-            updateSupplierInDS(_poolToken, firstPoolSupplier);
+            Types.Balance storage firstPoolSupplierBalance = p().supplyBalanceInOf[_poolToken][
+                vars.firstPoolSupplier
+            ];
+            vars = matchSupplierSingle(vars, firstPoolSupplierBalance);
+            updateSupplierInDS(_poolToken, vars.firstPoolSupplier);
+            // emit E.SupplierPositionUpdated(
+            //     vars.firstPoolSupplier,
+            //     _poolToken,
+            //     firstPoolSupplierBalance.inP2P,
+            //     firstPoolSupplierBalance.onPool
+            // );
         }
 
         // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
         // And _amount >= remainingToMatch.
         unchecked {
             matched = _amount - vars.remainingToMatch;
-            gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
+            gasConsumedInMatching = vars.gasLeftAtTheBeginning - gasleft();
         }
     }
 
@@ -79,8 +89,8 @@ library LibMatching {
         uint256 poolSupplyBalance = firstSupplierBalance.onPool;
         uint256 p2pSupplyBalance = firstSupplierBalance.inP2P;
 
-        vars.toMatch = Math.min(poolSupplyBalance.rayMul(vars.poolIndex), remainingToMatch);
-        remainingToMatch -= vars.toMatch;
+        vars.toMatch = Math.min(poolSupplyBalance.rayMul(vars.poolIndex), vars.remainingToMatch);
+        vars.remainingToMatch -= vars.toMatch;
 
         poolSupplyBalance -= vars.toMatch.rayDiv(vars.poolIndex);
         p2pSupplyBalance += vars.toMatch.rayDiv(vars.p2pIndex);
@@ -108,18 +118,12 @@ library LibMatching {
 
         if (formerValueOnPool != onPool && address(c().rewardsManager) != address(0))
             c().rewardsManager.updateUserAssetAndAccruedRewards(
-                rewardsController,
+                c().rewardsController,
                 _user,
                 _poolToken,
                 formerValueOnPool,
                 IScaledBalanceToken(_poolToken).scaledTotalSupply()
             );
-        emit E.SupplierPositionUpdated(
-            firstPoolSupplier,
-            _poolToken,
-            poolSupplyBalance,
-            p2pSupplyBalance
-        );
     }
 
     function updateBorrowerInDS(address _poolToken, address _user) internal {
@@ -135,12 +139,13 @@ library LibMatching {
         marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, g().maxSortedUsers);
         marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, g().maxSortedUsers);
 
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            address variableDebtTokenAddress = pool
-            .getReserveData(market[_poolToken].underlyingToken)
+        if (formerValueOnPool != onPool && address(c().rewardsManager) != address(0)) {
+            address variableDebtTokenAddress = c()
+            .pool
+            .getReserveData(m().market[_poolToken].underlyingToken)
             .variableDebtTokenAddress;
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                rewardsController,
+            c().rewardsManager.updateUserAssetAndAccruedRewards(
+                c().rewardsController,
                 _user,
                 variableDebtTokenAddress,
                 formerValueOnPool,

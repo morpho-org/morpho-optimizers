@@ -15,4 +15,4 @@ import {DataTypes} from "../../libraries/aave/DataTypes.sol";
 import {LibDiamond} from "./LibDiamond.sol";
 
 import {HeapOrdering} from "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
-import {ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {ERC20, SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";

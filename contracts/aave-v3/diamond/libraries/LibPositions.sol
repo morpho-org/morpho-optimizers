@@ -2,13 +2,17 @@
 pragma solidity 0.8.10;
 
 import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
-import {Types, Math, ERC20, EventsAndErrors as E} from "./Libraries.sol";
+import {Types, Math, WadRayMath, ERC20, EventsAndErrors as E, SafeTransferLib} from "./Libraries.sol";
 import {IAToken, IVariableDebtToken} from "../interfaces/Interfaces.sol";
 import {LibIndexes} from "./LibIndexes.sol";
 import {LibMarkets} from "./LibMarkets.sol";
 import {LibUsers} from "./LibUsers.sol";
 
 library LibPositions {
+    using SafeTransferLib for ERC20;
+    using WadRayMath for uint256;
+    using Math for uint256;
+
     function c() internal pure returns (S.ContractsLayout storage c) {
         c = S.contractsLayout();
     }
@@ -42,7 +46,7 @@ library LibPositions {
 
         validateSupply(market, _from, _onBehalf, _amount);
         LibIndexes.updateIndexes(_poolToken);
-        LibUsers.setSupplying(_onBehalf, p().borrowMask[_poolToken], true);
+        LibUsers.setSupplying(_onBehalf, m().borrowMask[_poolToken], true);
 
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
@@ -52,7 +56,6 @@ library LibPositions {
 
     function supplyP2P(Types.Delta storage delta, SupplyVars memory vars)
         internal
-        view
         returns (SupplyVars memory)
     {
         if (delta.p2pBorrowDelta > 0) {
@@ -73,7 +76,6 @@ library LibPositions {
 
     function matchP2PBorrowDelta(Types.Delta storage delta, SupplyVars memory vars)
         internal
-        view
         returns (SupplyVars memory)
     {
         if (delta.p2pBorrowDelta > 0) {

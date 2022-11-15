@@ -5,10 +5,13 @@ import {Modifiers} from "../abstract/Modifiers.sol";
 import {LibMarkets} from "../libraries/LibMarkets.sol";
 import {LibIndexes} from "../libraries/LibIndexes.sol";
 import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
-import {Math, WadRayMath, EventsAndErrors as E, Types, ERC20} from "../libraries/Libraries.sol";
+import {Math, DataTypes, ReserveConfiguration, WadRayMath, EventsAndErrors as E, Types, SafeTransferLib, ERC20} from "../libraries/Libraries.sol";
 import {IRewardsManager, IIncentivesVault, IRewardsController} from "../interfaces/Interfaces.sol";
 
 contract MorphoGovernance is Modifiers {
+    using SafeTransferLib for ERC20;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
@@ -23,7 +26,7 @@ contract MorphoGovernance is Modifiers {
         external
         onlyOwner
     {
-        g().defaultMaxGasForMatching = _defaultMaxGasForMatching;
+        g().defaultGasForMatching = _defaultMaxGasForMatching;
         emit E.DefaultMaxGasForMatchingSet(_defaultMaxGasForMatching);
     }
 
@@ -241,7 +244,7 @@ contract MorphoGovernance is Modifiers {
             address poolToken = _poolTokens[i];
 
             Types.Market memory market = m().market[poolToken];
-            if (!LibMarkets.isMarketCreated(poolToken)) continue;
+            if (!LibMarkets.isMarketCreated(market)) continue;
 
             ERC20 underlyingToken = ERC20(market.underlyingToken);
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
@@ -274,7 +277,7 @@ contract MorphoGovernance is Modifiers {
 
         address poolToken = c().pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (m().market[poolToken].isCreated()) revert E.MarketAlreadyCreated();
+        if (LibMarkets.isMarketCreated(m().market[poolToken])) revert E.MarketAlreadyCreated();
 
         m().p2pSupplyIndex[poolToken] = WadRayMath.RAY;
         m().p2pBorrowIndex[poolToken] = WadRayMath.RAY;

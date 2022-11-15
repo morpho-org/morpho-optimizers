@@ -30,7 +30,7 @@ library LibUsers {
         pure
         returns (bool)
     {
-        return _userMarkets && (_borrowMask | (_borrowMask << 1)) != 0;
+        return _userMarkets & (_borrowMask | (_borrowMask << 1)) != 0;
     }
 
     function isBorrowing(bytes32 _userMarkets, bytes32 _borrowMask) internal pure returns (bool) {
@@ -117,7 +117,7 @@ library LibUsers {
         address _poolToken,
         uint256 _amountWithdrawn,
         uint256 _amountBorrowed
-    ) internal view returns (Types.LiquidityData memory values) {
+    ) internal returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(c().addressesProvider.getPriceOracle());
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityStackVars memory vars;

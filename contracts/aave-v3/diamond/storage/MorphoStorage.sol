@@ -8,7 +8,7 @@ import {Types} from "../libraries/Libraries.sol";
 library MorphoStorage {
     /// CONSTANTS ///
 
-    uint256 constant NO_REFERRAL_CODE = 0;
+    uint16 constant NO_REFERRAL_CODE = 0;
     uint256 constant VARIABLE_INTEREST_MODE = 2;
     uint256 constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint256 constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 5_000; // 50% in basis points.
@@ -51,7 +51,7 @@ library MorphoStorage {
     struct PositionsLayout {
         mapping(address => HeapOrdering.HeapArray) suppliersInP2P;
         mapping(address => HeapOrdering.HeapArray) suppliersOnPool;
-        mapping(address => HeapOrdering.HeapArray) borrowerInP2P;
+        mapping(address => HeapOrdering.HeapArray) borrowersInP2P;
         mapping(address => HeapOrdering.HeapArray) borrowersOnPool;
         mapping(address => mapping(address => Types.Balance)) supplyBalanceInOf;
         mapping(address => mapping(address => Types.Balance)) borrowBalanceInOf;

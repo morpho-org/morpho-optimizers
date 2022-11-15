@@ -2,11 +2,14 @@
 pragma solidity 0.8.10;
 
 import {MorphoStorage as S} from "../storage/MorphoStorage.sol";
-import {EventsAndErrors as E, Types, Math, ERC20} from "./Libraries.sol";
+import {EventsAndErrors as E, Types, Math, WadRayMath, ERC20} from "./Libraries.sol";
 import {LibIndexes} from "./LibIndexes.sol";
 import {LibPositions} from "./LibPositions.sol";
 
 library LibMarkets {
+    using WadRayMath for uint256;
+    using Math for uint256;
+
     function m() internal pure returns (S.MarketsLayout storage m) {
         return S.marketsLayout();
     }
