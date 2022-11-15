@@ -55,10 +55,10 @@ contract TestSupply is TestSetup {
         uint256 amount = bound(
             _amount,
             10**(_market.decimals - 6),
-            ERC20(_market.underlying).balanceOf(address(this))
+            Math.min(ERC20(_market.underlying).balanceOf(address(this)), type(uint96).max)
         );
         if (_market.underlying == uni || _market.underlying == comp)
-            amount = uint96(uint80(amount)); // avoids overflows
+            amount = uint96(uint80(amount)); // avoids overflow
 
         _tip(_market.underlying, address(user), amount);
 

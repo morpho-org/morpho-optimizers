@@ -50,7 +50,11 @@ contract TestSupply is TestSetup {
         test.morphoBorrowedOnPoolBefore = ERC20(_market.debtToken).balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(_market.decimals - 6), type(uint96).max);
+        uint256 amount = bound(
+            _amount,
+            10**(_market.decimals - 6),
+            Math.min(ERC20(_market.underlying).balanceOf(address(this)), type(uint96).max)
+        );
         if (_market.underlying == uni || _market.underlying == comp)
             amount = uint96(uint80(amount)); // avoids overflows
 
