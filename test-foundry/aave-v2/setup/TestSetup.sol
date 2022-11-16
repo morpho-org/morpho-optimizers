@@ -231,8 +231,10 @@ contract TestSetup is Config, Utils {
         internal
         returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
     {
+        address poolToken = pool.getReserveData(_underlying).aTokenAddress;
+
         // Variable rate borrow.
-        uint256 amount = 100_000_000 * 10**ERC20(_underlying).decimals();
+        uint256 amount = ERC20(_underlying).balanceOf(poolToken) / 2;
         deal(usdc, address(1), to6Decimals(2 * amount));
 
         vm.startPrank(address(1));
@@ -243,9 +245,10 @@ contract TestSetup is Config, Utils {
 
         // Stable rate borrow.
         // We do it with multiple borrowers, because the stable borrow is capped
-        // (by users) in Aave, by a given percentage of the available liquidity.
-        uint256 amountStable = amount / 100;
-        for (uint160 i = 2; i <= 100; i++) {
+        // (by users) in Aave, by a 25% of the available liquidity.
+        for (uint160 i = 2; i < 12; i++) {
+            // (4/5)^10 ~= 0.1
+            uint256 amountStable = ERC20(_underlying).balanceOf(poolToken) / 5;
             deal(usdc, address(i), to6Decimals(2 * amountStable));
 
             vm.startPrank(address(i));
