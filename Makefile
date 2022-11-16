@@ -85,6 +85,9 @@ script-%:
 	@echo Running script $* of Morpho-${PROTOCOL} on "${NETWORK}" with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
+ci:
+	@forge test -vv
+
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test -vv | tee trace.ansi
@@ -100,11 +103,11 @@ lcov-html:
 
 gas-report:
 	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test --gas-report
+	@forge test --gas-report | tee trace.ansi
 
 test-common:
 	@echo Running all common tests on "${NETWORK}"
-	@FOUNDRY_TEST=test-foundry/common forge test -vvv
+	@FOUNDRY_TEST=test-foundry/common forge test -vvv | tee trace.ansi
 
 contract-% c-%:
 	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"

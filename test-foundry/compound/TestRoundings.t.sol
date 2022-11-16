@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestRounding is TestSetup {
+    using SafeTransferLib for ERC20;
+
     // This test compares balances stored by Compound & amount passed in argument.
     // The back & forth to cUnits leads to loss of information (when the underlying has enough decimals).
     function testRoundingError1() public {
@@ -55,7 +57,7 @@ contract TestRounding is TestSetup {
     // Still, the function is executed. mint, borrow, repayBorrow are fine, but redeemUnderlying reverts.
     function testRoundingError3() public {
         deal(dai, address(this), 1e20);
-        ERC20(dai).approve(cDai, type(uint64).max);
+        ERC20(dai).safeApprove(cDai, type(uint64).max);
 
         // mint 1 cDai, doesn't revert
         ICToken(cDai).mint(1);
