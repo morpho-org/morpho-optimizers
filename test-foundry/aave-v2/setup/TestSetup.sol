@@ -255,8 +255,8 @@ contract TestSetup is Config, Utils {
         // Stable rate borrow.
         // We do it with multiple borrowers, because the stable borrow is capped
         // (by users) in Aave, by a given percentage of the available liquidity.
-        uint256 amountStable = amount / 10;
-        for (uint160 i = 2; i <= 10; i++) {
+        uint256 amountStable = amount / 100;
+        for (uint160 i = 2; i <= 100; i++) {
             deal(usdc, address(i), to6Decimals(2 * amountStable));
 
             vm.startPrank(address(i));
