@@ -245,9 +245,9 @@ contract TestSetup is Config, Utils {
 
         // Stable rate borrow.
         // We do it with multiple borrowers, because the stable borrow is capped
-        // (by users) in Aave, by a 25% of the available liquidity.
+        // (by users) in Aave, by 25% of the available liquidity.
         for (uint160 i = 2; i < 12; i++) {
-            // (4/5)^10 ~= 0.1
+            // We borrow 20% of the available liquidity, 10 times (~= 90% of the total liquidity)
             uint256 amountStable = ERC20(_underlying).balanceOf(poolToken) / 5;
             deal(usdc, address(i), to6Decimals(2 * amountStable));
 
