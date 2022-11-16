@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeDLL is TestSetup {
-    function _testShouldPreservePriorityQueue(Types.PositionType queueType) internal {
+    function _testUpgradeShouldPreservePriorityQueue(Types.PositionType queueType) internal {
         for (uint256 marketIndex; marketIndex < borrowableCollateralMarkets.length; ++marketIndex) {
             TestMarket memory market = markets[marketIndex];
 
@@ -23,10 +23,7 @@ contract TestUpgradeDLL is TestSetup {
                 mstore(priorityQueue, i)
             }
 
-            vm.startPrank(morphoDao);
-            proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
-            morpho.setPositionsManager(new PositionsManager());
-            vm.stopPrank();
+            _upgrade();
 
             i = 0;
             next = morpho.getHead(market.poolToken, queueType);
@@ -42,19 +39,19 @@ contract TestUpgradeDLL is TestSetup {
         }
     }
 
-    function testShouldPreservePoolSuppliersDLL() public {
-        _testShouldPreservePriorityQueue(Types.PositionType.SUPPLIERS_ON_POOL);
+    function testUpgradeShouldPreservePoolSuppliersDLL() public {
+        _testUpgradeShouldPreservePriorityQueue(Types.PositionType.SUPPLIERS_ON_POOL);
     }
 
-    function testShouldPreservePoolBorrowersDLL() public {
-        _testShouldPreservePriorityQueue(Types.PositionType.BORROWERS_ON_POOL);
+    function testUpgradeShouldPreservePoolBorrowersDLL() public {
+        _testUpgradeShouldPreservePriorityQueue(Types.PositionType.BORROWERS_ON_POOL);
     }
 
-    function testShouldPreserveP2PSuppliersDLL() public {
-        _testShouldPreservePriorityQueue(Types.PositionType.SUPPLIERS_IN_P2P);
+    function testUpgradeShouldPreserveP2PSuppliersDLL() public {
+        _testUpgradeShouldPreservePriorityQueue(Types.PositionType.SUPPLIERS_IN_P2P);
     }
 
-    function testShouldPreserveP2PBorrowersDLL() public {
-        _testShouldPreservePriorityQueue(Types.PositionType.BORROWERS_IN_P2P);
+    function testUpgradeShouldPreserveP2PBorrowersDLL() public {
+        _testUpgradeShouldPreservePriorityQueue(Types.PositionType.BORROWERS_IN_P2P);
     }
 }

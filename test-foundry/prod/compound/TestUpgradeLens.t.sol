@@ -11,7 +11,7 @@ contract TestUpgradeLens is TestSetup {
         uint256 poolBorrowIndex;
     }
 
-    function testShouldPreserveOutdatedIndexes() public {
+    function testUpgradeShouldPreserveOutdatedIndexes() public {
         Indexes[] memory expectedIndexes = new Indexes[](markets.length);
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
@@ -28,9 +28,7 @@ contract TestUpgradeLens is TestSetup {
             expectedIndexes[marketIndex].poolBorrowIndex = poolBorrowIndex;
         }
 
-        vm.startPrank(address(proxyAdmin));
-        lensProxy.upgradeTo(address(new Lens()));
-        vm.stopPrank();
+        _upgrade();
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
             TestMarket memory market = markets[marketIndex];
@@ -64,7 +62,7 @@ contract TestUpgradeLens is TestSetup {
         }
     }
 
-    function testShouldPreserveUpdatedIndexes() public {
+    function testUpgradeShouldPreserveUpdatedIndexes() public {
         Indexes[] memory expectedIndexes = new Indexes[](markets.length);
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
