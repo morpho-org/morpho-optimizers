@@ -753,7 +753,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        hevm.roll(block.number + 31 days / 12);
         (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
@@ -783,7 +783,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aWbtc, to8Decimals(amount));
         borrower1.borrow(aDai, amount);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        hevm.roll(block.number + 31 days / 12);
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,
@@ -870,7 +870,7 @@ contract TestLens is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, amount);
 
-        vm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + 31 days / 12);
         vm.warp(block.timestamp + 1);
         (
             uint256 newP2PSupplyIndex,
@@ -907,6 +907,67 @@ contract TestLens is TestSetup {
 
         morpho.updateIndexes(aDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
+    }
+
+    function testGetUpdatedIndexesWithInvertedSpread() public {
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(aDai, 1 ether);
+        borrower1.approve(aave, 1 ether);
+        borrower1.supply(aAave, 1 ether);
+        borrower1.borrow(aDai, 1 ether);
+
+        _invertPoolSpread(dai);
+
+        hevm.roll(block.number + 31 days / 12);
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(dai),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
+    }
+
+    function testGetUpdatedIndexesWithInvertedSpreadAndSupplyDelta() public {
+        _createSupplyDelta();
+        _invertPoolSpreadWithStorageManipulation(dai);
+
+        hevm.roll(block.number + 31 days / 12);
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getIndexes(aDai);
+
+        morpho.updateIndexes(aDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+
+        assertEq(
+            newPoolSupplyIndex,
+            pool.getReserveNormalizedIncome(dai),
+            "pool supply indexes different"
+        );
+        assertEq(
+            newPoolBorrowIndex,
+            pool.getReserveNormalizedVariableDebt(dai),
+            "pool borrow indexes different"
+        );
     }
 
     function _createSupplyDelta() public {
