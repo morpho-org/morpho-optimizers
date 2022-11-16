@@ -5,17 +5,14 @@ SMODE?=network
 PROTOCOL?=compound
 NETWORK?=eth-mainnet
 
-FOUNDRY_SRC=contracts/${PROTOCOL}/
-FOUNDRY_TEST=test-foundry/${PROTOCOL}/
-FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
+FOUNDRY_SRC?=contracts/${PROTOCOL}/
+FOUNDRY_TEST?=test-foundry/${PROTOCOL}/
+FOUNDRY_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 
 FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
 
 ifdef FOUNDRY_ETH_RPC_URL
   FOUNDRY_TEST=test-foundry/prod/${PROTOCOL}/
-  FOUNDRY_FUZZ_RUNS=256
-  FOUNDRY_FUZZ_MAX_LOCAL_REJECTS=16384
-  FOUNDRY_FUZZ_MAX_GLOBAL_REJECTS=1048576
 else
   FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
@@ -89,6 +86,18 @@ test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test -vv | tee trace.ansi
 
+test-prod:
+	@echo Running all Morpho-${PROTOCOL} production tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@unset FOUNDRY_FORK_BLOCK_NUMBER && FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} forge test -vv --no-match-test testUpgrade | tee trace.ansi
+
+test-upgrade:
+	@echo Running all Morpho-${PROTOCOL} upgrade tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@unset FOUNDRY_FORK_BLOCK_NUMBER && FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} forge test -vv --match-test testUpgrade | tee trace.ansi
+
+test-common:
+	@echo Running all common tests on "${NETWORK}"
+	@FOUNDRY_TEST=test-foundry/common forge test -vvv
+
 coverage:
 	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage --report lcov
@@ -106,10 +115,6 @@ fuzz:
 gas-report:
 	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test --gas-report
-
-test-common:
-	@echo Running all common tests on "${NETWORK}"
-	@FOUNDRY_TEST=test-foundry/common forge test -vvv
 
 contract-% c-%:
 	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"

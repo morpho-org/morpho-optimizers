@@ -250,17 +250,13 @@ contract TestSetup is Config, Test {
 
     /// @dev Upgrades all the protocol contracts.
     function _upgrade() internal {
-        RewardsManager newRewardsManager = new RewardsManager();
-        PositionsManager newPositionsManager = new PositionsManager();
-        InterestRatesManager newInterestRatesManager = new InterestRatesManager();
-
         vm.startPrank(morphoDao);
+        proxyAdmin.upgrade(rewardsManagerProxy, address(new RewardsManager()));
         proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
         proxyAdmin.upgrade(lensProxy, address(new Lens()));
 
-        morpho.setRewardsManager(newRewardsManager);
-        morpho.setPositionsManager(newPositionsManager);
-        morpho.setInterestRatesManager(newInterestRatesManager);
+        morpho.setPositionsManager(new PositionsManager());
+        morpho.setInterestRatesManager(new InterestRatesManager());
         vm.stopPrank();
     }
 }
