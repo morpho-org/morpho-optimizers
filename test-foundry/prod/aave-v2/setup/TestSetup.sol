@@ -34,7 +34,7 @@ contract TestSetup is Config, Test {
     using SafeTransferLib for ERC20;
     using stdStorage for StdStorage;
 
-    uint256 MIN_ETH_AMOUNT = 0.005 ether;
+    uint256 MIN_ETH_AMOUNT = 0.001 ether;
     uint256 MAX_ETH_AMOUNT = 50_000_000 ether;
 
     User public user;

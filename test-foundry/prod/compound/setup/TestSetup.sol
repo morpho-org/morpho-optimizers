@@ -18,7 +18,8 @@ contract TestSetup is Config, Test {
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
 
-    uint256 MIN_USD_AMOUNT = 1e18;
+    uint256 MIN_USD_AMOUNT = 0.5 ether;
+    uint256 MAX_USD_AMOUNT = 50_000_000_000 ether;
 
     User public user;
 
@@ -192,10 +193,16 @@ contract TestSetup is Config, Test {
                 _amount,
                 MIN_USD_AMOUNT.div(_price),
                 Math.min(
-                    _market.maxBorrows - _market.totalBorrows,
-                    _market.underlying == wEth
-                        ? cEth.balance
-                        : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                    Math.min(
+                        Math.min(
+                            _market.maxBorrows - _market.totalBorrows,
+                            _market.underlying == wEth
+                                ? cEth.balance
+                                : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                        ),
+                        MAX_USD_AMOUNT.div(_price)
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
                 )
             );
     }
