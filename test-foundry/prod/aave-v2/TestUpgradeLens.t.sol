@@ -28,9 +28,7 @@ contract TestUpgradeLens is TestSetup {
             expectedIndexes[marketIndex].poolBorrowIndex = poolBorrowIndex;
         }
 
-        vm.startPrank(address(proxyAdmin));
-        lensProxy.upgradeTo(address(new Lens(address(morpho))));
-        vm.stopPrank();
+        _upgrade();
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
             TestMarket memory market = markets[marketIndex];

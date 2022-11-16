@@ -274,4 +274,22 @@ contract TestSetup is Config, Test {
         if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
     }
+
+    /// @dev Upgrades all the protocol contracts.
+    function _upgrade() internal {
+        RewardsManager newRewardsManager = new RewardsManager();
+        EntryPositionsManager newEntryPositionsManager = new EntryPositionsManager();
+        ExitPositionsManager newExitPositionsManager = new ExitPositionsManager();
+        InterestRatesManager newInterestRatesManager = new InterestRatesManager();
+
+        vm.startPrank(morphoDao);
+        proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
+        proxyAdmin.upgrade(lensProxy, address(new Lens()));
+
+        morpho.setRewardsManager(newRewardsManager);
+        morpho.setEntryPositionsManager(newEntryPositionsManager);
+        morpho.setExitPositionsManager(newExitPositionsManager);
+        morpho.setInterestRatesManager(newInterestRatesManager);
+        vm.stopPrank();
+    }
 }

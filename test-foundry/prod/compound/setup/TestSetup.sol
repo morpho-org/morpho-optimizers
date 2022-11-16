@@ -8,6 +8,8 @@ import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
 import {Types} from "@contracts/compound/libraries/Types.sol";
 
 import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
+
 import {User} from "../../../compound/helpers/User.sol";
 import "@config/Config.sol";
 import "@forge-std/console.sol";
@@ -244,5 +246,21 @@ contract TestSetup is Config, Test {
     function _revert() internal {
         if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
+    }
+
+    /// @dev Upgrades all the protocol contracts.
+    function _upgrade() internal {
+        RewardsManager newRewardsManager = new RewardsManager();
+        PositionsManager newPositionsManager = new PositionsManager();
+        InterestRatesManager newInterestRatesManager = new InterestRatesManager();
+
+        vm.startPrank(morphoDao);
+        proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
+        proxyAdmin.upgrade(lensProxy, address(new Lens()));
+
+        morpho.setRewardsManager(newRewardsManager);
+        morpho.setPositionsManager(newPositionsManager);
+        morpho.setInterestRatesManager(newInterestRatesManager);
+        vm.stopPrank();
     }
 }
