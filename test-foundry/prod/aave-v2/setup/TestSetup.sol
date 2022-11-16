@@ -35,7 +35,7 @@ contract TestSetup is Config, Test {
     using stdStorage for StdStorage;
 
     uint256 MIN_ETH_AMOUNT = 0.005 ether;
-    uint256 MAX_ETH_AMOUNT = 10_000_000 ether;
+    uint256 MAX_ETH_AMOUNT = 50_000_000 ether;
 
     User public user;
 
@@ -225,8 +225,11 @@ contract TestSetup is Config, Test {
                 _amount,
                 (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
                 Math.min(
-                    ERC20(_market.underlying).balanceOf(_market.poolToken),
-                    (MAX_ETH_AMOUNT * 10**_market.decimals) / _price
+                    Math.min(
+                        ERC20(_market.underlying).balanceOf(_market.poolToken),
+                        (MAX_ETH_AMOUNT * 10**_market.decimals) / _price
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
                 )
             );
     }
