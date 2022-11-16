@@ -784,8 +784,8 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
 
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
+        // Deposited amount may be lower than balanceOf in the case the current block number is lower than
+        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined.
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
         vm.store(
@@ -827,8 +827,9 @@ contract TestWithdraw is TestSetup {
     function testStEthSupplyShouldAccrueInterestsWithFlashLoan() public {
         createMarket(aStEth);
 
+        uint256 flashloanAmount = 1_000_000 ether;
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
-            1_000 ether
+            flashloanAmount
         );
 
         // Handle roundings.
@@ -838,11 +839,10 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
 
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
+        // Deposited amount may be lower than balanceOf in the case the current block number is lower than
+        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined.
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
-        uint256 flashloanAmount = 1_000 ether;
         uint256 flashloanFee = flashloanAmount.percentMul(pool.FLASHLOAN_PREMIUM_TOTAL());
         FlashLoan flashLoan = new FlashLoan(pool);
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(flashLoan)).checked_write(
