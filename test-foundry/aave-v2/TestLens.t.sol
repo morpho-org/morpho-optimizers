@@ -916,7 +916,7 @@ contract TestLens is TestSetup {
         borrower1.supply(aAave, 1 ether);
         borrower1.borrow(aDai, 1 ether);
 
-        _invertPoolSpread(dai, 18);
+        _invertPoolSpread(dai);
 
         hevm.roll(block.number + 31 days / 12);
         (
@@ -944,7 +944,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedIndexesWithInvertedSpreadAndSupplyDelta() public {
         _createSupplyDelta();
-        _invertPoolSpread(dai, 18);
+        _invertPoolSpreadWithStorageManipulation(dai);
 
         hevm.roll(block.number + 31 days / 12);
         (

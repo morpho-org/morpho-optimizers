@@ -1029,7 +1029,7 @@ contract TestRatesLens is TestSetup {
         borrower1.borrow(aDai, 1 ether);
 
         // Invert spreads on DAI.
-        (, uint256 poolBorrowRate) = _invertPoolSpread(dai, 18);
+        (, uint256 poolBorrowRate) = _invertPoolSpread(dai);
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
@@ -1057,7 +1057,9 @@ contract TestRatesLens is TestSetup {
         assertEq(p2pSupplyDelta, repayAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
 
         // Invert spreads on DAI.
-        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertPoolSpread(dai, 18);
+        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertPoolSpreadWithStorageManipulation(
+            dai
+        );
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);

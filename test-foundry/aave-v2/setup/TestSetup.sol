@@ -238,12 +238,12 @@ contract TestSetup is Config, Utils {
     /// @notice Inverts the pool's spread between supply & variable borrow rates.
     /// @dev This could be achieved natively by borrowing 90%+ of the available pool liquidity at a fixed rate,
     ///      but is more efficient with storage manipulation.
-    function _invertPoolSpread(address _underlying, uint256 _decimals)
+    function _invertPoolSpread(address _underlying)
         internal
         returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
     {
         // Variable rate borrow.
-        uint256 amount = 100_000_000 * 10**_decimals;
+        uint256 amount = 100_000_000 * 10**ERC20(_underlying).decimals();
         deal(usdc, address(1), to6Decimals(2 * amount));
 
         vm.startPrank(address(1));
@@ -278,6 +278,28 @@ contract TestSetup is Config, Utils {
         poolSupplyRate = reserve.currentLiquidityRate;
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
+        // Rates must be inverted.
+        assertGt(poolSupplyRate, poolBorrowRate);
+    }
+
+    function _invertPoolSpreadWithStorageManipulation(address _underlying)
+        internal
+        returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
+    {
+        // Keep the current supply rate.
+        uint256 newPoolSupplyRate = pool.getReserveData(_underlying).currentLiquidityRate;
+        // Make the borrow rate less than the supply rate.
+        uint256 newPoolBorrowRate = newPoolSupplyRate / 2;
+        // Rates are packed in the _reserves struct.
+        uint256 newRates = (newPoolBorrowRate << 128) | newPoolSupplyRate;
+        // Slot of the mapping _reserves is 53 to take into account 52 storage slots of VersionedInitializable plus the ILendingPoolAddressesProvider slot.
+        // Offset in the ReserveData struct is 2.
+        bytes32 rateSlot = bytes32(uint256(keccak256(abi.encode(_underlying, 53))) + uint256(2));
+        vm.store(address(pool), rateSlot, bytes32(newRates));
+
+        DataTypes.ReserveData memory reserve = pool.getReserveData(_underlying);
+        poolSupplyRate = reserve.currentLiquidityRate;
+        poolBorrowRate = reserve.currentVariableBorrowRate;
         // Rates must be inverted.
         assertGt(poolSupplyRate, poolBorrowRate);
     }
