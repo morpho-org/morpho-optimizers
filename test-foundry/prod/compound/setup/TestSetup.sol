@@ -195,7 +195,7 @@ contract TestSetup is Config, Test {
                 Math.min(
                     Math.min(
                         Math.min(
-                            _market.maxBorrows - _market.totalBorrows,
+                            (_market.maxBorrows - _market.totalBorrows) / 2,
                             _market.underlying == wEth
                                 ? cEth.balance
                                 : ERC20(_market.underlying).balanceOf(_market.poolToken)
