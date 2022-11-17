@@ -1,17 +1,15 @@
 -include .env.local
 .EXPORT_ALL_VARIABLES:
 
-SMODE?=network
 PROTOCOL?=compound
 NETWORK?=eth-mainnet
 
 FOUNDRY_PROFILE?=${PROTOCOL}
 FOUNDRY_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
-FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
-ifeq (${SMODE}, local)
-  FOUNDRY_ETH_RPC_URL=http://localhost:8545
+ifneq (${NETWORK}, avalanche-mainnet)
+  FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 endif
 
 
