@@ -172,7 +172,7 @@ contract TestBorrow is TestSetup {
         assertApproxEqAbs(
             ERC20(_borrowedMarket.poolToken).balanceOf(address(morpho)) + test.borrowedInP2PBefore,
             test.morphoSuppliedOnPoolBefore,
-            1,
+            2,
             "unexpected morpho supply balance on pool"
         );
         assertApproxEqAbs(

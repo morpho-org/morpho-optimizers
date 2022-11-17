@@ -34,7 +34,8 @@ contract TestSetup is Config, Test {
     using SafeTransferLib for ERC20;
     using stdStorage for StdStorage;
 
-    uint256 MIN_ETH_AMOUNT = 0.005 ether;
+    uint256 MIN_ETH_AMOUNT = 0.001 ether;
+    uint256 MAX_ETH_AMOUNT = 50_000_000 ether;
 
     User public user;
 
@@ -42,6 +43,7 @@ contract TestSetup is Config, Test {
         address poolToken;
         address debtToken;
         address underlying;
+        string symbol;
         uint256 decimals;
         uint256 ltv;
         uint256 liquidationThreshold;
@@ -163,6 +165,7 @@ contract TestSetup is Config, Test {
         for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
             address underlying = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
+            string memory symbol = ERC20(poolToken).symbol();
 
             Types.Market memory marketConfig;
             (
@@ -178,6 +181,7 @@ contract TestSetup is Config, Test {
                 poolToken: poolToken,
                 debtToken: pool.getReserveData(underlying).variableDebtTokenAddress,
                 underlying: underlying,
+                symbol: symbol,
                 ltv: 0,
                 liquidationThreshold: 0,
                 decimals: 0,
@@ -198,16 +202,16 @@ contract TestSetup is Config, Test {
                     activeMarkets.push(market);
 
                     if (isBorrowable) borrowableMarkets.push(market);
-                    else console.log("Unborrowable market:", poolToken);
+                    else console.log("Unborrowable market:", symbol);
 
                     if (market.ltv > 0) {
                         collateralMarkets.push(market);
 
                         if (isBorrowable) borrowableCollateralMarkets.push(market);
-                        else console.log("Unborrowable collateral market:", poolToken);
-                    } else console.log("Zero ltv market:", poolToken);
-                } else console.log("Partially paused market:", poolToken);
-            } else console.log("Paused market:", poolToken);
+                        else console.log("Unborrowable collateral market:", symbol);
+                    } else console.log("Zero ltv market:", symbol);
+                } else console.log("Partially paused market:", symbol);
+            } else console.log("Paused market:", symbol);
         }
     }
 
@@ -215,12 +219,18 @@ contract TestSetup is Config, Test {
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         return
             bound(
                 _amount,
                 (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
-                ERC20(_market.underlying).balanceOf(_market.poolToken)
+                Math.min(
+                    Math.min(
+                        ERC20(_market.underlying).balanceOf(_market.poolToken),
+                        (MAX_ETH_AMOUNT * 10**_market.decimals) / _price
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
+                )
             );
     }
 

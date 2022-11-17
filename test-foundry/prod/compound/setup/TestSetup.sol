@@ -18,13 +18,15 @@ contract TestSetup is Config, Test {
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
 
-    uint256 MIN_USD_AMOUNT = 1e18;
+    uint256 MIN_USD_AMOUNT = 0.5 ether;
+    uint256 MAX_USD_AMOUNT = 50_000_000_000 ether;
 
     User public user;
 
     struct TestMarket {
         address poolToken;
         address underlying;
+        string symbol;
         uint256 decimals;
         uint256 collateralFactor;
         uint256 maxBorrows;
@@ -141,10 +143,12 @@ contract TestSetup is Config, Test {
         for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
             address underlying = _getUnderlying(poolToken);
+            string memory symbol = ERC20(poolToken).symbol();
 
             TestMarket memory market = TestMarket({
                 poolToken: poolToken,
                 underlying: underlying,
+                symbol: symbol,
                 decimals: ERC20(underlying).decimals(),
                 collateralFactor: 0,
                 maxBorrows: comptroller.borrowCaps(poolToken),
@@ -166,16 +170,16 @@ contract TestSetup is Config, Test {
                     bool isBorrowable = market.maxBorrows > market.totalBorrows.percentMul(103_00);
 
                     if (isBorrowable) borrowableMarkets.push(market);
-                    else console.log("Unborrowable market:", poolToken);
+                    else console.log("Unborrowable market:", symbol);
 
                     if (market.collateralFactor > 0) {
                         collateralMarkets.push(market);
 
                         if (isBorrowable) borrowableCollateralMarkets.push(market);
-                        else console.log("Unborrowable collateral market:", poolToken);
-                    } else console.log("Zero collateral factor market:", poolToken);
-                } else console.log("Partially paused market:", poolToken);
-            } else console.log("Paused market:", poolToken);
+                        else console.log("Unborrowable collateral market:", symbol);
+                    } else console.log("Zero collateral factor market:", symbol);
+                } else console.log("Partially paused market:", symbol);
+            } else console.log("Paused market:", symbol);
         }
     }
 
@@ -183,16 +187,22 @@ contract TestSetup is Config, Test {
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         return
             bound(
                 _amount,
                 MIN_USD_AMOUNT.div(_price),
                 Math.min(
-                    _market.maxBorrows - _market.totalBorrows,
-                    _market.underlying == wEth
-                        ? cEth.balance
-                        : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                    Math.min(
+                        Math.min(
+                            (_market.maxBorrows - _market.totalBorrows) / 2,
+                            _market.underlying == wEth
+                                ? cEth.balance
+                                : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                        ),
+                        MAX_USD_AMOUNT.div(_price)
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
                 )
             );
     }

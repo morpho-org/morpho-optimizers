@@ -36,13 +36,12 @@ contract TestWithdraw is TestSetup {
         test.morphoBalanceOnPoolBefore = ERC20(_market.poolToken).balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
+        uint256 price = oracle.getAssetPrice(_market.underlying);
         uint256 amount = bound(
             _amount,
-            10**(_market.decimals - 4),
-            2**96 / (10**(18 - _market.decimals)) // ~8 billion underlying
+            (MIN_ETH_AMOUNT * 10**_market.decimals) / price,
+            Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / price, type(uint96).max)
         );
-        if (_market.underlying == uni || _market.underlying == comp)
-            amount = uint96(uint80(amount)); // avoids overflows
 
         _tip(_market.underlying, address(user), amount);
 

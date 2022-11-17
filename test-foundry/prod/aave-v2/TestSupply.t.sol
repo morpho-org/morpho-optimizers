@@ -38,6 +38,7 @@ contract TestSupply is TestSetup {
         uint256 totalUnderlyingAfter;
     }
 
+    /// @dev _amount is uint96 because HeapOrdering safe casts the amount to 96 bits
     function _testShouldSupplyMarketP2PAndOnPool(TestMarket memory _market, uint96 _amount)
         internal
     {
@@ -50,13 +51,12 @@ contract TestSupply is TestSetup {
         test.morphoBorrowedOnPoolBefore = ERC20(_market.debtToken).balanceOf(address(morpho));
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
+        uint256 price = oracle.getAssetPrice(_market.underlying);
         uint256 amount = bound(
             _amount,
-            10**(_market.decimals - 6),
-            ERC20(_market.underlying).balanceOf(address(this))
+            (MIN_ETH_AMOUNT * 10**_market.decimals) / price,
+            Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / price, type(uint96).max)
         );
-        if (_market.underlying == uni || _market.underlying == comp)
-            amount = uint96(uint80(amount)); // avoids overflows
 
         _tip(_market.underlying, address(user), amount);
 
