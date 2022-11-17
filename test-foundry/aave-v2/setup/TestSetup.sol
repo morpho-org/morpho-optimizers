@@ -32,6 +32,7 @@ import "@forge-std/Test.sol";
 import "@forge-std/console.sol";
 
 contract TestSetup is Config, Utils {
+    using WadRayMath for uint256;
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -325,5 +326,30 @@ contract TestSetup is Config, Utils {
 
         p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyAPR)) / 10_000;
         p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowAPR - rate)) / 10_000;
+    }
+
+    /// @dev Multiply the price per share of stEth by a given wad-based multiplier.
+    function _mulStEthSharePrice(uint256 _multiplier) internal {
+        vm.store(
+            stEth,
+            LIDO_BUFFERED_ETHER,
+            bytes32(uint256(vm.load(stEth, LIDO_BUFFERED_ETHER)).wadMul(_multiplier))
+        );
+        vm.store(
+            stEth,
+            LIDO_DEPOSITED_VALIDATORS,
+            bytes32(uint256(vm.load(stEth, LIDO_DEPOSITED_VALIDATORS)).wadMul(_multiplier))
+        );
+        vm.store(
+            stEth,
+            LIDO_BEACON_BALANCE,
+            bytes32(uint256(vm.load(stEth, LIDO_BEACON_BALANCE)).wadMul(_multiplier))
+        );
+        vm.store(
+            stEth,
+            LIDO_BEACON_VALIDATORS,
+            bytes32(uint256(vm.load(stEth, LIDO_BEACON_VALIDATORS)).wadMul(_multiplier))
+        );
+        deal(stEth, stEth.balance.wadMul(_multiplier));
     }
 }
