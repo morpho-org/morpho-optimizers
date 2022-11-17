@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestBorrow is TestSetup {
     using CompoundMath for uint256;
 
+    function _beforeEach() internal virtual {}
+
     struct BorrowTest {
         TestMarket collateralMarket;
         TestMarket borrowedMarket;
@@ -255,6 +257,8 @@ contract TestBorrow is TestSetup {
     }
 
     function testShouldBorrowAmountP2PAndFromPool(uint96 _amount) public {
+        _beforeEach();
+
         for (
             uint256 collateralMarketIndex;
             collateralMarketIndex < collateralMarkets.length;
@@ -277,6 +281,8 @@ contract TestBorrow is TestSetup {
     }
 
     function testShouldNotBorrowZeroAmount() public {
+        _beforeEach();
+
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             TestMarket memory market = activeMarkets[marketIndex];
 
@@ -286,6 +292,8 @@ contract TestBorrow is TestSetup {
     }
 
     function testShouldNotBorrowWithoutEnoughCollateral(uint96 _amount) public {
+        _beforeEach();
+
         for (
             uint256 collateralMarketIndex;
             collateralMarketIndex < collateralMarkets.length;

@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestRepay is TestSetup {
     using WadRayMath for uint256;
 
+    function _beforeEach() internal virtual {}
+
     struct RepayTest {
         TestMarket collateralMarket;
         TestMarket borrowedMarket;
@@ -109,6 +111,8 @@ contract TestRepay is TestSetup {
     }
 
     function testShouldRepayAmountP2PAndFromPool(uint96 _amount) public {
+        _beforeEach();
+
         for (
             uint256 collateralMarketIndex;
             collateralMarketIndex < collateralMarkets.length;
@@ -131,6 +135,8 @@ contract TestRepay is TestSetup {
     }
 
     function testShouldNotRepayZeroAmount() public {
+        _beforeEach();
+
         for (uint256 marketIndex; marketIndex < unpausedMarkets.length; ++marketIndex) {
             TestMarket memory market = unpausedMarkets[marketIndex];
 

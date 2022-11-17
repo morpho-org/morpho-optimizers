@@ -1,0 +1,37 @@
+name: Foundry upgrade tests (Morpho-Compound)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    # branches:
+    #   - main # disabled for testing
+    paths:
+      - "lib/**"
+      - "config/**/aave-v2/**"
+      - "contracts/common/**"
+      - "contracts/aave-v2/**"
+      - "test-foundry/common/**"
+      - "test-foundry/aave-v2/**"
+      - "*.lock"
+      - "Makefile"
+      - "foundry.toml"
+      - "remappings.txt"
+      - ".github/actions/ci-foundry-upgrade/*"
+      - ".github/workflows/ci-foundry-aave-v2-upgrade.yml"
+
+jobs:
+  morpho-aave-v2-eth-mainnet-upgrade:
+    name: eth-mainnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/ci-foundry-upgrade
+        with:
+          protocol: aave-v2
+          network: eth-mainnet
+          alchemyKey: ${{ secrets.ALCHEMY_KEY }}

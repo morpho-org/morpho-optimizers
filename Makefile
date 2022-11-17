@@ -5,50 +5,10 @@ SMODE?=network
 PROTOCOL?=compound
 NETWORK?=eth-mainnet
 
-FOUNDRY_SRC?=contracts/${PROTOCOL}/
-FOUNDRY_TEST?=test-foundry/${PROTOCOL}/
+FOUNDRY_PROFILE?=${PROTOCOL}
 FOUNDRY_REMAPPINGS?=@config/=config/${NETWORK}/${PROTOCOL}/
-
 FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
-
-ifdef FOUNDRY_ETH_RPC_URL
-  FOUNDRY_TEST=test-foundry/prod/${PROTOCOL}/
-else
-  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-
-  ifeq (${NETWORK}, eth-mainnet)
-    FOUNDRY_CHAIN_ID=1
-    FOUNDRY_FORK_BLOCK_NUMBER?=14292587
-  endif
-
-  ifeq (${NETWORK}, eth-ropsten)
-    FOUNDRY_CHAIN_ID=3
-  endif
-
-  ifeq (${NETWORK}, eth-goerli)
-    FOUNDRY_CHAIN_ID=5
-  endif
-
-  ifeq (${NETWORK}, polygon-mainnet)
-    ifeq (${PROTOCOL}, aave-v3)
-      FOUNDRY_FORK_BLOCK_NUMBER?=29116728
-      FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
-    endif
-
-    FOUNDRY_CHAIN_ID=137
-    FOUNDRY_FORK_BLOCK_NUMBER?=22116728
-  endif
-
-  ifeq (${NETWORK}, avalanche-mainnet)
-    ifeq (${PROTOCOL}, aave-v3)
-      FOUNDRY_FORK_BLOCK_NUMBER?=15675271
-    endif
-
-    FOUNDRY_CHAIN_ID=43114
-    FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-    FOUNDRY_FORK_BLOCK_NUMBER?=12675271
-  endif
-endif
+FOUNDRY_ETH_RPC_URL?=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
 ifeq (${SMODE}, local)
   FOUNDRY_ETH_RPC_URL=http://localhost:8545
@@ -85,17 +45,20 @@ script-%:
 ci:
 	@forge test -vv
 
+ci-upgrade:
+	@FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} FOUNDRY_FUZZ_RUNS=256 forge test -vv --match-contract TestUpgrade
+
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test -vv | tee trace.ansi
 
 test-prod:
 	@echo Running all Morpho-${PROTOCOL} production tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@unset FOUNDRY_FORK_BLOCK_NUMBER && FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} forge test -vv --no-match-test testUpgrade | tee trace.ansi
+	@FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} FOUNDRY_FUZZ_RUNS=256 forge test -vv --no-match-contract TestUpgrade | tee trace.ansi
 
 test-upgrade:
 	@echo Running all Morpho-${PROTOCOL} upgrade tests on "${NETWORK}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@unset FOUNDRY_FORK_BLOCK_NUMBER && FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} forge test -vv --match-test testUpgrade | tee trace.ansi
+	@FOUNDRY_TEST=test-foundry/prod/${PROTOCOL} FOUNDRY_FUZZ_RUNS=256 forge test -vv --match-contract TestUpgrade | tee trace.ansi
 
 test-common:
 	@echo Running all common tests on "${NETWORK}"

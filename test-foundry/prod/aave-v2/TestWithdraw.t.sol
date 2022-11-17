@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestWithdraw is TestSetup {
     using WadRayMath for uint256;
 
+    function _beforeEach() internal virtual {}
+
     struct WithdrawTest {
         TestMarket market;
         //
@@ -82,6 +84,8 @@ contract TestWithdraw is TestSetup {
     }
 
     function testShouldWithdrawAllMarketsP2PAndOnPool(uint96 _amount) public {
+        _beforeEach();
+
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             _revert();
 
@@ -90,6 +94,8 @@ contract TestWithdraw is TestSetup {
     }
 
     function testShouldNotWithdrawZeroAmount() public {
+        _beforeEach();
+
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             TestMarket memory market = activeMarkets[marketIndex];
 
@@ -100,6 +106,8 @@ contract TestWithdraw is TestSetup {
 
     function testShouldNotWithdrawFromUnenteredMarket(uint96 _amount) public {
         vm.assume(_amount > 0);
+
+        _beforeEach();
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             TestMarket memory market = activeMarkets[marketIndex];

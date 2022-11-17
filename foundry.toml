@@ -8,5 +8,24 @@ revert_strings = "default"
 names = true
 sizes = true
 
-[fuzz]
+[profile.default.fuzz]
 runs = 1024
+
+[profile.compound]
+src = "contracts/compound/"
+test = "test-foundry/compound/"
+block_number = 14292587
+chain_id = 1
+
+[profile.aave-v2]
+src = "contracts/aave-v2/"
+test = "test-foundry/aave-v2/"
+block_number = 14292587
+chain_id = 1
+
+[profile.aave-v3]
+src = "contracts/aave-v3/"
+test = "test-foundry/aave-v3/"
+block_number = 15675271
+chain_id = 43114
+eth_rpc_url = "https://api.avax.network/ext/bc/C/rpc"
