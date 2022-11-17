@@ -751,15 +751,26 @@ contract TestWithdraw is TestSetup {
     }
 
     function testStEthSupplyShouldReflectOnSlashing() public {
-        createMarket(aStEth);
+        vm.store(
+            stEth,
+            LIDO_DEPOSITED_VALIDATORS,
+            bytes32((uint256((vm.load(stEth, LIDO_DEPOSITED_VALIDATORS))) / 100) * 100)
+        );
+        vm.store(
+            stEth,
+            LIDO_BEACON_VALIDATORS,
+            bytes32((uint256((vm.load(stEth, LIDO_BEACON_VALIDATORS))) / 100) * 100)
+        );
 
+        createMarket(aStEth);
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
             1_000 ether
         );
 
-        // Handle roundings.
+        // Because of our manipulation, the rebase index is off which messes with withdraw.
+        // So we need to give morpho enough to fulfill a withdraw.
         vm.prank(address(supplier1));
-        ERC20(stEth).transfer(address(morpho), 100);
+        ERC20(stEth).transfer(address(morpho), 1 ether);
 
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
@@ -767,31 +778,21 @@ contract TestWithdraw is TestSetup {
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
         _mulStEthSharePrice(0.1 ether);
-
         // Update timestamp to update indexes.
         vm.warp(block.timestamp + 1);
-
         uint256 expectedBalance = totalBefore / 10;
 
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertApproxEqAbs(
-            totalAfter,
-            expectedBalance,
-            expectedBalance / 2e4,
-            "unexpected balance after slash"
-        );
+        assertApproxEqAbs(totalAfter, expectedBalance, 1, "unexpected balance after slash");
 
         uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
         supplier1.withdraw(aStEth, type(uint256).max);
         uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
 
+        assertEq(withdrawn, totalAfter, "bal not eq");
+
         // Slashed amount should reflect on stETH even if there's is no supply interest rate on Aave.
-        assertApproxEqAbs(
-            withdrawn,
-            expectedBalance,
-            expectedBalance / 2e4,
-            "unexpected balance after withdraw"
-        );
+        assertApproxEqAbs(withdrawn, expectedBalance, 1, "unexpected balance after withdraw");
     }
 
     function testStEthSupplyShouldAccrueInterestsWithFlashLoan() public {
