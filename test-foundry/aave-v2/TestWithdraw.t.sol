@@ -751,6 +751,7 @@ contract TestWithdraw is TestSetup {
     }
 
     function testStEthSupplyShouldReflectOnSlashing() public {
+        // This is needed to prevent rounding errors when dividing these storage slots in a manipulation below.
         vm.store(
             stEth,
             LIDO_DEPOSITED_VALIDATORS,
