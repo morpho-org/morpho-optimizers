@@ -52,12 +52,10 @@ contract TestSupply is TestSetup {
         test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
         uint256 price = oracle.getAssetPrice(_market.underlying);
-        uint256 amount = (
-            bound(
-                _amount,
-                (MIN_ETH_AMOUNT * 10**_market.decimals) / price,
-                Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / price, type(uint96).max)
-            )
+        uint256 amount = bound(
+            _amount,
+            (MIN_ETH_AMOUNT * 10**_market.decimals) / price,
+            Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / price, type(uint96).max)
         );
 
         _tip(_market.underlying, address(user), amount);
