@@ -774,14 +774,24 @@ contract TestWithdraw is TestSetup {
         uint256 expectedBalance = totalBefore / 10;
 
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertApproxEqAbs(totalAfter, expectedBalance, 1e16, "unexpected balance after slash");
+        assertApproxEqAbs(
+            totalAfter,
+            expectedBalance,
+            expectedBalance / 2e4,
+            "unexpected balance after slash"
+        );
 
         uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
         supplier1.withdraw(aStEth, type(uint256).max);
         uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
 
         // Slashed amount should reflect on stETH even if there's is no supply interest rate on Aave.
-        assertApproxEqAbs(withdrawn, expectedBalance, 1e16, "unexpected balance after withdraw");
+        assertApproxEqAbs(
+            withdrawn,
+            expectedBalance,
+            expectedBalance / 2e4,
+            "unexpected balance after withdraw"
+        );
     }
 
     function testStEthSupplyShouldAccrueInterestsWithFlashLoan() public {
