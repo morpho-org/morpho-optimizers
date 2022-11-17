@@ -68,9 +68,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     // Struct to avoid stack too deep.
     struct SupplyVars {
+        address poolToken;
+        address onBehalf;
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
+        uint256 maxGasForMatching;
     }
 
     // Struct to avoid stack too deep.
@@ -95,69 +98,46 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_onBehalf == address(0)) revert AddressIsZero();
-        if (_amount == 0) revert AmountIsZero();
+        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
+            _onBehalf
+        ];
+        Types.Delta storage delta = deltas[_poolToken];
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isSupplyPaused) revert SupplyIsPaused();
+        SupplyVars memory vars = SupplyVars({
+            poolToken: _poolToken,
+            onBehalf: _onBehalf,
+            poolBorrowIndex: poolIndexes[_poolToken].poolBorrowIndex,
+            remainingToSupply: _amount,
+            toRepay: 0,
+            maxGasForMatching: _maxGasForMatching
+        });
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
 
+        _validateSupply(market, _onBehalf, _amount);
         _updateIndexes(_poolToken);
         _setSupplying(_onBehalf, borrowMask[_poolToken], true);
 
-        ERC20 underlyingToken = ERC20(market.underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
-
-        Types.Delta storage delta = deltas[_poolToken];
-        SupplyVars memory vars;
-        vars.poolBorrowIndex = poolIndexes[_poolToken].poolBorrowIndex;
-        vars.remainingToSupply = _amount;
 
         /// Peer-to-peer supply ///
 
         // Match peer-to-peer borrow delta.
         if (delta.p2pBorrowDelta > 0) {
-            uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
-                vars.remainingToSupply
-            ); // In underlying.
-
-            delta.p2pBorrowDelta = delta.p2pBorrowDelta.zeroFloorSub(
-                vars.remainingToSupply.rayDiv(vars.poolBorrowIndex)
-            );
-            vars.toRepay += matchedDelta;
-            vars.remainingToSupply -= matchedDelta;
-            emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
+            (vars, delta.p2pBorrowDelta) = _matchP2PBorrowDelta(vars, delta.p2pBorrowDelta);
         }
 
         // Promote pool borrowers.
-        if (
-            vars.remainingToSupply > 0 &&
-            !market.isP2PDisabled &&
-            borrowersOnPool[_poolToken].getHead() != address(0)
-        ) {
-            (uint256 matched, ) = _matchBorrowers(
-                _poolToken,
-                vars.remainingToSupply,
-                _maxGasForMatching
-            ); // In underlying.
-
-            vars.toRepay += matched;
-            vars.remainingToSupply -= matched;
-            delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
-        }
-
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
-            _onBehalf
-        ];
+        (vars, delta.p2pBorrowAmount) = _promotePoolBorrowers(vars, market, delta.p2pBorrowAmount);
 
         if (vars.toRepay > 0) {
+            // note: This should probably be rounded down
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
 
             delta.p2pSupplyAmount += toAddInP2P;
             supplierSupplyBalance.inP2P += toAddInP2P;
             _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
-            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            emit P2PAmountsUpdated(vars.poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
         /// Pool supply ///
@@ -180,6 +160,61 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             supplierSupplyBalance.onPool,
             supplierSupplyBalance.inP2P
         );
+    }
+
+    function _validateSupply(
+        Types.Market memory _market,
+        address _onBehalf,
+        uint256 _amount
+    ) internal pure {
+        if (_onBehalf == address(0)) revert AddressIsZero();
+        if (_amount == 0) revert AmountIsZero();
+        if (!_market.isCreatedMemory()) revert MarketNotCreated();
+        if (_market.isSupplyPaused) revert SupplyIsPaused();
+    }
+
+    /// @dev returns the updated p2p borrow delta
+    function _matchP2PBorrowDelta(SupplyVars memory _vars, uint256 _p2pBorrowDelta)
+        internal
+        returns (SupplyVars memory, uint256)
+    {
+        uint256 matchedDelta = Math.min(
+            _p2pBorrowDelta.rayMul(_vars.poolBorrowIndex),
+            _vars.remainingToSupply
+        ); // In underlying.
+
+        _p2pBorrowDelta = _p2pBorrowDelta.zeroFloorSub(
+            _vars.remainingToSupply.rayDiv(_vars.poolBorrowIndex)
+        );
+        _vars.toRepay += matchedDelta;
+        _vars.remainingToSupply -= matchedDelta;
+        emit P2PBorrowDeltaUpdated(_vars.poolToken, _p2pBorrowDelta);
+
+        return (_vars, _p2pBorrowDelta);
+    }
+
+    /// @dev returns the updated delta p2p borrow amount
+    function _promotePoolBorrowers(
+        SupplyVars memory _vars,
+        Types.Market memory _market,
+        uint256 _p2pBorrowAmount
+    ) internal returns (SupplyVars memory, uint256) {
+        if (
+            _vars.remainingToSupply > 0 &&
+            !_market.isP2PDisabled &&
+            borrowersOnPool[_vars.poolToken].getHead() != address(0)
+        ) {
+            (uint256 matched, ) = _matchBorrowers(
+                _vars.poolToken,
+                _vars.remainingToSupply,
+                _vars.maxGasForMatching
+            ); // In underlying.
+
+            _vars.toRepay += matched;
+            _vars.remainingToSupply -= matched;
+            _p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_vars.poolToken]);
+        }
+        return (_vars, _p2pBorrowAmount);
     }
 
     /// @dev Implements borrow logic.
