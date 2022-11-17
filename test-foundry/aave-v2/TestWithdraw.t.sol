@@ -694,7 +694,12 @@ contract TestWithdraw is TestSetup {
         vm.warp(block.timestamp + 1);
 
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertEq(totalAfter, totalBefore * 2, "unexpected balance after rewards accrued");
+        assertApproxEqAbs(
+            totalAfter,
+            totalBefore * 2,
+            1,
+            "unexpected balance after rewards accrued"
+        );
 
         uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
         supplier1.withdraw(aStEth, type(uint256).max);

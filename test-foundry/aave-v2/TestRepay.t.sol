@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestRepay is TestSetup {
+    using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
 
     // The borrower repays no more than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
@@ -574,7 +575,7 @@ contract TestRepay is TestSetup {
 
         // Repay on-behalf of Morpho
         deal(usdt, address(this), amount / 2);
-        ERC20(usdt).approve(address(pool), amount / 2);
+        ERC20(usdt).safeApprove(address(pool), amount / 2);
         pool.repay(usdt, amount / 2, 2, address(morpho));
 
         uint256 remainingDebt = IVariableDebtToken(
