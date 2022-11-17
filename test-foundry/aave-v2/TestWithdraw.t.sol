@@ -751,27 +751,18 @@ contract TestWithdraw is TestSetup {
     }
 
     function testStEthSupplyShouldReflectOnSlashing() public {
-        // This is needed to prevent rounding errors when dividing these storage slots in a manipulation below.
-        vm.store(
-            stEth,
-            LIDO_DEPOSITED_VALIDATORS,
-            bytes32((uint256((vm.load(stEth, LIDO_DEPOSITED_VALIDATORS))) / 100) * 100)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_VALIDATORS,
-            bytes32((uint256((vm.load(stEth, LIDO_BEACON_VALIDATORS))) / 100) * 100)
-        );
+        // Prevent rounding errors due to operations on these values (which are multiplied by 32 ETH).
+        vm.store(stEth, LIDO_DEPOSITED_VALIDATORS, 0);
+        vm.store(stEth, LIDO_BEACON_VALIDATORS, 0);
 
         createMarket(aStEth);
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
             1_000 ether
         );
 
-        // Because of our manipulation, the rebase index is off which messes with withdraw.
-        // So we need to give morpho enough to fulfill a withdraw.
+        // Handle roundings.
         vm.prank(address(supplier1));
-        ERC20(stEth).transfer(address(morpho), 1 ether);
+        ERC20(stEth).transfer(address(morpho), 100);
 
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
@@ -779,8 +770,10 @@ contract TestWithdraw is TestSetup {
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
         _mulStEthSharePrice(0.1 ether);
+
         // Update timestamp to update indexes.
         vm.warp(block.timestamp + 1);
+
         uint256 expectedBalance = totalBefore / 10;
 
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
