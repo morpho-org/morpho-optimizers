@@ -21,11 +21,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
 
-    /// @notice Emitted the address of the `treasuryVault` is set.
+    /// @notice Emitted when the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted the address of the `incentivesVault` is set.
+    /// @notice Emitted when the address of the `incentivesVault` is set.
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
@@ -185,15 +185,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the `positionsManager`.
     /// @param _positionsManager The new `positionsManager`.
     function setPositionsManager(IPositionsManager _positionsManager) external onlyOwner {
+        if (address(_positionsManager) == address(0)) revert ZeroAddress();
         positionsManager = _positionsManager;
         emit PositionsManagerSet(address(_positionsManager));
-    }
-
-    /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManager The new `rewardsManager`.
-    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
-        rewardsManager = _rewardsManager;
-        emit RewardsManagerSet(address(_rewardsManager));
     }
 
     /// @notice Sets the `interestRatesManager`.
@@ -202,8 +196,16 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
+        if (address(_interestRatesManager) == address(0)) revert ZeroAddress();
         interestRatesManager = _interestRatesManager;
         emit InterestRatesSet(address(_interestRatesManager));
+    }
+
+    /// @notice Sets the `rewardsManager`.
+    /// @param _rewardsManager The new `rewardsManager`.
+    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
+        rewardsManager = _rewardsManager;
+        emit RewardsManagerSet(address(_rewardsManager));
     }
 
     /// @notice Sets the `treasuryVault`.
@@ -260,7 +262,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isSupplyPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsSupplyPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsSupplyPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketPauseStatus[_poolToken].isSupplyPaused = _isPaused;
         emit IsSupplyPausedSet(_poolToken, _isPaused);
     }
@@ -268,7 +274,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isBorrowPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsBorrowPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsBorrowPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketPauseStatus[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -276,7 +286,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isWithdrawPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsWithdrawPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsWithdrawPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketPauseStatus[_poolToken].isWithdrawPaused = _isPaused;
         emit IsWithdrawPausedSet(_poolToken, _isPaused);
     }
@@ -284,7 +298,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isRepayPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsRepayPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsRepayPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketPauseStatus[_poolToken].isRepayPaused = _isPaused;
         emit IsRepayPausedSet(_poolToken, _isPaused);
     }
@@ -292,7 +310,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isLiquidateCollateralPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketPauseStatus[_poolToken].isLiquidateCollateralPaused = _isPaused;
         emit IsLiquidateCollateralPausedSet(_poolToken, _isPaused);
     }
@@ -300,7 +322,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `isLiquidateBorrowPaused` for a given market.
     /// @param _poolToken The address of the market to update.
     /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external onlyOwner {
+    function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
         marketPauseStatus[_poolToken].isLiquidateBorrowPaused = _isPaused;
         emit IsLiquidateBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -322,7 +348,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Sets `isP2PDisabled` for a given market.
-    /// @param _poolToken The address of the market to update.
+    /// @param _poolToken The address of the market of which to enable/disable peer-to-peer matching.
     /// @param _isP2PDisabled True to disable the peer-to-peer market.
     function setIsP2PDisabled(address _poolToken, bool _isP2PDisabled)
         external

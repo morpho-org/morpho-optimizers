@@ -130,9 +130,9 @@ contract TestWithdraw is TestSetup {
     // There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function testWithdraw3_2() public {
         // TODO: fix this.
-        deal(dai, address(morpho), 1);
+        deal(dai, address(morpho), 10);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -273,7 +273,7 @@ contract TestWithdraw is TestSetup {
         // TODO: fix that.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -372,11 +372,11 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 1.2e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0.75e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+        uint256 suppliedAmount = 20 * borrowedAmount + 20;
         uint256 expectedSupplyBalanceInP2P;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount
@@ -401,8 +401,8 @@ contract TestWithdraw is TestSetup {
                 aDai,
                 address(supplier1)
             );
-            testEquality(onPoolSupplier, 0);
-            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+            testEquality(onPoolSupplier, 0, "on pool supplier");
+            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
 
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
             uint256 expectedBorrowBalanceInP2P = borrowedAmount.rayDiv(p2pBorrowIndex);
@@ -527,11 +527,11 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // Allows only 10 unmatch borrowers
-        _setDefaultMaxGasForMatching(3e6, 3e6, 2.6e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0.8e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+        uint256 suppliedAmount = 20 * borrowedAmount + 1e12;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount
         supplier1.approve(dai, suppliedAmount);
@@ -543,19 +543,79 @@ contract TestWithdraw is TestSetup {
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
-            borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
+            borrowers[i].borrow(aDai, borrowedAmount + i, type(uint64).max);
+        }
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertApproxEqAbs(
+                inP2P,
+                (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)),
+                1e4,
+                "inP2P"
+            );
+            assertApproxEqAbs(onPool, 0, 1e4, "onPool");
         }
 
         // Supplier withdraws max
         // Should create a delta on borrowers side
         supplier1.withdraw(aDai, type(uint256).max);
 
-        hevm.warp(block.timestamp + (365 days));
+        for (uint256 i = 10; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertEq(inP2P, 0, string.concat("inP2P", Strings.toString(i)));
+            assertApproxEqAbs(
+                onPool,
+                (borrowedAmount + i).rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
+                10,
+                string.concat("onPool", Strings.toString(i))
+            );
+        }
+        for (uint256 i; i < 10; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertApproxEqAbs(
+                inP2P,
+                (borrowedAmount + i).rayDiv(morpho.p2pBorrowIndex(aDai)),
+                1e2,
+                string.concat("inP2P", Strings.toString(i))
+            );
+            assertApproxEqAbs(onPool, 0, 1e2, string.concat("onPool", Strings.toString(i)));
+        }
+
+        (
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
+        ) = morpho.deltas(aDai);
+
+        assertEq(p2pSupplyDelta, 0, "p2pSupplyDelta");
+        assertApproxEqAbs(
+            p2pBorrowDelta,
+            (10 * borrowedAmount).rayDiv(pool.getReserveNormalizedVariableDebt(dai)),
+            1e3,
+            "p2pBorrowDelta"
+        );
+        assertApproxEqAbs(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
+        assertApproxEqAbs(
+            p2pBorrowAmount,
+            (10 * borrowedAmount).rayDiv(morpho.p2pBorrowIndex(aDai)),
+            1e3,
+            "p2pBorrowAmount"
+        );
+
+        hevm.warp(block.timestamp + (1 days));
 
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(dai, type(uint64).max);
             borrowers[i].repay(aDai, type(uint64).max);
             borrowers[i].withdraw(aUsdc, type(uint64).max);
+        }
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertEq(inP2P, 0, "inP2P");
+            assertEq(onPool, 0, "onPool");
         }
     }
 
@@ -605,7 +665,8 @@ contract TestWithdraw is TestSetup {
         supplier1.withdraw(aDai, toSupply);
     }
 
-    function testFailWithdrawZero() public {
+    function testShouldNotWithdrawZero() public {
+        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.withdraw(aDai, 0);
     }
 
@@ -664,39 +725,19 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
 
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
-        vm.store(
-            stEth,
-            LIDO_BUFFERED_ETHER,
-            bytes32(uint256(vm.load(stEth, LIDO_BUFFERED_ETHER)) * 2)
-        );
-        vm.store(
-            stEth,
-            LIDO_DEPOSITED_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_DEPOSITED_VALIDATORS)) * 2)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_BALANCE,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_BALANCE)) * 2)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_VALIDATORS)) * 2)
-        );
-        deal(stEth, stEth.balance * 2);
+        _mulStEthSharePrice(2 ether);
 
         // Update timestamp to update indexes.
         vm.warp(block.timestamp + 1);
 
+        uint256 expectedBalance = totalBefore * 2;
+
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
         assertApproxEqAbs(
             totalAfter,
-            totalBefore * 2,
+            expectedBalance,
             1,
             "unexpected balance after rewards accrued"
         );
@@ -706,12 +747,15 @@ contract TestWithdraw is TestSetup {
         uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
 
         // Staking rewards should accrue on stETH even if there's is no supply interest rate on Aave.
-        assertApproxEqAbs(withdrawn, totalBefore * 2, 1, "unexpected balance after withdraw");
+        assertApproxEqAbs(withdrawn, expectedBalance, 1, "unexpected balance after withdraw");
     }
 
     function testStEthSupplyShouldReflectOnSlashing() public {
-        createMarket(aStEth);
+        // Prevent rounding errors due to operations on these values (which are multiplied by 32 ETH).
+        vm.store(stEth, LIDO_DEPOSITED_VALIDATORS, 0);
+        vm.store(stEth, LIDO_BEACON_VALIDATORS, 0);
 
+        createMarket(aStEth);
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
             1_000 ether
         );
@@ -723,51 +767,34 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
 
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
-        vm.store(
-            stEth,
-            LIDO_BUFFERED_ETHER,
-            bytes32(uint256(vm.load(stEth, LIDO_BUFFERED_ETHER)) / 10)
-        );
-        vm.store(
-            stEth,
-            LIDO_DEPOSITED_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_DEPOSITED_VALIDATORS)) / 10)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_BALANCE,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_BALANCE)) / 10)
-        );
-        vm.store(
-            stEth,
-            LIDO_BEACON_VALIDATORS,
-            bytes32(uint256(vm.load(stEth, LIDO_BEACON_VALIDATORS)) / 10)
-        );
-        deal(stEth, stEth.balance / 10);
+        _mulStEthSharePrice(0.1 ether);
 
         // Update timestamp to update indexes.
         vm.warp(block.timestamp + 1);
 
+        uint256 expectedBalance = totalBefore / 10;
+
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertEq(totalAfter, totalBefore / 10, "unexpected balance after slash");
+        assertApproxEqAbs(totalAfter, expectedBalance, 1, "unexpected balance after slash");
 
         uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
         supplier1.withdraw(aStEth, type(uint256).max);
         uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
 
+        assertEq(withdrawn, totalAfter, "bal not eq");
+
         // Slashed amount should reflect on stETH even if there's is no supply interest rate on Aave.
-        assertApproxEqAbs(withdrawn, totalBefore / 10, 1, "unexpected balance after withdraw");
+        assertApproxEqAbs(withdrawn, expectedBalance, 1, "unexpected balance after withdraw");
     }
 
     function testStEthSupplyShouldAccrueInterestsWithFlashLoan() public {
         createMarket(aStEth);
 
+        uint256 flashloanAmount = 1_000_000 ether;
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(supplier1)).checked_write(
-            1_000 ether
+            flashloanAmount
         );
 
         // Handle roundings.
@@ -777,27 +804,27 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(stEth, type(uint256).max);
         supplier1.supply(aStEth, ERC20(stEth).balanceOf(address(supplier1)));
 
-        // deposited amount may be lower than balanceOf in the case the current block number is lower than
-        // the block number at which ST_ETH_BASE_REBASE_INDEX was defined
         (, , uint256 totalBefore) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
 
-        uint256 flashloanAmount = 1_000 ether;
-        uint256 flashloanFee = flashloanAmount.percentMul(pool.FLASHLOAN_PREMIUM_TOTAL());
         FlashLoan flashLoan = new FlashLoan(pool);
         stdstore.target(stEth).sig("sharesOf(address)").with_key(address(flashLoan)).checked_write(
-            flashloanFee
+            flashloanAmount.percentMul(pool.FLASHLOAN_PREMIUM_TOTAL())
         ); // to pay the premium
+
         flashLoan.callFlashLoan(stEth, flashloanAmount);
 
+        // Update timestamp to update indexes.
         vm.warp(block.timestamp + 1);
 
+        uint256 expectedMinBalance = totalBefore + 0.1 ether;
+
         (, , uint256 totalAfter) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
-        assertGt(totalAfter, totalBefore + 0.1 ether, "unexpected balance after interests accrued");
+        assertGt(totalAfter, expectedMinBalance, "unexpected balance after interests accrued");
 
         uint256 balanceBefore = ERC20(stEth).balanceOf(address(supplier1));
         supplier1.withdraw(aStEth, type(uint256).max);
         uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBefore;
 
-        assertGt(withdrawn, totalBefore + 0.1 ether, "unexpected balance after withdraw");
+        assertGt(withdrawn, expectedMinBalance, "unexpected balance after withdraw");
     }
 }

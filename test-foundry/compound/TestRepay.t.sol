@@ -125,7 +125,7 @@ contract TestRepay is TestSetup {
 
     // There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity. First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
     function testRepay2_2() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -303,7 +303,7 @@ contract TestRepay is TestSetup {
 
     // The borrower is matched to 2 x NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`. Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
     function testRepay2_4() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -418,7 +418,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -449,7 +449,7 @@ contract TestRepay is TestSetup {
                 cDai,
                 address(borrower1)
             );
-            assertApproxEqAbs(onPoolBorrower, 0, 10, "borrower on pool");
+            assertApproxEqAbs(onPoolBorrower, 0, 20, "borrower on pool");
             testEqualityLarge(
                 inP2PBorrower,
                 expectedBorrowBalanceInP2P,
@@ -607,10 +607,10 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepayAll() public {
         // Allows only 10 unmatch suppliers.
-        _setDefaultMaxGasForMatching(3e6, 3e6, 3e6, 1e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1e6);
 
         uint256 suppliedAmount = 1 ether;
-        uint256 borrowedAmount = 20 * suppliedAmount;
+        uint256 borrowedAmount = 20 * suppliedAmount + 1e12;
         uint256 collateral = 2 * borrowedAmount;
 
         // borrower1 and 100 suppliers are matched for borrowedAmount.
@@ -622,13 +622,13 @@ contract TestRepay is TestSetup {
 
         // 2 * NMAX suppliers supply suppliedAmount.
         for (uint256 i = 0; i < 20; i++) {
-            suppliers[i].approve(dai, suppliedAmount);
-            suppliers[i].supply(cDai, suppliedAmount);
+            suppliers[i].approve(dai, suppliedAmount + i);
+            suppliers[i].supply(cDai, suppliedAmount + i);
         }
 
         for (uint256 i = 0; i < 20; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-            assertEq(inP2P, suppliedAmount.div(morpho.p2pSupplyIndex(cDai)), "inP2P");
+            assertEq(inP2P, (suppliedAmount + i).div(morpho.p2pSupplyIndex(cDai)), "inP2P");
             assertEq(onPool, 0, "onPool");
         }
 
@@ -641,23 +641,23 @@ contract TestRepay is TestSetup {
 
         for (uint256 i = 0; i < 10; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-            assertEq(inP2P, 0, "inP2P");
+            assertEq(inP2P, 0, string.concat("inP2P", Strings.toString(i)));
             assertApproxEqAbs(
                 onPool,
-                suppliedAmount.div(ICToken(cDai).exchangeRateCurrent()),
+                (suppliedAmount + i).div(ICToken(cDai).exchangeRateCurrent()),
                 1e2,
-                "onPool"
+                string.concat("onPool", Strings.toString(i))
             );
         }
         for (uint256 i = 10; i < 20; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
             assertApproxEqAbs(
                 inP2P,
-                suppliedAmount.div(morpho.p2pSupplyIndex(cDai)),
-                100_000,
-                "inP2P"
+                (suppliedAmount + i).div(morpho.p2pSupplyIndex(cDai)),
+                1e4,
+                string.concat("inP2P", Strings.toString(i))
             );
-            assertEq(onPool, 0, "onPool");
+            assertEq(onPool, 0, string.concat("onPool", Strings.toString(i)));
         }
 
         (
@@ -670,7 +670,7 @@ contract TestRepay is TestSetup {
         assertApproxEqAbs(
             p2pSupplyDelta,
             (10 * suppliedAmount).div(ICToken(cDai).exchangeRateCurrent()),
-            1_000_000,
+            1e6,
             "p2pSupplyDelta"
         );
         assertEq(p2pBorrowDelta, 0, "p2pBorrowDelta");
@@ -910,7 +910,7 @@ contract TestRepay is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, supplyAmount);
         supplier1.borrow(cDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(cDai, borrowAmount); // Creates a 100% peer-to-peer borrow delta.
 
         hevm.roll(block.number + 1);

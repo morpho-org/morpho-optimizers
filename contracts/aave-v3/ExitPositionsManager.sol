@@ -309,11 +309,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 )
             )
         );
+        if (_amount == 0) revert AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
-        deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
         deltas.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);
-        deltas.p2pBorrowDelta = deltas.p2pBorrowDelta;
         emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
         emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
@@ -351,6 +350,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Pool withdraw ///
 
+        // Withdraw supply on pool.
         vars.onPoolSupply = supplierSupplyBalance.onPool;
         if (vars.onPoolSupply > 0) {
             vars.toWithdraw = Math.min(
@@ -395,7 +395,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ); // In peer-to-peer supply unit.
         _updateSupplierInDS(_poolToken, _supplier);
 
-        // Reduce peer-to-peer supply delta.
+        // Reduce the peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
@@ -445,7 +445,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching
             );
 
-            // Increase peer-to-peer borrow delta.
+            // Increase the peer-to-peer borrow delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
                     poolIndexes[_poolToken].poolBorrowIndex
@@ -506,6 +506,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Pool repay ///
 
+        // Repay borrow on pool.
         vars.borrowedOnPool = borrowerBorrowBalance.onPool;
         if (vars.borrowedOnPool > 0) {
             vars.toRepay = Math.min(
@@ -549,7 +550,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ); // In peer-to-peer borrow unit.
         _updateBorrowerInDS(_poolToken, _onBehalf);
 
-        // Reduce peer-to-peer borrow delta.
+        // Reduce the peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
@@ -610,7 +611,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Breaking repay ///
 
-        // Unmote peer-to-peer suppliers.
+        // Demote peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolToken,
@@ -618,7 +619,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingGasForMatching
             );
 
-            // Increase peer-to-peer supply delta.
+            // Increase the peer-to-peer supply delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
                     vars.poolSupplyIndex
@@ -708,9 +709,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         returns (bool liquidationAllowed, uint256 closeFactor)
     {
         if (_isDeprecated) {
-            // Allow liquidation of the whole debt.
             liquidationAllowed = true;
-            closeFactor = MAX_BASIS_POINTS;
+            closeFactor = MAX_BASIS_POINTS; // Allow liquidation of the whole debt.
         } else {
             uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
             address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();

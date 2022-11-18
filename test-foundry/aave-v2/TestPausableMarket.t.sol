@@ -72,6 +72,7 @@ contract TestPausableMarket is TestSetup {
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(aDai, 1);

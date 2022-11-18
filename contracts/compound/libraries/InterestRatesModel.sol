@@ -15,17 +15,17 @@ library InterestRatesModel {
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // Pool supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // Pool borrow index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
+        uint256 poolBorrowGrowthFactor; // The pool borrow index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
         uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
     }
 
     struct P2PSupplyIndexComputeParams {
-        uint256 poolSupplyGrowthFactor; // Pool supply index growth factor (in wad).
-        uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
-        uint256 lastP2PSupplyIndex; // Last stored peer-to-peer supply index (in wad).
-        uint256 lastPoolSupplyIndex; // Last stored pool supply index (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
+        uint256 p2pSupplyGrowthFactor; // The peer-to-peer supply index growth factor (in wad).
+        uint256 lastP2PSupplyIndex; // The last stored peer-to-peer supply index (in wad).
+        uint256 lastPoolSupplyIndex; // The last stored pool supply index (in wad).
         uint256 p2pSupplyDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pSupplyAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
     }
@@ -55,7 +55,7 @@ library InterestRatesModel {
     /// @param _lastPoolIndexes The pool's last stored indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
-    /// @return growthFactors_ The pool's indexes growth factor (in wad).
+    /// @return growthFactors_ The indexes growth factor (in wad).
     function computeGrowthFactors(
         uint256 _newPoolSupplyIndex,
         uint256 _newPoolBorrowIndex,

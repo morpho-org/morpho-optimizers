@@ -13,13 +13,12 @@ import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v2/libraries/Types.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
+import {PositionsManagerUtils} from "@contracts/aave-v2/PositionsManagerUtils.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -33,6 +32,7 @@ import "@forge-std/Test.sol";
 import "@forge-std/console.sol";
 
 contract TestSetup is Config, Utils {
+    using WadRayMath for uint256;
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -95,15 +95,6 @@ contract TestSetup is Config, Utils {
         morpho.setTreasuryVault(address(treasuryVault));
         morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
-        rewardsManagerImplV1 = new RewardsManagerOnMainnetAndAvalanche();
-        rewardsManagerProxy = new TransparentUpgradeableProxy(
-            address(rewardsManagerImplV1),
-            address(proxyAdmin),
-            ""
-        );
-        rewardsManager = IRewardsManager(address(rewardsManagerProxy));
-        rewardsManager.initialize(address(morpho));
-
         /// Create markets ///
 
         createMarket(aDai);
@@ -127,8 +118,6 @@ contract TestSetup is Config, Utils {
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
         morpho.setIncentivesVault(incentivesVault);
-
-        morpho.setRewardsManager(rewardsManager);
 
         lensImplV1 = new Lens(address(morpho));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
@@ -184,7 +173,6 @@ contract TestSetup is Config, Utils {
 
     function setContractsLabels() internal {
         hevm.label(address(morpho), "Morpho");
-        hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(aaveIncentivesController), "AaveIncentivesController");
         hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
@@ -222,7 +210,7 @@ contract TestSetup is Config, Utils {
         return customOracle;
     }
 
-    function _setDefaultMaxGasForMatching(
+    function setDefaultMaxGasForMatchingHelper(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,
@@ -244,8 +232,10 @@ contract TestSetup is Config, Utils {
         internal
         returns (uint256 poolSupplyRate, uint256 poolBorrowRate)
     {
+        address poolToken = pool.getReserveData(_underlying).aTokenAddress;
+
         // Variable rate borrow.
-        uint256 amount = 100_000_000 * 10**ERC20(_underlying).decimals();
+        uint256 amount = ERC20(_underlying).balanceOf(poolToken) / 2;
         deal(usdc, address(1), to6Decimals(2 * amount));
 
         vm.startPrank(address(1));
@@ -256,9 +246,10 @@ contract TestSetup is Config, Utils {
 
         // Stable rate borrow.
         // We do it with multiple borrowers, because the stable borrow is capped
-        // (by users) in Aave, by a given percentage of the available liquidity.
-        uint256 amountStable = amount / 100;
-        for (uint160 i = 2; i <= 100; i++) {
+        // (by users) in Aave, by 25% of the available liquidity.
+        for (uint160 i = 2; i < 12; i++) {
+            // We borrow 20% of the available liquidity, 10 times (~= 90% of the total liquidity)
+            uint256 amountStable = ERC20(_underlying).balanceOf(poolToken) / 5;
             deal(usdc, address(i), to6Decimals(2 * amountStable));
 
             vm.startPrank(address(i));
@@ -338,5 +329,30 @@ contract TestSetup is Config, Utils {
 
         p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyAPR)) / 10_000;
         p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowAPR - rate)) / 10_000;
+    }
+
+    /// @dev Multiply the price per share of stEth by a given wad-based multiplier.
+    function _mulStEthSharePrice(uint256 _multiplier) internal {
+        vm.store(
+            stEth,
+            LIDO_BUFFERED_ETHER,
+            bytes32(uint256(vm.load(stEth, LIDO_BUFFERED_ETHER)).wadMul(_multiplier))
+        );
+        vm.store(
+            stEth,
+            LIDO_DEPOSITED_VALIDATORS,
+            bytes32(uint256(vm.load(stEth, LIDO_DEPOSITED_VALIDATORS)).wadMul(_multiplier))
+        );
+        vm.store(
+            stEth,
+            LIDO_BEACON_BALANCE,
+            bytes32(uint256(vm.load(stEth, LIDO_BEACON_BALANCE)).wadMul(_multiplier))
+        );
+        vm.store(
+            stEth,
+            LIDO_BEACON_VALIDATORS,
+            bytes32(uint256(vm.load(stEth, LIDO_BEACON_VALIDATORS)).wadMul(_multiplier))
+        );
+        deal(stEth, stEth.balance.wadMul(_multiplier));
     }
 }

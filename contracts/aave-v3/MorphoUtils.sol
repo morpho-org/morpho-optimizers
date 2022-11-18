@@ -6,6 +6,7 @@ import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/aave/UserConfiguration.sol";
+
 import "@morpho-dao/morpho-utils/DelegateCall.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
@@ -64,13 +65,12 @@ abstract contract MorphoUtils is MorphoStorage {
             head = suppliersOnPool[_poolToken].getHead();
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             head = borrowersInP2P[_poolToken].getHead();
-        else head = borrowersOnPool[_poolToken].getHead();
-        // Borrowers on pool.
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
+            head = borrowersOnPool[_poolToken].getHead();
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @dev Beware that this function does not give the next account susceptible to get matched,
-    ///      nor the next account with highest liquidity. Use it only to go through every account.
+    /// @dev Beware that this function does not give the account with the highest liquidity.
     /// @param _poolToken The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.
@@ -86,8 +86,8 @@ abstract contract MorphoUtils is MorphoStorage {
             next = suppliersOnPool[_poolToken].getNext(_user);
         else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             next = borrowersInP2P[_poolToken].getNext(_user);
-        else next = borrowersOnPool[_poolToken].getNext(_user);
-        // Borrowers on pool.
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
+            next = borrowersOnPool[_poolToken].getNext(_user);
     }
 
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
@@ -182,7 +182,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _user The address of the user.
     /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
@@ -198,7 +198,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _user The address of the user.
     /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
