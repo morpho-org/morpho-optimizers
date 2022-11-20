@@ -39,14 +39,6 @@ abstract contract PositionsManagerUtils is MatchingEngine {
         uint256 _p2pBorrowAmount
     );
 
-    /// COMMON ERRORS ///
-
-    /// @notice Thrown when the address is zero.
-    error AddressIsZero();
-
-    /// @notice Thrown when the amount is equal to 0.
-    error AmountIsZero();
-
     /// POOL INTERACTION ///
 
     /// @dev Supplies underlying tokens to Aave.

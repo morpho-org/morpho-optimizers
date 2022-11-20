@@ -3,6 +3,8 @@ pragma solidity 0.8.10;
 
 import "./interfaces/IExitPositionsManager.sol";
 
+import "./libraries/Errors.sol";
+
 import "./PositionsManagerUtils.sol";
 
 /// @title ExitPositionsManager.
@@ -73,29 +75,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _amount The amount that has been added to the deltas (in underlying).
     event P2PDeltasIncreased(address indexed _poolToken, uint256 _amount);
 
-    /// ERRORS ///
-
-    /// @notice Thrown when user is not a member of the market.
-    error UserNotMemberOfMarket();
-
-    /// @notice Thrown when the user does not have enough remaining collateral to withdraw.
-    error UnauthorisedWithdraw();
-
-    /// @notice Thrown when the positions of the user is not liquidatable.
-    error UnauthorisedLiquidate();
-
-    /// @notice Thrown when someone tries to withdraw but the withdraw is paused.
-    error WithdrawIsPaused();
-
-    /// @notice Thrown when someone tries to repay but the repay is paused.
-    error RepayIsPaused();
-
-    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as collateral is paused.
-    error LiquidateCollateralIsPaused();
-
-    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
-    error LiquidateBorrowIsPaused();
-
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -159,17 +138,18 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _receiver,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
-        if (_receiver == address(0)) revert AddressIsZero();
+        if (_amount == 0) revert Errors.AmountIsZero();
+        if (_receiver == address(0)) revert Errors.AddressIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isWithdrawPaused) revert WithdrawIsPaused();
+        if (!market.isCreatedMemory()) revert Errors.MarketNotCreated();
+        if (market.isWithdrawPaused) revert Errors.WithdrawIsPaused();
 
         _updateIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
-        if (toWithdraw == 0) revert UserNotMemberOfMarket();
+        if (toWithdraw == 0) revert Errors.UserNotMemberOfMarket();
 
-        if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
+        if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw))
+            revert Errors.UnauthorisedWithdraw();
 
         _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
@@ -187,14 +167,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
+        if (_amount == 0) revert Errors.AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isRepayPaused) revert RepayIsPaused();
+        if (!market.isCreatedMemory()) revert Errors.MarketNotCreated();
+        if (market.isRepayPaused) revert Errors.RepayIsPaused();
 
         _updateIndexes(_poolToken);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
-        if (toRepay == 0) revert UserNotMemberOfMarket();
+        if (toRepay == 0) revert Errors.UserNotMemberOfMarket();
 
         _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
@@ -211,11 +191,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount
     ) external {
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
-        if (!collateralMarket.isCreatedMemory()) revert MarketNotCreated();
-        if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralIsPaused();
+        if (!collateralMarket.isCreatedMemory()) revert Errors.MarketNotCreated();
+        if (collateralMarket.isLiquidateCollateralPaused)
+            revert Errors.LiquidateCollateralIsPaused();
         Types.Market memory borrowedMarket = market[_poolTokenBorrowed];
-        if (!borrowedMarket.isCreatedMemory()) revert MarketNotCreated();
-        if (borrowedMarket.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
+        if (!borrowedMarket.isCreatedMemory()) revert Errors.MarketNotCreated();
+        if (borrowedMarket.isLiquidateBorrowPaused) revert Errors.LiquidateBorrowIsPaused();
 
         if (
             !_isBorrowingAndSupplying(
@@ -223,7 +204,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 borrowMask[_poolTokenBorrowed],
                 borrowMask[_poolTokenCollateral]
             )
-        ) revert UserNotMemberOfMarket();
+        ) revert Errors.UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenBorrowed);
         _updateIndexes(_poolTokenCollateral);
@@ -233,7 +214,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _borrower,
             borrowedMarket.isDeprecated
         );
-        if (!vars.liquidationAllowed) revert UnauthorisedLiquidate();
+        if (!vars.liquidationAllowed) revert Errors.UnauthorisedLiquidate();
 
         vars.amountToLiquidate = Math.min(
             _amount,
@@ -309,7 +290,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 )
             )
         );
-        if (_amount == 0) revert AmountIsZero();
+        if (_amount == 0) revert Errors.AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
         deltas.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);

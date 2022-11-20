@@ -120,26 +120,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _poolToken The P2P index cursor set for this market.
     event MarketCreated(address indexed _poolToken, uint16 _reserveFactor, uint16 _p2pIndexCursor);
 
-    /// ERRORS ///
-
-    /// @notice Thrown when the market is not listed on Aave.
-    error MarketIsNotListedOnAave();
-
-    /// @notice Thrown when the input is above the max basis points value (100%).
-    error ExceedsMaxBasisPoints();
-
-    /// @notice Thrown when the market is already created.
-    error MarketAlreadyCreated();
-
-    /// @notice Thrown when trying to set the max sorted users to 0.
-    error MaxSortedUsersCannotBeZero();
-
-    /// @notice Thrown when the number of markets will exceed the bitmask's capacity.
-    error MaxNumberOfMarkets();
-
-    /// @notice Thrown when the address is the zero address.
-    error ZeroAddress();
-
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
@@ -157,7 +137,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
         uint256 _maxSortedUsers
     ) external initializer {
-        if (_maxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
+        if (_maxSortedUsers == 0) revert Errors.MaxSortedUsersCannotBeZero();
 
         __ReentrancyGuard_init();
         __Ownable_init();
@@ -177,7 +157,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
-        if (_newMaxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
+        if (_newMaxSortedUsers == 0) revert Errors.MaxSortedUsersCannotBeZero();
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
@@ -198,7 +178,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
-        if (address(_entryPositionsManager) == address(0)) revert ZeroAddress();
+        if (address(_entryPositionsManager) == address(0)) revert Errors.ZeroAddress();
         entryPositionsManager = _entryPositionsManager;
         emit EntryPositionsManagerSet(address(_entryPositionsManager));
     }
@@ -209,7 +189,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
-        if (address(_exitPositionsManager) == address(0)) revert ZeroAddress();
+        if (address(_exitPositionsManager) == address(0)) revert Errors.ZeroAddress();
         exitPositionsManager = _exitPositionsManager;
         emit ExitPositionsManagerSet(address(_exitPositionsManager));
     }
@@ -220,7 +200,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
-        if (address(_interestRatesManager) == address(0)) revert ZeroAddress();
+        if (address(_interestRatesManager) == address(0)) revert Errors.ZeroAddress();
         interestRatesManager = _interestRatesManager;
         emit InterestRatesSet(address(_interestRatesManager));
     }
@@ -261,7 +241,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_newReserveFactor > MAX_BASIS_POINTS) revert Errors.ExceedsMaxBasisPoints();
         _updateIndexes(_poolToken);
 
         market[_poolToken].reserveFactor = _newReserveFactor;
@@ -276,7 +256,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert Errors.ExceedsMaxBasisPoints();
         _updateIndexes(_poolToken);
 
         market[_poolToken].p2pIndexCursor = _p2pIndexCursor;
@@ -435,7 +415,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         external
         onlyOwner
     {
-        if (treasuryVault == address(0)) revert ZeroAddress();
+        if (treasuryVault == address(0)) revert Errors.ZeroAddress();
 
         uint256 numberOfMarkets = _poolTokens.length;
 
@@ -466,16 +446,17 @@ abstract contract MorphoGovernance is MorphoUtils {
         uint16 _reserveFactor,
         uint16 _p2pIndexCursor
     ) external onlyOwner {
-        if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert MaxNumberOfMarkets();
-        if (_underlyingToken == address(0)) revert ZeroAddress();
+        if (marketsCreated.length >= MAX_NB_OF_MARKETS) revert Errors.MaxNumberOfMarkets();
+        if (_underlyingToken == address(0)) revert Errors.ZeroAddress();
         if (_p2pIndexCursor > MAX_BASIS_POINTS || _reserveFactor > MAX_BASIS_POINTS)
-            revert ExceedsMaxBasisPoints();
+            revert Errors.ExceedsMaxBasisPoints();
 
-        if (!pool.getConfiguration(_underlyingToken).getActive()) revert MarketIsNotListedOnAave();
+        if (!pool.getConfiguration(_underlyingToken).getActive())
+            revert Errors.MarketIsNotListedOnAave();
 
         address poolToken = pool.getReserveData(_underlyingToken).aTokenAddress;
 
-        if (market[poolToken].isCreated()) revert MarketAlreadyCreated();
+        if (market[poolToken].isCreated()) revert Errors.MarketAlreadyCreated();
 
         p2pSupplyIndex[poolToken] = WadRayMath.RAY;
         p2pBorrowIndex[poolToken] = WadRayMath.RAY;

@@ -26,11 +26,6 @@ contract Morpho is MorphoGovernance {
         bool indexed _traded
     );
 
-    /// ERRORS ///
-
-    /// @notice Thrown when claiming rewards is paused.
-    error ClaimRewardsPaused();
-
     /// EXTERNAL ///
 
     /// @notice Supplies underlying tokens to a specific market.
@@ -161,7 +156,7 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         returns (address[] memory rewardTokens, uint256[] memory claimedAmounts)
     {
-        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
+        if (isClaimRewardsPaused) revert Errors.ClaimRewardsPaused();
 
         IRewardsController rewardsController = rewardsController;
         (rewardTokens, claimedAmounts) = rewardsManager.claimRewards(

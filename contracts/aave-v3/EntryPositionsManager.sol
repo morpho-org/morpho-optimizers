@@ -50,20 +50,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _balanceInP2P
     );
 
-    /// ERRORS ///
-
-    /// @notice Thrown when borrowing is impossible, because it is not enabled on pool for this specific market.
-    error BorrowingNotEnabled();
-
-    /// @notice Thrown when the user does not have enough collateral for the borrow.
-    error UnauthorisedBorrow();
-
-    /// @notice Thrown when someone tries to supply but the supply is paused.
-    error SupplyIsPaused();
-
-    /// @notice Thrown when someone tries to borrow but the borrow is paused.
-    error BorrowIsPaused();
-
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -95,11 +81,11 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_onBehalf == address(0)) revert AddressIsZero();
-        if (_amount == 0) revert AmountIsZero();
+        if (_onBehalf == address(0)) revert Errors.AddressIsZero();
+        if (_amount == 0) revert Errors.AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isSupplyPaused) revert SupplyIsPaused();
+        if (!market.isCreatedMemory()) revert Errors.MarketNotCreated();
+        if (market.isSupplyPaused) revert Errors.SupplyIsPaused();
 
         _updateIndexes(_poolToken);
         _setSupplying(_onBehalf, borrowMask[_poolToken], true);
@@ -191,19 +177,19 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
+        if (_amount == 0) revert Errors.AmountIsZero();
         Types.Market memory market = market[_poolToken];
-        if (!market.isCreatedMemory()) revert MarketNotCreated();
-        if (market.isBorrowPaused) revert BorrowIsPaused();
+        if (!market.isCreatedMemory()) revert Errors.MarketNotCreated();
+        if (market.isBorrowPaused) revert Errors.BorrowIsPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
         if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
-            revert BorrowingNotEnabled();
+            revert Errors.BorrowingNotEnabled();
 
         _updateIndexes(_poolToken);
         _setBorrowing(msg.sender, borrowMask[_poolToken], true);
 
-        if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
+        if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert Errors.UnauthorisedBorrow();
 
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;

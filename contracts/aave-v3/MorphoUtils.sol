@@ -28,17 +28,12 @@ abstract contract MorphoUtils is MorphoStorage {
     using WadRayMath for uint256;
     using Math for uint256;
 
-    /// ERRORS ///
-
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
-
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
     /// @param _poolToken The address of the market to check.
     modifier isMarketCreated(address _poolToken) {
-        if (!market[_poolToken].isCreated()) revert MarketNotCreated();
+        if (!market[_poolToken].isCreated()) revert Errors.MarketNotCreated();
         _;
     }
 
