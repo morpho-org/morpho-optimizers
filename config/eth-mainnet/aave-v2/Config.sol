@@ -5,6 +5,7 @@ import {ILendingPool} from "@contracts/aave-v2/interfaces/aave/ILendingPool.sol"
 import {IPriceOracleGetter} from "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
 import {IAaveIncentivesController} from "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import {ILendingPoolAddressesProvider} from "@contracts/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
+import {IRewardsManager} from "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 import {IIncentivesVault} from "@contracts/aave-v2/interfaces/IIncentivesVault.sol";
 import {IEntryPositionsManager} from "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
 import {IExitPositionsManager} from "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
@@ -53,12 +54,15 @@ contract Config is BaseConfig {
         TransparentUpgradeableProxy(payable(0x507fA343d0A90786d86C7cd885f5C49263A91FF4));
     TransparentUpgradeableProxy public morphoProxy =
         TransparentUpgradeableProxy(payable(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0));
+    TransparentUpgradeableProxy public rewardsManagerProxy;
 
     Lens public lensImplV1;
     Morpho public morphoImplV1;
+    IRewardsManager public rewardsManagerImplV1;
 
     Lens public lens;
     Morpho public morpho;
+    IRewardsManager public rewardsManager;
     IIncentivesVault public incentivesVault;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;

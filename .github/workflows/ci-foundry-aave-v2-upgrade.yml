@@ -1,4 +1,4 @@
-name: Foundry upgrade tests (Morpho-Compound)
+name: Foundry upgrade tests (Morpho-Aave V2)
 
 on:
   push:
