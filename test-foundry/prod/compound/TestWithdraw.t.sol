@@ -78,8 +78,8 @@ contract TestWithdraw is TestSetup {
         .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
 
         assertEq(test.suppliedOnPoolAfter, 0, "unexpected pool underlying balance");
-        assertEq(test.suppliedInP2PAfter, 0, "unexpected p2p underlying balance");
-        assertEq(test.totalSuppliedAfter, 0, "unexpected total underlying supplied");
+        assertApproxEqAbs(test.suppliedInP2PAfter, 0, 1, "unexpected p2p underlying balance");
+        assertApproxEqAbs(test.totalSuppliedAfter, 0, 1, "unexpected total underlying supplied");
     }
 
     function testShouldWithdrawAllMarketsP2PAndOnPool(uint96 _amount) public {
