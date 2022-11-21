@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.10;
 
+import "./libraries/Events.sol";
+
 import "./MorphoGovernance.sol";
 
 /// @title Morpho.
@@ -11,20 +13,6 @@ contract Morpho is MorphoGovernance {
     using SafeTransferLib for ERC20;
     using DelegateCall for address;
     using WadRayMath for uint256;
-
-    /// EVENTS ///
-
-    /// @notice Emitted when a user claims rewards.
-    /// @param _user The address of the claimer.
-    /// @param _reward The reward token address.
-    /// @param _amountClaimed The amount of reward token claimed.
-    /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
-    event RewardsClaimed(
-        address indexed _user,
-        address indexed _reward,
-        uint256 _amountClaimed,
-        bool indexed _traded
-    );
 
     /// ERRORS ///
 
@@ -181,7 +169,7 @@ contract Morpho is MorphoGovernance {
                     ERC20(rewardTokens[i]).safeApprove(address(incentivesVault), claimedAmount);
                 else ERC20(rewardTokens[i]).safeTransfer(msg.sender, claimedAmount);
 
-                emit RewardsClaimed(
+                emit Events.RewardsClaimed(
                     msg.sender,
                     rewardTokens[i],
                     claimedAmount,
