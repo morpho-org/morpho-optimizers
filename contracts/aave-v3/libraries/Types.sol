@@ -1,15 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-library MarketLib {
-    function isCreated(Types.Market storage _market) internal view returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
-
-    function isCreatedMemory(Types.Market memory _market) internal pure returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
-}
+import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
 
 /// @title Types.
 /// @author Morpho Labs.
@@ -45,13 +37,6 @@ library Types {
         uint64 repay;
     }
 
-    struct Delta {
-        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in pool supply unit).
-        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in pool borrow unit).
-        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer supply unit).
-        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer borrow unit).
-    }
-
     struct AssetLiquidityData {
         uint256 decimals; // The number of decimals of the underlying token.
         uint256 tokenUnit; // The token unit considering its decimals.
@@ -69,25 +54,49 @@ library Types {
         uint256 debt; // The debt value (In base currency in wad).
     }
 
-    // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
-    struct PoolIndexes {
-        uint32 lastUpdateTimestamp; // The last time the local pool and peer-to-peer indexes were updated.
-        uint112 poolSupplyIndex; // Last pool supply index (in ray).
-        uint112 poolBorrowIndex; // Last pool borrow index (in ray).
+    struct Index {
+        uint128 p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
+        uint128 p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
+        uint128 poolSupplyIndex; // Last pool supply index (in ray).
+        uint128 poolBorrowIndex; // Last pool borrow index (in ray).
     }
 
-    struct Market {
-        address underlyingToken; // The address of the market's underlying token.
-        uint16 reserveFactor; // Proportion of the additional interest earned being matched peer-to-peer on Morpho compared to being on the pool. It is sent to the DAO for each market. The default value is 0. In basis point (100% = 10 000).
-        uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
-        bool isP2PDisabled; // Whether the peer-to-peer market is open or not.
-        bool isSupplyPaused; // Whether the supply is paused or not.
-        bool isBorrowPaused; // Whether the borrow is paused or not
-        bool isWithdrawPaused; // Whether the withdraw is paused or not. Note that a "withdraw" is still possible using a liquidation (if not paused).
-        bool isRepayPaused; // Whether the repay is paused or not. Note that a "repay" is still possible using a liquidation (if not paused).
-        bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
-        bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
-        bool isDeprecated; // Whether a market is deprecated or not.
+    struct Delta {
+        uint128 p2pSupplyDelta;
+        uint128 p2pBorrowDelta;
+        uint128 p2pSupplyAmount;
+        uint128 p2pBorrowAmount;
+    }
+
+    struct Flag {
+        bool isP2PDisabled;
+        bool isDeprecated;
+        bool isSupplyPaused;
+        bool isBorrowPaused;
+        bool isWithdrawPaused;
+        bool isRepayPaused;
+        bool isLiquidateCollateralPaused;
+        bool isLiquidateBorrowPaused;
+    }
+
+    struct MarketData {
+        address underlyingToken;
+        uint32 reserveFactor;
+        uint32 p2pIndexCursor;
+        uint32 lastUpdateTimestamp;
+        bytes32 borrowMask;
+        Index index;
+        Delta delta;
+        Flag flag;
+    }
+
+    struct UserData {
+        HeapOrdering.HeapArray suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
+        HeapOrdering.HeapArray suppliersOnPool; // For a given market, the suppliers on Aave.
+        HeapOrdering.HeapArray borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
+        HeapOrdering.HeapArray borrowersOnPool; // For a given market, the borrowers on Aave.
+        mapping(address => Types.SupplyBalance) supplyBalanceInOf; // For a given market, the supply balance of a user. aToken -> user -> balances.
+        mapping(address => Types.BorrowBalance) borrowBalanceInOf; // For a given market, the borrow balance of a user. aToken -> user -> balances.
     }
 
     struct LiquidityStackVars {
