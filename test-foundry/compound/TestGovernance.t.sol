@@ -229,6 +229,24 @@ contract TestGovernance is TestSetup {
         assertEq(p2pIndexCursor, 6969);
     }
 
+    function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        hevm.prank(address(supplier2));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIsDeprecated(cDai, true);
+
+        morpho.setIsDeprecated(cDai, true);
+        (, , , , , , bool isDeprecated) = morpho.marketPauseStatus(cDai);
+        assertTrue(isDeprecated);
+
+        morpho.setIsDeprecated(cDai, false);
+        (, , , , , , isDeprecated) = morpho.marketPauseStatus(cDai);
+        assertFalse(isDeprecated);
+    }
+
     function testOnlyOwnerShouldDisableSupply() public {
         (bool isSupplyPaused, , , , , , ) = morpho.marketPauseStatus(cDai);
         assertFalse(isSupplyPaused);
@@ -301,7 +319,11 @@ contract TestGovernance is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.increaseP2PDeltas(cDai, 0);
 
-        morpho.increaseP2PDeltas(cDai, 0);
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, 1_000 ether);
+        supplier1.borrow(cDai, 2 ether);
+
+        morpho.increaseP2PDeltas(cDai, 1 ether);
     }
 
     function testShouldNotIncreaseP2PDeltasWhenMarketNotCreated() public {
@@ -349,7 +371,7 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, supplyAmount);
         supplier1.borrow(cDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         hevm.roll(block.number + 1);
         supplier1.repay(cDai, deltaAmount); // Creates a peer-to-peer supply delta.
 
@@ -386,7 +408,7 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(cDai, supplyAmount);
         supplier1.borrow(cDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(cDai, supplyAmount - borrowAmount + deltaAmount); // Creates a peer-to-peer borrow delta.
 
         morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
@@ -413,11 +435,12 @@ contract TestGovernance is TestSetup {
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(cDai, supplyAmount);
         supplier1.borrow(cDai, borrowAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(cDai, type(uint256).max); // Creates a 100% peer-to-peer borrow delta.
 
         hevm.roll(block.number + 1000);
 
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
         morpho.increaseP2PDeltas(cDai, increaseDeltaAmount);
     }
 

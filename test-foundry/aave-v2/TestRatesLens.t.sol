@@ -133,7 +133,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -142,7 +142,7 @@ contract TestRatesLens is TestSetup {
 
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 1);
+        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 100);
     }
 
     function testBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
@@ -155,7 +155,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -621,7 +621,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -661,7 +661,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -702,7 +702,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -753,7 +753,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -809,7 +809,7 @@ contract TestRatesLens is TestSetup {
         borrower2.supply(aAave, amount);
         borrower2.borrow(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -985,7 +985,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(aUsdc, to6Decimals(amount));
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -1008,7 +1008,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -1050,7 +1050,7 @@ contract TestRatesLens is TestSetup {
         borrower1.approve(aave, supplyAmount);
         borrower1.supply(aAave, supplyAmount);
         borrower1.borrow(aDai, supplyAmount);
-        _setDefaultMaxGasForMatching(0, 0, 0, 0);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         borrower1.approve(dai, repayAmount);
         borrower1.repay(aDai, repayAmount);
         (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);

@@ -71,11 +71,6 @@ lcov-html:
 	@echo Transforming the lcov coverage report into html
 	@genhtml lcov.info -o coverage
 
-fuzz:
-	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
-	@echo Running all Morpho-${PROTOCOL} fuzzing tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv
-
 gas-report:
 	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test --gas-report | tee trace.ansi
@@ -93,6 +88,12 @@ storage-layout-generate:
 
 storage-layout-check:
 	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+
+storage-layout-generate-no-rewards:
+	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho Lens
+
+storage-layout-check-no-rewards:
+	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho Lens
 
 config:
 	@forge config

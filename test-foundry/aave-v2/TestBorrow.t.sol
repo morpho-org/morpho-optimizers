@@ -88,7 +88,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -141,7 +141,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -205,7 +205,8 @@ contract TestBorrow is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
-    function testFailBorrowZero() public {
+    function testShouldNotBorrowZero() public {
+        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.borrow(aDai, 0, type(uint256).max);
     }
 
@@ -232,6 +233,20 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
     }
 
+    function testShouldNotAllowUSDTCollateral() public {
+        uint256 amount = 1e8;
+        // Give morpho enough of a position size
+        supplier1.approve(usdc, amount * 10);
+        supplier1.supply(aUsdc, amount * 10);
+
+        // Add large usdt supply
+        borrower1.approve(usdt, type(uint256).max);
+        borrower1.supply(aUsdt, amount * 10);
+
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        borrower1.borrow(aUsdc, amount);
+    }
+
     function testShouldNotBorrowWithDisabledCollateral() public {
         uint256 amount = 100 ether;
 
@@ -249,7 +264,43 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aUsdc, to6Decimals(amount));
     }
 
-    function testShouldMatchBorrowWithCorrectAmountOfGas() public {
+    function testBorrowLargerThanDeltaShouldClearDelta() public {
+        // Allows only 10 unmatch suppliers.
+
+        uint256 suppliedAmount = 1 ether;
+        uint256 borrowedAmount = 19 * suppliedAmount;
+        uint256 collateral = 99 * borrowedAmount;
+
+        // borrower1 and 20 suppliers are matched for borrowedAmount.
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, borrowedAmount);
+
+        createSigners(20);
+
+        // 2 * NMAX suppliers supply suppliedAmount.
+        for (uint256 i = 0; i < 20; i++) {
+            suppliers[i].approve(dai, suppliedAmount);
+            suppliers[i].supply(aDai, suppliedAmount);
+        }
+
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+
+        vm.roll(block.number + 1);
+        // Delta should be created.
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        vm.roll(block.number + 1);
+        (uint256 p2pSupplyDeltaBefore, , , ) = morpho.deltas(aDai);
+        borrower1.borrow(aDai, borrowedAmount * 2);
+        (uint256 p2pSupplyDeltaAfter, , , ) = morpho.deltas(aDai);
+
+        assertGt(p2pSupplyDeltaBefore, 0);
+        assertEq(p2pSupplyDeltaAfter, 0);
+    }
+
+    function testShouldUseRightAmountOfGas() public {
         uint256 amount = 100 ether;
         createSigners(30);
 

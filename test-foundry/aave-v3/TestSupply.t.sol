@@ -208,7 +208,8 @@ contract TestSupply is TestSetup {
         testEqualityLarge(onPool, expectedOnPool);
     }
 
-    function testFailSupplyZero() public {
+    function testShouldNotSupplyZero() public {
+        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.supply(aDai, msg.sender, 0, type(uint256).max);
     }
 

@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestMarketMember is TestSetup {
-    using CompoundMath for uint256;
-
     function testShouldNotWithdrawWhenNotMarketMember() public {
         hevm.expectRevert(abi.encodeWithSignature("UserNotMemberOfMarket()"));
         supplier1.withdraw(cDai, 1 ether);

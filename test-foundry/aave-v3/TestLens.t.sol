@@ -191,7 +191,7 @@ contract TestLens is TestSetup {
         assertEq(assetDataDai.debt, 0, "debtValueDai");
     }
 
-    function testMaxCapicitiesWithNothing() public {
+    function testMaxCapacitiesWithNothing() public {
         (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
@@ -201,7 +201,7 @@ contract TestLens is TestSetup {
         assertEq(borrowable, 0);
     }
 
-    function testMaxCapicitiesWithNothingWithSupply() public {
+    function testMaxCapacitiesWithNothingWithSupply() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
@@ -238,7 +238,7 @@ contract TestLens is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
-    function testMaxCapicitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
+    function testMaxCapacitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
@@ -616,8 +616,14 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
+
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
+
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         borrower1.repay(aDai, type(uint256).max);
+
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 
     function _createBorrowDelta() public {
@@ -627,7 +633,13 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount / 2);
         borrower1.borrow(aDai, amount / 4);
+
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
+
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, type(uint256).max);
+
+        setDefaultMaxGasForMatchingHelper(supply, borrow, withdraw, repay);
     }
 }

@@ -37,6 +37,6 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: make storage-layout-check
+        run: make storage-layout-check-no-rewards
         env:
           PROTOCOL: aave-v2

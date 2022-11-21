@@ -390,17 +390,6 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit IsClaimRewardsPausedSet(_isPaused);
     }
 
-    /// @notice Sets a market's asset as collateral.
-    /// @param _poolToken The address of the market to (un)set as collateral.
-    /// @param _assetAsCollateral True to set the asset as collateral (True by default).
-    function setAssetAsCollateral(address _poolToken, bool _assetAsCollateral)
-        external
-        onlyOwner
-        isMarketCreated(_poolToken)
-    {
-        pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _assetAsCollateral);
-    }
-
     /// @notice Sets a market as deprecated (allows liquidation of every position on this market).
     /// @param _poolToken The address of the market to update.
     /// @param _isDeprecated The new deprecated status, true to deprecate the market.
@@ -411,6 +400,17 @@ abstract contract MorphoGovernance is MorphoUtils {
     {
         market[_poolToken].isDeprecated = _isDeprecated;
         emit IsDeprecatedSet(_poolToken, _isDeprecated);
+    }
+
+    /// @notice Sets a market's asset as collateral.
+    /// @param _poolToken The address of the market to (un)set as collateral.
+    /// @param _assetAsCollateral True to set the asset as collateral (True by default).
+    function setAssetAsCollateral(address _poolToken, bool _assetAsCollateral)
+        external
+        onlyOwner
+        isMarketCreated(_poolToken)
+    {
+        pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _assetAsCollateral);
     }
 
     /// @notice Increases peer-to-peer deltas, to put some liquidity back on the pool.
