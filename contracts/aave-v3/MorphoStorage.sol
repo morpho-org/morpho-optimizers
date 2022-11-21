@@ -39,25 +39,23 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
 
-    /// POSITIONS STORAGE ///
+    struct Market {
+        HeapOrdering.HeapArray suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
+        HeapOrdering.HeapArray suppliersOnPool; // For a given market, the suppliers on Aave.
+        HeapOrdering.HeapArray borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
+        HeapOrdering.HeapArray borrowersOnPool; // For a given market, the borrowers on Aave.
+        mapping(address => Types.SupplyBalance) supplyBalanceInOf; // For a given market, the supply balance of a user. aToken -> user -> balances.
+        mapping(address => Types.BorrowBalance) borrowBalanceInOf; // For a given market, the borrow balance of a user. aToken -> user -> balances.
+        uint256 p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
+        uint256 p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
+        Types.PoolIndexes poolIndexes; // Last pool index stored.
+        Types.Market market; // Market information.
+        Types.Delta deltas; // Delta parameters for each market.
+        bytes32 borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
+    }
 
-    mapping(address => HeapOrdering.HeapArray) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
-    mapping(address => HeapOrdering.HeapArray) internal suppliersOnPool; // For a given market, the suppliers on Aave.
-    mapping(address => HeapOrdering.HeapArray) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
-    mapping(address => HeapOrdering.HeapArray) internal borrowersOnPool; // For a given market, the borrowers on Aave.
-    mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user. aToken -> user -> balances.
-    mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. aToken -> user -> balances.
     mapping(address => bytes32) public userMarkets; // The markets entered by a user as a bitmask.
-
-    /// MARKETS STORAGE ///
-
     address[] internal marketsCreated; // Keeps track of the created markets.
-    mapping(address => uint256) public p2pSupplyIndex; // Current index from supply peer-to-peer unit to underlying (in ray).
-    mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in ray).
-    mapping(address => Types.PoolIndexes) public poolIndexes; // Last pool index stored.
-    mapping(address => Types.Market) public market; // Market information.
-    mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
-    mapping(address => bytes32) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
 
     /// CONTRACTS AND ADDRESSES ///
 
