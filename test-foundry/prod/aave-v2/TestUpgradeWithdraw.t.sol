@@ -5,6 +5,8 @@ import "./TestWithdraw.t.sol";
 
 contract TestUpgradeWithdraw is TestWithdraw {
     function _onSetUp() internal override {
+        super._onSetUp();
+
         _upgrade();
     }
 }

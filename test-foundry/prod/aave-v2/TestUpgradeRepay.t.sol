@@ -5,6 +5,8 @@ import "./TestRepay.t.sol";
 
 contract TestUpgradeRepay is TestRepay {
     function _onSetUp() internal override {
+        super._onSetUp();
+
         _upgrade();
     }
 }

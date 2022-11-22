@@ -5,6 +5,8 @@ import "./TestSupply.t.sol";
 
 contract TestUpgradeSupply is TestSupply {
     function _onSetUp() internal override {
+        super._onSetUp();
+
         _upgrade();
     }
 }
