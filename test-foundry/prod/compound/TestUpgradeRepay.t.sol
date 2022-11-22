@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./TestRepay.t.sol";
 
 contract TestUpgradeRepay is TestRepay {
-    function _beforeEach() internal override {
+    function _onSetUp() internal override {
         _upgrade();
     }
 }

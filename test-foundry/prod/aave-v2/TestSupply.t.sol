@@ -6,8 +6,6 @@ import "./setup/TestSetup.sol";
 contract TestSupply is TestSetup {
     using WadRayMath for uint256;
 
-    function _beforeEach() internal virtual {}
-
     struct SupplyTest {
         TestMarket market;
         //
@@ -197,8 +195,6 @@ contract TestSupply is TestSetup {
     }
 
     function testShouldSupplyAllMarketsP2PAndOnPool(uint96 _amount) public {
-        _beforeEach();
-
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             _revert();
 
@@ -207,8 +203,6 @@ contract TestSupply is TestSetup {
     }
 
     function testShouldNotSupplyZeroAmount() public {
-        _beforeEach();
-
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             TestMarket memory market = activeMarkets[marketIndex];
 
@@ -219,8 +213,6 @@ contract TestSupply is TestSetup {
 
     function testShouldNotSupplyOnBehalfAddressZero(uint96 _amount) public {
         vm.assume(_amount > 0);
-
-        _beforeEach();
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
             TestMarket memory market = activeMarkets[marketIndex];

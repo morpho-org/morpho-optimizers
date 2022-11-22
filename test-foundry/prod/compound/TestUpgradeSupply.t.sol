@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./TestSupply.t.sol";
 
 contract TestUpgradeSupply is TestSupply {
-    function _beforeEach() internal override {
+    function _onSetUp() internal override {
         _upgrade();
     }
 }

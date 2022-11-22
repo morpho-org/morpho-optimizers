@@ -11,7 +11,7 @@ contract TestUpgradeLens is TestSetup {
         uint256 poolBorrowIndex;
     }
 
-    function testUpgradeShouldPreserveOutdatedIndexes() public {
+    function testShouldPreserveOutdatedIndexes() public {
         Indexes[] memory expectedIndexes = new Indexes[](markets.length);
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
@@ -62,7 +62,7 @@ contract TestUpgradeLens is TestSetup {
         }
     }
 
-    function testUpgradeShouldPreserveUpdatedIndexes() public {
+    function testShouldPreserveUpdatedIndexes() public {
         Indexes[] memory expectedIndexes = new Indexes[](markets.length);
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
