@@ -32,7 +32,7 @@ contract ERC1155POC is MorphoStorage {
         address _to,
         uint256 _id,
         uint256 _value,
-        bytes calldata _data
+        bytes calldata
     ) external {
         // APPROVAL NOT IMPLEMENTED
         (address poolToken, TokenType tokenType) = _getPoolTokenAndSupplyTypeFromId(_id);
