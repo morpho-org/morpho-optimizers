@@ -50,7 +50,7 @@ script-%:
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
 ci:
-	forge test -vv
+	forge test -vvv
 
 ci-upgrade:
 	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make ci
@@ -61,7 +61,7 @@ test:
 		match contract patterns \"\(${FOUNDRY_MATCH_CONTRACT}\)!${FOUNDRY_NO_MATCH_CONTRACT}\",\
 		match test patterns \"\(${FOUNDRY_MATCH_TEST}\)!${FOUNDRY_NO_MATCH_TEST}\"
 
-	forge test -vv | tee trace.ansi
+	forge test -vvv | tee trace.ansi
 
 test-prod:
 	@FOUNDRY_NO_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
@@ -74,6 +74,9 @@ test-common:
 
 test-upgrade-%:
 	@FOUNDRY_MATCH_TEST=$* make test-upgrade
+
+test-prod-%:
+	@FOUNDRY_MATCH_TEST=$* make test-prod
 
 test-%:
 	@FOUNDRY_MATCH_TEST=$* make test
