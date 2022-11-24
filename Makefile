@@ -49,6 +49,9 @@ script-%:
 	@echo Running script $* of Morpho-${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
+build:
+	FOUNDRY_TEST=/dev/null forge build --sizes --force
+
 ci:
 	forge test -vvv
 
