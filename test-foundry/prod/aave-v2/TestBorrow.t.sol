@@ -153,7 +153,8 @@ contract TestBorrow is TestSetup {
             1,
             "unexpected borrowed amount"
         );
-        if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
+        if (test.p2pDisabled && test.p2pSupplyDelta == 0)
+            assertEq(test.balanceInP2P, 0, "unexpected p2p balance");
 
         address[] memory borrowedPoolTokens = new address[](1);
         borrowedPoolTokens[0] = _borrowedMarket.poolToken;

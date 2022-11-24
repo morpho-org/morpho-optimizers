@@ -95,7 +95,8 @@ contract TestSupply is TestSetup {
             amount,
             "unexpected supplied amount"
         );
-        if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "expected no match");
+        if (test.p2pDisabled && test.p2pBorrowDelta == 0)
+            assertEq(test.balanceInP2P, 0, "expected no match");
 
         address[] memory poolTokens = new address[](1);
         poolTokens[0] = _market.poolToken;

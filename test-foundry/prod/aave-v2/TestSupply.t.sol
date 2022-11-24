@@ -93,7 +93,8 @@ contract TestSupply is TestSetup {
             1,
             "unexpected total supplied amount"
         );
-        if (test.p2pDisabled) assertEq(test.balanceInP2P, 0, "expected no match");
+        if (test.p2pDisabled && test.p2pBorrowDelta == 0)
+            assertEq(test.balanceInP2P, 0, "expected no match");
 
         address[] memory poolTokens = new address[](1);
         poolTokens[0] = _market.poolToken;
@@ -161,25 +162,25 @@ contract TestSupply is TestSetup {
         assertApproxEqAbs(
             test.underlyingOnPoolAfter,
             expectedUnderlyingOnPoolAfter,
-            test.underlyingOnPoolAfter / 1e9 + 1e4,
+            test.underlyingOnPoolAfter / 1e8 + 1e4,
             "unexpected pool underlying amount"
         );
         assertApproxEqAbs(
             test.underlyingInP2PAfter,
             expectedUnderlyingInP2PAfter,
-            test.underlyingInP2PAfter / 1e9 + 1e4,
+            test.underlyingInP2PAfter / 1e8 + 1e4,
             "unexpected p2p underlying amount"
         );
         assertApproxEqAbs(
             test.totalUnderlyingAfter,
             expectedTotalUnderlyingAfter,
-            test.totalUnderlyingAfter / 1e9 + 1e4,
+            test.totalUnderlyingAfter / 1e8 + 1e4,
             "unexpected total underlying amount from avg supply rate"
         );
         assertApproxEqAbs(
             test.totalUnderlyingAfter,
             expectedUnderlyingOnPoolAfter + expectedUnderlyingInP2PAfter,
-            test.totalUnderlyingBefore / 1e9 + 1e4,
+            test.totalUnderlyingBefore / 1e8 + 1e4,
             "unexpected total underlying amount"
         );
         if (

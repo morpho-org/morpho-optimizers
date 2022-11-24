@@ -42,25 +42,25 @@ contract TestUpgradeLens is TestSetup {
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].p2pSupplyIndex,
                 p2pSupplyIndex,
-                1e9,
+                1,
                 string.concat(market.symbol, " p2p supply index")
             );
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].p2pBorrowIndex,
                 p2pBorrowIndex,
-                1e9,
+                1e7,
                 string.concat(market.symbol, " p2p borrow index")
             );
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].poolSupplyIndex,
                 poolSupplyIndex,
-                1e9,
+                1,
                 string.concat(market.symbol, " pool supply index")
             );
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].poolBorrowIndex,
                 poolBorrowIndex,
-                1e9,
+                1,
                 string.concat(market.symbol, " pool borrow index")
             );
         }
