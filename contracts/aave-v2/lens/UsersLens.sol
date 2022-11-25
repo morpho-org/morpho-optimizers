@@ -72,12 +72,12 @@ abstract contract UsersLens is IndexesLens {
             _poolToken,
             oracle
         );
-        uint256 healthFactor = liquidityData.debt > 0
-            ? liquidityData.liquidationThreshold.wadDiv(liquidityData.debt)
-            : type(uint256).max;
 
-        // Not possible to withdraw nor borrow.
-        if (healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
+        if (
+            liquidityData.debt > 0 &&
+            liquidityData.liquidationThreshold.wadDiv(liquidityData.debt) <=
+            HEALTH_FACTOR_LIQUIDATION_THRESHOLD
+        ) return (0, 0);
 
         uint256 poolTokenBalance = ERC20(IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS()).balanceOf(
             _poolToken

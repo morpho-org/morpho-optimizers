@@ -7,6 +7,7 @@ import "../interfaces/IMorpho.sol";
 import "../libraries/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
