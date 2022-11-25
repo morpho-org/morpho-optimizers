@@ -114,7 +114,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         /// Peer-to-peer supply ///
 
         // Match the peer-to-peer borrow delta.
-        if (delta.p2pBorrowDelta > 0) {
+        if (delta.p2pBorrowDelta > 0 && !market.isP2PDisabled) {
             uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
                 vars.remainingToSupply
@@ -212,7 +212,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         /// Peer-to-peer borrow ///
 
         // Match the peer-to-peer supply delta.
-        if (delta.p2pSupplyDelta > 0) {
+        if (delta.p2pSupplyDelta > 0 && !market.isP2PDisabled) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
                 remainingToBorrow

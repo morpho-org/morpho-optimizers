@@ -255,7 +255,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Peer-to-peer supply ///
 
         // Match the peer-to-peer borrow delta.
-        if (delta.p2pBorrowDelta > 0) {
+        if (delta.p2pBorrowDelta > 0 && !p2pDisabled[_poolToken]) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
             if (deltaInUnderlying > vars.remainingToSupply) {
                 vars.toRepay += vars.remainingToSupply;
@@ -351,7 +351,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Peer-to-peer borrow ///
 
         // Match the peer-to-peer supply delta.
-        if (delta.p2pSupplyDelta > 0) {
+        if (delta.p2pSupplyDelta > 0 && !p2pDisabled[_poolToken]) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
             if (deltaInUnderlying > remainingToBorrow) {
                 toWithdraw += remainingToBorrow;
