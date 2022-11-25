@@ -291,7 +291,5 @@ contract TestSetup is Config, Test {
         vm.label(address(morpho.interestRatesManager()), "InterestRatesManagerV2");
 
         vm.stopPrank();
-
-        console.log("Upgrade complete");
     }
 }

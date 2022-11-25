@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestWithdraw is TestSetup {
     using WadRayMath for uint256;
 
+    function _beforeWithdraw() internal virtual {}
+
     struct WithdrawTest {
         TestMarket market;
         //
@@ -63,6 +65,8 @@ contract TestWithdraw is TestSetup {
         test.suppliedInP2PBefore = test.balanceInP2P.rayMul(test.p2pSupplyIndex);
         test.suppliedOnPoolBefore = test.balanceOnPool.rayMul(test.poolSupplyIndex);
         test.totalSuppliedBefore = test.suppliedOnPoolBefore + test.suppliedInP2PBefore;
+
+        _beforeWithdraw();
 
         user.withdraw(_market.poolToken, type(uint256).max);
 
