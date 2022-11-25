@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestRepay is TestSetup {
     using WadRayMath for uint256;
 
+    function _beforeRepay() internal virtual {}
+
     struct RepayTest {
         TestMarket collateralMarket;
         TestMarket borrowedMarket;
@@ -84,6 +86,8 @@ contract TestRepay is TestSetup {
         test.borrowedInP2PBefore = test.balanceInP2P.rayMul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.rayMul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
+
+        _beforeRepay();
 
         _tip(
             _borrowedMarket.underlying,

@@ -5,7 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestUpgradeHeap is TestSetup {
     function _testShouldPreservePriorityQueue(Types.PositionType queueType) internal {
-        for (uint256 marketIndex; marketIndex < borrowableCollateralMarkets.length; ++marketIndex) {
+        for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
             TestMarket memory market = markets[marketIndex];
 
             address[] memory priorityQueue = new address[](10_000);

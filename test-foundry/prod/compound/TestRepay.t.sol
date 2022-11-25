@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestRepay is TestSetup {
     using CompoundMath for uint256;
 
+    function _beforeRepay() internal virtual {}
+
     struct RepayTest {
         TestMarket collateralMarket;
         TestMarket borrowedMarket;
@@ -82,6 +84,8 @@ contract TestRepay is TestSetup {
         test.borrowedInP2PBefore = test.balanceInP2P.mul(test.p2pBorrowIndex);
         test.borrowedOnPoolBefore = test.balanceOnPool.mul(test.poolBorrowIndex);
         test.totalBorrowedBefore = test.borrowedOnPoolBefore + test.borrowedInP2PBefore;
+
+        _beforeRepay();
 
         _tip(
             _borrowedMarket.underlying,

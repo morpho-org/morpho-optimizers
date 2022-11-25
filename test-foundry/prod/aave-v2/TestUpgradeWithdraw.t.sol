@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import "./TestWithdraw.t.sol";
 
 contract TestUpgradeWithdraw is TestWithdraw {
-    function _onSetUp() internal override {
-        super._onSetUp();
+    function _beforeWithdraw() internal override {
+        super._beforeWithdraw();
 
         _upgrade();
     }
