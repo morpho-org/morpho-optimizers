@@ -27,6 +27,75 @@ contract TestLiquidate is TestSetup {
     }
 
     // A user liquidates a borrower that has not enough collateral to cover for his debt.
+    function testShouldLiquidateOnPoolWhenFrozen() public {
+        // uint256 FROZEN_MASK = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDFFFFFFFFFFFFFF;
+        // uint256 IS_FROZEN_START_BIT_POSITION = 57;
+        // DataTypes.ReserveConfigurationMap memory currentConfig = pool.getConfiguration(
+        //     address(dai)
+        // );
+        // currentConfig.data =
+        //     (currentConfig.data & FROZEN_MASK) |
+        //     (uint256(1) << IS_FROZEN_START_BIT_POSITION);
+
+        // vm.prank(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756); // address of the lending pool configurator
+        // pool.setConfiguration(address(dai), currentConfig.data);
+
+        uint256 collateral = 100_000 ether;
+
+        borrower1.aaveSupply(address(Usdc), to6Decimals(collateral));
+
+        uint256 amount = (collateral * 85) / 100;
+        borrower1.aaveBorrow(address(dai), amount);
+
+        vm.roll(100000000);
+
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(usdc, oracle.getAssetPrice(usdc) / 10);
+
+        // Liquidate
+        uint256 toRepay = amount / 2;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(pool), toRepay);
+        vm.prank(address(liquidator));
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
+    }
+
+    // A user liquidates a borrower that has not enough collateral to cover for his debt.
+    function testShouldNotLiquidateWhenFrozen() public {
+        uint256 FROZEN_MASK = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDFFFFFFFFFFFFFF;
+        uint256 IS_FROZEN_START_BIT_POSITION = 57;
+        DataTypes.ReserveConfigurationMap memory currentConfig = pool.getConfiguration(
+            address(dai)
+        );
+        currentConfig.data =
+            (currentConfig.data & FROZEN_MASK) |
+            (uint256(1) << IS_FROZEN_START_BIT_POSITION);
+
+        vm.prank(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756); // address of the lending pool configurator
+        pool.setConfiguration(address(dai), currentConfig.data);
+
+        uint256 collateral = 100_000 ether;
+
+        borrower1.approve(usdc, address(morpho), to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+        borrower1.borrow(aDai, amount);
+
+        (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
+
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
+
+        // Liquidate
+        uint256 toRepay = amount / 2;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(morpho), toRepay);
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
+    }
+
     function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;
 
