@@ -11,6 +11,7 @@ import "./UsersLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol users and their positions.
 abstract contract RatesLens is UsersLens {
     using WadRayMath for uint256;
+    using Math for uint256;
 
     /// STRUCTS ///
 
@@ -430,9 +431,9 @@ abstract contract RatesLens is UsersLens {
     ) internal view returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount) {
         Types.Delta memory delta = morpho.deltas(reserve.aTokenAddress);
 
-        p2pBorrowAmount =
-            delta.p2pBorrowAmount.rayMul(_p2pBorrowIndex) -
-            delta.p2pBorrowDelta.rayMul(_poolBorrowIndex);
+        p2pBorrowAmount = delta.p2pBorrowAmount.rayMul(_p2pBorrowIndex).zeroFloorSub(
+            delta.p2pBorrowDelta.rayMul(_poolBorrowIndex)
+        );
         poolBorrowAmount = IVariableDebtToken(reserve.variableDebtTokenAddress)
         .scaledBalanceOf(address(morpho))
         .rayMul(_poolBorrowIndex);
