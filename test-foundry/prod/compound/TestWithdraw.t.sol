@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
@@ -7,119 +7,104 @@ contract TestWithdraw is TestSetup {
     using CompoundMath for uint256;
 
     struct WithdrawTest {
-        ERC20 underlying;
-        ICToken poolToken;
-        uint256 decimals;
+        TestMarket market;
+        //
         uint256 morphoBalanceOnPoolBefore;
         uint256 morphoUnderlyingBalanceBefore;
+        //
         uint256 p2pSupplyIndex;
         uint256 poolSupplyIndex;
+        //
         uint256 balanceInP2P;
         uint256 balanceOnPool;
-        uint256 underlyingOnPoolBefore;
-        uint256 underlyingInP2PBefore;
-        uint256 totalUnderlyingBefore;
-        uint256 underlyingOnPoolAfter;
-        uint256 underlyingInP2PAfter;
-        uint256 totalUnderlyingAfter;
+        //
+        uint256 suppliedOnPoolBefore;
+        uint256 suppliedInP2PBefore;
+        uint256 totalSuppliedBefore;
+        //
+        uint256 suppliedOnPoolAfter;
+        uint256 suppliedInP2PAfter;
+        uint256 totalSuppliedAfter;
     }
 
-    function _testShouldWithdrawMarketP2PAndOnPool(address _poolToken, uint96 _amount) internal {
+    function _testShouldWithdrawMarketP2PAndOnPool(TestMarket memory _market, uint96 _amount)
+        internal
+    {
         WithdrawTest memory test;
-        test.poolToken = ICToken(_poolToken);
-        (test.underlying, test.decimals) = _getUnderlying(_poolToken);
+        test.market = _market;
 
-        test.morphoBalanceOnPoolBefore = test.poolToken.balanceOf(address(morpho));
-        test.morphoUnderlyingBalanceBefore = test.underlying.balanceOf(address(morpho));
+        test.morphoBalanceOnPoolBefore = ICToken(_market.poolToken).balanceOf(address(morpho));
+        test.morphoUnderlyingBalanceBefore = ERC20(_market.underlying).balanceOf(address(morpho));
 
-        uint256 amount = bound(_amount, 10**(test.decimals - 4), type(uint96).max);
+        uint256 price = oracle.getUnderlyingPrice(_market.poolToken);
+        uint256 amount = bound(
+            _amount,
+            MIN_USD_AMOUNT.div(price),
+            Math.min(MAX_USD_AMOUNT.div(price), type(uint96).max)
+        );
 
-        _tip(address(test.underlying), address(supplier1), amount);
+        _tip(_market.underlying, address(user), amount);
 
-        supplier1.approve(address(test.underlying), amount);
-        supplier1.supply(address(test.poolToken), amount);
+        user.approve(_market.underlying, amount);
+        user.supply(_market.poolToken, address(user), amount);
 
-        test.p2pSupplyIndex = morpho.p2pSupplyIndex(address(test.poolToken));
-        test.poolSupplyIndex = test.poolToken.exchangeRateCurrent();
+        _forward(100_000);
+
+        morpho.updateP2PIndexes(_market.poolToken);
+
+        test.p2pSupplyIndex = morpho.p2pSupplyIndex(_market.poolToken);
+        test.poolSupplyIndex = ICToken(_market.poolToken).exchangeRateCurrent();
 
         (test.balanceInP2P, test.balanceOnPool) = morpho.supplyBalanceInOf(
-            address(test.poolToken),
-            address(supplier1)
+            _market.poolToken,
+            address(user)
         );
 
-        test.underlyingInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
-        test.underlyingOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
-        test.totalUnderlyingBefore = test.underlyingOnPoolBefore + test.underlyingInP2PBefore;
+        test.suppliedInP2PBefore = test.balanceInP2P.mul(test.p2pSupplyIndex);
+        test.suppliedOnPoolBefore = test.balanceOnPool.mul(test.poolSupplyIndex);
+        test.totalSuppliedBefore = test.suppliedOnPoolBefore + test.suppliedInP2PBefore;
 
-        vm.roll(block.number + 10_000);
-
-        morpho.updateP2PIndexes(address(test.poolToken));
-
-        vm.roll(block.number + 10_000);
+        user.withdraw(_market.poolToken, type(uint256).max);
 
         assertEq(
-            test.underlying.balanceOf(address(supplier1)),
-            0,
-            "unexpected underlying balance before withdraw"
-        );
-
-        supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore);
-
-        (test.underlyingOnPoolAfter, test.underlyingInP2PAfter, test.totalUnderlyingAfter) = lens
-        .getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
-
-        assertEq(
-            test.underlying.balanceOf(address(supplier1)),
-            test.totalUnderlyingBefore,
+            ERC20(_market.underlying).balanceOf(address(user)),
+            test.totalSuppliedBefore,
             "unexpected underlying balance after withdraw"
         );
 
-        if (test.totalUnderlyingAfter > 0) {
-            supplier1.withdraw(address(test.poolToken), test.totalUnderlyingBefore); // Withdraw accrued interests.
+        (test.suppliedOnPoolAfter, test.suppliedInP2PAfter, test.totalSuppliedAfter) = lens
+        .getCurrentSupplyBalanceInOf(_market.poolToken, address(user));
 
-            (
-                test.underlyingOnPoolAfter,
-                test.underlyingInP2PAfter,
-                test.totalUnderlyingAfter
-            ) = lens.getCurrentSupplyBalanceInOf(address(test.poolToken), address(supplier1));
-        }
-
-        assertEq(test.underlyingOnPoolAfter, 0, "unexpected pool underlying balance");
-        assertEq(test.underlyingInP2PAfter, 0, "unexpected p2p underlying balance");
-        assertEq(test.totalUnderlyingAfter, 0, "unexpected total underlying supplied");
+        assertEq(test.suppliedOnPoolAfter, 0, "unexpected pool underlying balance");
+        assertApproxEqAbs(test.suppliedInP2PAfter, 0, 1, "unexpected p2p underlying balance");
+        assertApproxEqAbs(test.totalSuppliedAfter, 0, 1, "unexpected total underlying supplied");
     }
 
-    function testShouldWithdrawAllMarketsP2PAndOnPool(uint8 _marketIndex, uint96 _amount) public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
+    function testShouldWithdrawAllMarketsP2PAndOnPool(uint96 _amount) public {
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            _revert();
 
-        _marketIndex = uint8(_marketIndex % activeMarkets.length);
-
-        _testShouldWithdrawMarketP2PAndOnPool(activeMarkets[_marketIndex], _amount);
+            _testShouldWithdrawMarketP2PAndOnPool(activeMarkets[marketIndex], _amount);
+        }
     }
 
     function testShouldNotWithdrawZeroAmount() public {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            WithdrawTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            TestMarket memory market = activeMarkets[marketIndex];
 
             vm.expectRevert(PositionsManager.AmountIsZero.selector);
-            supplier1.withdraw(address(test.poolToken), 0);
+            user.withdraw(market.poolToken, 0);
         }
     }
 
     function testShouldNotWithdrawFromUnenteredMarket(uint96 _amount) public {
         vm.assume(_amount > 0);
 
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
-            WithdrawTest memory test;
-            test.poolToken = ICToken(activeMarkets[marketIndex]);
+            TestMarket memory market = activeMarkets[marketIndex];
 
             vm.expectRevert(PositionsManager.UserNotMemberOfMarket.selector);
-            supplier1.withdraw(address(test.poolToken), _amount);
+            user.withdraw(market.poolToken, _amount);
         }
     }
 }

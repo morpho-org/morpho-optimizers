@@ -1,50 +1,62 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
-import "@contracts/compound/interfaces/IRewardsManager.sol";
-import "@contracts/compound/interfaces/IMorpho.sol";
+import {CompoundMath} from "@contracts/compound/libraries/CompoundMath.sol";
+import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {Types} from "@contracts/compound/libraries/Types.sol";
 
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/compound/libraries/CompoundMath.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-dao/morpho-utils/math/Math.sol";
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
 import "@config/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
-import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Test {
     using CompoundMath for uint256;
+    using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
 
-    User public supplier1;
-    User public supplier2;
-    User public supplier3;
-    User[] public suppliers;
+    uint256 MIN_USD_AMOUNT = 0.5 ether;
+    uint256 MAX_USD_AMOUNT = 50_000_000_000 ether;
 
-    User public borrower1;
-    User public borrower2;
-    User public borrower3;
-    User[] public borrowers;
+    User public user;
+
+    struct TestMarket {
+        address poolToken;
+        address underlying;
+        string symbol;
+        uint256 decimals;
+        uint256 collateralFactor;
+        uint256 maxBorrows;
+        uint256 totalBorrows;
+    }
+
+    TestMarket[] public markets;
+    TestMarket[] public activeMarkets;
+    TestMarket[] public unpausedMarkets;
+    TestMarket[] public collateralMarkets;
+    TestMarket[] public borrowableMarkets;
+    TestMarket[] public borrowableCollateralMarkets;
+
+    uint256 snapshotId = type(uint256).max;
 
     function setUp() public {
         initContracts();
         setContractsLabels();
         initUsers();
 
-        onSetUp();
+        _initMarkets();
+
+        _onSetUp();
     }
 
-    function onSetUp() public virtual {}
+    function _onSetUp() internal virtual {}
 
     function initContracts() internal {
-        // vm.prank(address(proxyAdmin));
-        // lensImplV1 = Lens(lensProxy.implementation());
-        // morphoImplV1 = Morpho(payable(morphoProxy.implementation()));
-        // rewardsManagerImplV1 = RewardsManager(rewardsManagerProxy.implementation());
-
         lens = Lens(address(lensProxy));
         morpho = Morpho(payable(morphoProxy));
         rewardsManager = RewardsManager(address(morpho.rewardsManager()));
@@ -56,28 +68,9 @@ contract TestSetup is Config, Test {
     }
 
     function initUsers() internal {
-        for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(morpho));
-            vm.label(
-                address(suppliers[i]),
-                string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
-            );
-        }
-        supplier1 = suppliers[0];
-        supplier2 = suppliers[1];
-        supplier3 = suppliers[2];
+        user = new User(morpho);
 
-        for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(morpho));
-            vm.label(
-                address(borrowers[i]),
-                string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
-            );
-        }
-
-        borrower1 = borrowers[0];
-        borrower2 = borrowers[1];
-        borrower3 = borrowers[2];
+        vm.label(address(user), "User");
 
         deal(aave, address(this), type(uint256).max);
         deal(dai, address(this), type(uint256).max);
@@ -146,121 +139,78 @@ contract TestSetup is Config, Test {
         vm.label(address(cSushi), "cSUSHI");
     }
 
-    function getAllFullyActiveMarkets() public view returns (address[] memory activeMarkets) {
+    function _initMarkets() internal {
         address[] memory createdMarkets = morpho.getAllMarkets();
-        uint256 nbCreatedMarkets = createdMarkets.length;
 
-        uint256 nbActiveMarkets;
-        activeMarkets = new address[](nbCreatedMarkets);
-
-        for (uint256 i; i < nbCreatedMarkets; ) {
+        for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
+            address underlying = _getUnderlying(poolToken);
+            string memory symbol = ERC20(poolToken).symbol();
+
+            TestMarket memory market = TestMarket({
+                poolToken: poolToken,
+                underlying: underlying,
+                symbol: symbol,
+                decimals: ERC20(underlying).decimals(),
+                collateralFactor: 0,
+                maxBorrows: comptroller.borrowCaps(poolToken),
+                totalBorrows: ICToken(poolToken).totalBorrows()
+            });
 
             (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
-            if (!isPaused && !isPartiallyPaused) {
-                activeMarkets[nbActiveMarkets] = poolToken;
-                ++nbActiveMarkets;
-            } else console.log("Skipping paused (or partially paused) market:", poolToken);
+            (, market.collateralFactor, ) = comptroller.markets(poolToken);
+            market.maxBorrows = market.maxBorrows == 0 ? type(uint256).max : market.maxBorrows;
 
-            unchecked {
-                ++i;
-            }
-        }
+            markets.push(market);
 
-        // Resize the array for return
-        assembly {
-            mstore(activeMarkets, nbActiveMarkets)
-        }
-    }
-
-    function getAllUnpausedMarkets() public view returns (address[] memory unpausedMarkets) {
-        address[] memory createdMarkets = morpho.getAllMarkets();
-        uint256 nbCreatedMarkets = createdMarkets.length;
-
-        uint256 nbActiveMarkets;
-        unpausedMarkets = new address[](nbCreatedMarkets);
-
-        for (uint256 i; i < nbCreatedMarkets; ) {
-            address poolToken = createdMarkets[i];
-
-            (, bool isPaused, ) = morpho.marketStatus(poolToken);
             if (!isPaused) {
-                unpausedMarkets[nbActiveMarkets] = poolToken;
-                ++nbActiveMarkets;
-            } else console.log("Skipping paused market:", poolToken);
+                unpausedMarkets.push(market);
 
-            unchecked {
-                ++i;
-            }
-        }
+                if (!isPartiallyPaused) {
+                    activeMarkets.push(market);
 
-        // Resize the array for return
-        assembly {
-            mstore(unpausedMarkets, nbActiveMarkets)
-        }
-    }
+                    bool isBorrowable = market.maxBorrows > market.totalBorrows.percentMul(103_00);
 
-    function getAllFullyActiveCollateralMarkets()
-        public
-        view
-        returns (address[] memory activeCollateralMarkets)
-    {
-        address[] memory activeMarkets = getAllFullyActiveMarkets();
-        uint256 nbActiveMarkets = activeMarkets.length;
+                    if (isBorrowable) borrowableMarkets.push(market);
+                    else console.log("Unborrowable market:", symbol);
 
-        uint256 nbActiveCollateralMarkets;
-        activeCollateralMarkets = new address[](nbActiveMarkets);
+                    if (market.collateralFactor > 0) {
+                        collateralMarkets.push(market);
 
-        for (uint256 i; i < nbActiveMarkets; ) {
-            address poolToken = activeMarkets[i];
-
-            (, uint256 collateralFactor, ) = morpho.comptroller().markets(poolToken);
-            (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
-            if (collateralFactor > 0 && !isPaused && !isPartiallyPaused) {
-                activeCollateralMarkets[nbActiveCollateralMarkets] = poolToken;
-                ++nbActiveCollateralMarkets;
-            } else console.log("Skipping paused (or partially paused) market:", poolToken);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Resize the array for return
-        assembly {
-            mstore(activeCollateralMarkets, nbActiveCollateralMarkets)
+                        if (isBorrowable) borrowableCollateralMarkets.push(market);
+                        else console.log("Unborrowable collateral market:", symbol);
+                    } else console.log("Zero collateral factor market:", symbol);
+                } else console.log("Partially paused market:", symbol);
+            } else console.log("Paused market:", symbol);
         }
     }
 
     function _boundBorrowedAmount(
+        TestMarket memory _market,
         uint96 _amount,
-        address _poolToken,
-        address _underlying,
-        uint256 _decimals
-    ) internal returns (uint256) {
-        uint256 borrowCap = morpho.comptroller().borrowCaps(_poolToken);
-
+        uint256 _price
+    ) internal view returns (uint256) {
         return
             bound(
                 _amount,
-                10**(_decimals - 6),
+                MIN_USD_AMOUNT.div(_price),
                 Math.min(
-                    (borrowCap > 0 ? borrowCap - 1 : type(uint256).max) -
-                        ICToken(_poolToken).totalBorrows(),
-                    _underlying == wEth
-                        ? _poolToken.balance
-                        : ERC20(_underlying).balanceOf(_poolToken)
+                    Math.min(
+                        Math.min(
+                            (_market.maxBorrows - _market.totalBorrows) / 2,
+                            _market.underlying == wEth
+                                ? cEth.balance
+                                : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                        ),
+                        MAX_USD_AMOUNT.div(_price)
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
                 )
             );
     }
 
-    function _getUnderlying(address _poolToken)
-        internal
-        view
-        returns (ERC20 underlying, uint256 decimals)
-    {
-        underlying = ERC20(_poolToken == cEth ? wEth : ICToken(_poolToken).underlying());
-        decimals = underlying.decimals();
+    function _getUnderlying(address _poolToken) internal view returns (address underlying) {
+        return _poolToken == cEth ? wEth : ICToken(_poolToken).underlying();
     }
 
     function _getMinimumCollateralAmount(
@@ -284,5 +234,29 @@ contract TestSetup is Config, Test {
         if (_underlying == wEth) deal(wEth, wEth.balance + _amount); // Refill wrapped Ether.
 
         ERC20(_underlying).safeTransfer(_user, _amount);
+    }
+
+    /// @dev Rolls & warps `_blocks` blocks forward the blockchain.
+    function _forward(uint256 _blocks) internal {
+        vm.roll(block.number + _blocks);
+        vm.warp(block.timestamp + _blocks * 12);
+    }
+
+    /// @dev Reverts the fork to its initial fork state.
+    function _revert() internal {
+        if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+    }
+
+    /// @dev Upgrades all the protocol contracts.
+    function _upgrade() internal {
+        vm.startPrank(morphoDao);
+        proxyAdmin.upgrade(rewardsManagerProxy, address(new RewardsManager()));
+        proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
+        proxyAdmin.upgrade(lensProxy, address(new Lens()));
+
+        morpho.setPositionsManager(new PositionsManager());
+        morpho.setInterestRatesManager(new InterestRatesManager());
+        vm.stopPrank();
     }
 }
