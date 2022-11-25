@@ -101,13 +101,13 @@ contract TestUpgradeDeltas is TestSetup {
             assertApproxEqAbs(
                 test.avgSupplyRatePerYear,
                 reserve.currentLiquidityRate,
-                10**(19 - test.market.decimals),
+                1e15,
                 "avg supply rate per year"
             );
             assertApproxEqAbs(
                 test.avgBorrowRatePerYear,
                 reserve.currentVariableBorrowRate,
-                10**(22 - test.market.decimals),
+                1e15,
                 "avg borrow rate per year"
             );
         }
