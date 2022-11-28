@@ -10,6 +10,7 @@ import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
 import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v3/interfaces/IMorpho.sol";
 import "../helpers/IVariableDebtTokenExtended.sol";
+import "../helpers/IPoolConfigurator.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -61,6 +62,7 @@ contract TestSetup is Config, Utils {
     DumbOracle public dumbOracle;
     MorphoToken public morphoToken;
     IPoolAddressesProvider public poolAddressesProvider;
+    IPoolConfigurator public poolConfigurator;
     IPoolDataProvider public protocolDataProvider;
     IPriceOracleGetter public oracle;
     IPool public pool;
@@ -97,6 +99,7 @@ contract TestSetup is Config, Utils {
             repay: 3e6
         });
         poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
+        poolConfigurator = IPoolConfigurator(poolConfiguratorAddress);
         pool = IPool(poolAddressesProvider.getPool());
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();

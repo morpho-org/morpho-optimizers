@@ -35,6 +35,7 @@ contract Config is BaseConfig {
 
     address public morphoDao = 0xcBa28b38103307Ec8dA98377ffF9816C164f9AFa;
     IComptroller public comptroller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    address constant comptrollerAdmin = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
     ICompoundOracle public oracle = ICompoundOracle(comptroller.oracle());
 
     ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
