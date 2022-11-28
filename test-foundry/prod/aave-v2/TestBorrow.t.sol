@@ -285,7 +285,6 @@ contract TestBorrow is TestSetup {
     }
 
     function testShouldNotBorrowWithoutEnoughCollateral(uint96 _amount) public {
-        console.log(block.number, block.timestamp);
         for (
             uint256 collateralMarketIndex;
             collateralMarketIndex < collateralMarkets.length;

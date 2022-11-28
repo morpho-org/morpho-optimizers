@@ -50,11 +50,7 @@ contract TestSetup is Config, Test {
         initUsers();
 
         _initMarkets();
-
-        _onSetUp();
     }
-
-    function _onSetUp() internal virtual {}
 
     function initContracts() internal {
         lens = Lens(address(lensProxy));

@@ -26,8 +26,8 @@ contract TestUpgradeDeltas is TestSetup {
         uint256 avgBorrowRatePerYear;
     }
 
-    function _onSetUp() internal override {
-        super._onSetUp();
+    function setUp() internal override {
+        super.setUp();
 
         _upgrade();
     }
