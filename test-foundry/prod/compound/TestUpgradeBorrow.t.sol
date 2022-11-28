@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./TestBorrow.t.sol";
 
 contract TestUpgradeBorrow is TestBorrow {
-    function setUp() internal override {
+    function setUp() public override {
         super.setUp();
 
         _upgrade();
