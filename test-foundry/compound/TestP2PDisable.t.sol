@@ -75,4 +75,30 @@ contract TestP2PDisable is TestSetup {
         (uint256 inP2P, ) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
         assertApproxEqAbs(inP2P, 0, 1e4);
     }
+
+    function testShouldBeAbleToWithdrawRepayAfterPoolPause() public {
+        uint256 amount = 100_000 ether;
+
+        // Create some peer-to-peer matching.
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
+        borrower1.approve(usdc, type(uint256).max);
+        borrower1.supply(cUsdc, to6Decimals(amount * 2));
+        borrower1.borrow(cDai, to6Decimals(amount));
+
+        // Increase deltas.
+        morpho.increaseP2PDeltas(cDai, type(uint256).max);
+
+        // Pause borrow on pool.
+        vm.prank(comptrollerAdmin);
+        comptroller._setMintPaused(ICToken(cDai), true);
+        vm.prank(comptrollerAdmin);
+        comptroller._setBorrowPaused(ICToken(cDai), true);
+
+        // Withdraw and repay peer-to-peer matched positions.
+        supplier1.withdraw(cDai, amount - 1e9);
+        hevm.store(address(morpho), keccak256(abi.encode(address(borrower1), 178)), 0);
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(cDai, type(uint256).max);
+    }
 }
