@@ -44,7 +44,7 @@ contract TestSetup is Config, Test {
 
     uint256 snapshotId = type(uint256).max;
 
-    function setUp() public {
+    function setUp() public virtual {
         initContracts();
         setContractsLabels();
         initUsers();
