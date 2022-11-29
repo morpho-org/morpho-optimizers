@@ -82,7 +82,7 @@ contract TestP2PDisable is TestSetup {
         supplier1.supply(aDai, amount);
         borrower1.approve(usdc, type(uint256).max);
         borrower1.supply(aUsdc, to6Decimals(amount * 2));
-        borrower1.borrow(aDai, to6Decimals(amount));
+        borrower1.borrow(aDai, amount);
 
         // Increase deltas.
         morpho.increaseP2PDeltas(aDai, type(uint256).max);
