@@ -282,7 +282,7 @@ contract TestLifecycle is TestSetup {
             address(user),
             borrow.position.total - ERC20(borrow.market.underlying).balanceOf(address(user))
         );
-        user.approve(borrow.market.underlying, type(uint256).max);
+        user.approve(borrow.market.underlying, borrow.position.total);
         user.repay(borrow.market.poolToken, address(user), type(uint256).max);
     }
 

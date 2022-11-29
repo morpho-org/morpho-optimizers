@@ -286,10 +286,9 @@ contract TestLifecycle is TestSetup {
         _tip(
             borrow.market.underlying,
             address(user),
-            // + 1 because sometimes, repaying all leaves 1 wei of debt.
-            borrow.position.total - ERC20(borrow.market.underlying).balanceOf(address(user)) + 1
+            borrow.position.total - ERC20(borrow.market.underlying).balanceOf(address(user))
         );
-        user.approve(borrow.market.underlying, type(uint256).max);
+        user.approve(borrow.market.underlying, borrow.position.total);
         user.repay(borrow.market.poolToken, address(user), type(uint256).max);
 
         // Sometimes, repaying all leaves 1 wei of debt.
@@ -297,7 +296,11 @@ contract TestLifecycle is TestSetup {
             borrow.market.poolToken,
             address(user)
         );
-        if (totalBorrow > 0) user.repay(borrow.market.poolToken, address(user), 1);
+        if (totalBorrow > 0) {
+            _tip(borrow.market.underlying, address(user), 1);
+            user.approve(borrow.market.underlying, 1);
+            user.repay(borrow.market.poolToken, address(user), 1);
+        }
     }
 
     function _testRepay(MarketSideTest memory borrow) internal virtual {
@@ -333,6 +336,13 @@ contract TestLifecycle is TestSetup {
         .getCurrentSupplyBalanceInOf(supply.market.poolToken, address(user));
 
         user.withdraw(supply.market.poolToken, type(uint256).max);
+
+        // Sometimes, withdrawing all leaves 1 wei of supply.
+        (, , uint256 totalSupply) = lens.getCurrentSupplyBalanceInOf(
+            supply.market.poolToken,
+            address(user)
+        );
+        if (totalSupply > 0) user.withdraw(supply.market.poolToken, 1);
     }
 
     function _testWithdraw(MarketSideTest memory supply) internal virtual {
