@@ -56,7 +56,7 @@ ci:
 	forge test -vvv
 
 ci-upgrade:
-	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make ci
+	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_FUZZ_RUNS=32 FOUNDRY_PROFILE=production make ci
 
 test:
 	@echo Running Morpho-${PROTOCOL}-${NETWORK} tests under \"${FOUNDRY_TEST}\"\
