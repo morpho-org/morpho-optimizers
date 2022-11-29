@@ -42,6 +42,7 @@ contract TestLifecycle is TestSetup {
 
     function _initMarketSideTest(TestMarket memory _market, uint256 _amount)
         internal
+        virtual
         returns (MarketSideTest memory test)
     {
         test.market = _market;
@@ -62,6 +63,7 @@ contract TestLifecycle is TestSetup {
 
     function _supply(TestMarket memory _market, uint256 _amount)
         internal
+        virtual
         returns (MarketSideTest memory supply)
     {
         supply = _initMarketSideTest(_market, _amount);
@@ -89,7 +91,7 @@ contract TestLifecycle is TestSetup {
         supply.position.total = supply.position.p2p + supply.position.pool;
     }
 
-    function _testSupply(MarketSideTest memory supply) internal {
+    function _testSupply(MarketSideTest memory supply) internal virtual {
         assertEq(
             ERC20(supply.market.underlying).balanceOf(address(user)),
             0,
@@ -173,6 +175,7 @@ contract TestLifecycle is TestSetup {
 
     function _borrow(TestMarket memory _market, uint256 _amount)
         internal
+        virtual
         returns (MarketSideTest memory borrow)
     {
         borrow = _initMarketSideTest(_market, _amount);
@@ -197,7 +200,7 @@ contract TestLifecycle is TestSetup {
         borrow.position.total = borrow.position.p2p + borrow.position.pool;
     }
 
-    function _testBorrow(MarketSideTest memory borrow) internal {
+    function _testBorrow(MarketSideTest memory borrow) internal virtual {
         assertEq(
             ERC20(borrow.market.underlying).balanceOf(address(user)),
             borrow.amount,
@@ -276,7 +279,7 @@ contract TestLifecycle is TestSetup {
             );
     }
 
-    function _repay(MarketSideTest memory borrow) internal {
+    function _repay(MarketSideTest memory borrow) internal virtual {
         (borrow.position.p2p, borrow.position.pool, borrow.position.total) = lens
         .getCurrentBorrowBalanceInOf(borrow.market.poolToken, address(user));
 
@@ -297,7 +300,7 @@ contract TestLifecycle is TestSetup {
         if (totalBorrow > 0) user.repay(borrow.market.poolToken, address(user), 1);
     }
 
-    function _testRepay(MarketSideTest memory borrow) internal {
+    function _testRepay(MarketSideTest memory borrow) internal virtual {
         assertApproxEqAbs(
             ERC20(borrow.market.underlying).balanceOf(address(user)),
             0,
@@ -325,14 +328,14 @@ contract TestLifecycle is TestSetup {
         );
     }
 
-    function _withdraw(MarketSideTest memory supply) internal {
+    function _withdraw(MarketSideTest memory supply) internal virtual {
         (supply.position.p2p, supply.position.pool, supply.position.total) = lens
         .getCurrentSupplyBalanceInOf(supply.market.poolToken, address(user));
 
         user.withdraw(supply.market.poolToken, type(uint256).max);
     }
 
-    function _testWithdraw(MarketSideTest memory supply) internal {
+    function _testWithdraw(MarketSideTest memory supply) internal virtual {
         assertApproxEqAbs(
             ERC20(supply.market.underlying).balanceOf(address(user)),
             supply.position.total,
