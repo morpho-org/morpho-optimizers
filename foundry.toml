@@ -11,11 +11,11 @@ sizes = true
 [profile.default.fuzz]
 runs = 1024
 
-[profile.common]
-test = "test-foundry/common"
-
 [profile.production.fuzz]
 runs = 256
+
+[profile.common]
+test = "test-foundry/common"
 
 [profile.compound]
 fork_block_number = 15_581_371

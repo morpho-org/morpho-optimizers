@@ -181,7 +181,7 @@ contract TestSetup is Config, Test {
         }
     }
 
-    function _boundBorrowedAmount(
+    function _boundBorrowAmount(
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price

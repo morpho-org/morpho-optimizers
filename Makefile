@@ -49,14 +49,14 @@ script-%:
 	@echo Running script $* of Morpho-${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
-build:
+contracts:
 	FOUNDRY_TEST=/dev/null forge build --sizes --force
 
 ci:
 	forge test -vvv
 
 ci-upgrade:
-	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make ci
+	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_FUZZ_RUNS=64 FOUNDRY_PROFILE=production make ci
 
 test:
 	@echo Running Morpho-${PROTOCOL}-${NETWORK} tests under \"${FOUNDRY_TEST}\"\
@@ -118,4 +118,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry coverage
+.PHONY: test config test-common foundry coverage contracts
