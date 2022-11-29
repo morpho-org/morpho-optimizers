@@ -251,55 +251,52 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         SupplyVars memory vars;
         vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.remainingToSupply = _amount;
-
-        /// Peer-to-peer supply ///
-
-        // Match the peer-to-peer borrow delta.
-        if (delta.p2pBorrowDelta > 0 && !p2pDisabled[_poolToken]) {
-            uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
-            if (deltaInUnderlying > vars.remainingToSupply) {
-                vars.toRepay += vars.remainingToSupply;
-                delta.p2pBorrowDelta -= vars.remainingToSupply.div(vars.poolBorrowIndex);
-                vars.remainingToSupply = 0;
-            } else {
-                vars.toRepay += deltaInUnderlying;
-                delta.p2pBorrowDelta = 0;
-                vars.remainingToSupply -= deltaInUnderlying;
-            }
-            emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
-        }
-
-        // Promote pool borrowers.
-        if (
-            vars.remainingToSupply > 0 &&
-            !p2pDisabled[_poolToken] &&
-            borrowersOnPool[_poolToken].getHead() != address(0)
-        ) {
-            (uint256 matched, ) = _matchBorrowers(
-                _poolToken,
-                vars.remainingToSupply,
-                _maxGasForMatching
-            ); // In underlying.
-
-            if (matched > 0) {
-                vars.toRepay += matched;
-                vars.remainingToSupply -= matched;
-                delta.p2pBorrowAmount += matched.div(p2pBorrowIndex[_poolToken]);
-            }
-        }
-
         Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
             _onBehalf
         ];
 
-        if (vars.toRepay > 0) {
-            uint256 toAddInP2P = vars.toRepay.div(p2pSupplyIndex[_poolToken]);
+        /// Peer-to-peer supply ///
 
-            delta.p2pSupplyAmount += toAddInP2P;
-            supplierSupplyBalance.inP2P += toAddInP2P;
-            _repayToPool(_poolToken, underlyingToken, vars.toRepay); // Reverts on error.
+        if (!p2pDisabled[_poolToken]) {
+            // Match the peer-to-peer borrow delta.
+            if (delta.p2pBorrowDelta > 0) {
+                uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
+                if (deltaInUnderlying > vars.remainingToSupply) {
+                    vars.toRepay += vars.remainingToSupply;
+                    delta.p2pBorrowDelta -= vars.remainingToSupply.div(vars.poolBorrowIndex);
+                    vars.remainingToSupply = 0;
+                } else {
+                    vars.toRepay += deltaInUnderlying;
+                    delta.p2pBorrowDelta = 0;
+                    vars.remainingToSupply -= deltaInUnderlying;
+                }
+                emit P2PBorrowDeltaUpdated(_poolToken, delta.p2pBorrowDelta);
+            }
 
-            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            // Promote pool borrowers.
+            if (vars.remainingToSupply > 0 && borrowersOnPool[_poolToken].getHead() != address(0)) {
+                (uint256 matched, ) = _matchBorrowers(
+                    _poolToken,
+                    vars.remainingToSupply,
+                    _maxGasForMatching
+                ); // In underlying.
+
+                if (matched > 0) {
+                    vars.toRepay += matched;
+                    vars.remainingToSupply -= matched;
+                    delta.p2pBorrowAmount += matched.div(p2pBorrowIndex[_poolToken]);
+                }
+            }
+
+            if (vars.toRepay > 0) {
+                uint256 toAddInP2P = vars.toRepay.div(p2pSupplyIndex[_poolToken]);
+
+                delta.p2pSupplyAmount += toAddInP2P;
+                supplierSupplyBalance.inP2P += toAddInP2P;
+                _repayToPool(_poolToken, underlyingToken, vars.toRepay); // Reverts on error.
+
+                emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+            }
         }
 
         /// Pool supply ///
@@ -347,57 +344,54 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolToken];
         uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
-
-        /// Peer-to-peer borrow ///
-
-        // Match the peer-to-peer supply delta.
-        if (delta.p2pSupplyDelta > 0 && !p2pDisabled[_poolToken]) {
-            uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
-            if (deltaInUnderlying > remainingToBorrow) {
-                toWithdraw += remainingToBorrow;
-                delta.p2pSupplyDelta -= remainingToBorrow.div(poolSupplyIndex);
-                remainingToBorrow = 0;
-            } else {
-                toWithdraw += deltaInUnderlying;
-                delta.p2pSupplyDelta = 0;
-                remainingToBorrow -= deltaInUnderlying;
-            }
-
-            emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
-        }
-
-        // Promote pool suppliers.
-        if (
-            remainingToBorrow > 0 &&
-            !p2pDisabled[_poolToken] &&
-            suppliersOnPool[_poolToken].getHead() != address(0)
-        ) {
-            (uint256 matched, ) = _matchSuppliers(
-                _poolToken,
-                remainingToBorrow,
-                _maxGasForMatching
-            ); // In underlying.
-
-            if (matched > 0) {
-                toWithdraw += matched;
-                remainingToBorrow -= matched;
-                deltas[_poolToken].p2pSupplyAmount += matched.div(p2pSupplyIndex[_poolToken]);
-            }
-        }
-
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
             msg.sender
         ];
 
-        if (toWithdraw > 0) {
-            uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
+        /// Peer-to-peer borrow ///
 
-            deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
-            borrowerBorrowBalance.inP2P += toAddInP2P;
-            emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+        if (!p2pDisabled[_poolToken]) {
+            // Match the peer-to-peer supply delta.
+            if (delta.p2pSupplyDelta > 0) {
+                uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
+                if (deltaInUnderlying > remainingToBorrow) {
+                    toWithdraw += remainingToBorrow;
+                    delta.p2pSupplyDelta -= remainingToBorrow.div(poolSupplyIndex);
+                    remainingToBorrow = 0;
+                } else {
+                    toWithdraw += deltaInUnderlying;
+                    delta.p2pSupplyDelta = 0;
+                    remainingToBorrow -= deltaInUnderlying;
+                }
 
-            // If this value is equal to 0 the withdraw will revert on Compound.
-            if (toWithdraw.div(poolSupplyIndex) > 0) _withdrawFromPool(_poolToken, toWithdraw); // Reverts on error.
+                emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
+            }
+
+            // Promote pool suppliers.
+            if (remainingToBorrow > 0 && suppliersOnPool[_poolToken].getHead() != address(0)) {
+                (uint256 matched, ) = _matchSuppliers(
+                    _poolToken,
+                    remainingToBorrow,
+                    _maxGasForMatching
+                ); // In underlying.
+
+                if (matched > 0) {
+                    toWithdraw += matched;
+                    remainingToBorrow -= matched;
+                    deltas[_poolToken].p2pSupplyAmount += matched.div(p2pSupplyIndex[_poolToken]);
+                }
+            }
+
+            if (toWithdraw > 0) {
+                uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
+
+                deltas[_poolToken].p2pBorrowAmount += toAddInP2P;
+                borrowerBorrowBalance.inP2P += toAddInP2P;
+                emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+
+                // If this value is equal to 0 the withdraw will revert on Compound.
+                if (toWithdraw.div(poolSupplyIndex) > 0) _withdrawFromPool(_poolToken, toWithdraw); // Reverts on error.
+            }
         }
 
         /// Pool borrow ///
