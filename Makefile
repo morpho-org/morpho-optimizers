@@ -49,7 +49,7 @@ script-%:
 	@echo Running script $* of Morpho-${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
-build:
+contracts:
 	FOUNDRY_TEST=/dev/null forge build --sizes --force
 
 ci:
@@ -118,4 +118,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry coverage
+.PHONY: test config test-common foundry coverage contracts
