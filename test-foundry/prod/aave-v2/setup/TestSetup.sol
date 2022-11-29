@@ -206,7 +206,20 @@ contract TestSetup is Config, Test {
         }
     }
 
-    function _boundBorrowedAmount(
+    function _boundSupplyAmount(
+        TestMarket memory _market,
+        uint96 _amount,
+        uint256 _price
+    ) internal view returns (uint256) {
+        return
+            bound(
+                _amount,
+                (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
+                Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / _price, type(uint96).max)
+            );
+    }
+
+    function _boundBorrowAmount(
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
