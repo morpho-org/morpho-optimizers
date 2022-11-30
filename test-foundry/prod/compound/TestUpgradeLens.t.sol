@@ -93,7 +93,7 @@ contract TestUpgradeLens is TestSetup {
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].p2pSupplyIndex,
                 p2pSupplyIndex,
-                3e8,
+                1,
                 string.concat(market.symbol, " p2p supply index")
             );
             assertApproxEqAbs(
@@ -105,13 +105,13 @@ contract TestUpgradeLens is TestSetup {
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].poolSupplyIndex,
                 poolSupplyIndex,
-                3e8,
+                1,
                 string.concat(market.symbol, " pool supply index")
             );
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].poolBorrowIndex,
                 poolBorrowIndex,
-                3e8,
+                1,
                 string.concat(market.symbol, " pool borrow index")
             );
         }
