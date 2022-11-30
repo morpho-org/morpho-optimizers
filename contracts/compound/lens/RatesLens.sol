@@ -200,7 +200,7 @@ abstract contract RatesLens is UsersLens {
         // Do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
         uint256 p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerBlock(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: InterestRatesModel.computeRawP2PRatePerBlock(
+                p2pRate: PercentageMath.weightedAvg(
                     poolSupplyRate,
                     poolBorrowRate,
                     marketParams.p2pIndexCursor
@@ -252,7 +252,7 @@ abstract contract RatesLens is UsersLens {
         // Do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
         uint256 p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerBlock(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: InterestRatesModel.computeRawP2PRatePerBlock(
+                p2pRate: PercentageMath.weightedAvg(
                     poolSupplyRate,
                     poolBorrowRate,
                     marketParams.p2pIndexCursor
