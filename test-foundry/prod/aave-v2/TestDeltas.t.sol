@@ -52,9 +52,11 @@ contract TestDeltas is TestSetup {
 
             uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.rayMul(test.p2pSupplyIndex);
             uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.rayMul(test.p2pBorrowIndex);
+            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.rayMul(test.poolSupplyIndex);
+            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.rayMul(test.poolBorrowIndex);
             if (
-                p2pSupplyUnderlying <= test.p2pSupplyDelta.rayMul(test.poolSupplyIndex) ||
-                p2pBorrowUnderlying <= test.p2pBorrowDelta.rayMul(test.poolBorrowIndex)
+                p2pSupplyUnderlying <= supplyDeltaUnderlyingBefore ||
+                p2pBorrowUnderlying <= borrowDeltaUnderlyingBefore
             ) continue;
 
             test.morphoSupplyBefore = IAToken(test.market.poolToken).balanceOf(address(morpho));
@@ -109,13 +111,13 @@ contract TestDeltas is TestSetup {
             );
 
             assertApproxEqAbs(
-                p2pSupplyUnderlying,
+                p2pSupplyUnderlying - supplyDeltaUnderlyingBefore,
                 IAToken(test.market.poolToken).balanceOf(address(morpho)) - test.morphoSupplyBefore,
                 1,
                 "morpho pool supply"
             );
             assertApproxEqAbs(
-                p2pBorrowUnderlying,
+                p2pBorrowUnderlying - borrowDeltaUnderlyingBefore,
                 IVariableDebtToken(test.market.debtToken).balanceOf(address(morpho)) -
                     test.morphoBorrowBefore,
                 1,
