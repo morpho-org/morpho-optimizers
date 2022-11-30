@@ -22,6 +22,9 @@ contract TestDeltas is TestSetup {
         uint256 p2pSupplyAfter;
         uint256 p2pBorrowAfter;
         //
+        uint256 morphoSupplyBefore;
+        uint256 morphoBorrowBefore;
+        //
         uint256 avgSupplyRatePerBlock;
         uint256 avgBorrowRatePerBlock;
     }
@@ -49,12 +52,21 @@ contract TestDeltas is TestSetup {
                 test.poolBorrowIndex
             ) = lens.getIndexes(test.market.poolToken, true);
 
+            uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.mul(test.p2pSupplyIndex);
+            uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.mul(test.p2pBorrowIndex);
+            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.mul(test.poolSupplyIndex);
+            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.mul(test.poolBorrowIndex);
             if (
-                test.p2pSupplyBefore.mul(test.p2pSupplyIndex) <=
-                test.p2pSupplyDelta.mul(test.poolSupplyIndex) ||
-                test.p2pBorrowBefore.mul(test.p2pBorrowIndex) <=
-                test.p2pBorrowDelta.mul(test.poolBorrowIndex)
+                p2pSupplyUnderlying <= supplyDeltaUnderlyingBefore ||
+                p2pBorrowUnderlying <= borrowDeltaUnderlyingBefore
             ) continue;
+
+            test.morphoSupplyBefore = ICToken(test.market.poolToken).balanceOfUnderlying(
+                address(morpho)
+            );
+            test.morphoBorrowBefore = ICToken(test.market.poolToken).borrowBalanceCurrent(
+                address(morpho)
+            );
 
             vm.prank(morphoDao);
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
@@ -68,13 +80,13 @@ contract TestDeltas is TestSetup {
 
             assertApproxEqAbs(
                 test.p2pSupplyDelta.mul(test.poolSupplyIndex),
-                test.p2pSupplyBefore.mul(test.p2pSupplyIndex),
+                p2pSupplyUnderlying,
                 10**(test.market.decimals / 2 + 1),
                 "p2p supply delta"
             );
             assertApproxEqAbs(
                 test.p2pBorrowDelta.mul(test.poolBorrowIndex),
-                test.p2pBorrowBefore.mul(test.p2pBorrowIndex),
+                p2pBorrowUnderlying,
                 10,
                 "p2p borrow delta"
             );
@@ -99,6 +111,21 @@ contract TestDeltas is TestSetup {
                 ICToken(test.market.poolToken).borrowRatePerBlock(),
                 1,
                 "avg borrow rate per year"
+            );
+
+            assertApproxEqAbs(
+                p2pSupplyUnderlying - supplyDeltaUnderlyingBefore,
+                ICToken(test.market.poolToken).balanceOfUnderlying(address(morpho)) -
+                    test.morphoSupplyBefore,
+                10**(test.market.decimals / 2 + 1),
+                "morpho pool supply"
+            );
+            assertApproxEqAbs(
+                p2pBorrowUnderlying - borrowDeltaUnderlyingBefore,
+                ICToken(test.market.poolToken).borrowBalanceCurrent(address(morpho)) -
+                    test.morphoBorrowBefore,
+                10,
+                "morpho pool borrow"
             );
         }
     }
