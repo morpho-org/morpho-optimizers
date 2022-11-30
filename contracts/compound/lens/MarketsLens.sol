@@ -99,10 +99,10 @@ abstract contract MarketsLens is RatesLens {
         lastUpdateBlockNumber = lastPoolIndexes.lastUpdateBlockNumber;
     }
 
-    /// @notice Returns market's configuration.
+    /// @notice Returns the given market's configuration.
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
-    /// @return p2pDisabled Whether user are put in peer-to-peer or not.
+    /// @return p2pDisabled Whether the peer-to-peer market is enabled or not.
     /// @return isPaused Deprecated.
     /// @return isPartiallyPaused Deprecated.
     /// @return reserveFactor The reserve factor applied to this market.
@@ -137,7 +137,7 @@ abstract contract MarketsLens is RatesLens {
         (, collateralFactor, ) = comptroller.markets(_poolToken);
     }
 
-    /// @notice Returns market's pause statuses.
+    /// @notice Returns the given market's pause statuses.
     /// @param _poolToken The address of the market of which to get pause statuses.
     /// @return The market status struct.
     function getMarketPauseStatus(address _poolToken)

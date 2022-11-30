@@ -300,7 +300,8 @@ abstract contract UsersLens is IndexesLens {
         }
     }
 
-    /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
+    /// @dev Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
+    ///      optionally using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine data for.
     /// @param _poolToken The address of the market.
     /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.

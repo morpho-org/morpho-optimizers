@@ -195,7 +195,8 @@ abstract contract UsersLens is IndexesLens {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
 
-    /// @dev Returns the debt value, max debt value of a given user.
+    /// @dev Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
+    ///      using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine liquidity for.
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).

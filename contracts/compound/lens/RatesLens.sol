@@ -280,7 +280,7 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// @notice Computes and returns peer-to-peer and pool rates for a specific market.
-    /// @dev Note: prefer using getAverageSupplyRatePerBlock & getAverageBorrowRatePerBlock to get the experienced supply/borrow rate instead of this.
+    /// @dev Note: prefer using getAverageSupplyRatePerBlock & getAverageBorrowRatePerBlock to get the actual experienced supply/borrow rate.
     /// @param _poolToken The market address.
     /// @return p2pSupplyRate The market's peer-to-peer supply rate per block (in wad).
     /// @return p2pBorrowRate The market's peer-to-peer borrow rate per block (in wad).
@@ -379,7 +379,7 @@ abstract contract RatesLens is UsersLens {
 
     /// INTERNAL ///
 
-    /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
+    /// @notice Computes and returns the total distribution of supply for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @param _p2pSupplyIndex The given market's peer-to-peer supply index.
     /// @param _poolSupplyIndex The underlying pool's supply index.
@@ -398,7 +398,7 @@ abstract contract RatesLens is UsersLens {
         poolSupplyAmount = ICToken(_poolToken).balanceOf(address(morpho)).mul(_poolSupplyIndex);
     }
 
-    /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
+    /// @notice Computes and returns the total distribution of borrows for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @param _p2pBorrowIndex The given market's peer-to-peer borrow index.
     /// @param _poolBorrowIndex The underlying pool's borrow index.

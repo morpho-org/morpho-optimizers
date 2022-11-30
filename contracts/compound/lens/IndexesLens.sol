@@ -36,7 +36,7 @@ abstract contract IndexesLens is LensStorage {
         (currentP2PBorrowIndex, , ) = _getCurrentP2PBorrowIndex(_poolToken);
     }
 
-    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @notice Returns the optionally updated pool & peer-to-peer indexes.
     /// @param _poolToken The address of the market.
     /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return newP2PSupplyIndex The updated peer-to-peer supply index.

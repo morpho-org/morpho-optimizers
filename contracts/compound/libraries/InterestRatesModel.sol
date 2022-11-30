@@ -15,8 +15,8 @@ library InterestRatesModel {
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // The pool borrow index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
+        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
         uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
     }
@@ -40,8 +40,8 @@ library InterestRatesModel {
     }
 
     struct P2PRateComputeParams {
-        uint256 poolRate; // The pool's index growth factor (in wad).
-        uint256 p2pRate; // Morpho peer-to-peer's median index growth factor (in wad).
+        uint256 poolRate; // The pool's rate per block (in wad).
+        uint256 p2pRate; // Morpho's peer-to-peer rate per block (in wad).
         uint256 poolIndex; // The pool's last stored index.
         uint256 p2pIndex; // Morpho's last stored peer-to-peer index.
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
@@ -49,13 +49,13 @@ library InterestRatesModel {
         uint16 reserveFactor; // The reserve factor of the given market (in bps).
     }
 
-    /// @notice Computes and returns the new peer-to-peer growth factors.
-    /// @param _newPoolSupplyIndex The pool's last current supply index.
-    /// @param _newPoolBorrowIndex The pool's last current borrow index.
+    /// @notice Computes and returns the new supply/borrow growth factors associated to the given market's pool & peer-to-peer indexes.
+    /// @param _newPoolSupplyIndex The pool's current supply index.
+    /// @param _newPoolBorrowIndex The pool's current borrow index.
     /// @param _lastPoolIndexes The pool's last stored indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
-    /// @return growthFactors_ The indexes growth factor (in wad).
+    /// @return growthFactors_ The market's indexes growth factors (in wad).
     function computeGrowthFactors(
         uint256 _newPoolSupplyIndex,
         uint256 _newPoolBorrowIndex,
