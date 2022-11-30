@@ -61,7 +61,12 @@ abstract contract UsersLens is IndexesLens {
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
+        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
+            _user,
+            address(0),
+            0,
+            0
+        );
         Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
             _user,
             _poolToken,
@@ -101,13 +106,13 @@ abstract contract UsersLens is IndexesLens {
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
     /// @param _user The potential liquidatee.
-    /// @param _poolTokenBorrowed The address of the market to repay.
-    /// @param _poolTokenCollateral The address of the market to seize.
+    /// @param _poolTokenBorrowedAddress The address of the market to repay.
+    /// @param _poolTokenCollateralAddress The address of the market to seize.
     /// @return The maximum repayable amount (in underlying).
     function computeLiquidationRepayAmount(
         address _user,
-        address _poolTokenBorrowed,
-        address _poolTokenCollateral
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress
     ) external view returns (uint256) {
         if (!isLiquidatable(_user)) return 0;
 
@@ -116,9 +121,9 @@ abstract contract UsersLens is IndexesLens {
             ,
             ,
             uint256 totalCollateralBalance
-        ) = _getCurrentSupplyBalanceInOf(_poolTokenCollateral, _user);
+        ) = _getCurrentSupplyBalanceInOf(_poolTokenCollateralAddress, _user);
         (address borrowedToken, , , uint256 totalBorrowBalance) = _getCurrentBorrowBalanceInOf(
-            _poolTokenBorrowed,
+            _poolTokenBorrowedAddress,
             _user
         );
 
@@ -139,6 +144,8 @@ abstract contract UsersLens is IndexesLens {
             );
     }
 
+    /// PUBLIC ///
+
     /// @notice Returns the balance in underlying of a given user in a given market.
     /// @param _poolToken The address of the market.
     /// @param _user The user to determine balances of.
@@ -146,7 +153,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
-        external
+        public
         view
         returns (
             uint256 balanceInP2P,
@@ -167,7 +174,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
-        external
+        public
         view
         returns (
             uint256 balanceInP2P,
@@ -184,17 +191,12 @@ abstract contract UsersLens is IndexesLens {
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @return The liquidity data of the user.
-    function getUserBalanceStates(address _user)
-        external
-        view
-        returns (Types.LiquidityData memory)
-    {
+    function getUserBalanceStates(address _user) public view returns (Types.LiquidityData memory) {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
 
-    /// PUBLIC ///
-
-    /// @dev Returns the debt value, max debt value of a given user.
+    /// @dev Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
+    ///      using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine liquidity for.
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).

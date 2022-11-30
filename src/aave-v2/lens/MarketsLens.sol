@@ -71,7 +71,7 @@ abstract contract MarketsLens is RatesLens {
     /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in ray).
     /// @return poolSupplyIndex The pool supply index of the given market (in ray).
     /// @return poolBorrowIndex The pool borrow index of the given market (in ray).
-    /// @return lastUpdateTimestamp The block number at which pool indexes were last updated.
+    /// @return lastUpdateTimestamp The timestamp of the block at which pool indexes were last updated.
     /// @return p2pSupplyDelta The total supply delta (in underlying).
     /// @return p2pBorrowDelta The total borrow delta (in underlying).
     function getAdvancedMarketData(address _poolToken)
@@ -98,10 +98,11 @@ abstract contract MarketsLens is RatesLens {
         lastUpdateTimestamp = morpho.poolIndexes(_poolToken).lastUpdateTimestamp;
     }
 
-    /// @notice Returns market's configuration.
+    /// @notice Returns the given market's configuration.
+    /// @param _poolToken The address of the market of which to get the configuration.
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
-    /// @return isP2PDisabled Whether user are put in peer-to-peer or not.
+    /// @return isP2PDisabled Whether the peer-to-peer market is enabled or not.
     /// @return isPaused Deprecated.
     /// @return isPartiallyPaused Deprecated.
     /// @return reserveFactor The reserve factor applied to this market.
@@ -142,7 +143,7 @@ abstract contract MarketsLens is RatesLens {
         .getParamsMemory();
     }
 
-    /// @notice Returns market's pause statuses.
+    /// @notice Returns the given market's pause statuses.
     /// @param _poolToken The address of the market of which to get pause statuses.
     /// @return The market status struct.
     function getMarketPauseStatus(address _poolToken)

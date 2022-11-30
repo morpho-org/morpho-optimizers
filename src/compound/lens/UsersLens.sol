@@ -82,7 +82,10 @@ abstract contract UsersLens is IndexesLens {
         );
 
         if (assetData.collateralFactor != 0) {
-            withdrawable = Math.min(withdrawable, borrowable.div(assetData.collateralFactor));
+            withdrawable = CompoundMath.min(
+                withdrawable,
+                borrowable.div(assetData.collateralFactor)
+            );
         }
     }
 
@@ -146,51 +149,6 @@ abstract contract UsersLens is IndexesLens {
         if (debtValue == 0) return type(uint256).max;
 
         return maxDebtValue.div(debtValue);
-    }
-
-    /// @dev Returns the debt value, max debt value of a given user.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolToken The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum debt value possible of the user.
-    function getUserHypotheticalBalanceStates(
-        address _user,
-        address _poolToken,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) external view returns (uint256 debtValue, uint256 maxDebtValue) {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
-
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                true,
-                oracle
-            );
-
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
-            unchecked {
-                ++i;
-            }
-
-            if (_poolToken == poolTokenEntered) {
-                if (_borrowedAmount > 0)
-                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
-
-                if (_withdrawnAmount > 0)
-                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                        assetData.collateralFactor
-                    );
-            }
-        }
     }
 
     /// PUBLIC ///
@@ -297,7 +255,53 @@ abstract contract UsersLens is IndexesLens {
         totalBalance = balanceOnPool + balanceInP2P;
     }
 
-    /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
+    /// @dev Returns the debt value, max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum debt value possible of the user.
+    function getUserHypotheticalBalanceStates(
+        address _user,
+        address _poolToken,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) public view returns (uint256 debtValue, uint256 maxDebtValue) {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
+            address poolTokenEntered = enteredMarkets[i];
+
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                true,
+                oracle
+            );
+
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+            unchecked {
+                ++i;
+            }
+
+            if (_poolToken == poolTokenEntered) {
+                if (_borrowedAmount > 0)
+                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
+
+                if (_withdrawnAmount > 0)
+                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
+                        assetData.collateralFactor
+                    );
+            }
+        }
+    }
+
+    /// @dev Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
+    ///      optionally using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine data for.
     /// @param _poolToken The address of the market.
     /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.

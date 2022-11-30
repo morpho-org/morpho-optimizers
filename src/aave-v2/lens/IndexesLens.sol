@@ -60,7 +60,7 @@ abstract contract IndexesLens is LensStorage {
 
     /// INTERNAL ///
 
-    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @notice Returns the updated pool & peer-to-peer indexes.
     /// @param _poolToken The address of the market.
     /// @return underlyingToken The address of the underlying ERC20 token of the given market.
     /// @return p2pSupplyIndex The updated peer-to-peer supply index.
