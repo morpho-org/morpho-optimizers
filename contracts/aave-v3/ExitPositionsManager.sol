@@ -171,7 +171,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
 
-        _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _unsafeWithdrawLogic(_poolToken, _amount, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -340,6 +340,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     ) internal {
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
         WithdrawVars memory vars;
+        uint256 accumulatedWithdraw;
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
@@ -359,9 +360,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplierSupplyBalance.onPool -= Math.min(
-                vars.onPoolSupply,
-                vars.toWithdraw.rayDiv(vars.poolSupplyIndex)
+            supplierSupplyBalance.onPool = supplierSupplyBalance.onPool.zeroFloorSub(
+                Math.min(vars.onPoolSupply, vars.toWithdraw.rayDiv(vars.poolSupplyIndex))
             );
 
             if (vars.remainingToWithdraw == 0) {
@@ -371,13 +371,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     _setSupplying(_supplier, borrowMask[_poolToken], false);
 
                 _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
-                underlyingToken.safeTransfer(_receiver, _amount);
+                underlyingToken.safeTransfer(_receiver, vars.toWithdraw);
 
                 emit Withdrawn(
                     _supplier,
                     _receiver,
                     _poolToken,
-                    _amount,
+                    vars.toWithdraw,
                     supplierSupplyBalance.onPool,
                     supplierSupplyBalance.inP2P
                 );
@@ -389,10 +389,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.Delta storage delta = deltas[_poolToken];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-        supplierSupplyBalance.inP2P -= Math.min(
-            supplierSupplyBalance.inP2P,
-            vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
-        ); // In peer-to-peer supply unit.
+        if (supplierSupplyBalance.inP2P < vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)) {
+            vars.remainingToWithdraw = supplierSupplyBalance.inP2P.rayMul(vars.p2pSupplyIndex);
+            supplierSupplyBalance.inP2P = 0;
+        } else {
+            supplierSupplyBalance.inP2P = supplierSupplyBalance.inP2P.zeroFloorSub(
+                vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
+            );
+        }
         _updateSupplierInDS(_poolToken, _supplier);
 
         // Reduce the peer-to-peer supply delta.
@@ -433,7 +437,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             vars.toWithdraw += matched;
         }
 
-        if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
+        if (vars.toWithdraw > 0) {
+            _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
+            accumulatedWithdraw += vars.toWithdraw;
+        }
 
         /// Breaking withdraw ///
 
@@ -464,17 +471,18 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
+            accumulatedWithdraw += vars.remainingToWithdraw;
         }
 
         if (supplierSupplyBalance.inP2P == 0 && supplierSupplyBalance.onPool == 0)
             _setSupplying(_supplier, borrowMask[_poolToken], false);
-        underlyingToken.safeTransfer(_receiver, _amount);
+        underlyingToken.safeTransfer(_receiver, accumulatedWithdraw);
 
         emit Withdrawn(
             _supplier,
             _receiver,
             _poolToken,
-            _amount,
+            accumulatedWithdraw,
             supplierSupplyBalance.onPool,
             supplierSupplyBalance.inP2P
         );

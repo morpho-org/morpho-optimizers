@@ -169,7 +169,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         if (!_withdrawAllowed(_supplier, _poolToken, toWithdraw)) revert UnauthorisedWithdraw();
 
-        _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _unsafeWithdrawLogic(_poolToken, _amount, _supplier, _receiver, _maxGasForMatching);
     }
 
     /// @dev Implements repay logic with security checks.
@@ -391,10 +391,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.Delta storage delta = deltas[_poolToken];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-        supplierSupplyBalance.inP2P -= Math.min(
-            supplierSupplyBalance.inP2P,
-            vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
-        ); // In peer-to-peer supply unit.
+        if (supplierSupplyBalance.inP2P < vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)) {
+            vars.remainingToWithdraw = supplierSupplyBalance.inP2P.rayMul(vars.p2pSupplyIndex);
+            supplierSupplyBalance.inP2P = 0;
+        } else {
+            supplierSupplyBalance.inP2P -= vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex);
+        }
         _updateSupplierInDS(_poolToken, _supplier);
 
         // Reduce the peer-to-peer supply delta.
