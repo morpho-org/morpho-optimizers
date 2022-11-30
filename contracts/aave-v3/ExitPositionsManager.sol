@@ -344,9 +344,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
 
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
-            _supplier
-        ];
+        Types.Balance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][_supplier];
 
         /// Pool withdraw ///
 
@@ -500,9 +498,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = poolIndexes[_poolToken].poolBorrowIndex;
 
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
-            _onBehalf
-        ];
+        Types.Balance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_onBehalf];
 
         /// Pool repay ///
 

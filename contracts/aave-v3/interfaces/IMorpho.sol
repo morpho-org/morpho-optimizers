@@ -28,8 +28,8 @@ interface IMorpho {
     function isClaimRewardsPaused() external view returns (bool);
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function maxSortedUsers() external view returns (uint256);
-    function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
-    function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
+    function supplyBalanceInOf(address, address) external view returns (Types.Balance memory);
+    function borrowBalanceInOf(address, address) external view returns (Types.Balance memory);
     function deltas(address) external view returns (Types.Delta memory);
     function market(address) external view returns (Types.Market memory);
     function p2pSupplyIndex(address) external view returns (uint256);

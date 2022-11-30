@@ -82,7 +82,7 @@ abstract contract MatchingEngine is MorphoUtils {
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            Types.SupplyBalance storage firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][
+            Types.Balance storage firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][
                 firstPoolSupplier
             ];
 
@@ -143,7 +143,7 @@ abstract contract MatchingEngine is MorphoUtils {
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            Types.SupplyBalance storage firstP2PSupplierBalance = supplyBalanceInOf[_poolToken][
+            Types.Balance storage firstP2PSupplierBalance = supplyBalanceInOf[_poolToken][
                 firstP2PSupplier
             ];
 
@@ -203,7 +203,7 @@ abstract contract MatchingEngine is MorphoUtils {
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            Types.BorrowBalance storage firstPoolBorrowerBalance = borrowBalanceInOf[_poolToken][
+            Types.Balance storage firstPoolBorrowerBalance = borrowBalanceInOf[_poolToken][
                 firstPoolBorrower
             ];
 
@@ -264,7 +264,7 @@ abstract contract MatchingEngine is MorphoUtils {
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            Types.BorrowBalance storage firstP2PBorrowerBalance = borrowBalanceInOf[_poolToken][
+            Types.Balance storage firstP2PBorrowerBalance = borrowBalanceInOf[_poolToken][
                 firstP2PBorrower
             ];
 
@@ -295,59 +295,58 @@ abstract contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Updates the given `_user`'s position in the supplier data structures.
-    /// @param _poolToken The address of the market on which to update the suppliers data structure.
-    /// @param _user The address of the user.
-    function _updateSupplierInDS(address _poolToken, address _user) internal {
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][_user];
-        uint256 onPool = supplierSupplyBalance.onPool;
-        uint256 inP2P = supplierSupplyBalance.inP2P;
-        HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
-        HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
+    function _updateInDS(
+        address _token,
+        address _user,
+        Types.Balance storage _balance,
+        HeapOrdering.HeapArray storage _marketOnPool,
+        HeapOrdering.HeapArray storage _marketInP2P
+    ) internal {
+        uint256 onPool = _balance.onPool;
+        uint256 inP2P = _balance.inP2P;
+        uint256 formerValueOnPool = _marketOnPool.getValueOf(_user);
+        uint256 formerValueInP2P = _marketInP2P.getValueOf(_user);
 
-        uint256 formerValueOnPool = marketSuppliersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketSuppliersInP2P.getValueOf(_user);
-
-        marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
+        _marketOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
+        _marketInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
             rewardsManager.updateUserAssetAndAccruedRewards(
                 rewardsController,
                 _user,
-                _poolToken,
+                _token,
                 formerValueOnPool,
-                IScaledBalanceToken(_poolToken).scaledTotalSupply()
+                IScaledBalanceToken(_token).scaledTotalSupply()
             );
+    }
+
+    /// @notice Updates the given `_user`'s position in the supplier data structures.
+    /// @param _poolToken The address of the market on which to update the suppliers data structure.
+    /// @param _user The address of the user.
+    function _updateSupplierInDS(address _poolToken, address _user) internal {
+        _updateInDS(
+            _poolToken,
+            _user,
+            supplyBalanceInOf[_poolToken][_user],
+            suppliersOnPool[_poolToken],
+            suppliersInP2P[_poolToken]
+        );
     }
 
     /// @notice Updates the given `_user`'s position in the borrower data structures.
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_user];
-        uint256 onPool = borrowerBorrowBalance.onPool;
-        uint256 inP2P = borrowerBorrowBalance.inP2P;
-        HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
-        HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
+        address variableDebtTokenAddress = pool
+        .getReserveData(market[_poolToken].underlyingToken)
+        .variableDebtTokenAddress;
 
-        uint256 formerValueOnPool = marketBorrowersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketBorrowersInP2P.getValueOf(_user);
-
-        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
-
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            address variableDebtTokenAddress = pool
-            .getReserveData(market[_poolToken].underlyingToken)
-            .variableDebtTokenAddress;
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                rewardsController,
-                _user,
-                variableDebtTokenAddress,
-                formerValueOnPool,
-                IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
-            );
-        }
+        _updateInDS(
+            variableDebtTokenAddress,
+            _user,
+            borrowBalanceInOf[_poolToken][_user],
+            borrowersOnPool[_poolToken],
+            borrowersInP2P[_poolToken]
+        );
     }
 }

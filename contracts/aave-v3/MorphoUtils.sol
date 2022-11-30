@@ -191,7 +191,7 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
-        Types.SupplyBalance memory userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+        Types.Balance memory userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
         return
             userSupplyBalance.inP2P.rayMul(p2pSupplyIndex[_poolToken]) +
             userSupplyBalance.onPool.rayMul(poolIndexes[_poolToken].poolSupplyIndex);
@@ -207,7 +207,7 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
-        Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+        Types.Balance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
         return
             userBorrowBalance.inP2P.rayMul(p2pBorrowIndex[_poolToken]) +
             userBorrowBalance.onPool.rayMul(poolIndexes[_poolToken].poolBorrowIndex);
