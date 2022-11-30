@@ -208,6 +208,12 @@ interface IComptroller {
 
     function checkMembership(address, address) external view returns (bool);
 
+    function mintGuardianPaused(address) external view returns (bool);
+
+    function borrowGuardianPaused(address) external view returns (bool);
+
+    function seizeGuardianPaused(address) external view returns (bool);
+
     function claimComp(address holder) external;
 
     function claimComp(address holder, address[] memory cTokens) external;
