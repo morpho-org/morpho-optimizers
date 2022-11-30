@@ -1,121 +1,106 @@
 -include .env.local
 .EXPORT_ALL_VARIABLES:
+MAKEFLAGS += --no-print-directory
 
-SMODE?=network
-PROTOCOL?=compound
-NETWORK?=eth-mainnet
+PROTOCOL ?= compound
+NETWORK ?= eth-mainnet
 
-FOUNDRY_SRC=contracts/${PROTOCOL}/
-FOUNDRY_TEST=test-foundry/${PROTOCOL}/
-FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
+FOUNDRY_SRC ?= contracts/${PROTOCOL}/
 
-FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
+FOUNDRY_PROFILE ?= ${PROTOCOL}
+FOUNDRY_REMAPPINGS ?= @config/=config/${NETWORK}/${PROTOCOL}/
+FOUNDRY_PRIVATE_KEY ?= ${DEPLOYER_PRIVATE_KEY}
 
-ifdef FOUNDRY_ETH_RPC_URL
-  FOUNDRY_TEST=test-foundry/prod/${PROTOCOL}/
-  FOUNDRY_FUZZ_RUNS=256
-  FOUNDRY_FUZZ_MAX_LOCAL_REJECTS=16384
-  FOUNDRY_FUZZ_MAX_GLOBAL_REJECTS=1048576
+ifeq (${FOUNDRY_PROFILE}, production)
+  FOUNDRY_TEST = test-foundry/prod/${PROTOCOL}/
 else
-  FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-
-  ifeq (${NETWORK}, eth-mainnet)
-    FOUNDRY_CHAIN_ID=1
-    FOUNDRY_FORK_BLOCK_NUMBER?=15581371 # Block number when the Aave's V2 IRM was updated for the stETH.
-  endif
-
-  ifeq (${NETWORK}, eth-ropsten)
-    FOUNDRY_CHAIN_ID=3
-  endif
-
-  ifeq (${NETWORK}, eth-goerli)
-    FOUNDRY_CHAIN_ID=5
-  endif
-
-  ifeq (${NETWORK}, polygon-mainnet)
-    ifeq (${PROTOCOL}, aave-v3)
-      FOUNDRY_FORK_BLOCK_NUMBER?=29116728
-      FOUNDRY_CONTRACT_PATTERN_INVERSE=(Fees|IncentivesVault|Rewards)
-    endif
-
-    FOUNDRY_CHAIN_ID=137
-    FOUNDRY_FORK_BLOCK_NUMBER?=22116728
-  endif
-
-  ifeq (${NETWORK}, avalanche-mainnet)
-    ifeq (${PROTOCOL}, aave-v3)
-      FOUNDRY_FORK_BLOCK_NUMBER?=15675271
-    endif
-
-    FOUNDRY_CHAIN_ID=43114
-    FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-    FOUNDRY_FORK_BLOCK_NUMBER?=12675271
-  endif
+  FOUNDRY_TEST ?= test-foundry/${PROTOCOL}/
 endif
 
-ifeq (${SMODE}, local)
-  FOUNDRY_ETH_RPC_URL=http://localhost:8545
+ifneq (${NETWORK}, avalanche-mainnet)
+  FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 endif
 
 
 install:
-	@yarn
-	@foundryup
-	@git submodule update --init --recursive
+	yarn
+	foundryup
+	git submodule update --init --recursive
 
-	@chmod +x ./scripts/**/*.sh
+	chmod +x ./scripts/**/*.sh
 
 deploy:
-	@echo Deploying Morpho-${PROTOCOL} on ${NETWORK}
+	@echo Deploying Morpho-${PROTOCOL}-${NETWORK}
 	./scripts/${PROTOCOL}/deploy.sh
 
 initialize:
-	@echo Initializing Morpho-${PROTOCOL} on "${NETWORK}"
+	@echo Initializing Morpho-${PROTOCOL}-${NETWORK}
 	./scripts/${PROTOCOL}/initialize.sh
 
 create-market:
-	@echo Creating market on Morpho-${PROTOCOL} on "${NETWORK}"
+	@echo Creating market on Morpho-${PROTOCOL}-${NETWORK}
 	./scripts/${PROTOCOL}/create-market.sh
 
 anvil:
-	@echo Starting fork of "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
+	@echo Starting fork of ${NETWORK}
 	@anvil --fork-url ${FOUNDRY_ETH_RPC_URL} --fork-block-number "${FOUNDRY_FORK_BLOCK_NUMBER}"
 
 script-%:
-	@echo Running script $* of Morpho-${PROTOCOL} on "${NETWORK}" with script mode: ${SMODE}
+	@echo Running script $* of Morpho-${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
+contracts:
+	FOUNDRY_TEST=/dev/null forge build --sizes --force
+
 ci:
-	@forge test -vv
+	forge test -vvv
+
+ci-upgrade:
+	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_FUZZ_RUNS=64 FOUNDRY_PROFILE=production make ci
 
 test:
-	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test -vv | tee trace.ansi
+	@echo Running Morpho-${PROTOCOL}-${NETWORK} tests under \"${FOUNDRY_TEST}\"\
+		with profile \"${FOUNDRY_PROFILE}\", seed \"${FOUNDRY_FUZZ_SEED}\",\
+		match contract patterns \"\(${FOUNDRY_MATCH_CONTRACT}\)!${FOUNDRY_NO_MATCH_CONTRACT}\",\
+		match test patterns \"\(${FOUNDRY_MATCH_TEST}\)!${FOUNDRY_NO_MATCH_TEST}\"
+
+	forge test -vvv | tee trace.ansi
+
+test-prod:
+	@FOUNDRY_NO_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
+
+test-upgrade:
+	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
+
+test-common:
+	@FOUNDRY_TEST=test-foundry/common/ FOUNDRY_PROFILE=common make test
+
+test-upgrade-%:
+	@FOUNDRY_MATCH_TEST=$* make test-upgrade
+
+test-prod-%:
+	@FOUNDRY_MATCH_TEST=$* make test-prod
+
+test-%:
+	@FOUNDRY_MATCH_TEST=$* make test
+
+contract-% c-%:
+	@FOUNDRY_MATCH_CONTRACT=$* make test
 
 coverage:
-	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge coverage --report lcov
-	@lcov --remove lcov.info -o lcov.info "test-foundry/*"
+	@echo Create lcov coverage report for Morpho-${PROTOCOL}-${NETWORK} tests
+	forge coverage --report lcov
+	lcov --remove lcov.info -o lcov.info "test-foundry/*"
 
 lcov-html:
 	@echo Transforming the lcov coverage report into html
-	@genhtml lcov.info -o coverage
+	genhtml lcov.info -o coverage
 
 gas-report:
-	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test --gas-report | tee trace.ansi
+	@echo Create gas report from Morpho-${PROTOCOL}-${NETWORK} tests under \"${FOUNDRY_TEST}\"\
+		with profile \"${FOUNDRY_PROFILE}\", seed \"${FOUNDRY_FUZZ_SEED}\",
 
-test-common:
-	@echo Running all common tests on "${NETWORK}"
-	@FOUNDRY_TEST=test-foundry/common forge test -vvv | tee trace.ansi
-
-contract-% c-%:
-	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvv --match-contract $* | tee trace.ansi
-
-single-% s-%:
-	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvvv --match-test $* | tee trace.ansi
+	forge test --gas-report | tee trace.ansi
 
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
@@ -133,4 +118,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry coverage
+.PHONY: test config test-common foundry coverage contracts

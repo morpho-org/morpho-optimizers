@@ -57,17 +57,13 @@ contract TestSetup is Config, Test {
 
     uint256 snapshotId = type(uint256).max;
 
-    function setUp() public {
+    function setUp() public virtual {
         initContracts();
         setContractsLabels();
         initUsers();
 
         _initMarkets();
-
-        onSetUp();
     }
-
-    function onSetUp() public virtual {}
 
     function initContracts() internal {
         lens = Lens(address(lensProxy));
@@ -210,7 +206,20 @@ contract TestSetup is Config, Test {
         }
     }
 
-    function _boundBorrowedAmount(
+    function _boundSupplyAmount(
+        TestMarket memory _market,
+        uint96 _amount,
+        uint256 _price
+    ) internal view returns (uint256) {
+        return
+            bound(
+                _amount,
+                (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
+                Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / _price, type(uint96).max)
+            );
+    }
+
+    function _boundBorrowAmount(
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
@@ -268,5 +277,28 @@ contract TestSetup is Config, Test {
     function _revert() internal {
         if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
+    }
+
+    /// @dev Upgrades all the protocol contracts.
+    function _upgrade() internal {
+        vm.startPrank(morphoDao);
+        address morphoImplV2 = address(new Morpho());
+        proxyAdmin.upgrade(morphoProxy, morphoImplV2);
+        vm.label(morphoImplV2, "MorphoImplV2");
+
+        address lensImplV2 = address(new Lens(address(morpho)));
+        proxyAdmin.upgrade(lensProxy, lensImplV2);
+        vm.label(lensImplV2, "LensImplV2");
+
+        morpho.setEntryPositionsManager(new EntryPositionsManager());
+        vm.label(address(morpho.entryPositionsManager()), "EntryPositionsManagerV2");
+
+        morpho.setExitPositionsManager(new ExitPositionsManager());
+        vm.label(address(morpho.exitPositionsManager()), "ExitPositionsManagerV2");
+
+        morpho.setInterestRatesManager(new InterestRatesManager());
+        vm.label(address(morpho.interestRatesManager()), "InterestRatesManagerV2");
+
+        vm.stopPrank();
     }
 }

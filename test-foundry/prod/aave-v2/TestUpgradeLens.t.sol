@@ -28,9 +28,7 @@ contract TestUpgradeLens is TestSetup {
             expectedIndexes[marketIndex].poolBorrowIndex = poolBorrowIndex;
         }
 
-        vm.startPrank(address(proxyAdmin));
-        lensProxy.upgradeTo(address(new Lens(address(morpho))));
-        vm.stopPrank();
+        _upgrade();
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
             TestMarket memory market = markets[marketIndex];
@@ -41,24 +39,28 @@ contract TestUpgradeLens is TestSetup {
                 uint256 poolBorrowIndex
             ) = lens.getIndexes(market.poolToken);
 
-            assertEq(
+            assertApproxEqAbs(
                 expectedIndexes[marketIndex].p2pSupplyIndex,
                 p2pSupplyIndex,
+                1,
                 string.concat(market.symbol, " p2p supply index")
             );
-            assertEq(
+            assertApproxEqAbs(
                 expectedIndexes[marketIndex].p2pBorrowIndex,
                 p2pBorrowIndex,
+                1e7,
                 string.concat(market.symbol, " p2p borrow index")
             );
-            assertEq(
+            assertApproxEqAbs(
                 expectedIndexes[marketIndex].poolSupplyIndex,
                 poolSupplyIndex,
+                1,
                 string.concat(market.symbol, " pool supply index")
             );
-            assertEq(
+            assertApproxEqAbs(
                 expectedIndexes[marketIndex].poolBorrowIndex,
                 poolBorrowIndex,
+                1,
                 string.concat(market.symbol, " pool borrow index")
             );
         }

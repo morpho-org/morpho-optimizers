@@ -5,7 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestUpgradeHeap is TestSetup {
     function _testShouldPreservePriorityQueue(Types.PositionType queueType) internal {
-        for (uint256 marketIndex; marketIndex < borrowableCollateralMarkets.length; ++marketIndex) {
+        for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
             TestMarket memory market = markets[marketIndex];
 
             address[] memory priorityQueue = new address[](10_000);
@@ -23,11 +23,7 @@ contract TestUpgradeHeap is TestSetup {
                 mstore(priorityQueue, i)
             }
 
-            vm.startPrank(morphoDao);
-            proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
-            morpho.setEntryPositionsManager(new EntryPositionsManager());
-            morpho.setExitPositionsManager(new ExitPositionsManager());
-            vm.stopPrank();
+            _upgrade();
 
             i = 0;
             next = morpho.getHead(market.poolToken, queueType);
