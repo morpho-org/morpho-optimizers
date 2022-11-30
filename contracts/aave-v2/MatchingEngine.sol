@@ -175,7 +175,7 @@ abstract contract MatchingEngine is MorphoUtils {
     }
 
     /// @notice Matches borrowers' liquidity waiting on Aave up to the given `_amount` and moves it to peer-to-peer.
-    /// @dev Note: This function expects peer-to-peer indexes to have been updated.
+    /// @dev Note: This function expects stored indexes to have been updated.
     /// @param _poolToken The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.

@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestRatesLens is TestSetup {
     using WadRayMath for uint256;
+    using SafeTransferLib for ERC20;
 
     function testGetRatesPerYear() public {
         hevm.roll(block.number + 1_000);
@@ -132,7 +133,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -141,7 +142,7 @@ contract TestRatesLens is TestSetup {
 
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 1);
+        assertApproxEqAbs(p2pSupplyRate, poolSupplyRate, 100);
     }
 
     function testBorrowRateShouldEqualPoolRateWithFullBorrowDelta() public {
@@ -154,7 +155,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -620,7 +621,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -660,7 +661,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -701,7 +702,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -752,7 +753,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount / 2);
         supplier1.supply(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -808,7 +809,7 @@ contract TestRatesLens is TestSetup {
         borrower2.supply(aAave, amount);
         borrower2.borrow(aDai, amount / 2);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 1);
 
@@ -984,7 +985,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(aUsdc, to6Decimals(amount));
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -1007,7 +1008,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        _setDefaultMaxGasForMatching(3e6, 3e6, 0, 0);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
         hevm.roll(block.number + 100);
 
@@ -1017,5 +1018,56 @@ contract TestRatesLens is TestSetup {
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
 
         assertApproxEqAbs(avgBorrowRate, reserve.currentVariableBorrowRate, 1);
+    }
+
+    function testRatesWithInvertedSpread() public {
+        // Full p2p on the DAI market.
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(aDai, 1 ether);
+        borrower1.approve(aave, 1 ether);
+        borrower1.supply(aAave, 1 ether);
+        borrower1.borrow(aDai, 1 ether);
+
+        // Invert spreads on DAI.
+        (, uint256 poolBorrowRate) = _invertPoolSpread(dai);
+
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertEq(avgSupplyRate, poolBorrowRate);
+        assertEq(avgBorrowRate, poolBorrowRate);
+        assertEq(p2pSupplyRate, poolBorrowRate);
+        assertEq(p2pBorrowRate, poolBorrowRate);
+    }
+
+    function testRatesWithInvertedSpreadAndHalfSupplyDelta() public {
+        // Full p2p on the DAI market, with a 50% supply delta.
+        uint256 supplyAmount = 1 ether;
+        uint256 repayAmount = 0.5 ether;
+        supplier1.approve(dai, supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
+        borrower1.approve(aave, supplyAmount);
+        borrower1.supply(aAave, supplyAmount);
+        borrower1.borrow(aDai, supplyAmount);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        borrower1.approve(dai, repayAmount);
+        borrower1.repay(aDai, repayAmount);
+        (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
+        assertEq(p2pSupplyDelta, repayAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
+
+        // Invert spreads on DAI.
+        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertPoolSpreadWithStorageManipulation(
+            dai
+        );
+
+        (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
+        (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
+        (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
+
+        assertApproxEqAbs(avgSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
+        assertEq(avgBorrowRate, poolBorrowRate);
+        assertApproxEqAbs(p2pSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
+        assertEq(p2pBorrowRate, poolBorrowRate);
     }
 }

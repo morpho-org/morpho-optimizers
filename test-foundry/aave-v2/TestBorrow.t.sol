@@ -88,7 +88,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -141,7 +141,7 @@ contract TestBorrow is TestSetup {
         // TODO: fix this.
         deal(dai, address(morpho), 1 ether);
 
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -205,7 +205,8 @@ contract TestBorrow is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
-    function testFailBorrowZero() public {
+    function testShouldNotBorrowZero() public {
+        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.borrow(aDai, 0, type(uint256).max);
     }
 
@@ -263,32 +264,69 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aUsdc, to6Decimals(amount));
     }
 
+    function testBorrowLargerThanDeltaShouldClearDelta() public {
+        // Allows only 10 unmatch suppliers.
+
+        uint256 suppliedAmount = 1 ether;
+        uint256 borrowedAmount = 19 * suppliedAmount;
+        uint256 collateral = 99 * borrowedAmount;
+
+        // borrower1 and 20 suppliers are matched for borrowedAmount.
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, borrowedAmount);
+
+        createSigners(20);
+
+        // 2 * NMAX suppliers supply suppliedAmount.
+        for (uint256 i = 0; i < 20; i++) {
+            suppliers[i].approve(dai, suppliedAmount);
+            suppliers[i].supply(aDai, suppliedAmount);
+        }
+
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+
+        vm.roll(block.number + 1);
+        // Delta should be created.
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        vm.roll(block.number + 1);
+        (uint256 p2pSupplyDeltaBefore, , , ) = morpho.deltas(aDai);
+        borrower1.borrow(aDai, borrowedAmount * 2);
+        (uint256 p2pSupplyDeltaAfter, , , ) = morpho.deltas(aDai);
+
+        assertGt(p2pSupplyDeltaBefore, 0);
+        assertEq(p2pSupplyDeltaAfter, 0);
+    }
+
     function testShouldUseRightAmountOfGas() public {
         uint256 amount = 100 ether;
         createSigners(30);
+
         uint256 snapshotId = vm.snapshot();
         uint256 gasUsed1 = _getBorrowGasUsage(amount, 1e5);
+
         vm.revertTo(snapshotId);
         uint256 gasUsed2 = _getBorrowGasUsage(amount, 2e5);
+
         assertGt(gasUsed2, gasUsed1 + 1e4);
     }
 
     /// @dev Helper for gas usage test
     function _getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
-        // 2 * NMAX suppliers supply suppliedAmount
+        // 2 * NMAX suppliers supply amount
         for (uint256 i; i < 30; i++) {
-            suppliers[i].setMorphoAddresses(morpho);
             suppliers[i].approve(dai, type(uint256).max);
             suppliers[i].supply(aDai, amount);
         }
 
-        borrower1.setMorphoAddresses(morpho);
         borrower1.approve(usdc, to6Decimals(amount * 200));
         borrower1.supply(aUsdc, to6Decimals(amount * 200));
 
         uint256 gasLeftBefore = gasleft();
         borrower1.borrow(aDai, amount * 20, maxGas);
-        uint256 gasLeftAfter = gasleft();
-        gasUsed = gasLeftBefore - gasLeftAfter;
+
+        gasUsed = gasLeftBefore - gasleft();
     }
 }

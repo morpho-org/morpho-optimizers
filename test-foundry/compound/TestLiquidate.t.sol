@@ -79,7 +79,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 94) / 100);
+        customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 98) / 100);
 
         // Liquidate.
         uint256 toRepay = amount / 2;
@@ -275,7 +275,7 @@ contract TestLiquidate is TestSetup {
 
     function testLiquidateUpdateIndexesSameAsCompound() public {
         uint256 collateral = 1 ether;
-        uint256 borrow = collateral / 10;
+        uint256 borrow = collateral / 2;
         uint256 formerPriceDai;
         uint256 formerPriceUsdc;
 

@@ -94,7 +94,7 @@ contract TestSupply is TestSetup {
 
     // There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function testSupply4() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -142,7 +142,7 @@ contract TestSupply is TestSetup {
 
     // The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
     function testSupply5() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -206,7 +206,8 @@ contract TestSupply is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
-    function testFailSupplyZero() public {
+    function testShouldNotSupplyZero() public {
+        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
         morpho.supply(cDai, msg.sender, 0, type(uint256).max);
     }
 
@@ -306,5 +307,35 @@ contract TestSupply is TestSetup {
         assertGt(daiPoolBorrowIndexAfter, daiPoolBorrowIndexBefore);
         assertEq(usdcPoolSupplyIndexAfter, usdcPoolSupplyIndexBefore);
         assertEq(usdcPoolBorrowIndexAfter, usdcPoolBorrowIndexBefore);
+    }
+
+    function testShouldMatchSupplyWithCorrectAmountOfGas() public {
+        uint256 amount = 100 ether;
+        createSigners(30);
+
+        uint256 snapshotId = vm.snapshot();
+        uint256 gasUsed1 = _getSupplyGasUsage(amount, 1e5);
+
+        vm.revertTo(snapshotId);
+        uint256 gasUsed2 = _getSupplyGasUsage(amount, 2e5);
+
+        assertGt(gasUsed2, gasUsed1 + 5e4);
+    }
+
+    /// @dev Helper for gas usage test
+    function _getSupplyGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
+        // 2 * NMAX borrowers borrow amount
+        for (uint256 i; i < 30; i++) {
+            borrowers[i].approve(usdc, type(uint256).max);
+            borrowers[i].supply(cUsdc, to6Decimals(amount * 3));
+            borrowers[i].borrow(cDai, amount);
+        }
+
+        supplier1.approve(dai, amount * 20);
+
+        uint256 gasLeftBefore = gasleft();
+        supplier1.supply(cDai, amount * 20, maxGas);
+
+        gasUsed = gasLeftBefore - gasleft();
     }
 }

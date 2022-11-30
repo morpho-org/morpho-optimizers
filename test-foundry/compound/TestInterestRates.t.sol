@@ -137,7 +137,7 @@ contract TestInterestRates is InterestRatesManager, Test {
         InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
-            poolSupplyIndexTest,
+            poolBorrowIndexTest * 2,
             poolBorrowIndexTest,
             lastPoolSupplyIndexTest,
             lastPoolBorrowIndexTest,
@@ -156,7 +156,7 @@ contract TestInterestRates is InterestRatesManager, Test {
         InterestRatesManager.Params memory params = InterestRatesManager.Params(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
-            poolSupplyIndexTest,
+            poolBorrowIndexTest * 2,
             poolBorrowIndexTest,
             lastPoolSupplyIndexTest,
             lastPoolBorrowIndexTest,

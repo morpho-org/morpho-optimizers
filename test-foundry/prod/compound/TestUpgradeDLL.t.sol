@@ -23,10 +23,7 @@ contract TestUpgradeDLL is TestSetup {
                 mstore(priorityQueue, i)
             }
 
-            vm.startPrank(morphoDao);
-            proxyAdmin.upgrade(morphoProxy, address(new Morpho()));
-            morpho.setPositionsManager(new PositionsManager());
-            vm.stopPrank();
+            _upgrade();
 
             i = 0;
             next = morpho.getHead(market.poolToken, queueType);

@@ -8,6 +8,8 @@ import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
 import {Types} from "@contracts/compound/libraries/Types.sol";
 
 import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
+
 import {User} from "../../../compound/helpers/User.sol";
 import "@config/Config.sol";
 import "@forge-std/console.sol";
@@ -18,13 +20,15 @@ contract TestSetup is Config, Test {
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
 
-    uint256 MIN_USD_AMOUNT = 1e18;
+    uint256 MIN_USD_AMOUNT = 0.5 ether;
+    uint256 MAX_USD_AMOUNT = 50_000_000_000 ether;
 
     User public user;
 
     struct TestMarket {
         address poolToken;
         address underlying;
+        string symbol;
         uint256 decimals;
         uint256 collateralFactor;
         uint256 maxBorrows;
@@ -40,17 +44,13 @@ contract TestSetup is Config, Test {
 
     uint256 snapshotId = type(uint256).max;
 
-    function setUp() public {
+    function setUp() public virtual {
         initContracts();
         setContractsLabels();
         initUsers();
 
         _initMarkets();
-
-        onSetUp();
     }
-
-    function onSetUp() public virtual {}
 
     function initContracts() internal {
         lens = Lens(address(lensProxy));
@@ -141,10 +141,12 @@ contract TestSetup is Config, Test {
         for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
             address underlying = _getUnderlying(poolToken);
+            string memory symbol = ERC20(poolToken).symbol();
 
             TestMarket memory market = TestMarket({
                 poolToken: poolToken,
                 underlying: underlying,
+                symbol: symbol,
                 decimals: ERC20(underlying).decimals(),
                 collateralFactor: 0,
                 maxBorrows: comptroller.borrowCaps(poolToken),
@@ -166,33 +168,39 @@ contract TestSetup is Config, Test {
                     bool isBorrowable = market.maxBorrows > market.totalBorrows.percentMul(103_00);
 
                     if (isBorrowable) borrowableMarkets.push(market);
-                    else console.log("Unborrowable market:", poolToken);
+                    else console.log("Unborrowable market:", symbol);
 
                     if (market.collateralFactor > 0) {
                         collateralMarkets.push(market);
 
                         if (isBorrowable) borrowableCollateralMarkets.push(market);
-                        else console.log("Unborrowable collateral market:", poolToken);
-                    } else console.log("Zero collateral factor market:", poolToken);
-                } else console.log("Partially paused market:", poolToken);
-            } else console.log("Paused market:", poolToken);
+                        else console.log("Unborrowable collateral market:", symbol);
+                    } else console.log("Zero collateral factor market:", symbol);
+                } else console.log("Partially paused market:", symbol);
+            } else console.log("Paused market:", symbol);
         }
     }
 
-    function _boundBorrowedAmount(
+    function _boundBorrowAmount(
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         return
             bound(
                 _amount,
                 MIN_USD_AMOUNT.div(_price),
                 Math.min(
-                    _market.maxBorrows - _market.totalBorrows,
-                    _market.underlying == wEth
-                        ? cEth.balance
-                        : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                    Math.min(
+                        Math.min(
+                            (_market.maxBorrows - _market.totalBorrows) / 2,
+                            _market.underlying == wEth
+                                ? cEth.balance
+                                : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                        ),
+                        MAX_USD_AMOUNT.div(_price)
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
                 )
             );
     }
@@ -234,5 +242,29 @@ contract TestSetup is Config, Test {
     function _revert() internal {
         if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
+    }
+
+    /// @dev Upgrades all the protocol contracts.
+    function _upgrade() internal {
+        vm.startPrank(morphoDao);
+        address rewardsManagerImplV2 = address(new RewardsManager());
+        proxyAdmin.upgrade(rewardsManagerProxy, rewardsManagerImplV2);
+        vm.label(rewardsManagerImplV2, "RewardsManagerImplV2");
+
+        address morphoImplV2 = address(new Morpho());
+        proxyAdmin.upgrade(morphoProxy, morphoImplV2);
+        vm.label(morphoImplV2, "MorphoImplV2");
+
+        address lensImplV2 = address(new Lens());
+        proxyAdmin.upgrade(lensProxy, lensImplV2);
+        vm.label(lensImplV2, "LensImplV2");
+
+        morpho.setPositionsManager(new PositionsManager());
+        vm.label(address(morpho.positionsManager()), "PositionsManagerV2");
+
+        morpho.setInterestRatesManager(new InterestRatesManager());
+        vm.label(address(morpho.interestRatesManager()), "InterestRatesManagerV2");
+
+        vm.stopPrank();
     }
 }

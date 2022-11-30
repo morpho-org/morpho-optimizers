@@ -311,20 +311,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 )
             )
         );
+        if (_amount == 0) revert AmountIsZero();
 
         deltas.p2pSupplyDelta += _amount.rayDiv(poolIndexes.poolSupplyIndex);
-        deltas.p2pSupplyDelta = deltas.p2pSupplyDelta;
         deltas.p2pBorrowDelta += _amount.rayDiv(poolIndexes.poolBorrowIndex);
-        deltas.p2pBorrowDelta = deltas.p2pBorrowDelta;
         emit P2PSupplyDeltaUpdated(_poolToken, deltas.p2pSupplyDelta);
         emit P2PBorrowDeltaUpdated(_poolToken, deltas.p2pBorrowDelta);
 
         ERC20 underlyingToken = ERC20(market[_poolToken].underlyingToken);
-        // If _amount == 0, calls to pool will revert.
-        if (_amount > 0) {
-            _borrowFromPool(underlyingToken, _amount);
-            _supplyToPool(underlyingToken, _amount);
-        }
+        _borrowFromPool(underlyingToken, _amount);
+        _supplyToPool(underlyingToken, _amount);
 
         emit P2PDeltasIncreased(_poolToken, _amount);
     }
@@ -617,7 +613,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         /// Breaking repay ///
 
-        // Unmote peer-to-peer suppliers.
+        // Demote peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolToken,

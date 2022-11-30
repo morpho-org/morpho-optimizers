@@ -15,7 +15,10 @@ contract User {
     IComptroller internal comptroller;
 
     constructor(Morpho _morpho) {
-        setMorphoAddresses(_morpho);
+        morpho = _morpho;
+        interestRatesManager = InterestRatesManager(address(_morpho.interestRatesManager()));
+        rewardsManager = _morpho.rewardsManager();
+        comptroller = morpho.comptroller();
     }
 
     receive() external payable {}
@@ -195,12 +198,5 @@ contract User {
 
     function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external {
         morpho.setIsLiquidateBorrowPaused(_poolToken, _isPaused);
-    }
-
-    function setMorphoAddresses(Morpho _morpho) public {
-        morpho = _morpho;
-        interestRatesManager = InterestRatesManager(address(_morpho.interestRatesManager()));
-        rewardsManager = _morpho.rewardsManager();
-        comptroller = morpho.comptroller();
     }
 }

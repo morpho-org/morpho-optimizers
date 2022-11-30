@@ -15,14 +15,14 @@ library InterestRatesModel {
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
+        uint256 poolBorrowGrowthFactor; // The pool borrow index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
         uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
     }
 
     struct P2PSupplyIndexComputeParams {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // The peer-to-peer supply index growth factor (in wad).
         uint256 lastP2PSupplyIndex; // The last stored peer-to-peer supply index (in wad).
         uint256 lastPoolSupplyIndex; // The last stored pool supply index (in wad).
@@ -55,7 +55,7 @@ library InterestRatesModel {
     /// @param _lastPoolIndexes The pool's last stored indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
-    /// @return growthFactors_ The market's indexes growth factor (in wad).
+    /// @return growthFactors_ The indexes growth factor (in wad).
     function computeGrowthFactors(
         uint256 _newPoolSupplyIndex,
         uint256 _newPoolBorrowIndex,

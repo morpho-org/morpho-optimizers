@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
-import "./helpers/FlashLoan.sol";
 
 contract TestSupply is TestSetup {
     using stdStorage for StdStorage;
@@ -97,7 +96,7 @@ contract TestSupply is TestSetup {
 
     // There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function testSupply4() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -145,7 +144,7 @@ contract TestSupply is TestSetup {
 
     // The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
     function testSupply5() public {
-        _setDefaultMaxGasForMatching(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -209,7 +208,8 @@ contract TestSupply is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
-    function testFailSupplyZero() public {
+    function testShouldNotSupplyZero() public {
+        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.supply(aDai, msg.sender, 0, type(uint256).max);
     }
 
@@ -264,46 +264,33 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
     }
 
-    function testAStakedEthShouldAccrueInterest() public {
-        createMarket(aStEth);
+    function testShouldMatchSupplyWithCorrectAmountOfGas() public {
+        uint256 amount = 100 ether;
+        createSigners(30);
 
-        deal(address(supplier1), 1_000 ether);
-        uint256 totalEthBalance = address(supplier1).balance;
-        uint256 totalBalance = totalEthBalance / 2;
-        vm.prank(address(supplier1));
-        ILido(stEth).submit{value: totalBalance}(address(0));
-        totalBalance = ERC20(stEth).balanceOf(address(supplier1));
+        uint256 snapshotId = vm.snapshot();
+        uint256 gasUsed1 = _getSupplyGasUsage(amount, 1e5);
 
-        // Handle roundings.
-        vm.prank(address(supplier1));
-        ERC20(stEth).transfer(address(morpho), 100);
+        vm.revertTo(snapshotId);
+        uint256 gasUsed2 = _getSupplyGasUsage(amount, 2e5);
 
-        supplier1.approve(stEth, type(uint256).max);
-        supplier1.supply(aStEth, totalBalance / 2);
+        assertGt(gasUsed2, gasUsed1 + 1e4);
+    }
 
-        // deposited may be lower than totalBalance / 2 in the case the current block number is lower than
-        // the block number at which Morpho.ST_ETH_BASE_REBASE_INDEX was defined
-        (, , uint256 deposited) = lens.getCurrentSupplyBalanceInOf(aStEth, address(supplier1));
+    /// @dev Helper for gas usage test
+    function _getSupplyGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
+        // 2 * NMAX borrowers borrow amount
+        for (uint256 i; i < 30; i++) {
+            borrowers[i].approve(usdc, type(uint256).max);
+            borrowers[i].supply(aUsdc, to6Decimals(amount * 3));
+            borrowers[i].borrow(aDai, amount);
+        }
 
-        // Update the beacon balance to accrue rewards on the stETH token.
-        // bytes32 internal constant BEACON_BALANCE_POSITION = keccak256("lido.Lido.beaconBalance");
-        uint256 beaconBalanceBefore = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
-        vm.store(
-            stEth,
-            keccak256("lido.Lido.beaconBalance"),
-            bytes32(beaconBalanceBefore + 10_000 ether)
-        );
-        uint256 beaconBalanceAfter = uint256(vm.load(stEth, keccak256("lido.Lido.beaconBalance")));
-        assertGt(beaconBalanceAfter, beaconBalanceBefore);
+        supplier1.approve(dai, amount * 20);
 
-        // Update timestamp to update indexes.
-        vm.warp(block.timestamp + 1);
+        uint256 gasLeftBefore = gasleft();
+        supplier1.supply(aDai, amount * 20, maxGas);
 
-        uint256 balanceBeforeWithdraw = ERC20(stEth).balanceOf(address(supplier1));
-        supplier1.withdraw(aStEth, type(uint256).max);
-        uint256 withdrawn = ERC20(stEth).balanceOf(address(supplier1)) - balanceBeforeWithdraw;
-
-        // Staking rewards should accrue on stETH even if there's is no supply interest rate on Aave.
-        assertGt(withdrawn, deposited);
+        gasUsed = gasLeftBefore - gasleft();
     }
 }

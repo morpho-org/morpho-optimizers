@@ -11,7 +11,6 @@ import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
 import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
 import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
@@ -169,6 +168,7 @@ contract TestSetup is Config, Utils {
     function fillUserBalances(User _user) internal {
         deal(dai, address(_user), INITIAL_BALANCE * WAD);
         deal(wEth, address(_user), INITIAL_BALANCE * WAD);
+        deal(bat, address(_user), INITIAL_BALANCE * WAD);
         deal(usdt, address(_user), INITIAL_BALANCE * 1e6);
         deal(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
@@ -211,7 +211,7 @@ contract TestSetup is Config, Utils {
         return customOracle;
     }
 
-    function _setDefaultMaxGasForMatching(
+    function setDefaultMaxGasForMatchingHelper(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,

@@ -11,7 +11,7 @@ contract TestUpgradeLens is TestSetup {
         uint256 poolBorrowIndex;
     }
 
-    function testShouldPreserveUpdatedIndexes() public {
+    function testShouldPreserveIndexes() public {
         Indexes[] memory expectedIndexes = new Indexes[](markets.length);
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
@@ -28,22 +28,41 @@ contract TestUpgradeLens is TestSetup {
             expectedIndexes[marketIndex].poolBorrowIndex = poolBorrowIndex;
         }
 
-        vm.startPrank(address(proxyAdmin));
-        lensProxy.upgradeTo(address(new Lens(address(morpho))));
-        vm.stopPrank();
+        _upgrade();
 
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
+            TestMarket memory market = markets[marketIndex];
             (
                 uint256 p2pSupplyIndex,
                 uint256 p2pBorrowIndex,
                 uint256 poolSupplyIndex,
                 uint256 poolBorrowIndex
-            ) = lens.getIndexes(markets[marketIndex].poolToken);
+            ) = lens.getIndexes(market.poolToken);
 
-            assertEq(expectedIndexes[marketIndex].p2pSupplyIndex, p2pSupplyIndex);
-            assertEq(expectedIndexes[marketIndex].p2pBorrowIndex, p2pBorrowIndex);
-            assertEq(expectedIndexes[marketIndex].poolSupplyIndex, poolSupplyIndex);
-            assertEq(expectedIndexes[marketIndex].poolBorrowIndex, poolBorrowIndex);
+            assertApproxEqAbs(
+                expectedIndexes[marketIndex].p2pSupplyIndex,
+                p2pSupplyIndex,
+                1,
+                string.concat(market.symbol, " p2p supply index")
+            );
+            assertApproxEqAbs(
+                expectedIndexes[marketIndex].p2pBorrowIndex,
+                p2pBorrowIndex,
+                1e7,
+                string.concat(market.symbol, " p2p borrow index")
+            );
+            assertApproxEqAbs(
+                expectedIndexes[marketIndex].poolSupplyIndex,
+                poolSupplyIndex,
+                1,
+                string.concat(market.symbol, " pool supply index")
+            );
+            assertApproxEqAbs(
+                expectedIndexes[marketIndex].poolBorrowIndex,
+                poolBorrowIndex,
+                1,
+                string.concat(market.symbol, " pool borrow index")
+            );
         }
     }
 }

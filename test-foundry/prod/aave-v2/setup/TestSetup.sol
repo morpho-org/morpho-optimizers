@@ -12,8 +12,6 @@ import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
@@ -34,7 +32,8 @@ contract TestSetup is Config, Test {
     using SafeTransferLib for ERC20;
     using stdStorage for StdStorage;
 
-    uint256 MIN_ETH_AMOUNT = 0.005 ether;
+    uint256 MIN_ETH_AMOUNT = 0.001 ether;
+    uint256 MAX_ETH_AMOUNT = 50_000_000 ether;
 
     User public user;
 
@@ -42,6 +41,7 @@ contract TestSetup is Config, Test {
         address poolToken;
         address debtToken;
         address underlying;
+        string symbol;
         uint256 decimals;
         uint256 ltv;
         uint256 liquidationThreshold;
@@ -57,17 +57,13 @@ contract TestSetup is Config, Test {
 
     uint256 snapshotId = type(uint256).max;
 
-    function setUp() public {
+    function setUp() public virtual {
         initContracts();
         setContractsLabels();
         initUsers();
 
         _initMarkets();
-
-        onSetUp();
     }
-
-    function onSetUp() public virtual {}
 
     function initContracts() internal {
         lens = Lens(address(lensProxy));
@@ -76,8 +72,6 @@ contract TestSetup is Config, Test {
         entryPositionsManager = morpho.entryPositionsManager();
         exitPositionsManager = morpho.exitPositionsManager();
         interestRatesManager = morpho.interestRatesManager();
-
-        rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
     }
 
     function initUsers() internal {
@@ -119,7 +113,6 @@ contract TestSetup is Config, Test {
         vm.label(address(morphoImplV1), "MorphoImplV1");
         vm.label(address(morpho), "Morpho");
         vm.label(address(interestRatesManager), "InterestRatesManager");
-        vm.label(address(rewardsManager), "RewardsManager");
         vm.label(address(oracle), "Oracle");
         vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
@@ -163,6 +156,7 @@ contract TestSetup is Config, Test {
         for (uint256 i; i < createdMarkets.length; ++i) {
             address poolToken = createdMarkets[i];
             address underlying = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
+            string memory symbol = ERC20(poolToken).symbol();
 
             Types.Market memory marketConfig;
             (
@@ -178,6 +172,7 @@ contract TestSetup is Config, Test {
                 poolToken: poolToken,
                 debtToken: pool.getReserveData(underlying).variableDebtTokenAddress,
                 underlying: underlying,
+                symbol: symbol,
                 ltv: 0,
                 liquidationThreshold: 0,
                 decimals: 0,
@@ -198,29 +193,48 @@ contract TestSetup is Config, Test {
                     activeMarkets.push(market);
 
                     if (isBorrowable) borrowableMarkets.push(market);
-                    else console.log("Unborrowable market:", poolToken);
+                    else console.log("Unborrowable market:", symbol);
 
                     if (market.ltv > 0) {
                         collateralMarkets.push(market);
 
                         if (isBorrowable) borrowableCollateralMarkets.push(market);
-                        else console.log("Unborrowable collateral market:", poolToken);
-                    } else console.log("Zero ltv market:", poolToken);
-                } else console.log("Partially paused market:", poolToken);
-            } else console.log("Paused market:", poolToken);
+                        else console.log("Unborrowable collateral market:", symbol);
+                    } else console.log("Zero ltv market:", symbol);
+                } else console.log("Partially paused market:", symbol);
+            } else console.log("Paused market:", symbol);
         }
     }
 
-    function _boundBorrowedAmount(
+    function _boundSupplyAmount(
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         return
             bound(
                 _amount,
                 (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
-                ERC20(_market.underlying).balanceOf(_market.poolToken)
+                Math.min((MAX_ETH_AMOUNT * 10**_market.decimals) / _price, type(uint96).max)
+            );
+    }
+
+    function _boundBorrowAmount(
+        TestMarket memory _market,
+        uint96 _amount,
+        uint256 _price
+    ) internal view returns (uint256) {
+        return
+            bound(
+                _amount,
+                (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
+                Math.min(
+                    Math.min(
+                        ERC20(_market.underlying).balanceOf(_market.poolToken),
+                        (MAX_ETH_AMOUNT * 10**_market.decimals) / _price
+                    ),
+                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
+                )
             );
     }
 
@@ -263,5 +277,28 @@ contract TestSetup is Config, Test {
     function _revert() internal {
         if (snapshotId < type(uint256).max) vm.revertTo(snapshotId);
         snapshotId = vm.snapshot();
+    }
+
+    /// @dev Upgrades all the protocol contracts.
+    function _upgrade() internal {
+        vm.startPrank(morphoDao);
+        address morphoImplV2 = address(new Morpho());
+        proxyAdmin.upgrade(morphoProxy, morphoImplV2);
+        vm.label(morphoImplV2, "MorphoImplV2");
+
+        address lensImplV2 = address(new Lens(address(morpho)));
+        proxyAdmin.upgrade(lensProxy, lensImplV2);
+        vm.label(lensImplV2, "LensImplV2");
+
+        morpho.setEntryPositionsManager(new EntryPositionsManager());
+        vm.label(address(morpho.entryPositionsManager()), "EntryPositionsManagerV2");
+
+        morpho.setExitPositionsManager(new ExitPositionsManager());
+        vm.label(address(morpho.exitPositionsManager()), "ExitPositionsManagerV2");
+
+        morpho.setInterestRatesManager(new InterestRatesManager());
+        vm.label(address(morpho.interestRatesManager()), "InterestRatesManagerV2");
+
+        vm.stopPrank();
     }
 }

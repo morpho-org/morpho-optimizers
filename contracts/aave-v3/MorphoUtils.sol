@@ -70,8 +70,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @dev Beware that this function does not give the next account susceptible to get matched,
-    ///      nor the next account with highest liquidity. Use it only to go through every account.
+    /// @dev Beware that this function does not give the account with the highest liquidity.
     /// @param _poolToken The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.
@@ -183,7 +182,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _user The address of the user.
     /// @param _poolToken The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
@@ -199,7 +198,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @dev Note: Computes the result with the stored indexes, which are not always the most up to date ones.
     /// @param _user The address of the user.
     /// @param _poolToken The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
