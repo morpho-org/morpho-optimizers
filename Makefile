@@ -99,7 +99,6 @@ lcov-html:
 gas-report:
 	@echo Create gas report from Morpho-${PROTOCOL}-${NETWORK} tests under \"${FOUNDRY_TEST}\"\
 		with profile \"${FOUNDRY_PROFILE}\", seed \"${FOUNDRY_FUZZ_SEED}\",
-
 	forge test --gas-report | tee trace.ansi
 
 storage-layout-generate:
