@@ -95,8 +95,7 @@ abstract contract MarketsLens is RatesLens {
         p2pSupplyDelta = delta.p2pSupplyDelta.mul(poolSupplyIndex);
         p2pBorrowDelta = delta.p2pBorrowDelta.mul(poolBorrowIndex);
 
-        Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolToken);
-        lastUpdateBlockNumber = lastPoolIndexes.lastUpdateBlockNumber;
+        lastUpdateBlockNumber = morpho.lastPoolIndexes(_poolToken).lastUpdateBlockNumber;
     }
 
     /// @notice Returns market's configuration.
@@ -124,8 +123,7 @@ abstract contract MarketsLens is RatesLens {
     {
         underlying = _poolToken == morpho.cEth() ? morpho.wEth() : ICToken(_poolToken).underlying();
 
-        Types.MarketStatus memory marketStatus = morpho.marketStatus(_poolToken);
-        isCreated = marketStatus.isCreated;
+        isCreated = morpho.marketStatus(_poolToken).isCreated;
         p2pDisabled = morpho.p2pDisabled(_poolToken);
         isPaused = false;
         isPartiallyPaused = false;
