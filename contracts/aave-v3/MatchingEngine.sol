@@ -13,38 +13,13 @@ abstract contract MatchingEngine is MorphoUtils {
 
     /// STRUCTS ///
 
-    // Struct to avoid stack too deep.
-    struct UnmatchVars {
-        uint256 p2pIndex;
-        uint256 toUnmatch;
-        uint256 poolIndex;
-    }
-
-    // Struct to avoid stack too deep.
-    struct MatchVars {
-        uint256 p2pIndex;
-        uint256 toMatch;
-        uint256 poolIndex;
-    }
-
     /// @notice Emitted when the position of a supplier is updated.
     /// @param _user The address of the supplier.
     /// @param _poolToken The address of the market.
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
-    event SupplierPositionUpdated(
-        address indexed _user,
-        address indexed _poolToken,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// @notice Emitted when the position of a borrower is updated.
-    /// @param _user The address of the borrower.
-    /// @param _poolToken The address of the market.
-    /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
-    event BorrowerPositionUpdated(
+    event PositionUpdated(
+        bool _borrow,
         address indexed _user,
         address indexed _poolToken,
         uint256 _balanceOnPool,
@@ -65,113 +40,17 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
-        if (_maxGasForMatching == 0) return (0, 0);
-
-        MatchVars memory vars;
-        vars.poolIndex = poolIndexes[_poolToken].poolSupplyIndex;
-        vars.p2pIndex = p2pSupplyIndex[_poolToken];
-        address firstPoolSupplier;
-        uint256 remainingToMatch = _amount;
-        uint256 gasLeftAtTheBeginning = gasleft();
-
-        while (
-            remainingToMatch > 0 &&
-            (firstPoolSupplier = suppliersOnPool[_poolToken].getHead()) != address(0)
-        ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
-            Types.Balance storage firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][
-                firstPoolSupplier
-            ];
-
-            uint256 poolSupplyBalance = firstPoolSupplierBalance.onPool;
-            uint256 p2pSupplyBalance = firstPoolSupplierBalance.inP2P;
-
-            vars.toMatch = Math.min(poolSupplyBalance.rayMul(vars.poolIndex), remainingToMatch);
-            remainingToMatch -= vars.toMatch;
-
-            poolSupplyBalance -= vars.toMatch.rayDiv(vars.poolIndex);
-            p2pSupplyBalance += vars.toMatch.rayDiv(vars.p2pIndex);
-
-            firstPoolSupplierBalance.onPool = poolSupplyBalance;
-            firstPoolSupplierBalance.inP2P = p2pSupplyBalance;
-
-            _updateSupplierInDS(_poolToken, firstPoolSupplier);
-            emit SupplierPositionUpdated(
-                firstPoolSupplier,
+        return
+            _match(
+                supplyBalanceInOf[_poolToken],
+                suppliersOnPool[_poolToken],
                 _poolToken,
-                poolSupplyBalance,
-                p2pSupplyBalance
+                poolIndexes[_poolToken].poolSupplyIndex,
+                p2pSupplyIndex[_poolToken],
+                _amount,
+                _maxGasForMatching,
+                false
             );
-        }
-
-        // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-        // And _amount >= remainingToMatch.
-        unchecked {
-            matched = _amount - remainingToMatch;
-            gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
-        }
-    }
-
-    /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Aave.
-    /// @dev Note: This function expects Aave's exchange rate and peer-to-peer indexes to have been updated.
-    /// @param _poolToken The address of the market from which to unmatch suppliers.
-    /// @param _amount The amount to search for (in underlying).
-    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    /// @return unmatched The amount unmatched (in underlying).
-    function _unmatchSuppliers(
-        address _poolToken,
-        uint256 _amount,
-        uint256 _maxGasForMatching
-    ) internal returns (uint256 unmatched) {
-        if (_maxGasForMatching == 0) return 0;
-
-        UnmatchVars memory vars;
-        vars.poolIndex = poolIndexes[_poolToken].poolSupplyIndex;
-        vars.p2pIndex = p2pSupplyIndex[_poolToken];
-        address firstP2PSupplier;
-        uint256 remainingToUnmatch = _amount;
-        uint256 gasLeftAtTheBeginning = gasleft();
-
-        while (
-            remainingToUnmatch > 0 &&
-            (firstP2PSupplier = suppliersInP2P[_poolToken].getHead()) != address(0)
-        ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
-            Types.Balance storage firstP2PSupplierBalance = supplyBalanceInOf[_poolToken][
-                firstP2PSupplier
-            ];
-
-            uint256 poolSupplyBalance = firstP2PSupplierBalance.onPool;
-            uint256 p2pSupplyBalance = firstP2PSupplierBalance.inP2P;
-
-            vars.toUnmatch = Math.min(p2pSupplyBalance.rayMul(vars.p2pIndex), remainingToUnmatch);
-            remainingToUnmatch -= vars.toUnmatch;
-
-            poolSupplyBalance += vars.toUnmatch.rayDiv(vars.poolIndex);
-            p2pSupplyBalance -= vars.toUnmatch.rayDiv(vars.p2pIndex);
-
-            firstP2PSupplierBalance.onPool = poolSupplyBalance;
-            firstP2PSupplierBalance.inP2P = p2pSupplyBalance;
-
-            _updateSupplierInDS(_poolToken, firstP2PSupplier);
-            emit SupplierPositionUpdated(
-                firstP2PSupplier,
-                _poolToken,
-                poolSupplyBalance,
-                p2pSupplyBalance
-            );
-        }
-
-        // Safe unchecked because _amount >= remainingToUnmatch.
-        unchecked {
-            unmatched = _amount - remainingToUnmatch;
-        }
     }
 
     /// @notice Matches borrowers' liquidity waiting on Aave up to the given `_amount` and moves it to peer-to-peer.
@@ -186,54 +65,41 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
-        if (_maxGasForMatching == 0) return (0, 0);
-
-        MatchVars memory vars;
-        vars.poolIndex = poolIndexes[_poolToken].poolBorrowIndex;
-        vars.p2pIndex = p2pBorrowIndex[_poolToken];
-        address firstPoolBorrower;
-        uint256 remainingToMatch = _amount;
-        uint256 gasLeftAtTheBeginning = gasleft();
-
-        while (
-            remainingToMatch > 0 &&
-            (firstPoolBorrower = borrowersOnPool[_poolToken].getHead()) != address(0)
-        ) {
-            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-            unchecked {
-                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
-            }
-            Types.Balance storage firstPoolBorrowerBalance = borrowBalanceInOf[_poolToken][
-                firstPoolBorrower
-            ];
-
-            uint256 poolBorrowBalance = firstPoolBorrowerBalance.onPool;
-            uint256 p2pBorrowBalance = firstPoolBorrowerBalance.inP2P;
-
-            vars.toMatch = Math.min(poolBorrowBalance.rayMul(vars.poolIndex), remainingToMatch);
-            remainingToMatch -= vars.toMatch;
-
-            poolBorrowBalance -= vars.toMatch.rayDiv(vars.poolIndex);
-            p2pBorrowBalance += vars.toMatch.rayDiv(vars.p2pIndex);
-
-            firstPoolBorrowerBalance.onPool = poolBorrowBalance;
-            firstPoolBorrowerBalance.inP2P = p2pBorrowBalance;
-
-            _updateBorrowerInDS(_poolToken, firstPoolBorrower);
-            emit BorrowerPositionUpdated(
-                firstPoolBorrower,
+        return
+            _match(
+                borrowBalanceInOf[_poolToken],
+                borrowersOnPool[_poolToken],
                 _poolToken,
-                poolBorrowBalance,
-                p2pBorrowBalance
+                poolIndexes[_poolToken].poolBorrowIndex,
+                p2pBorrowIndex[_poolToken],
+                _amount,
+                _maxGasForMatching,
+                true
             );
-        }
+    }
 
-        // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
-        // And _amount >= remainingToMatch.
-        unchecked {
-            matched = _amount - remainingToMatch;
-            gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
-        }
+    /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Aave.
+    /// @dev Note: This function expects Aave's exchange rate and peer-to-peer indexes to have been updated.
+    /// @param _poolToken The address of the market from which to unmatch suppliers.
+    /// @param _amount The amount to search for (in underlying).
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @return unmatched The amount unmatched (in underlying).
+    function _unmatchSuppliers(
+        address _poolToken,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) internal returns (uint256 unmatched) {
+        return
+            _unmatch(
+                supplyBalanceInOf[_poolToken],
+                suppliersInP2P[_poolToken],
+                _poolToken,
+                poolIndexes[_poolToken].poolSupplyIndex,
+                p2pSupplyIndex[_poolToken],
+                _amount,
+                _maxGasForMatching,
+                false
+            );
     }
 
     /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Aave.
@@ -247,46 +113,108 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 unmatched) {
-        if (_maxGasForMatching == 0) return 0;
+        return
+            _unmatch(
+                borrowBalanceInOf[_poolToken],
+                borrowersInP2P[_poolToken],
+                _poolToken,
+                poolIndexes[_poolToken].poolBorrowIndex,
+                p2pBorrowIndex[_poolToken],
+                _amount,
+                _maxGasForMatching,
+                true
+            );
+    }
 
-        UnmatchVars memory vars;
-        vars.poolIndex = poolIndexes[_poolToken].poolBorrowIndex;
-        vars.p2pIndex = p2pBorrowIndex[_poolToken];
-        address firstP2PBorrower;
-        uint256 remainingToUnmatch = _amount;
+    function _match(
+        mapping(address => Types.Balance) storage _balanceOf,
+        HeapOrdering.HeapArray storage _onPool,
+        address _poolToken,
+        uint256 _poolIndex,
+        uint256 _p2pIndex,
+        uint256 _amount,
+        uint256 _maxGasForMatching,
+        bool _borrow
+    ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
+        if (_maxGasForMatching == 0) return (0, 0);
+
+        address firstUser;
+        uint256 remainingToMatch = _amount;
         uint256 gasLeftAtTheBeginning = gasleft();
+        uint256 toProcess;
 
-        while (
-            remainingToUnmatch > 0 &&
-            (firstP2PBorrower = borrowersInP2P[_poolToken].getHead()) != address(0)
-        ) {
+        while (remainingToMatch > 0 && (firstUser = _onPool.getHead()) != address(0)) {
             // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            Types.Balance storage firstP2PBorrowerBalance = borrowBalanceInOf[_poolToken][
-                firstP2PBorrower
-            ];
+            Types.Balance storage balance = _balanceOf[firstUser];
 
-            uint256 poolBorrowBalance = firstP2PBorrowerBalance.onPool;
-            uint256 p2pBorrowBalance = firstP2PBorrowerBalance.inP2P;
+            uint256 poolBalance = balance.onPool;
+            uint256 p2pBalance = balance.inP2P;
 
-            vars.toUnmatch = Math.min(p2pBorrowBalance.rayMul(vars.p2pIndex), remainingToUnmatch);
-            remainingToUnmatch -= vars.toUnmatch;
+            toProcess = Math.min(poolBalance.rayMul(_poolIndex), remainingToMatch);
+            remainingToMatch -= toProcess;
 
-            poolBorrowBalance += vars.toUnmatch.rayDiv(vars.poolIndex);
-            p2pBorrowBalance -= vars.toUnmatch.rayDiv(vars.p2pIndex);
+            poolBalance -= toProcess.rayDiv(_poolIndex);
+            p2pBalance += toProcess.rayDiv(_p2pIndex);
 
-            firstP2PBorrowerBalance.onPool = poolBorrowBalance;
-            firstP2PBorrowerBalance.inP2P = p2pBorrowBalance;
+            balance.onPool = poolBalance;
+            balance.inP2P = p2pBalance;
 
-            _updateBorrowerInDS(_poolToken, firstP2PBorrower);
-            emit BorrowerPositionUpdated(
-                firstP2PBorrower,
-                _poolToken,
-                poolBorrowBalance,
-                p2pBorrowBalance
-            );
+            if (!_borrow) _updateSupplierInDS(_poolToken, firstUser);
+            else _updateBorrowerInDS(_poolToken, firstUser);
+
+            emit PositionUpdated(_borrow, firstUser, _poolToken, poolBalance, p2pBalance);
+        }
+
+        // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+        // And _amount >= remainingToMatch.
+        unchecked {
+            matched = _amount - remainingToMatch;
+            gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
+        }
+    }
+
+    function _unmatch(
+        mapping(address => Types.Balance) storage _balanceOf,
+        HeapOrdering.HeapArray storage _inP2P,
+        address _poolToken,
+        uint256 _poolIndex,
+        uint256 _p2pIndex,
+        uint256 _amount,
+        uint256 _maxGasForMatching,
+        bool _borrow
+    ) internal returns (uint256 unmatched) {
+        if (_maxGasForMatching == 0) return 0;
+
+        address firstP2PUser;
+        uint256 remainingToUnmatch = _amount;
+        uint256 gasLeftAtTheBeginning = gasleft();
+        uint256 toProcess;
+
+        while (remainingToUnmatch > 0 && (firstP2PUser = _inP2P.getHead()) != address(0)) {
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
+            Types.Balance storage firstP2PBalance = _balanceOf[firstP2PUser];
+
+            uint256 poolBalance = firstP2PBalance.onPool;
+            uint256 p2pBalance = firstP2PBalance.inP2P;
+
+            toProcess = Math.min(p2pBalance.rayMul(_p2pIndex), remainingToUnmatch);
+            remainingToUnmatch -= toProcess;
+
+            poolBalance += toProcess.rayDiv(_poolIndex);
+            p2pBalance -= toProcess.rayDiv(_p2pIndex);
+
+            firstP2PBalance.onPool = poolBalance;
+            firstP2PBalance.inP2P = p2pBalance;
+
+            if (!_borrow) _updateSupplierInDS(_poolToken, firstP2PUser);
+            else _updateBorrowerInDS(_poolToken, firstP2PUser);
+            emit PositionUpdated(_borrow, firstP2PUser, _poolToken, poolBalance, p2pBalance);
         }
 
         // Safe unchecked because _amount >= remainingToUnmatch.
