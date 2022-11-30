@@ -9,6 +9,7 @@ import "./UsersLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol users and their positions.
 abstract contract RatesLens is UsersLens {
     using CompoundMath for uint256;
+    using Math for uint256;
 
     /// STRUCTS ///
 
@@ -392,9 +393,9 @@ abstract contract RatesLens is UsersLens {
     ) internal view returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount) {
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
-        p2pSupplyAmount =
-            delta.p2pSupplyAmount.mul(_p2pSupplyIndex) -
-            delta.p2pSupplyDelta.mul(_poolSupplyIndex);
+        p2pSupplyAmount = delta.p2pSupplyAmount.mul(_p2pSupplyIndex).zeroFloorSub(
+            delta.p2pSupplyDelta.mul(_poolSupplyIndex)
+        );
         poolSupplyAmount = ICToken(_poolToken).balanceOf(address(morpho)).mul(_poolSupplyIndex);
     }
 
@@ -411,9 +412,9 @@ abstract contract RatesLens is UsersLens {
     ) internal view returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount) {
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
-        p2pBorrowAmount =
-            delta.p2pBorrowAmount.mul(_p2pBorrowIndex) -
-            delta.p2pBorrowDelta.mul(_poolBorrowIndex);
+        p2pBorrowAmount = delta.p2pBorrowAmount.mul(_p2pBorrowIndex).zeroFloorSub(
+            delta.p2pBorrowDelta.mul(_poolBorrowIndex)
+        );
         poolBorrowAmount = ICToken(_poolToken)
         .borrowBalanceStored(address(morpho))
         .div(ICToken(_poolToken).borrowIndex())

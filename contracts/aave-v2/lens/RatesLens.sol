@@ -412,9 +412,9 @@ abstract contract RatesLens is UsersLens {
     ) internal view returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount) {
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
-        p2pSupplyAmount =
-            delta.p2pSupplyAmount.rayMul(_p2pSupplyIndex) -
-            delta.p2pSupplyDelta.rayMul(_poolSupplyIndex);
+        p2pSupplyAmount = delta.p2pSupplyAmount.rayMul(_p2pSupplyIndex).zeroFloorSub(
+            delta.p2pSupplyDelta.rayMul(_poolSupplyIndex)
+        );
         poolSupplyAmount = IAToken(_poolToken).balanceOf(address(morpho));
     }
 
