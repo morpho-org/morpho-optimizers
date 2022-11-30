@@ -93,7 +93,7 @@ contract TestUpgradeLens is TestSetup {
             assertApproxEqAbs(
                 expectedIndexes[marketIndex].p2pSupplyIndex,
                 p2pSupplyIndex,
-                1,
+                3e8,
                 string.concat(market.symbol, " p2p supply index")
             );
             assertApproxEqAbs(
