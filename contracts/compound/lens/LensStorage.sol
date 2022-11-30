@@ -19,7 +19,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 abstract contract LensStorage is Initializable {
     /// STORAGE ///
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
+    uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
     IMorpho public morpho;

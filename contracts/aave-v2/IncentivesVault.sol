@@ -20,7 +20,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     /// STORAGE ///
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
+    uint256 public constant MAX_BASIS_POINTS = 100_00;
 
     IMorpho public immutable morpho; // The address of the main Morpho contract.
     ERC20 public immutable rewardToken; // The reward token.
