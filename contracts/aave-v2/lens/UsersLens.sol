@@ -49,7 +49,7 @@ abstract contract UsersLens is IndexesLens {
         }
     }
 
-    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolToken` (in underlyings).
+    /// @notice Returns the maximum amount available to withdraw & borrow for a given user, on a given market.
     /// @param _user The user to determine the capacities for.
     /// @param _poolToken The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
