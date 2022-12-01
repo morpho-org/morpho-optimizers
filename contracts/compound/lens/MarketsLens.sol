@@ -150,7 +150,7 @@ abstract contract MarketsLens is RatesLens {
 
     /// PUBLIC ///
 
-    /// @notice Computes and returns the total distribution of supply for a given market.
+    /// @notice Computes and returns the total distribution of supply for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
@@ -168,7 +168,7 @@ abstract contract MarketsLens is RatesLens {
         );
     }
 
-    /// @notice Computes and returns the total distribution of borrows for a given market.
+    /// @notice Computes and returns the total distribution of borrows for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
