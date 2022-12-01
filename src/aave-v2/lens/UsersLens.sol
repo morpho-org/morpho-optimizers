@@ -61,12 +61,7 @@ abstract contract UsersLens is IndexesLens {
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
-            _user,
-            address(0),
-            0,
-            0
-        );
+        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
         Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
             _user,
             _poolToken,
