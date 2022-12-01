@@ -15,8 +15,8 @@ library InterestRatesModel {
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in wad).
-        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in wad).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in wad).
+        uint256 poolBorrowGrowthFactor; // The pool borrow index growth factor (in wad).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in wad).
         uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in wad).
     }
@@ -40,19 +40,19 @@ library InterestRatesModel {
     }
 
     struct P2PRateComputeParams {
-        uint256 poolRate; // The pool's rate per block (in wad).
-        uint256 p2pRate; // Morpho's peer-to-peer rate per block (in wad).
-        uint256 poolIndex; // The pool's last stored index.
-        uint256 p2pIndex; // Morpho's last stored peer-to-peer index.
+        uint256 poolRate; // The pool rate per block (in wad).
+        uint256 p2pRate; // The peer-to-peer rate per block (in wad).
+        uint256 poolIndex; // The last stored pool index (in wad).
+        uint256 p2pIndex; // The last stored peer-to-peer index (in wad).
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
         uint16 reserveFactor; // The reserve factor of the given market (in bps).
     }
 
     /// @notice Computes and returns the new supply/borrow growth factors associated to the given market's pool & peer-to-peer indexes.
-    /// @param _newPoolSupplyIndex The pool's current supply index.
-    /// @param _newPoolBorrowIndex The pool's current borrow index.
-    /// @param _lastPoolIndexes The pool's last stored indexes.
+    /// @param _newPoolSupplyIndex The current pool supply index.
+    /// @param _newPoolBorrowIndex The current pool borrow index.
+    /// @param _lastPoolIndexes The last stored pool indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
     /// @return growthFactors_ The market's indexes growth factors (in wad).
@@ -146,8 +146,8 @@ library InterestRatesModel {
     }
 
     /// @notice Computes and returns the raw peer-to-peer rate per block of a market given the pool rates.
-    /// @param _poolSupplyRate The pool's supply rate per block.
-    /// @param _poolBorrowRate The pool's borrow rate per block.
+    /// @param _poolSupplyRate The pool supply rate per block.
+    /// @param _poolBorrowRate The pool borrow rate per block.
     /// @param _p2pIndexCursor The market's p2p index cursor.
     /// @return The raw peer-to-peer rate per block, without reserve factor, without delta.
     function computeRawP2PRatePerBlock(
