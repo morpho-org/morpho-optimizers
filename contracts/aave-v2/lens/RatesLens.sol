@@ -184,6 +184,44 @@ abstract contract RatesLens is UsersLens {
         );
     }
 
+    /// @notice Returns the supply rate per year a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the supply rate per year for.
+    /// @return The supply rate per year the user is currently experiencing (in wad).
+    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256)
+    {
+        (
+            ,
+            uint256 balanceInP2P,
+            uint256 balanceOnPool,
+            uint256 totalBalance
+        ) = _getCurrentSupplyBalanceInOf(_poolToken, _user);
+
+        return _getUserSupplyRatePerYear(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
+    }
+
+    /// @notice Returns the borrow rate per year a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the borrow rate per year for.
+    /// @return The borrow rate per year the user is currently experiencing (in wad).
+    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256)
+    {
+        (
+            ,
+            uint256 balanceInP2P,
+            uint256 balanceOnPool,
+            uint256 totalBalance
+        ) = _getCurrentBorrowBalanceInOf(_poolToken, _user);
+
+        return _getUserBorrowRatePerYear(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
+    }
+
     /// PUBLIC ///
 
     /// @notice Computes and returns the current supply rate per year experienced on average on a given market.
@@ -359,42 +397,6 @@ abstract contract RatesLens is UsersLens {
                 reserveFactor: market.reserveFactor
             })
         );
-    }
-
-    /// @notice Returns the supply rate per year a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the supply rate per year for.
-    /// @return The supply rate per year the user is currently experiencing (in wad).
-    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
-
-        return _getUserSupplyRatePerYear(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
-    }
-
-    /// @notice Returns the borrow rate per year a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the borrow rate per year for.
-    /// @return The borrow rate per year the user is currently experiencing (in wad).
-    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
-
-        return _getUserBorrowRatePerYear(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
     }
 
     /// INTERNAL ///
