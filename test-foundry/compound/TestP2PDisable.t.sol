@@ -90,9 +90,9 @@ contract TestP2PDisable is TestSetup {
         morpho.increaseP2PDeltas(cDai, type(uint256).max);
 
         // Pause borrow on pool.
-        vm.prank(comptrollerAdmin);
+        vm.prank(comptroller.admin());
         comptroller._setMintPaused(ICToken(cDai), true);
-        vm.prank(comptrollerAdmin);
+        vm.prank(comptroller.admin());
         comptroller._setBorrowPaused(ICToken(cDai), true);
 
         // Withdraw and repay peer-to-peer matched positions.
