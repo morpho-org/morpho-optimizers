@@ -7,6 +7,10 @@ contract TestBorrow is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
+    function testFail() public {
+        borrower1.approve(usdc, type(uint256).max);
+    }
+
     // The borrower tries to borrow more than his collateral allows, the transaction reverts.
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
