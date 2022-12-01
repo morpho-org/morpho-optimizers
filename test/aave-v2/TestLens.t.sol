@@ -9,6 +9,7 @@ contract TestLens is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
+    using Math for uint256;
 
     struct UserBalanceStates {
         uint256 collateral;
@@ -62,13 +63,38 @@ contract TestLens is TestSetup {
         .getParamsMemory();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**decimals;
-        uint256 collateral = (amount * underlyingPrice) / tokenUnit;
 
         assertEq(assetData.ltv, ltv, "ltv");
         assertEq(assetData.liquidationThreshold, liquidationThreshold, "liquidationThreshold");
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
         assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
-        assertEq(assetData.collateral, collateral, "collateral");
+        assertEq(assetData.collateral, (amount * underlyingPrice) / tokenUnit, "collateral");
+        assertEq(assetData.debt, 0, "debt");
+    }
+
+    function testUserLiquidityDataForOtherAssetThanSupply() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aUsdc,
+            oracle
+        );
+
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 decimals, ) = pool
+        .getConfiguration(usdc)
+        .getParamsMemory();
+        uint256 underlyingPrice = oracle.getAssetPrice(usdc);
+        uint256 tokenUnit = 10**decimals;
+
+        assertEq(assetData.ltv, ltv, "ltv");
+        assertEq(assetData.liquidationThreshold, liquidationThreshold, "liquidationThreshold");
+        assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
+        assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
+        assertEq(assetData.collateral, 0, "collateral");
         assertEq(assetData.debt, 0, "debt");
     }
 
@@ -176,6 +202,68 @@ contract TestLens is TestSetup {
         assertEq(assetDataDai.tokenUnit, expectedDataDai.tokenUnit, "tokenUnitDai");
         assertEq(assetDataDai.collateral, expectedDataDai.collateral, "collateralDai");
         assertEq(assetDataDai.debt, 0, "debtDai");
+    }
+
+    function testUserHypotheticalBalanceStatesUnenteredMarket() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        uint256 hypotheticalBorrow = 500e6;
+        Types.LiquidityData memory liquidityData = lens.getUserHypotheticalBalanceStates(
+            address(borrower1),
+            aUsdc,
+            amount / 2,
+            hypotheticalBorrow
+        );
+
+        (uint256 daiLtv, uint256 daiLiquidationThreshold, , uint256 daiDecimals, ) = pool
+        .getConfiguration(dai)
+        .getParamsMemory();
+        (, , , uint256 usdcDecimals, ) = pool.getConfiguration(usdc).getParamsMemory();
+
+        uint256 collateral = (amount * oracle.getAssetPrice(dai)) / 10**daiDecimals;
+
+        assertEq(
+            liquidityData.liquidationThreshold,
+            collateral.percentMul(daiLiquidationThreshold),
+            "liquidationThreshold"
+        );
+        assertEq(liquidityData.maxDebt, collateral.percentMul(daiLtv), "maxDebt");
+        assertEq(liquidityData.collateral, collateral, "collateral");
+        assertEq(
+            liquidityData.debt,
+            (hypotheticalBorrow * oracle.getAssetPrice(usdc)).divUp(10**usdcDecimals),
+            "debt"
+        );
+    }
+
+    function testUserHypotheticalBalanceStatesAfterUnauthorisedBorrowWithdraw() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        uint256 hypotheticalWithdraw = 2 * amount;
+        uint256 hypotheticalBorrow = amount;
+        Types.LiquidityData memory liquidityData = lens.getUserHypotheticalBalanceStates(
+            address(borrower1),
+            aDai,
+            hypotheticalWithdraw,
+            hypotheticalBorrow
+        );
+
+        (, , , uint256 daiDecimals, ) = pool.getConfiguration(dai).getParamsMemory();
+
+        assertEq(liquidityData.liquidationThreshold, 0, "liquidationThreshold");
+        assertEq(liquidityData.maxDebt, 0, "maxDebt");
+        assertEq(liquidityData.collateral, 0, "collateral");
+        assertEq(
+            liquidityData.debt,
+            (hypotheticalBorrow * oracle.getAssetPrice(dai)).divUp(10**daiDecimals),
+            "debt"
+        );
     }
 
     function testMaxCapacitiesWithNothing() public {
