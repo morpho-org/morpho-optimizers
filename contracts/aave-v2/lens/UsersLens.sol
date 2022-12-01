@@ -106,13 +106,13 @@ abstract contract UsersLens is IndexesLens {
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
     /// @param _user The potential liquidatee.
-    /// @param _poolTokenBorrowedAddress The address of the market to repay.
-    /// @param _poolTokenCollateralAddress The address of the market to seize.
+    /// @param _poolTokenBorrowed The address of the market to repay.
+    /// @param _poolTokenCollateral The address of the market to seize.
     /// @return The maximum repayable amount (in underlying).
     function computeLiquidationRepayAmount(
         address _user,
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral
     ) external view returns (uint256) {
         if (!isLiquidatable(_user)) return 0;
 
@@ -121,9 +121,9 @@ abstract contract UsersLens is IndexesLens {
             ,
             ,
             uint256 totalCollateralBalance
-        ) = _getCurrentSupplyBalanceInOf(_poolTokenCollateralAddress, _user);
+        ) = _getCurrentSupplyBalanceInOf(_poolTokenCollateral, _user);
         (address borrowedToken, , , uint256 totalBorrowBalance) = _getCurrentBorrowBalanceInOf(
-            _poolTokenBorrowedAddress,
+            _poolTokenBorrowed,
             _user
         );
 
