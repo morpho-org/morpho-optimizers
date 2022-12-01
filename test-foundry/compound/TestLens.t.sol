@@ -702,6 +702,50 @@ contract TestLens is TestSetup {
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
+    function testUserHypotheticalBalanceStatesUnenteredMarket() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+
+        uint256 hypotheticalBorrow = 500e6;
+        (uint256 debtValue, uint256 maxDebtValue) = lens.getUserHypotheticalBalanceStates(
+            address(borrower1),
+            cUsdc,
+            amount / 2,
+            hypotheticalBorrow
+        );
+
+        (, uint256 daiCollateralFactor, ) = comptroller.markets(cDai);
+
+        assertApproxEqAbs(
+            maxDebtValue,
+            amount.mul(oracle.getUnderlyingPrice(cDai)).mul(daiCollateralFactor),
+            1e9,
+            "maxDebtValue"
+        );
+        assertEq(debtValue, hypotheticalBorrow.mul(oracle.getUnderlyingPrice(cUsdc)), "debtValue");
+    }
+
+    function testUserHypotheticalBalanceStatesAfterUnauthorisedBorrowWithdraw() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+
+        uint256 hypotheticalWithdraw = 2 * amount;
+        uint256 hypotheticalBorrow = amount;
+        (uint256 debtValue, uint256 maxDebtValue) = lens.getUserHypotheticalBalanceStates(
+            address(borrower1),
+            cDai,
+            hypotheticalWithdraw,
+            hypotheticalBorrow
+        );
+
+        assertEq(maxDebtValue, 0, "maxDebtValue");
+        assertEq(debtValue, hypotheticalBorrow.mul(oracle.getUnderlyingPrice(cDai)), "debtValue");
+    }
+
     function testGetMainMarketData() public {
         uint256 amount = 10_000 ether;
 
