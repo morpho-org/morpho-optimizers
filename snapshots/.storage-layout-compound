@@ -1,17 +1,16 @@
-
 =======================
 ➡ Morpho
 =======================
 
 | Name                     | Type                                                               | Slot | Offset | Bytes | Contract                             |
-|--------------------------|--------------------------------------------------------------------|------|--------|-------|--------------------------------------|
-| _initialized             | bool                                                               | 0    | 0      | 1     | contracts/compound/Morpho.sol:Morpho |
-| _initializing            | bool                                                               | 0    | 1      | 1     | contracts/compound/Morpho.sol:Morpho |
-| __gap                    | uint256[50]                                                        | 1    | 0      | 1600  | contracts/compound/Morpho.sol:Morpho |
-| _owner                   | address                                                            | 51   | 0      | 20    | contracts/compound/Morpho.sol:Morpho |
-| __gap                    | uint256[49]                                                        | 52   | 0      | 1568  | contracts/compound/Morpho.sol:Morpho |
-| _status                  | uint256                                                            | 101  | 0      | 32    | contracts/compound/Morpho.sol:Morpho |
-| __gap                    | uint256[49]                                                        | 102  | 0      | 1568  | contracts/compound/Morpho.sol:Morpho |
+| ------------------------ | ------------------------------------------------------------------ | ---- | ------ | ----- | ------------------------------------ |
+| \_initialized            | bool                                                               | 0    | 0      | 1     | contracts/compound/Morpho.sol:Morpho |
+| \_initializing           | bool                                                               | 0    | 1      | 1     | contracts/compound/Morpho.sol:Morpho |
+| \_\_gap                  | uint256[50]                                                        | 1    | 0      | 1600  | contracts/compound/Morpho.sol:Morpho |
+| \_owner                  | address                                                            | 51   | 0      | 20    | contracts/compound/Morpho.sol:Morpho |
+| \_\_gap                  | uint256[49]                                                        | 52   | 0      | 1568  | contracts/compound/Morpho.sol:Morpho |
+| \_status                 | uint256                                                            | 101  | 0      | 32    | contracts/compound/Morpho.sol:Morpho |
+| \_\_gap                  | uint256[49]                                                        | 102  | 0      | 1568  | contracts/compound/Morpho.sol:Morpho |
 | maxSortedUsers           | uint256                                                            | 151  | 0      | 32    | contracts/compound/Morpho.sol:Morpho |
 | dustThreshold            | uint256                                                            | 152  | 0      | 32    | contracts/compound/Morpho.sol:Morpho |
 | defaultMaxGasForMatching | struct Types.MaxGasForMatching                                     | 153  | 0      | 32    | contracts/compound/Morpho.sol:Morpho |
@@ -48,9 +47,9 @@
 =======================
 
 | Name                     | Type                                                    | Slot | Offset | Bytes | Contract                                             |
-|--------------------------|---------------------------------------------------------|------|--------|-------|------------------------------------------------------|
-| _initialized             | bool                                                    | 0    | 0      | 1     | contracts/compound/RewardsManager.sol:RewardsManager |
-| _initializing            | bool                                                    | 0    | 1      | 1     | contracts/compound/RewardsManager.sol:RewardsManager |
+| ------------------------ | ------------------------------------------------------- | ---- | ------ | ----- | ---------------------------------------------------- |
+| \_initialized            | bool                                                    | 0    | 0      | 1     | contracts/compound/RewardsManager.sol:RewardsManager |
+| \_initializing           | bool                                                    | 0    | 1      | 1     | contracts/compound/RewardsManager.sol:RewardsManager |
 | userUnclaimedCompRewards | mapping(address => uint256)                             | 1    | 0      | 32    | contracts/compound/RewardsManager.sol:RewardsManager |
 | compSupplierIndex        | mapping(address => mapping(address => uint256))         | 2    | 0      | 32    | contracts/compound/RewardsManager.sol:RewardsManager |
 | compBorrowerIndex        | mapping(address => mapping(address => uint256))         | 3    | 0      | 32    | contracts/compound/RewardsManager.sol:RewardsManager |
@@ -64,9 +63,9 @@
 =======================
 
 | Name           | Type                     | Slot | Offset | Bytes | Contract                              |
-|----------------|--------------------------|------|--------|-------|---------------------------------------|
-| _initialized   | bool                     | 0    | 0      | 1     | contracts/compound/lens/Lens.sol:Lens |
-| _initializing  | bool                     | 0    | 1      | 1     | contracts/compound/lens/Lens.sol:Lens |
+| -------------- | ------------------------ | ---- | ------ | ----- | ------------------------------------- |
+| \_initialized  | bool                     | 0    | 0      | 1     | contracts/compound/lens/Lens.sol:Lens |
+| \_initializing | bool                     | 0    | 1      | 1     | contracts/compound/lens/Lens.sol:Lens |
 | morpho         | contract IMorpho         | 0    | 2      | 20    | contracts/compound/lens/Lens.sol:Lens |
 | comptroller    | contract IComptroller    | 1    | 0      | 20    | contracts/compound/lens/Lens.sol:Lens |
 | rewardsManager | contract IRewardsManager | 2    | 0      | 20    | contracts/compound/lens/Lens.sol:Lens |

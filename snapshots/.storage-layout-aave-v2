@@ -1,17 +1,16 @@
-
 =======================
 ➡ Morpho
 =======================
 
 | Name                     | Type                                                               | Slot | Offset | Bytes | Contract                            |
-|--------------------------|--------------------------------------------------------------------|------|--------|-------|-------------------------------------|
-| _initialized             | bool                                                               | 0    | 0      | 1     | contracts/aave-v2/Morpho.sol:Morpho |
-| _initializing            | bool                                                               | 0    | 1      | 1     | contracts/aave-v2/Morpho.sol:Morpho |
-| __gap                    | uint256[50]                                                        | 1    | 0      | 1600  | contracts/aave-v2/Morpho.sol:Morpho |
-| _owner                   | address                                                            | 51   | 0      | 20    | contracts/aave-v2/Morpho.sol:Morpho |
-| __gap                    | uint256[49]                                                        | 52   | 0      | 1568  | contracts/aave-v2/Morpho.sol:Morpho |
-| _status                  | uint256                                                            | 101  | 0      | 32    | contracts/aave-v2/Morpho.sol:Morpho |
-| __gap                    | uint256[49]                                                        | 102  | 0      | 1568  | contracts/aave-v2/Morpho.sol:Morpho |
+| ------------------------ | ------------------------------------------------------------------ | ---- | ------ | ----- | ----------------------------------- |
+| \_initialized            | bool                                                               | 0    | 0      | 1     | contracts/aave-v2/Morpho.sol:Morpho |
+| \_initializing           | bool                                                               | 0    | 1      | 1     | contracts/aave-v2/Morpho.sol:Morpho |
+| \_\_gap                  | uint256[50]                                                        | 1    | 0      | 1600  | contracts/aave-v2/Morpho.sol:Morpho |
+| \_owner                  | address                                                            | 51   | 0      | 20    | contracts/aave-v2/Morpho.sol:Morpho |
+| \_\_gap                  | uint256[49]                                                        | 52   | 0      | 1568  | contracts/aave-v2/Morpho.sol:Morpho |
+| \_status                 | uint256                                                            | 101  | 0      | 32    | contracts/aave-v2/Morpho.sol:Morpho |
+| \_\_gap                  | uint256[49]                                                        | 102  | 0      | 1568  | contracts/aave-v2/Morpho.sol:Morpho |
 | isClaimRewardsPaused     | bool                                                               | 151  | 0      | 1     | contracts/aave-v2/Morpho.sol:Morpho |
 | maxSortedUsers           | uint256                                                            | 152  | 0      | 32    | contracts/aave-v2/Morpho.sol:Morpho |
 | defaultMaxGasForMatching | struct Types.MaxGasForMatching                                     | 153  | 0      | 32    | contracts/aave-v2/Morpho.sol:Morpho |
@@ -45,4 +44,4 @@
 =======================
 
 | Name | Type | Slot | Offset | Bytes | Contract |
-|------|------|------|--------|-------|----------|
+| ---- | ---- | ---- | ------ | ----- | -------- |
