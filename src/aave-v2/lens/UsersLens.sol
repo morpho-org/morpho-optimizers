@@ -32,7 +32,7 @@ abstract contract UsersLens is IndexesLens {
         enteredMarkets = new address[](nbCreatedMarkets);
 
         bytes32 userMarkets = morpho.userMarkets(_user);
-        for (uint256 i; i < nbCreatedMarkets; ) {
+        for (uint256 i; i < nbCreatedMarkets; ++i) {
             if (_isSupplyingOrBorrowing(userMarkets, createdMarkets[i])) {
                 enteredMarkets[nbEnteredMarkets] = createdMarkets[i];
                 ++nbEnteredMarkets;
@@ -212,7 +212,7 @@ abstract contract UsersLens is IndexesLens {
         address[] memory createdMarkets = morpho.getMarketsCreated();
 
         uint256 nbCreatedMarkets = createdMarkets.length;
-        for (uint256 i; i < nbCreatedMarkets; ) {
+        for (uint256 i; i < nbCreatedMarkets; ++i) {
             address poolToken = createdMarkets[i];
 
             Types.AssetLiquidityData memory assetData = _poolToken == poolToken
@@ -231,10 +231,6 @@ abstract contract UsersLens is IndexesLens {
                 assetData.liquidationThreshold
             );
             liquidityData.debt += assetData.debt;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
