@@ -22,9 +22,8 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking: {
-        enabled: true,
-        url: `https://${process.env.NETWORK}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: Number(process.env.BLOCK_NUMBER ?? 15_500_000),
+        url: `https://${process.env.NETWORK || "eth-mainnet"}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+        blockNumber: Number(process.env.BLOCK_NUMBER || 15_500_000),
       },
     },
   },
@@ -36,9 +35,6 @@ const config: HardhatUserConfig = {
         return line;
       },
     }),
-  },
-  paths: {
-    sources: "./contracts/",
   },
   solidity: {
     compilers: [

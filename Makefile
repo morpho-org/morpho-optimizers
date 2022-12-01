@@ -85,17 +85,21 @@ script-%:
 	@echo Running script $* of Morpho-${PROTOCOL} on "${NETWORK}" with script mode: ${SMODE}
 	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
 
+ci:
+	@forge test -vv
+
 test:
 	@echo Running all Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge test -vv | tee trace.ansi
 
 coverage:
-	@echo Create coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge coverage
-
-coverage-lcov:
-	@echo Create coverage lcov for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
+	@echo Create lcov coverage report for Morpho-${PROTOCOL} tests on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
 	@forge coverage --report lcov
+	@lcov --remove lcov.info -o lcov.info "test-foundry/*"
+
+lcov-html:
+	@echo Transforming the lcov coverage report into html
+	@genhtml lcov.info -o coverage
 
 fuzz:
 	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
@@ -104,11 +108,11 @@ fuzz:
 
 gas-report:
 	@echo Creating gas report for Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}" with seed "${FOUNDRY_FUZZ_SEED}"
-	@forge test --gas-report
+	@forge test --gas-report | tee trace.ansi
 
 test-common:
 	@echo Running all common tests on "${NETWORK}"
-	@FOUNDRY_TEST=test-foundry/common forge test -vvv
+	@FOUNDRY_TEST=test-foundry/common forge test -vvv | tee trace.ansi
 
 contract-% c-%:
 	@echo Running tests for contract $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
@@ -116,7 +120,7 @@ contract-% c-%:
 
 single-% s-%:
 	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvv --match-test $* | tee trace.ansi
+	@forge test -vvvv --match-test $* | tee trace.ansi
 
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
@@ -128,4 +132,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry
+.PHONY: test config test-common foundry coverage
