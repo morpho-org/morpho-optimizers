@@ -272,34 +272,23 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory createdMarkets = morpho.getAllMarkets();
 
-        uint256 nbEnteredMarkets = createdMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = createdMarkets[i];
+        uint256 nbCreatedMarkets = createdMarkets.length;
+        for (uint256 i; i < nbCreatedMarkets; ++i) {
+            address poolToken = createdMarkets[i];
 
-            Types.AssetLiquidityData memory assetData = _poolToken == poolTokenEntered
+            Types.AssetLiquidityData memory assetData = _poolToken == poolToken
                 ? _getUserHypotheticalLiquidityDataForAsset(
                     _user,
-                    poolTokenEntered,
+                    poolToken,
                     true,
                     oracle,
                     _withdrawnAmount,
                     _borrowedAmount
                 )
-                : _getUserHypotheticalLiquidityDataForAsset(
-                    _user,
-                    poolTokenEntered,
-                    true,
-                    oracle,
-                    0,
-                    0
-                );
+                : _getUserHypotheticalLiquidityDataForAsset(_user, poolToken, true, oracle, 0, 0);
 
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 

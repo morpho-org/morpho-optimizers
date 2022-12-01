@@ -28,10 +28,10 @@ library Types {
     }
 
     struct Indexes {
-        uint256 p2pSupplyIndex; // Peer-to-peer supply index (in ray), used to multiply the scaled peer-to-peer supply balance and get the peer-to-peer supply balance (in underlying).
-        uint256 p2pBorrowIndex; // Peer-to-peer borrow index (in ray), used to multiply the scaled peer-to-peer borrow balance and get the peer-to-peer borrow balance (in underlying).
-        uint256 poolSupplyIndex; // The underlying pool's supply index (in ray), used to multiply the scaled pool supply balance and get the pool supply balance (in underlying).
-        uint256 poolBorrowIndex; // The underlying pool's borrow index (in ray), used to multiply the scaled pool borrow balance and get the pool borrow balance (in underlying).
+        uint256 p2pSupplyIndex; // The peer-to-peer supply index (in ray), used to multiply the scaled peer-to-peer supply balance and get the peer-to-peer supply balance (in underlying).
+        uint256 p2pBorrowIndex; // The peer-to-peer borrow index (in ray), used to multiply the scaled peer-to-peer borrow balance and get the peer-to-peer borrow balance (in underlying).
+        uint256 poolSupplyIndex; // The pool supply index (in ray), used to multiply the scaled pool supply balance and get the pool supply balance (in underlying).
+        uint256 poolBorrowIndex; // The pool borrow index (in ray), used to multiply the scaled pool borrow balance and get the pool borrow balance (in underlying).
     }
 
     // Max gas to consume during the matching process for supply, borrow, withdraw and repay functions.
