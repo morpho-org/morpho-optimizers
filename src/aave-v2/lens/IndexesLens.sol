@@ -13,13 +13,13 @@ import "./LensStorage.sol";
 abstract contract IndexesLens is LensStorage {
     using WadRayMath for uint256;
 
-    /// PUBLIC ///
+    /// EXTERNAL ///
 
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolToken The address of the market.
     /// @return currentP2PSupplyIndex The updated peer-to-peer supply index.
     function getCurrentP2PSupplyIndex(address _poolToken)
-        public
+        external
         view
         returns (uint256 currentP2PSupplyIndex)
     {
@@ -30,7 +30,7 @@ abstract contract IndexesLens is LensStorage {
     /// @param _poolToken The address of the market.
     /// @return currentP2PBorrowIndex The updated peer-to-peer borrow index.
     function getCurrentP2PBorrowIndex(address _poolToken)
-        public
+        external
         view
         returns (uint256 currentP2PBorrowIndex)
     {
@@ -44,7 +44,7 @@ abstract contract IndexesLens is LensStorage {
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
     function getIndexes(address _poolToken)
-        public
+        external
         view
         returns (
             uint256 p2pSupplyIndex,
