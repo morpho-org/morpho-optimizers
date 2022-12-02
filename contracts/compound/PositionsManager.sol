@@ -14,6 +14,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+    using Math for uint256;
 
     /// EVENTS ///
 
@@ -555,10 +556,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _amount = Math.min(
             _amount,
             Math.min(
-                deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]) -
-                    deltas.p2pSupplyDelta.mul(poolSupplyIndex),
-                deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]) -
+                deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).zeroFloorSub(
+                    deltas.p2pSupplyDelta.mul(poolSupplyIndex)
+                ),
+                deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).zeroFloorSub(
                     deltas.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
+                )
             )
         );
         if (_amount == 0) revert AmountIsZero();
@@ -831,10 +834,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
             // No need to subtract p2pBorrowDelta as it is zero.
-            vars.feeToRepay =
-                delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
-                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored()));
+            vars.feeToRepay = delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex).zeroFloorSub(
+                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).zeroFloorSub(
+                    delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
+                )
+            );
 
             if (vars.feeToRepay > 0) {
                 uint256 feeRepaid = Math.min(vars.feeToRepay, vars.remainingToRepay);
