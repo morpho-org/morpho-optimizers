@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@contracts/compound/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/compound/libraries/CompoundMath.sol";
+import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";

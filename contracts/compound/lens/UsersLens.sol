@@ -82,10 +82,7 @@ abstract contract UsersLens is IndexesLens {
         );
 
         if (assetData.collateralFactor != 0) {
-            withdrawable = CompoundMath.min(
-                withdrawable,
-                borrowable.div(assetData.collateralFactor)
-            );
+            withdrawable = Math.min(withdrawable, borrowable.div(assetData.collateralFactor));
         }
     }
 
