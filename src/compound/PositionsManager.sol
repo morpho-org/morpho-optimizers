@@ -836,7 +836,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
             // No need to subtract p2pBorrowDelta as it is zero.
-            vars.feeToRepay = delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex).zeroFloorSub(
+            vars.feeToRepay = Math.zeroFloorSub(
+                delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
                 delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).zeroFloorSub(
                     delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
                 )
