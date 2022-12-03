@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import {CompoundMath} from "src/compound/libraries/CompoundMath.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
-import {Types} from "src/compound/libraries/Types.sol";
+import {Types} from "@contracts/compound/libraries/Types.sol";
 
-import {PositionsManager} from "src/compound/PositionsManager.sol";
-import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
+import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
+import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
 import "@config/Config.sol";
