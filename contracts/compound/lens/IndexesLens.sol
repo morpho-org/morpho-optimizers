@@ -137,9 +137,7 @@ abstract contract IndexesLens is LensStorage {
         uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
             reservesPrior;
 
-        currentPoolSupplyIndex = totalSupply > 0
-            ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
-            : cToken.initialExchangeRateMantissa();
+        currentPoolSupplyIndex = (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply);
         currentPoolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 
