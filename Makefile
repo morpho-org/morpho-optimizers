@@ -10,6 +10,7 @@ FOUNDRY_SRC ?= contracts/${PROTOCOL}/
 FOUNDRY_PROFILE ?= ${PROTOCOL}
 FOUNDRY_REMAPPINGS ?= @config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_PRIVATE_KEY ?= ${DEPLOYER_PRIVATE_KEY}
+FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
 ifeq (${FOUNDRY_PROFILE}, production)
   FOUNDRY_TEST = test-foundry/prod/${PROTOCOL}/
@@ -59,7 +60,7 @@ test:
 		match contract patterns \"\(${FOUNDRY_MATCH_CONTRACT}\)!${FOUNDRY_NO_MATCH_CONTRACT}\",\
 		match test patterns \"\(${FOUNDRY_MATCH_TEST}\)!${FOUNDRY_NO_MATCH_TEST}\"
 
-	forge test -vvvvv | tee trace.ansi
+	forge test -vvv | tee trace.ansi
 
 test-prod:
 	@FOUNDRY_NO_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
