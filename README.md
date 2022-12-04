@@ -128,7 +128,7 @@ For the other commands, check the [Makefile](./Makefile).
 
 ## Testing with Hardhat
 
-Only tests for the [RewardsDistributor](./contracts/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
+Only tests for the [RewardsDistributor](./src/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
 
 Just run:
 
