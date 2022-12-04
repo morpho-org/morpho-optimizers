@@ -5,7 +5,7 @@ MAKEFLAGS += --no-print-directory
 PROTOCOL ?= compound
 NETWORK ?= eth-mainnet
 
-FOUNDRY_SRC ?= contracts/${PROTOCOL}/
+FOUNDRY_SRC ?= src/${PROTOCOL}/
 
 FOUNDRY_PROFILE ?= ${PROTOCOL}
 FOUNDRY_REMAPPINGS ?= @config/=config/${NETWORK}/${PROTOCOL}/
@@ -114,4 +114,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry coverage contracts
+.PHONY: test config test-common foundry coverage src

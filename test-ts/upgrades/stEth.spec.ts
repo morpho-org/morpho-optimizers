@@ -51,9 +51,7 @@ describe("Check ugprade", () => {
   const morpho = MorphoAaveV2__factory.connect("0x777777c9898d384f785ee44acfe945efdff5f3e0", hre.ethers.provider);
 
   const deployUpgrade = async () => {
-    const InterestRatesManagerUpgraded = await hre.ethers.getContractFactory(
-      "contracts/aave-v2/InterestRatesManager.sol:InterestRatesManager"
-    );
+    const InterestRatesManagerUpgraded = await hre.ethers.getContractFactory("src/aave-v2/InterestRatesManager.sol:InterestRatesManager");
 
     const interestRatesManagerUpgraded = await InterestRatesManagerUpgraded.deploy();
     await interestRatesManagerUpgraded.deployed();

@@ -8,8 +8,8 @@ on:
     paths:
       - "lib/**"
       - "config/**/compound/**"
-      - "contracts/common/**"
-      - "contracts/compound/**"
+      - "src/common/**"
+      - "src/compound/**"
       - "test/prod/compound/**"
       - "*.lock"
       - "Makefile"

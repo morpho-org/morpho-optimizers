@@ -7,7 +7,7 @@
     "test:upgrade:stEth": "BLOCK_NUMBER=15580517 hardhat test test-ts/upgrades/stEth.spec.ts",
     "lint": "yarn lint:sol && yarn lint:ts",
     "lint:ts": "eslint . --ext .ts",
-    "lint:sol": "solhint 'contracts/**/*.sol'",
+    "lint:sol": "solhint 'src/**/*.sol'",
     "format": "yarn fix:sol && yarn fix:ts",
     "format:ts": "prettier --write './**/*.ts'",
     "format:sol": "prettier --write './**/*.sol'",

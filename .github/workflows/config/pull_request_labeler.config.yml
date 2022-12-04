@@ -1,14 +1,14 @@
 "👻 aave-v2":
-  - contracts/common/*
-  - contracts/common/**/*
-  - contracts/aave-v2/*
-  - contracts/aave-v2/**/*
+  - src/common/*
+  - src/common/**/*
+  - src/aave-v2/*
+  - src/aave-v2/**/*
 
 "🟢 compound":
-  - contracts/common/*
-  - contracts/common/**/*
-  - contracts/compound/*
-  - contracts/compound/**/*
+  - src/common/*
+  - src/common/**/*
+  - src/compound/*
+  - src/compound/**/*
 
 "🧮 certora":
   - certora/*
