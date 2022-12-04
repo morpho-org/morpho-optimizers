@@ -17,24 +17,24 @@ abstract contract IndexesLens is LensStorage {
 
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolToken The address of the market.
-    /// @return currentP2PSupplyIndex The updated peer-to-peer supply index.
+    /// @return p2pSupplyIndex The updated peer-to-peer supply index.
     function getCurrentP2PSupplyIndex(address _poolToken)
         external
         view
-        returns (uint256 currentP2PSupplyIndex)
+        returns (uint256 p2pSupplyIndex)
     {
-        (, currentP2PSupplyIndex, , ) = _getSupplyIndexes(_poolToken);
+        (, p2pSupplyIndex, , ) = _getSupplyIndexes(_poolToken);
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolToken The address of the market.
-    /// @return currentP2PBorrowIndex The updated peer-to-peer borrow index.
+    /// @return p2pBorrowIndex The updated peer-to-peer borrow index.
     function getCurrentP2PBorrowIndex(address _poolToken)
         external
         view
-        returns (uint256 currentP2PBorrowIndex)
+        returns (uint256 p2pBorrowIndex)
     {
-        (, currentP2PBorrowIndex, , ) = _getBorrowIndexes(_poolToken);
+        (, p2pBorrowIndex, , ) = _getBorrowIndexes(_poolToken);
     }
 
     /// @notice Returns the updated peer-to-peer and pool indexes.
@@ -119,7 +119,7 @@ abstract contract IndexesLens is LensStorage {
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolToken The address of the market.
     /// @return market The market from which to compute the peer-to-peer supply index.
-    /// @return currentP2PSupplyIndex The updated peer-to-peer supply index.
+    /// @return p2pSupplyIndex The updated peer-to-peer supply index.
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
     function _getSupplyIndexes(address _poolToken)
@@ -127,7 +127,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (
             Types.Market memory market,
-            uint256 currentP2PSupplyIndex,
+            uint256 p2pSupplyIndex,
             uint256 poolSupplyIndex,
             uint256 poolBorrowIndex
         )
@@ -147,7 +147,7 @@ abstract contract IndexesLens is LensStorage {
             market.reserveFactor
         );
 
-        currentP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
+        p2pSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
@@ -162,7 +162,7 @@ abstract contract IndexesLens is LensStorage {
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolToken The address of the market.
     /// @return market The market from which to compute the peer-to-peer borrow index.
-    /// @return currentP2PBorrowIndex The updated peer-to-peer borrow index.
+    /// @return p2pBorrowIndex The updated peer-to-peer borrow index.
     /// @return poolSupplyIndex The updated pool supply index.
     /// @return poolBorrowIndex The updated pool borrow index.
     function _getBorrowIndexes(address _poolToken)
@@ -170,7 +170,7 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (
             Types.Market memory market,
-            uint256 currentP2PBorrowIndex,
+            uint256 p2pBorrowIndex,
             uint256 poolSupplyIndex,
             uint256 poolBorrowIndex
         )
@@ -190,7 +190,7 @@ abstract contract IndexesLens is LensStorage {
             market.reserveFactor
         );
 
-        currentP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
+        p2pBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pBorrowGrowthFactor,
