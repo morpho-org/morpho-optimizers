@@ -144,8 +144,6 @@ abstract contract UsersLens is IndexesLens {
             );
     }
 
-    /// PUBLIC ///
-
     /// @notice Returns the balance in underlying of a given user in a given market.
     /// @param _poolToken The address of the market.
     /// @param _user The user to determine balances of.
@@ -153,7 +151,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
-        public
+        external
         view
         returns (
             uint256 balanceInP2P,
@@ -174,7 +172,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
-        public
+        external
         view
         returns (
             uint256 balanceInP2P,
@@ -191,9 +189,15 @@ abstract contract UsersLens is IndexesLens {
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @return The liquidity data of the user.
-    function getUserBalanceStates(address _user) public view returns (Types.LiquidityData memory) {
+    function getUserBalanceStates(address _user)
+        external
+        view
+        returns (Types.LiquidityData memory)
+    {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
+
+    /// PUBLIC ///
 
     /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.

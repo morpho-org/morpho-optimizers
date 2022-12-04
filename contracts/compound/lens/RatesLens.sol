@@ -173,6 +173,42 @@ abstract contract RatesLens is UsersLens {
         );
     }
 
+    /// @notice Returns the supply rate per block a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the supply rate per block for.
+    /// @return The supply rate per block the user is currently experiencing (in wad).
+    function getCurrentUserSupplyRatePerBlock(address _poolToken, address _user)
+        external
+        view
+        returns (uint256)
+    {
+        (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
+
+        return _getUserSupplyRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
+    }
+
+    /// @notice Returns the borrow rate per block a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the borrow rate per block for.
+    /// @return The borrow rate per block the user is currently experiencing (in wad).
+    function getCurrentUserBorrowRatePerBlock(address _poolToken, address _user)
+        external
+        view
+        returns (uint256)
+    {
+        (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
+
+        return _getUserBorrowRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
+    }
+
     /// PUBLIC ///
 
     /// @notice Computes and returns the current supply rate per block experienced on average on a given market.
@@ -339,42 +375,6 @@ abstract contract RatesLens is UsersLens {
                 reserveFactor: marketParams.reserveFactor
             })
         );
-    }
-
-    /// @notice Returns the supply rate per block a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the supply rate per block for.
-    /// @return The supply rate per block the user is currently experiencing (in wad).
-    function getCurrentUserSupplyRatePerBlock(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
-
-        return _getUserSupplyRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
-    }
-
-    /// @notice Returns the borrow rate per block a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the borrow rate per block for.
-    /// @return The borrow rate per block the user is currently experiencing (in wad).
-    function getCurrentUserBorrowRatePerBlock(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
-
-        return _getUserBorrowRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
     }
 
     /// INTERNAL ///
