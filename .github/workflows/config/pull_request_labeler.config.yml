@@ -21,7 +21,7 @@
   - .github/workflows/**/*
 
 "🧪 testing":
-  - test-foundry/**/*
+  - test/**/*
 
 "🏹 fuzzing":
-  - test-foundry/fuzzing/**/*
+  - test/fuzzing/**/*

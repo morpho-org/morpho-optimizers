@@ -10,7 +10,7 @@ on:
       - "config/**/aave-v2/**"
       - "contracts/common/**"
       - "contracts/aave-v2/**"
-      - "test-foundry/prod/aave-v2/**"
+      - "test/prod/aave-v2/**"
       - "*.lock"
       - "Makefile"
       - "foundry.toml"
