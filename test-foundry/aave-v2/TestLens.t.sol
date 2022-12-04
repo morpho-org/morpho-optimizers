@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/aave-v2/interfaces/lido/ILido.sol";
+import "src/aave-v2/interfaces/lido/ILido.sol";
 
 import "./setup/TestSetup.sol";
 

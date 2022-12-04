@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@forge-std/Test.sol";
 
-import "@contracts/compound/libraries/DoubleLinkedList.sol";
+import "src/compound/libraries/DoubleLinkedList.sol";
 
 contract TestDoubleLinkedList is Test {
     using DoubleLinkedList for DoubleLinkedList.List;

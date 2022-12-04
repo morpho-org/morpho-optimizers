@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
-import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
-import "@contracts/aave-v2/interfaces/lido/ILido.sol";
+import "src/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import "src/aave-v2/interfaces/aave/IVariableDebtToken.sol";
+import "src/aave-v2/interfaces/aave/IAToken.sol";
+import "src/aave-v2/interfaces/lido/ILido.sol";
 
-import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
+import {ReserveConfiguration} from "src/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 
-import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
-import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
-import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
-import {PositionsManagerUtils} from "@contracts/aave-v2/PositionsManagerUtils.sol";
-import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
-import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
-import "@contracts/aave-v2/Morpho.sol";
+import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
+import {IncentivesVault} from "src/aave-v2/IncentivesVault.sol";
+import {MatchingEngine} from "src/aave-v2/MatchingEngine.sol";
+import {PositionsManagerUtils} from "src/aave-v2/PositionsManagerUtils.sol";
+import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
+import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
+import "src/aave-v2/Morpho.sol";
 
 import {User} from "../../../aave-v2/helpers/User.sol";
 import "@config/Config.sol";

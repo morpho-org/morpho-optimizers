@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/interfaces/IMorpho.sol";
+import "src/compound/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/compound/libraries/CompoundMath.sol";
+import "src/compound/libraries/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
-import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
-import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
-import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
+import {IncentivesVault} from "src/compound/IncentivesVault.sol";
+import {PositionsManager} from "src/compound/PositionsManager.sol";
+import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";

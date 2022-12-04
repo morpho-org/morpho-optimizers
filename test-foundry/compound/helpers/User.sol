@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/interfaces/IRewardsManager.sol";
+import "src/compound/interfaces/IRewardsManager.sol";
 
-import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/InterestRatesManager.sol";
+import "src/compound/Morpho.sol";
+import "src/compound/InterestRatesManager.sol";
 
 contract User {
     using SafeTransferLib for ERC20;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "src/compound/interfaces/compound/ICompound.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 

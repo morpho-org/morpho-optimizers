@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity >=0.8.0;
 
-import {ILendingPool} from "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
-import {IPriceOracleGetter} from "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
-import {IAaveIncentivesController} from "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import {ILendingPoolAddressesProvider} from "@contracts/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
-import {IRewardsManager} from "@contracts/aave-v2/interfaces/IRewardsManager.sol";
-import {IIncentivesVault} from "@contracts/aave-v2/interfaces/IIncentivesVault.sol";
-import {IEntryPositionsManager} from "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
-import {IExitPositionsManager} from "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
-import {IInterestRatesManager} from "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
+import {ILendingPool} from "src/aave-v2/interfaces/aave/ILendingPool.sol";
+import {IPriceOracleGetter} from "src/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
+import {IAaveIncentivesController} from "src/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import {ILendingPoolAddressesProvider} from "src/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
+import {IRewardsManager} from "src/aave-v2/interfaces/IRewardsManager.sol";
+import {IIncentivesVault} from "src/aave-v2/interfaces/IIncentivesVault.sol";
+import {IEntryPositionsManager} from "src/aave-v2/interfaces/IEntryPositionsManager.sol";
+import {IExitPositionsManager} from "src/aave-v2/interfaces/IExitPositionsManager.sol";
+import {IInterestRatesManager} from "src/aave-v2/interfaces/IInterestRatesManager.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {Lens} from "@contracts/aave-v2/lens/Lens.sol";
-import {Morpho} from "@contracts/aave-v2/Morpho.sol";
+import {Lens} from "src/aave-v2/lens/Lens.sol";
+import {Morpho} from "src/aave-v2/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";
 
 contract Config is BaseConfig {

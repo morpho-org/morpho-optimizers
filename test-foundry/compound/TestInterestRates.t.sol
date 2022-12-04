@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/InterestRatesManager.sol";
+import "src/compound/InterestRatesManager.sol";
 import "@forge-std/Test.sol";
 
 contract TestInterestRates is InterestRatesManager, Test {
