@@ -9,6 +9,7 @@ import "./UsersLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol users and their positions.
 abstract contract RatesLens is UsersLens {
     using CompoundMath for uint256;
+    using Math for uint256;
 
     /// STRUCTS ///
 
@@ -171,6 +172,42 @@ abstract contract RatesLens is UsersLens {
             balanceInP2P,
             totalBalance
         );
+    }
+
+    /// @notice Returns the supply rate per block a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the supply rate per block for.
+    /// @return The supply rate per block the user is currently experiencing (in wad).
+    function getCurrentUserSupplyRatePerBlock(address _poolToken, address _user)
+        external
+        view
+        returns (uint256)
+    {
+        (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
+
+        return _getUserSupplyRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
+    }
+
+    /// @notice Returns the borrow rate per block a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the borrow rate per block for.
+    /// @return The borrow rate per block the user is currently experiencing (in wad).
+    function getCurrentUserBorrowRatePerBlock(address _poolToken, address _user)
+        external
+        view
+        returns (uint256)
+    {
+        (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
+
+        return _getUserBorrowRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
     }
 
     /// PUBLIC ///
@@ -341,42 +378,6 @@ abstract contract RatesLens is UsersLens {
         );
     }
 
-    /// @notice Returns the supply rate per block a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the supply rate per block for.
-    /// @return The supply rate per block the user is currently experiencing (in wad).
-    function getCurrentUserSupplyRatePerBlock(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
-
-        return _getUserSupplyRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
-    }
-
-    /// @notice Returns the borrow rate per block a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the borrow rate per block for.
-    /// @return The borrow rate per block the user is currently experiencing (in wad).
-    function getCurrentUserBorrowRatePerBlock(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
-
-        return _getUserBorrowRatePerBlock(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
-    }
-
     /// INTERNAL ///
 
     /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
@@ -392,9 +393,9 @@ abstract contract RatesLens is UsersLens {
     ) internal view returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount) {
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
-        p2pSupplyAmount =
-            delta.p2pSupplyAmount.mul(_p2pSupplyIndex) -
-            delta.p2pSupplyDelta.mul(_poolSupplyIndex);
+        p2pSupplyAmount = delta.p2pSupplyAmount.mul(_p2pSupplyIndex).zeroFloorSub(
+            delta.p2pSupplyDelta.mul(_poolSupplyIndex)
+        );
         poolSupplyAmount = ICToken(_poolToken).balanceOf(address(morpho)).mul(_poolSupplyIndex);
     }
 
@@ -411,9 +412,9 @@ abstract contract RatesLens is UsersLens {
     ) internal view returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount) {
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
-        p2pBorrowAmount =
-            delta.p2pBorrowAmount.mul(_p2pBorrowIndex) -
-            delta.p2pBorrowDelta.mul(_poolBorrowIndex);
+        p2pBorrowAmount = delta.p2pBorrowAmount.mul(_p2pBorrowIndex).zeroFloorSub(
+            delta.p2pBorrowDelta.mul(_poolBorrowIndex)
+        );
         poolBorrowAmount = ICToken(_poolToken)
         .borrowBalanceStored(address(morpho))
         .div(ICToken(_poolToken).borrowIndex())

@@ -9,7 +9,7 @@ library InterestRatesModel {
     using PercentageMath for uint256;
     using CompoundMath for uint256;
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
+    uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
     /// STRUCTS ///

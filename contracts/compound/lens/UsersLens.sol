@@ -151,6 +151,51 @@ abstract contract UsersLens is IndexesLens {
         return maxDebtValue.div(debtValue);
     }
 
+    /// @dev Returns the debt value, max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum debt value possible of the user.
+    function getUserHypotheticalBalanceStates(
+        address _user,
+        address _poolToken,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) external view returns (uint256 debtValue, uint256 maxDebtValue) {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
+            address poolTokenEntered = enteredMarkets[i];
+
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                true,
+                oracle
+            );
+
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+            unchecked {
+                ++i;
+            }
+
+            if (_poolToken == poolTokenEntered) {
+                if (_borrowedAmount > 0)
+                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
+
+                if (_withdrawnAmount > 0)
+                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
+                        assetData.collateralFactor
+                    );
+            }
+        }
+    }
+
     /// PUBLIC ///
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
@@ -253,51 +298,6 @@ abstract contract UsersLens is IndexesLens {
         balanceInP2P = borrowBalance.inP2P.mul(p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
-    }
-
-    /// @dev Returns the debt value, max debt value of a given user.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolToken The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum debt value possible of the user.
-    function getUserHypotheticalBalanceStates(
-        address _user,
-        address _poolToken,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) public view returns (uint256 debtValue, uint256 maxDebtValue) {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
-
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                true,
-                oracle
-            );
-
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
-            unchecked {
-                ++i;
-            }
-
-            if (_poolToken == poolTokenEntered) {
-                if (_borrowedAmount > 0)
-                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
-
-                if (_withdrawnAmount > 0)
-                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                        assetData.collateralFactor
-                    );
-            }
-        }
     }
 
     /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
