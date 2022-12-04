@@ -22,7 +22,3 @@ fork_block_number = 15_581_371
 
 [profile.aave-v2]
 fork_block_number = 15_581_371 # Block number when the Aave's V2 IRM was updated for the stETH.
-
-[profile.aave-v3]
-eth_rpc_url = "https://api.avax.network/ext/bc/C/rpc"
-fork_block_number = 15_675_271

@@ -17,11 +17,6 @@ else
   FOUNDRY_TEST ?= test-foundry/${PROTOCOL}/
 endif
 
-ifneq (${NETWORK}, avalanche-mainnet)
-  FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-endif
-
-
 install:
 	yarn
 	foundryup
@@ -64,7 +59,7 @@ test:
 		match contract patterns \"\(${FOUNDRY_MATCH_CONTRACT}\)!${FOUNDRY_NO_MATCH_CONTRACT}\",\
 		match test patterns \"\(${FOUNDRY_MATCH_TEST}\)!${FOUNDRY_NO_MATCH_TEST}\"
 
-	forge test -vvv | tee trace.ansi
+	forge test -vvvvv | tee trace.ansi
 
 test-prod:
 	@FOUNDRY_NO_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
