@@ -10,6 +10,7 @@ import {IIncentivesVault} from "src/aave-v2/interfaces/IIncentivesVault.sol";
 import {IEntryPositionsManager} from "src/aave-v2/interfaces/IEntryPositionsManager.sol";
 import {IExitPositionsManager} from "src/aave-v2/interfaces/IExitPositionsManager.sol";
 import {IInterestRatesManager} from "src/aave-v2/interfaces/IInterestRatesManager.sol";
+import {ILendingPoolConfigurator} from "../../../test/aave-v2/helpers/ILendingPoolConfigurator.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -41,6 +42,8 @@ contract Config is BaseConfig {
     address public morphoDao = 0xcBa28b38103307Ec8dA98377ffF9816C164f9AFa;
     ILendingPoolAddressesProvider public poolAddressesProvider =
         ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
+    ILendingPoolConfigurator public lendingPoolConfigurator =
+        ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
     IAaveIncentivesController public aaveIncentivesController =
         IAaveIncentivesController(0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5);
     IPriceOracleGetter public oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
