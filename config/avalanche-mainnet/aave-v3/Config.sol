@@ -27,6 +27,7 @@ contract Config {
     address constant variableDebtUsdc = 0xFCCf3cAbbe80101232d343252614b6A3eE81C989;
 
     address constant poolDataProviderAddress = 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654;
+    address constant poolConfiguratorAddress = 0x8145eddDf43f50276641b55bd3AD95944510021E;
     address constant poolAddressesProviderAddress = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address constant rewardsControllerAddress = 0x929EC64c34a17401F460460D4B9390518E5B473e;
     address constant swapRouterAddress = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;

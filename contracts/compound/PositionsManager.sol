@@ -251,11 +251,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         SupplyVars memory vars;
         vars.poolBorrowIndex = lastPoolIndexes[_poolToken].lastBorrowPoolIndex;
         vars.remainingToSupply = _amount;
+        bool p2pDisabled = p2pDisabled[_poolToken];
 
         /// Peer-to-peer supply ///
 
         // Match the peer-to-peer borrow delta.
-        if (delta.p2pBorrowDelta > 0) {
+        if (delta.p2pBorrowDelta > 0 && !p2pDisabled) {
             uint256 deltaInUnderlying = delta.p2pBorrowDelta.mul(vars.poolBorrowIndex);
             if (deltaInUnderlying > vars.remainingToSupply) {
                 vars.toRepay += vars.remainingToSupply;
@@ -272,7 +273,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Promote pool borrowers.
         if (
             vars.remainingToSupply > 0 &&
-            !p2pDisabled[_poolToken] &&
+            !p2pDisabled &&
             borrowersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchBorrowers(
@@ -347,11 +348,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolToken];
         uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
+        bool p2pDisabled = p2pDisabled[_poolToken];
 
         /// Peer-to-peer borrow ///
 
         // Match the peer-to-peer supply delta.
-        if (delta.p2pSupplyDelta > 0) {
+        if (delta.p2pSupplyDelta > 0 && !p2pDisabled) {
             uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(poolSupplyIndex);
             if (deltaInUnderlying > remainingToBorrow) {
                 toWithdraw += remainingToBorrow;
@@ -369,7 +371,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Promote pool suppliers.
         if (
             remainingToBorrow > 0 &&
-            !p2pDisabled[_poolToken] &&
+            !p2pDisabled &&
             suppliersOnPool[_poolToken].getHead() != address(0)
         ) {
             (uint256 matched, ) = _matchSuppliers(
