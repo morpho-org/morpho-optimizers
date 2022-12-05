@@ -120,7 +120,7 @@ contract-% c-%:
 
 single-% s-%:
 	@echo Running single test $* of Morpho-${PROTOCOL} on "${NETWORK}" at block "${FOUNDRY_FORK_BLOCK_NUMBER}"
-	@forge test -vvvv --match-test $* | tee trace.ansi
+	@forge test -vv --match-test $* | tee trace.ansi
 
 storage-layout-generate:
 	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens

@@ -3,10 +3,400 @@ pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
 import "./helpers/FlashLoan.sol";
+import "../../contracts/aave-v2/libraries/Types.sol";
+import "@forge-std/console.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract TestSupply is TestSetup {
     using stdStorage for StdStorage;
     using WadRayMath for uint256;
+
+    mapping(address => User) users;
+
+    function logFirsts() public view {
+        address current = morpho.getHead(aDai, Types.PositionType.SUPPLIERS_ON_POOL);
+        string memory a;
+        for (uint256 i; i < 8; i++) {
+            (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, current);
+            string memory added = string.concat(Strings.toString(onPool), ", ");
+            a = string.concat(a, added);
+            if (current != address(0))
+                current = morpho.getNext(aDai, Types.PositionType.SUPPLIERS_ON_POOL, current);
+        }
+
+        console.log(a);
+    }
+
+    function getNewUser(address addr) public returns (User usr) {
+        uint256 bigAmount = 1_000_000 ether;
+        usr = users[addr];
+        if (address(usr) == address(0)) {
+            usr = new User(morpho);
+            users[addr] = usr;
+            fillUserBalances(usr);
+            usr.approve(dai, type(uint256).max);
+            usr.approve(wEth, type(uint256).max);
+            usr.supply(aWeth, bigAmount); // so that users are always collateralized
+        }
+    }
+
+    function testFirstMonthDAI() public {
+        User currentUser;
+        createMarket(aWeth);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.borrow(
+        //     aDai,
+        //     0x00000000000000000000000000000000000000000000054b40b1f852bd800000
+        // );
+        // console.log("borrow", 0x00000000000000000000000000000000000000000000054b40b1f852bd800000);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.supply(
+        //     aDai,
+        //     0x00000000000000000000000000000000000000000000054b40b1f852bd800000
+        // );
+        // console.log("supply", 0x00000000000000000000000000000000000000000000054b40b1f852bd800000);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.withdraw(
+        //     aDai,
+        //     0x00000000000000000000000000000000000000000000043c33c1937564800000
+        // );
+        // console.log("withdraw", 0x00000000000000000000000000000000000000000000043c33c1937564800000);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000043c33c1937564800000);
+        // console.log("repay", 0x00000000000000000000000000000000000000000000043c33c1937564800000);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.withdraw(
+        //     aDai,
+        //     0x00000000000000000000000000000000000000000000010f263bd8e952200000
+        // );
+        // console.log("withdraw", 0x00000000000000000000000000000000000000000000010f263bd8e952200000);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000010f263bd8e952200000);
+        // console.log("repay", 0x00000000000000000000000000000000000000000000010f263bd8e952200000);
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.repay(aDai, 0x0000000000000000000000000000000000000000000000000f04892dff9c61b0);
+        // console.log("repay", 0x0000000000000000000000000000000000000000000000000f04892dff9c61b0);
+
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000006e632701fd42a9b856294a2172dd63f03eb957c5))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x0000000000000000000000000000000000000000000000015af1d78b58c40000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000006e632701fd42a9b856294a2172dd63f03eb957c5))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x0000000000000000000000000000000000000000000000004f89dc938286aff8
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000264c86dbbd2e4165fbbf0c35b0ddf0e00aec6b31))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x0000000000000000000000000000000000000000000000056bc75e2d63100000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000006abfd6139c7c3cc270ee2ce132e309f59caaf6a2))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x00000000000000000000000000000000000000000000001b1ae4d6e2ef500000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000006abfd6139c7c3cc270ee2ce132e309f59caaf6a2))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x0000000000000000000000000000000000000000000069c5f3028f93e0000000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000f7253a0e87e39d2cd6365919d4a3d56d431d0041))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x000000000000000000000000000000000000000000000015b81d1d5ac8f69ac0
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000005853ed4f26a3fcea565b3fbc698bb19cdf6deb85))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x000000000000000000000000000000000000000000000000016345785d8a0000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000005853ed4f26a3fcea565b3fbc698bb19cdf6deb85))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x000000000000000000000000000000000000000000000000001b5b22505311f4
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x00000000000000000000000032c52c9e56c7382e9a9e52d53862ff3e6cbcaeee))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x00000000000000000000000000000000000000000000000273f902caf9f57e50
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x00000000000000000000000050e4eb3a74d2be7fd7c0be081754cee2dbeae918))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x000000000000000000000000000000000000000000000002b5e3af16b1880000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000003a91d37bac30c913369e1abc8cad1c13d1ff2e98))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x0000000000000000000000000000000000000000000000000000000005f5e100
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000a1958a37c21372482deff4618baebbec23c9a449))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x0000000000000000000000000000000000000000000002231e1587e466400000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000a1958a37c21372482deff4618baebbec23c9a449))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x00000000000000000000000000000000000000000000001b1ae4d6e2ef500000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000a1958a37c21372482deff4618baebbec23c9a449))
+            )
+        );
+        currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000001b1ae4d6e2ef500000);
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000005f9d7cef3e9298de2e91ff0cb486ce2c7ffc5144))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x000000000000000000000000000000000000000000000001158e460913d00000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000a1958a37c21372482deff4618baebbec23c9a449))
+            )
+        );
+        currentUser.withdraw(
+            aDai,
+            0x000000000000000000000000000000000000000000000222fac9693cdc800000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x00000000000000000000000000000000000000000000054b40b1f852bd800000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x00000000000000000000000000000000000000000000054b40b1f852bd800000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000f53feaeb035361c046e5669745695e450ebb4028))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x00000000000000000000000000000000000000000000d3c21bcecceda0000000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000f53feaeb035361c046e5669745695e450ebb4028))
+            )
+        );
+        currentUser.withdraw(
+            aDai,
+            0x0000000000000000000000000000000000000000000089a49213386740000000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000f53feaeb035361c046e5669745695e450ebb4028))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x000000000000000000000000000000000000000000000a968163f0a57b000000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x00000000000000000000000016c2312b7168f0e268751a4d5d73953176d87768))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x00000000000000000000000000000000000000000000006194049f30f7200000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x000000000000000000000000046f601cbcbfa162228897ac75c9b61daf5cee5f))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x0000000000000000000000000000000000000000000000a2a15d09519be00000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000007bfee91193d9df2ac0bfe90191d40f23c773c060))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x0000000000000000000000000000000000000000000069e4a419b0df64000000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x00000000000000000000000047b023db19b34519aa34c39134b508cac2c1efcb))
+            )
+        );
+        currentUser.borrow(
+            aDai,
+            0x000000000000000000000000000000000000000000007ad1dcedb44c60000000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+            )
+        );
+        currentUser.withdraw(
+            aDai,
+            0x00000000000000000000000000000000000000000000043c33c1937564800000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+            )
+        );
+        currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000043c33c1937564800000);
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+            )
+        );
+        currentUser.withdraw(
+            aDai,
+            0x00000000000000000000000000000000000000000000010f263bd8e952200000
+        );
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+            )
+        );
+        currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000010f263bd8e952200000);
+        logFirsts();
+        currentUser = getNewUser(
+            address(
+                uint160(uint256(0x0000000000000000000000007bfee91193d9df2ac0bfe90191d40f23c773c060))
+            )
+        );
+        currentUser.supply(
+            aDai,
+            0x00000000000000000000000000000000000000000000ddc21a99e84720000000
+        );
+        logFirsts();
+    }
 
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply1() public {
