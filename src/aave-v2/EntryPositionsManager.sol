@@ -145,15 +145,16 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
         }
 
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
-            _onBehalf
-        ];
+        uint256 inP2PNew;
+        uint256 onPoolNew;
 
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
-
             delta.p2pSupplyAmount += toAddInP2P;
-            supplierSupplyBalance.inP2P += toAddInP2P;
+            uint256 inP2POld = suppliersInP2P.getValueOf(_onBehalf);
+            inP2PNew = inP2POld + toAddInP2P;
+
+            suppliersInP2P.updateHeap(_onBehalf, inP2POld, inP2PNew);
             _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -163,22 +164,15 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
-            supplierSupplyBalance.onPool += vars.remainingToSupply.rayDiv(
-                poolIndexes[_poolToken].poolSupplyIndex
-            ); // In scaled balance.
+            uint256 onPoolOld = suppliersInPool.getValueOf(_onBehalf);
+            onPoolNew =
+                onPoolOld +
+                vars.remainingToSupply.rayDiv(poolIndexes[_poolToken].poolSupplyIndex);
+            suppliersInPool.updateHeap(_onBehalf, onPoolOld, onPoolNew);
             _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
 
-        _updateSupplierInDS(_poolToken, _onBehalf);
-
-        emit Supplied(
-            _from,
-            _onBehalf,
-            _poolToken,
-            _amount,
-            supplierSupplyBalance.onPool,
-            supplierSupplyBalance.inP2P
-        );
+        emit Supplied(_from, _onBehalf, _poolToken, _amount, onPoolNew, inP2PNew);
     }
 
     /// @dev Implements borrow logic.

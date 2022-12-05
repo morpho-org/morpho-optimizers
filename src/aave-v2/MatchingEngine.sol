@@ -73,6 +73,8 @@ abstract contract MatchingEngine is MorphoUtils {
         address firstPoolSupplier;
         uint256 remainingToMatch = _amount;
         uint256 gasLeftAtTheBeginning = gasleft();
+        HeapOrdering.HeapArray storage poolSuppliers = suppliersOnPool[_poolToken];
+        HeapOrdering.HeapArray storage p2pSuppliers = suppliersInP2P[_poolToken];
 
         while (
             remainingToMatch > 0 &&
@@ -82,28 +84,25 @@ abstract contract MatchingEngine is MorphoUtils {
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
             }
-            Types.SupplyBalance storage firstPoolSupplierBalance = supplyBalanceInOf[_poolToken][
-                firstPoolSupplier
-            ];
 
-            uint256 poolSupplyBalance = firstPoolSupplierBalance.onPool;
-            uint256 p2pSupplyBalance = firstPoolSupplierBalance.inP2P;
+            // Store old value for heap update.
+            uint256 poolSupplyBalanceOld = poolSuppliers.getValueOf(firstPoolSupplier);
+            uint256 p2pSupplyBalanceOld = p2pSuppliers.getValueOf(firstPoolSupplier);
 
             vars.toMatch = Math.min(poolSupplyBalance.rayMul(vars.poolIndex), remainingToMatch);
             remainingToMatch -= vars.toMatch;
 
-            poolSupplyBalance -= vars.toMatch.rayDiv(vars.poolIndex);
-            p2pSupplyBalance += vars.toMatch.rayDiv(vars.p2pIndex);
+            uint256 poolSupplyBalanceNew = poolSuppliers.getValueOf(firstPoolSupplier);
+            uint256 p2pSupplyBalanceNew = p2pSuppliers.getValueOf(firstPoolSupplier);
 
-            firstPoolSupplierBalance.onPool = poolSupplyBalance;
-            firstPoolSupplierBalance.inP2P = p2pSupplyBalance;
+            poolSuppliers.updateHeap(firstPoolSupplier, poolSupplyBalance, poolSupplyBalanceNew);
+            p2pSuppliers.updateHeap(firstPoolSupplier, p2pSupplyBalance, p2pSupplyBalanceNew);
 
-            _updateSupplierInDS(_poolToken, firstPoolSupplier);
             emit SupplierPositionUpdated(
                 firstPoolSupplier,
                 _poolToken,
-                poolSupplyBalance,
-                p2pSupplyBalance
+                poolSupplyBalanceNew,
+                p2pSupplyBalanceNew
             );
         }
 
@@ -295,59 +294,15 @@ abstract contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Updates the given `_user`'s position in the supplier data structures.
-    /// @param _poolToken The address of the market on which to update the suppliers data structure.
-    /// @param _user The address of the user.
-    function _updateSupplierInDS(address _poolToken, address _user) internal {
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][_user];
-        uint256 onPool = supplierSupplyBalance.onPool;
-        uint256 inP2P = supplierSupplyBalance.inP2P;
-        HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
-        HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
-
-        uint256 formerValueOnPool = marketSuppliersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketSuppliersInP2P.getValueOf(_user);
-
-        marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
-
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                aaveIncentivesController,
-                _user,
-                _poolToken,
-                formerValueOnPool,
-                IScaledBalanceToken(_poolToken).scaledTotalSupply()
-            );
-    }
-
-    /// @notice Updates the given `_user`'s position in the borrower data structures.
-    /// @param _poolToken The address of the market on which to update the borrowers data structure.
-    /// @param _user The address of the user.
-    function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_user];
-        uint256 onPool = borrowerBorrowBalance.onPool;
-        uint256 inP2P = borrowerBorrowBalance.inP2P;
-        HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
-        HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
-
-        uint256 formerValueOnPool = marketBorrowersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketBorrowersInP2P.getValueOf(_user);
-
-        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
-
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            address variableDebtTokenAddress = pool
-            .getReserveData(market[_poolToken].underlyingToken)
-            .variableDebtTokenAddress;
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                aaveIncentivesController,
-                _user,
-                variableDebtTokenAddress,
-                formerValueOnPool,
-                IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
-            );
-        }
+    // Wrapper for heap.update() (could directly go into the DS lib).
+    // I use this function as if it was in a library, but it's not.
+    // _formerValue could be removed depending on the DS used.
+    function updateHeap(
+        HeapOrdering.HeapArray storage _heap,
+        address _user,
+        uint256 _formerValue,
+        uint256 _newValue
+    ) internal {
+        _heap.update(_user, _formerValue, _newValue, maxSortedUsers);
     }
 }
