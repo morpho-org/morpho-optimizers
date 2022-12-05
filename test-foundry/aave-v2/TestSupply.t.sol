@@ -369,33 +369,33 @@ contract TestSupply is TestSetup {
         );
         currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000043c33c1937564800000);
         logFirsts();
-        currentUser = getNewUser(
-            address(
-                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
-            )
-        );
-        currentUser.withdraw(
-            aDai,
-            0x00000000000000000000000000000000000000000000010f263bd8e952200000
-        );
-        logFirsts();
-        currentUser = getNewUser(
-            address(
-                uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
-            )
-        );
-        currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000010f263bd8e952200000);
-        logFirsts();
-        currentUser = getNewUser(
-            address(
-                uint160(uint256(0x0000000000000000000000007bfee91193d9df2ac0bfe90191d40f23c773c060))
-            )
-        );
-        currentUser.supply(
-            aDai,
-            0x00000000000000000000000000000000000000000000ddc21a99e84720000000
-        );
-        logFirsts();
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.withdraw(
+        //     aDai,
+        //     0x00000000000000000000000000000000000000000000010f263bd8e952200000
+        // );
+        // logFirsts();
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000009ed5194f7506d71eed9facb203b80ad03ae8f2ed))
+        //     )
+        // );
+        // currentUser.repay(aDai, 0x00000000000000000000000000000000000000000000010f263bd8e952200000);
+        // logFirsts();
+        // currentUser = getNewUser(
+        //     address(
+        //         uint160(uint256(0x0000000000000000000000007bfee91193d9df2ac0bfe90191d40f23c773c060))
+        //     )
+        // );
+        // currentUser.supply(
+        //     aDai,
+        //     0x00000000000000000000000000000000000000000000ddc21a99e84720000000
+        // );
+        // logFirsts();
     }
 
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
