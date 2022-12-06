@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
+import {CompoundMath} from "@contracts/compound/libraries/CompoundMath.sol";
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
