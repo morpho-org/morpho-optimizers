@@ -2,7 +2,7 @@
 set -euo pipefail # exit on error
 
 unset FOUNDRY_TEST
-export FOUNDRY_SRC=contracts/compound/
+export FOUNDRY_SRC=src/compound/
 
 read -p "🚀❓ Deploy Morpho-Compound's InterestRatesManager on ${NETWORK}? " -n 1 -r
 echo
@@ -12,7 +12,7 @@ then
 	echo "Deploying Morpho-Compound's InterestRatesManager on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --optimize contracts/compound/InterestRatesManager.sol:InterestRatesManager \
+        --optimize src/compound/InterestRatesManager.sol:InterestRatesManager \
         --verify
 
     echo "🎉 InterestRatesManager deployed!"
@@ -28,7 +28,7 @@ then
 	echo "Deploying Morpho-Compound's PositionsManager on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --optimize contracts/compound/PositionsManager.sol:PositionsManager \
+        --optimize src/compound/PositionsManager.sol:PositionsManager \
         --verify
 
     echo "🎉 PositionsManager deployed!"
@@ -44,7 +44,7 @@ then
 	echo "Deploying Morpho-Compound's RewardsManager Implementation on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --optimize contracts/compound/RewardsManager.sol:RewardsManager \
+        --optimize src/compound/RewardsManager.sol:RewardsManager \
         --verify
 
     echo "🎉 RewardsManager Implementation deployed!"
@@ -60,7 +60,7 @@ then
 	echo "Deploying Morpho-Compound's Implementation on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --optimize contracts/compound/Morpho.sol:Morpho \
+        --optimize src/compound/Morpho.sol:Morpho \
         --verify
 
     echo "🎉 Morpho Implementation deployed!"
@@ -76,14 +76,14 @@ then
 	echo "Deploying Morpho-Compound's Lens Implementation on $NETWORK..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --optimize contracts/compound/lens/Lens.sol:Lens \
+        --optimize src/compound/lens/Lens.sol:Lens \
         --verify
 
     echo "🎉 Lens Implementation deployed!"
 fi
 
 
-export FOUNDRY_SRC=node_modules/@openzeppelin/contracts/proxy/transparent/
+export FOUNDRY_SRC=node_modules/@openzeppelin/src/proxy/transparent/
 
 echo "---"
 read -p "🚀❓ Deploy Morpho-Compound's ProxyAdmin on ${NETWORK}? " -n 1 -r
@@ -94,7 +94,7 @@ then
 	echo "Deploying Morpho-Compound's ProxyAdmin on ${NETWORK}..."
 
 	forge create --private-key "${DEPLOYER_PRIVATE_KEY}" \
-        --optimize node_modules/@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin \
+        --optimize node_modules/@openzeppelin/src/proxy/transparent/ProxyAdmin.sol:ProxyAdmin \
         --verify
 
     echo "🎉 ProxyAdmin deployed!"

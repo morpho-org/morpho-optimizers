@@ -5,22 +5,18 @@ MAKEFLAGS += --no-print-directory
 PROTOCOL ?= compound
 NETWORK ?= eth-mainnet
 
-FOUNDRY_SRC ?= contracts/${PROTOCOL}/
+FOUNDRY_SRC ?= src/${PROTOCOL}/
 
 FOUNDRY_PROFILE ?= ${PROTOCOL}
 FOUNDRY_REMAPPINGS ?= @config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_PRIVATE_KEY ?= ${DEPLOYER_PRIVATE_KEY}
+FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
 ifeq (${FOUNDRY_PROFILE}, production)
-  FOUNDRY_TEST = test-foundry/prod/${PROTOCOL}/
+  FOUNDRY_TEST = test/prod/${PROTOCOL}/
 else
-  FOUNDRY_TEST ?= test-foundry/${PROTOCOL}/
+  FOUNDRY_TEST ?= test/${PROTOCOL}/
 endif
-
-ifneq (${NETWORK}, avalanche-mainnet)
-  FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-endif
-
 
 install:
 	yarn
@@ -73,7 +69,7 @@ test-upgrade:
 	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
 
 test-common:
-	@FOUNDRY_TEST=test-foundry/common/ FOUNDRY_PROFILE=common make test
+	@FOUNDRY_TEST=test/common/ FOUNDRY_PROFILE=common make test
 
 test-upgrade-%:
 	@FOUNDRY_MATCH_TEST=$* make test-upgrade
@@ -90,7 +86,7 @@ contract-% c-%:
 coverage:
 	@echo Create lcov coverage report for Morpho-${PROTOCOL}-${NETWORK} tests
 	forge coverage --report lcov
-	lcov --remove lcov.info -o lcov.info "test-foundry/*"
+	lcov --remove lcov.info -o lcov.info "test/*"
 
 lcov-html:
 	@echo Transforming the lcov coverage report into html
