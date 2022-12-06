@@ -4,12 +4,6 @@
   - contracts/aave-v2/*
   - contracts/aave-v2/**/*
 
-"👻 aave-v3":
-  - contracts/common/*
-  - contracts/common/**/*
-  - contracts/aave-v3/*
-  - contracts/aave-v3/**/*
-
 "🟢 compound":
   - contracts/common/*
   - contracts/common/**/*

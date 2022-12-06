@@ -3,7 +3,4 @@
 @morpho-dao/morpho-data-structures/=lib/morpho-data-structures/contracts/
 @rari-capital/solmate/=lib/solmate/
 
-@aave/core-v3/=lib/aave-v3-core/
-@aave/periphery-v3/=lib/aave-v3-periphery/
-
 @contracts/=contracts/

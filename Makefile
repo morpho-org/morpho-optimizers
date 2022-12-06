@@ -10,17 +10,13 @@ FOUNDRY_SRC ?= contracts/${PROTOCOL}/
 FOUNDRY_PROFILE ?= ${PROTOCOL}
 FOUNDRY_REMAPPINGS ?= @config/=config/${NETWORK}/${PROTOCOL}/
 FOUNDRY_PRIVATE_KEY ?= ${DEPLOYER_PRIVATE_KEY}
+FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
 ifeq (${FOUNDRY_PROFILE}, production)
   FOUNDRY_TEST = test-foundry/prod/${PROTOCOL}/
 else
   FOUNDRY_TEST ?= test-foundry/${PROTOCOL}/
 endif
-
-ifneq (${NETWORK}, avalanche-mainnet)
-  FOUNDRY_ETH_RPC_URL ?= https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-endif
-
 
 install:
 	yarn
