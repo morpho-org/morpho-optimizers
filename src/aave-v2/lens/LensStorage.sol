@@ -5,6 +5,7 @@ import "../interfaces/aave/IPriceOracleGetter.sol";
 import "../interfaces/aave/ILendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../interfaces/IMorpho.sol";
+import "./interfaces/ILens.sol";
 
 import "../libraries/aave/ReserveConfiguration.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
@@ -17,7 +18,7 @@ import "../libraries/InterestRatesModel.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage {
+abstract contract LensStorage is ILens {
     /// CONSTANTS & IMMUTABLES ///
 
     uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 50_00; // 50% in basis points.

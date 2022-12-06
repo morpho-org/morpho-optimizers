@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
+import "./interfaces/ILens.sol";
 
 import "../libraries/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
@@ -16,7 +17,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage is Initializable {
+abstract contract LensStorage is ILens, Initializable {
     /// STORAGE ///
 
     uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
