@@ -247,23 +247,17 @@ abstract contract RatesLens is UsersLens {
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
         uint256 poolSupplyRate = reserve.currentLiquidityRate;
-        uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
 
         // Do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
         uint256 p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: poolBorrowRate < poolSupplyRate
-                    ? poolBorrowRate
-                    : PercentageMath.weightedAvg(
-                        poolSupplyRate,
-                        poolBorrowRate,
-                        market.p2pIndexCursor
-                    ),
-                poolRate: poolSupplyRate,
+                poolSupplyRate: poolSupplyRate,
+                poolBorrowRate: reserve.currentVariableBorrowRate,
                 poolIndex: poolSupplyIndex,
                 p2pIndex: p2pSupplyIndex,
                 p2pDelta: 0,
                 p2pAmount: 0,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
@@ -303,24 +297,18 @@ abstract contract RatesLens is UsersLens {
         ) = _getBorrowIndexes(_poolToken);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
-        uint256 poolSupplyRate = reserve.currentLiquidityRate;
         uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
 
         // Do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
         uint256 p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: poolBorrowRate < poolSupplyRate
-                    ? poolBorrowRate
-                    : PercentageMath.weightedAvg(
-                        poolSupplyRate,
-                        poolBorrowRate,
-                        market.p2pIndexCursor
-                    ),
-                poolRate: poolBorrowRate,
+                poolSupplyRate: reserve.currentLiquidityRate,
+                poolBorrowRate: poolBorrowRate,
                 poolIndex: poolBorrowIndex,
                 p2pIndex: p2pBorrowIndex,
                 p2pDelta: 0,
                 p2pAmount: 0,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
@@ -368,32 +356,30 @@ abstract contract RatesLens is UsersLens {
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
         Types.Market memory market = morpho.market(_poolToken);
-        uint256 p2pRate = poolBorrowRate < poolSupplyRate
-            ? poolBorrowRate
-            : PercentageMath.weightedAvg(poolSupplyRate, poolBorrowRate, market.p2pIndexCursor);
-
         Types.Delta memory delta = morpho.deltas(_poolToken);
 
         p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: p2pRate,
-                poolRate: poolSupplyRate,
+                poolSupplyRate: poolSupplyRate,
+                poolBorrowRate: poolBorrowRate,
                 poolIndex: poolSupplyIndex,
                 p2pIndex: p2pSupplyIndex,
                 p2pDelta: delta.p2pSupplyDelta,
                 p2pAmount: delta.p2pSupplyAmount,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
 
         p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: p2pRate,
-                poolRate: poolBorrowRate,
+                poolSupplyRate: poolSupplyRate,
+                poolBorrowRate: poolBorrowRate,
                 poolIndex: poolBorrowIndex,
                 p2pIndex: p2pBorrowIndex,
                 p2pDelta: delta.p2pBorrowDelta,
                 p2pAmount: delta.p2pBorrowAmount,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
