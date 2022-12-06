@@ -37,10 +37,6 @@ abstract contract UsersLens is IndexesLens {
                 enteredMarkets[nbEnteredMarkets] = createdMarkets[i];
                 ++nbEnteredMarkets;
             }
-
-            unchecked {
-                ++i;
-            }
         }
 
         // Resize the array for return
@@ -210,10 +206,14 @@ abstract contract UsersLens is IndexesLens {
     ) public view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory createdMarkets = morpho.getMarketsCreated();
+        bytes32 userMarkets = morpho.userMarkets(_user);
 
         uint256 nbCreatedMarkets = createdMarkets.length;
         for (uint256 i; i < nbCreatedMarkets; ++i) {
             address poolToken = createdMarkets[i];
+
+            if (!_isSupplyingOrBorrowing(userMarkets, poolToken) && _poolToken != poolToken)
+                continue;
 
             Types.AssetLiquidityData memory assetData = _poolToken == poolToken
                 ? _getUserHypotheticalLiquidityDataForAsset(
