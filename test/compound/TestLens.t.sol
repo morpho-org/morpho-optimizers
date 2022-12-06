@@ -703,7 +703,7 @@ contract TestLens is TestSetup {
     }
 
     function testUserHypotheticalBalanceStatesUnenteredMarket() public {
-        uint256 amount = 10_000 ether;
+        uint256 amount = 10_001 ether;
 
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
@@ -728,7 +728,7 @@ contract TestLens is TestSetup {
     }
 
     function testUserHypotheticalBalanceStatesAfterUnauthorisedBorrowWithdraw() public {
-        uint256 amount = 10_000 ether;
+        uint256 amount = 10_001 ether;
 
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
