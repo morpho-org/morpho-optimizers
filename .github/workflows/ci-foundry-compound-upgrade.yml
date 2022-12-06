@@ -8,9 +8,9 @@ on:
     paths:
       - "lib/**"
       - "config/**/compound/**"
-      - "contracts/common/**"
-      - "contracts/compound/**"
-      - "test-foundry/prod/compound/**"
+      - "src/common/**"
+      - "src/compound/**"
+      - "test/prod/compound/**"
       - "*.lock"
       - "Makefile"
       - "foundry.toml"
