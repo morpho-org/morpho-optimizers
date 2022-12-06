@@ -8,8 +8,8 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
-      - contracts/aave-v2/**
+      - src/common/**
+      - src/aave-v2/**
       - "*.lock"
       - remappings.txt
       - .github/workflows/ci-storage-check-aave-v2.yml
@@ -38,6 +38,6 @@ jobs:
           version: nightly
 
       - name: Check Morpho storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1
+        uses: Rubilmax/foundry-storage-check@v2.1.2
         with:
-          contract: contracts/aave-v2/Morpho.sol:Morpho
+          contract: src/aave-v2/Morpho.sol:Morpho
