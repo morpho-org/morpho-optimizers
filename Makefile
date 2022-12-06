@@ -114,4 +114,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry coverage src
+.PHONY: test config test-common foundry coverage contracts
