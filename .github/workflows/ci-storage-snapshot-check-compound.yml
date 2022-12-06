@@ -8,8 +8,8 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
-      - contracts/compound/**
+      - src/common/**
+      - src/compound/**
       - "*.lock"
       - remappings.txt
       - .github/workflows/ci-storage-check-compound.yml

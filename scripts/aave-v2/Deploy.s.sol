@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave-v2/interfaces/IIncentivesVault.sol";
-import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
-import "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
-import "@contracts/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "src/aave-v2/interfaces/IIncentivesVault.sol";
+import "src/aave-v2/interfaces/IInterestRatesManager.sol";
+import "src/aave-v2/interfaces/IExitPositionsManager.sol";
+import "src/aave-v2/interfaces/IEntryPositionsManager.sol";
+import "src/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
-import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
-import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
-import {Morpho} from "@contracts/aave-v2/Morpho.sol";
-import {Lens} from "@contracts/aave-v2/Lens.sol";
+import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
+import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
+import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
+import {Morpho} from "src/aave-v2/Morpho.sol";
+import {Lens} from "src/aave-v2/Lens.sol";
 
 import "@config/Config.sol";
 import "forge-std/Script.sol";
