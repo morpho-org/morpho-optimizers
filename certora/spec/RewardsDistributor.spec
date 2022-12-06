@@ -30,6 +30,7 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
 rule claimOnlyValue(address _account, uint256 _claimable, bytes32[] _proof) {
     env e;
     require T1.hash(T1.root()) == prevRoot() && T2.hash(T2.root()) == currRoot();
+    require T1.isValid() && T2.isValid();
 
     claim(_account, _claimable, _proof);
 

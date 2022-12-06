@@ -1,52 +1,87 @@
-diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
---- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-11-08 19:10:18.940152537 +0100
-@@ -0,0 +1,43 @@
+diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
+--- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2022-12-06 18:46:39.505835328 +0100
+@@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
-+library MerkleTree {
++import "./MerkleTree.sol";
++
++contract MerkleTree1 is MerkleTree {}
+diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
+--- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2022-12-06 18:47:04.652604544 +0100
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GNU AGPLv3
++pragma solidity ^0.8.0;
++
++import "./MerkleTree.sol";
++
++contract MerkleTree2 is MerkleTree {}
+diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
+--- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTree.sol	2022-12-06 19:53:31.893517000 +0100
+@@ -0,0 +1,58 @@
++// SPDX-License-Identifier: GNU AGPLv3
++pragma solidity ^0.8.0;
++
++abstract contract MerkleTree {
 +    struct Node {
 +        address left;
 +        address right;
++        uint256 value;
 +        bytes32 hashNode;
 +    }
 +
-+    struct Tree {
-+        mapping(address => Node) nodes;
-+        address root;
++    mapping(address => Node) public nodes;
++
++    address public root;
++
++    function hash(address addr) public view returns (bytes32) {
++        return nodes[addr].hashNode;
 +    }
 +
-+    function _isValidNode(address root, mapping(address => Node) storage nodes)
-+        private
-+        view
-+        returns (bool)
-+    {
-+        Node memory rootNode = nodes[root];
-+        if (root == address(0) || rootNode.hashNode == bytes32(0)) return false;
++    function _isValidFrom(address addr) private view returns (bool) {
++        Node memory node = nodes[addr];
++        if (addr == address(0) || node.hashNode == bytes32(0)) return false;
 +
 +        bool leftValid = true;
 +        bool rightValid = true;
-+        if (rootNode.left != address(0)) leftValid = _isValidNode(rootNode.left, nodes);
-+        if (rootNode.right != address(0)) rightValid = _isValidNode(rootNode.right, nodes);
++        if (node.left != address(0)) leftValid = _isValidFrom(node.left);
++        if (node.right != address(0)) rightValid = _isValidFrom(node.right);
++
++        bool leafHashed = true;
++        if (node.left == address(0) && node.right == address(0))
++            leafHashed = node.hashNode == keccak256(abi.encodePacked(addr, node.value));
 +
 +        bool pairSorted = true;
-+        bytes32 leftHash = nodes[rootNode.left].hashNode;
-+        bytes32 rightHash = nodes[rootNode.right].hashNode;
-+        if (rootNode.left != address(0) && rootNode.right != address(0))
-+            pairSorted = leftHash <= rightHash;
++        bytes32 leftHash = nodes[node.left].hashNode;
++        bytes32 rightHash = nodes[node.right].hashNode;
++        if (node.left != address(0) && node.right != address(0)) pairSorted = leftHash <= rightHash;
 +
-+        bool hashedNode = rootNode.hashNode == keccak256(abi.encode(leftHash, rightHash));
++        bool hashedNode = node.hashNode == keccak256(abi.encode(leftHash, rightHash));
 +
-+        return leftValid && rightValid && pairSorted && hashedNode;
++        return leftValid && rightValid && leafHashed && pairSorted && hashedNode;
 +    }
 +
-+    function isValidTree(Tree storage t) internal view returns (bool) {
-+        return _isValidNode(t.root, t.nodes);
++    function isValid() public view returns (bool) {
++        return _isValidFrom(root);
++    }
++
++    function _valueFrom(address user, address addr) private view returns (uint256) {
++        if (root == address(0)) return 0;
++        if (user == addr) return nodes[addr].value;
++        uint256 foundLeft = _valueFrom(user, nodes[addr].left);
++        uint256 foundRight = _valueFrom(user, nodes[addr].right);
++        return foundLeft > foundRight ? foundLeft : foundRight;
++    }
++
++    function value(address user) public view returns (uint256) {
++        return _valueFrom(user, root);
 +    }
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-11-08 19:10:33.089997069 +0100
++++ .gitignore	2022-12-06 17:24:59.360976786 +0100
 @@ -0,0 +1 @@
 +*
