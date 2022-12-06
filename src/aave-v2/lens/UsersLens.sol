@@ -32,10 +32,14 @@ abstract contract UsersLens is IndexesLens {
         enteredMarkets = new address[](nbCreatedMarkets);
 
         bytes32 userMarkets = morpho.userMarkets(_user);
-        for (uint256 i; i < nbCreatedMarkets; ++i) {
+        for (uint256 i; i < nbCreatedMarkets; ) {
             if (_isSupplyingOrBorrowing(userMarkets, createdMarkets[i])) {
                 enteredMarkets[nbEnteredMarkets] = createdMarkets[i];
                 ++nbEnteredMarkets;
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -57,12 +61,7 @@ abstract contract UsersLens is IndexesLens {
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        Types.LiquidityData memory liquidityData = getUserHypotheticalBalanceStates(
-            _user,
-            address(0),
-            0,
-            0
-        );
+        Types.LiquidityData memory liquidityData = getUserBalanceStates(_user);
         Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
             _user,
             _poolToken,
@@ -140,8 +139,6 @@ abstract contract UsersLens is IndexesLens {
             );
     }
 
-    /// PUBLIC ///
-
     /// @notice Returns the balance in underlying of a given user in a given market.
     /// @param _poolToken The address of the market.
     /// @param _user The user to determine balances of.
@@ -149,7 +146,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
-        public
+        external
         view
         returns (
             uint256 balanceInP2P,
@@ -170,7 +167,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return balanceOnPool The balance on pool of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
-        public
+        external
         view
         returns (
             uint256 balanceInP2P,
@@ -184,6 +181,8 @@ abstract contract UsersLens is IndexesLens {
         );
     }
 
+    /// PUBLIC ///
+
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @return The liquidity data of the user.
@@ -195,8 +194,8 @@ abstract contract UsersLens is IndexesLens {
     ///      using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine liquidity for.
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw from the given market (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow from the given market (in underlying).
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return liquidityData The liquidity data of the user.
     function getUserHypotheticalBalanceStates(
         address _user,
@@ -209,28 +208,45 @@ abstract contract UsersLens is IndexesLens {
         bytes32 userMarkets = morpho.userMarkets(_user);
 
         uint256 nbCreatedMarkets = createdMarkets.length;
-        for (uint256 i; i < nbCreatedMarkets; ++i) {
+        for (uint256 i; i < nbCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (!_isSupplyingOrBorrowing(userMarkets, poolToken) && _poolToken != poolToken)
-                continue;
-
-            Types.AssetLiquidityData memory assetData = _poolToken == poolToken
-                ? _getUserHypotheticalLiquidityDataForAsset(
+            if (_isSupplyingOrBorrowing(userMarkets, poolToken)) {
+                Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                     _user,
                     poolToken,
-                    oracle,
-                    _withdrawnAmount,
-                    _borrowedAmount
-                )
-                : _getUserHypotheticalLiquidityDataForAsset(_user, poolToken, oracle, 0, 0);
+                    oracle
+                );
 
-            liquidityData.collateral += assetData.collateral;
-            liquidityData.maxDebt += assetData.collateral.percentMul(assetData.ltv);
-            liquidityData.liquidationThreshold += assetData.collateral.percentMul(
-                assetData.liquidationThreshold
-            );
-            liquidityData.debt += assetData.debt;
+                liquidityData.collateral += assetData.collateral;
+                liquidityData.maxDebt += assetData.collateral.percentMul(assetData.ltv);
+                liquidityData.liquidationThreshold += assetData.collateral.percentMul(
+                    assetData.liquidationThreshold
+                );
+                liquidityData.debt += assetData.debt;
+
+                if (_poolToken == poolToken) {
+                    if (_borrowedAmount > 0)
+                        liquidityData.debt += (_borrowedAmount * assetData.underlyingPrice).divUp(
+                            assetData.tokenUnit
+                        );
+
+                    if (_withdrawnAmount > 0) {
+                        uint256 assetCollateral = (_withdrawnAmount * assetData.underlyingPrice) /
+                            assetData.tokenUnit;
+
+                        liquidityData.collateral -= assetCollateral;
+                        liquidityData.maxDebt -= assetCollateral.percentMul(assetData.ltv);
+                        liquidityData.liquidationThreshold -= assetCollateral.percentMul(
+                            assetData.liquidationThreshold
+                        );
+                    }
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -243,8 +259,32 @@ abstract contract UsersLens is IndexesLens {
         address _user,
         address _poolToken,
         IPriceOracleGetter _oracle
-    ) public view returns (Types.AssetLiquidityData memory) {
-        return _getUserHypotheticalLiquidityDataForAsset(_user, _poolToken, _oracle, 0, 0);
+    ) public view returns (Types.AssetLiquidityData memory assetData) {
+        (Types.Market memory market, , Types.Indexes memory indexes) = _getIndexes(_poolToken);
+
+        assetData.underlyingPrice = _oracle.getAssetPrice(market.underlyingToken); // In ETH.
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
+        .getConfiguration(market.underlyingToken)
+        .getParamsMemory();
+
+        (, , uint256 totalCollateralBalance) = _getSupplyBalanceInOf(
+            _poolToken,
+            _user,
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex
+        );
+        (, , uint256 totalDebtBalance) = _getBorrowBalanceInOf(
+            _poolToken,
+            _user,
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex
+        );
+
+        assetData.tokenUnit = 10**assetData.decimals;
+        assetData.debt = (totalDebtBalance * assetData.underlyingPrice).divUp(assetData.tokenUnit);
+        assetData.collateral =
+            (totalCollateralBalance * assetData.underlyingPrice) /
+            assetData.tokenUnit;
     }
 
     /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
@@ -287,7 +327,7 @@ abstract contract UsersLens is IndexesLens {
     /// INTERNAL ///
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
-    /// @param _userMarkets The bytes representation of entered markets of the user to check for.
+    /// @param _userMarkets The user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(bytes32 _userMarkets, address _market)
@@ -317,19 +357,14 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (
-            Types.Market memory market,
-            uint256 p2pSupplyIndex,
-            uint256 poolSupplyIndex,
-
-        ) = _getSupplyIndexes(_poolToken);
+        (Types.Market memory market, , Types.Indexes memory indexes) = _getIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (balanceInP2P, balanceOnPool, totalBalance) = _getSupplyBalanceInOf(
             _poolToken,
             _user,
-            p2pSupplyIndex,
-            poolSupplyIndex
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex
         );
     }
 
@@ -350,19 +385,14 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (
-            Types.Market memory market,
-            uint256 p2pBorrowIndex,
-            ,
-            uint256 poolBorrowIndex
-        ) = _getBorrowIndexes(_poolToken);
+        (Types.Market memory market, , Types.Indexes memory indexes) = _getIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (balanceInP2P, balanceOnPool, totalBalance) = _getBorrowBalanceInOf(
             _poolToken,
             _user,
-            p2pBorrowIndex,
-            poolBorrowIndex
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex
         );
     }
 
@@ -425,57 +455,5 @@ abstract contract UsersLens is IndexesLens {
         balanceOnPool = borrowBalance.onPool.rayMul(_poolBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
-    }
-
-    /// @notice Returns the data related to `_poolToken` for the `_user`.
-    /// @param _user The user to determine data for.
-    /// @param _poolToken The address of the market.
-    /// @param _oracle The oracle used.
-    /// @param _withdrawnAmount The amount to hypothetically withdraw from the given market (in underlying).
-    /// @param _borrowedAmount The amount to hypothetically borrow from the given market (in underlying).
-    /// @return assetData The data related to this asset.
-    function _getUserHypotheticalLiquidityDataForAsset(
-        address _user,
-        address _poolToken,
-        IPriceOracleGetter _oracle,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) internal view returns (Types.AssetLiquidityData memory assetData) {
-        (
-            address underlyingToken,
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = _getIndexes(_poolToken);
-
-        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
-        .getConfiguration(underlyingToken)
-        .getParamsMemory();
-
-        unchecked {
-            assetData.tokenUnit = 10**assetData.decimals;
-        }
-
-        (, , uint256 totalCollateralBalance) = _getSupplyBalanceInOf(
-            _poolToken,
-            _user,
-            p2pSupplyIndex,
-            poolSupplyIndex
-        );
-        (, , uint256 totalDebtBalance) = _getBorrowBalanceInOf(
-            _poolToken,
-            _user,
-            p2pBorrowIndex,
-            poolBorrowIndex
-        );
-
-        assetData.debt = ((totalDebtBalance + _borrowedAmount) * assetData.underlyingPrice).divUp(
-            assetData.tokenUnit
-        );
-        assetData.collateral =
-            ((totalCollateralBalance.zeroFloorSub(_withdrawnAmount)) * assetData.underlyingPrice) /
-            assetData.tokenUnit;
     }
 }

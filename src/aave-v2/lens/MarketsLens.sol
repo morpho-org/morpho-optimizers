@@ -67,10 +67,7 @@ abstract contract MarketsLens is RatesLens {
 
     /// @notice Returns non-updated indexes, the block at which they were last updated and the total deltas of a given market.
     /// @param _poolToken The address of the market of which to get advanced data.
-    /// @return p2pSupplyIndex The peer-to-peer supply index of the given market (in ray).
-    /// @return p2pBorrowIndex The peer-to-peer borrow index of the given market (in ray).
-    /// @return poolSupplyIndex The pool supply index of the given market (in ray).
-    /// @return poolBorrowIndex The pool borrow index of the given market (in ray).
+    /// @return indexes The given market's updated indexes.
     /// @return lastUpdateTimestamp The timestamp of the block at which pool indexes were last updated.
     /// @return p2pSupplyDelta The total supply delta (in underlying).
     /// @return p2pBorrowDelta The total borrow delta (in underlying).
@@ -78,22 +75,17 @@ abstract contract MarketsLens is RatesLens {
         external
         view
         returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex,
+            Types.Indexes memory indexes,
             uint32 lastUpdateTimestamp,
             uint256 p2pSupplyDelta,
             uint256 p2pBorrowDelta
         )
     {
-        (, p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex) = _getIndexes(
-            _poolToken
-        );
+        Types.Delta memory delta;
+        (, delta, indexes) = _getIndexes(_poolToken);
 
-        Types.Delta memory delta = morpho.deltas(_poolToken);
-        p2pSupplyDelta = delta.p2pSupplyDelta.rayMul(poolSupplyIndex);
-        p2pBorrowDelta = delta.p2pBorrowDelta.rayMul(poolBorrowIndex);
+        p2pSupplyDelta = delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex);
+        p2pBorrowDelta = delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex);
 
         lastUpdateTimestamp = morpho.poolIndexes(_poolToken).lastUpdateTimestamp;
     }
@@ -196,16 +188,16 @@ abstract contract MarketsLens is RatesLens {
     {
         (
             Types.Market memory market,
-            uint256 p2pSupplyIndex,
-            uint256 poolSupplyIndex,
-
-        ) = _getSupplyIndexes(_poolToken);
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
+        ) = _getIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
             _poolToken,
-            p2pSupplyIndex,
-            poolSupplyIndex
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex,
+            delta
         );
     }
 
@@ -225,18 +217,18 @@ abstract contract MarketsLens is RatesLens {
     {
         (
             Types.Market memory market,
-            uint256 p2pBorrowIndex,
-            ,
-            uint256 poolBorrowIndex
-        ) = _getBorrowIndexes(_poolToken);
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
+        ) = _getIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
 
         (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
             reserve,
-            p2pBorrowIndex,
-            poolBorrowIndex
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex,
+            delta
         );
     }
 }
