@@ -5,15 +5,12 @@ on:
     branches:
       - main
   pull_request:
-    # branches:
-    #   - main # disabled for testing
     paths:
       - "lib/**"
       - "config/**/compound/**"
-      - "contracts/common/**"
-      - "contracts/compound/**"
-      - "test-foundry/common/**"
-      - "test-foundry/compound/**"
+      - "src/common/**"
+      - "src/compound/**"
+      - "test/prod/compound/**"
       - "*.lock"
       - "Makefile"
       - "foundry.toml"

@@ -2,7 +2,6 @@
 
 [![Morpho-Compound](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
 [![Morpho-AaveV2](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
-[![Morpho-AaveV3](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v3.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v3.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
@@ -76,9 +75,9 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 ### Morpho-Aave-V2 Ethereum
 
 - Morpho Proxy: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
-- Morpho Implementation: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
+- Morpho Implementation: [0x497897080d90bc0418f896f4bfcdddd06fe8a9ea](https://etherscan.io/address/0x497897080d90bc0418f896f4bfcdddd06fe8a9ea)
 - EntryPositionsManager: [0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4](https://etherscan.io/address/0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4)
-- ExitPositionsManager: [0xf6998f72b92b81c8f683d30ed8678d348fe9754b](https://etherscan.io/address/0xf6998f72b92b81c8f683d30ed8678d348fe9754b)
+- ExitPositionsManager: [0x51ae58e71fed9b1162810898bbd68301206786b2](https://etherscan.io/address/0x51ae58e71fed9b1162810898bbd68301206786b2)
 - InterestRatesManager: [0x91b23044d4a8089670309852c7f0a93e5ca8efb7](https://etherscan.io/address/0x91b23044d4a8089670309852c7f0a93e5ca8efb7)
 - Lens Proxy: [0x507fa343d0a90786d86c7cd885f5c49263a91ff4](https://etherscan.io/address/0x507fa343d0a90786d86c7cd885f5c49263a91ff4)
 - Lens: [0x8706256509684e9cd93b7f19254775ce9324c226](https://etherscan.io/address/0x8706256509684e9cd93b7f19254775ce9324c226)
@@ -117,10 +116,10 @@ or to run only a specific set of tests of a specific protocol (e.g. for Morpho-A
 make c-TestBorrow PROTOCOL=aave-v2
 ```
 
-or to run an individual test of a specific protocol (e.g. for Morpho-Aave V3):
+or to run an individual test of a specific protocol (e.g. for Morpho-Aave V2):
 
 ```bash
-make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
+make test-testBorrow1 PROTOCOL=aave-v2
 ```
 
 For the other commands, check the [Makefile](./Makefile).
@@ -129,7 +128,7 @@ For the other commands, check the [Makefile](./Makefile).
 
 ## Testing with Hardhat
 
-Only tests for the [RewardsDistributor](./contracts/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
+Only tests for the [RewardsDistributor](./src/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
 
 Just run:
 
@@ -154,7 +153,7 @@ The report is then usable either:
 - via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
 - via html, using `make lcov-html` to transform the report and opening `coverage/index.html`
 
-:warning: Test coverage is not available on Morpho-AaveV2 nor Morpho-AaveV3 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+:warning: Test coverage is not available on Morpho-AaveV2 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
 
 ---
 
