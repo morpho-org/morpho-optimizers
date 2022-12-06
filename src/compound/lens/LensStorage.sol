@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
 
-import "../libraries/CompoundMath.sol";
+import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
