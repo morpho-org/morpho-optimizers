@@ -183,8 +183,8 @@ interface ILens {
 
     function computeLiquidationRepayAmount(
         address _user,
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral
     ) external view returns (uint256 toRepay);
 
     /// RATES ///

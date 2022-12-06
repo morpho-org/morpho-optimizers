@@ -49,7 +49,7 @@ abstract contract UsersLens is IndexesLens {
         }
     }
 
-    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolToken` (in underlyings).
+    /// @notice Returns the maximum amount available to withdraw & borrow for a given user, on a given market.
     /// @param _user The user to determine the capacities for.
     /// @param _poolToken The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
@@ -101,13 +101,13 @@ abstract contract UsersLens is IndexesLens {
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
     /// @param _user The potential liquidatee.
-    /// @param _poolTokenBorrowedAddress The address of the market to repay.
-    /// @param _poolTokenCollateralAddress The address of the market to seize.
+    /// @param _poolTokenBorrowed The address of the market to repay.
+    /// @param _poolTokenCollateral The address of the market to seize.
     /// @return The maximum repayable amount (in underlying).
     function computeLiquidationRepayAmount(
         address _user,
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress
+        address _poolTokenBorrowed,
+        address _poolTokenCollateral
     ) external view returns (uint256) {
         if (!isLiquidatable(_user)) return 0;
 
@@ -116,9 +116,9 @@ abstract contract UsersLens is IndexesLens {
             ,
             ,
             uint256 totalCollateralBalance
-        ) = _getCurrentSupplyBalanceInOf(_poolTokenCollateralAddress, _user);
+        ) = _getCurrentSupplyBalanceInOf(_poolTokenCollateral, _user);
         (address borrowedToken, , , uint256 totalBorrowBalance) = _getCurrentBorrowBalanceInOf(
-            _poolTokenBorrowedAddress,
+            _poolTokenBorrowed,
             _user
         );
 
@@ -181,20 +181,17 @@ abstract contract UsersLens is IndexesLens {
         );
     }
 
+    /// PUBLIC ///
+
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @return The liquidity data of the user.
-    function getUserBalanceStates(address _user)
-        external
-        view
-        returns (Types.LiquidityData memory)
-    {
+    function getUserBalanceStates(address _user) public view returns (Types.LiquidityData memory) {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
 
-    /// PUBLIC ///
-
-    /// @dev Returns the debt value, max debt value of a given user.
+    /// @dev Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
+    ///      using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine liquidity for.
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).

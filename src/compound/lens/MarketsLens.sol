@@ -98,10 +98,10 @@ abstract contract MarketsLens is RatesLens {
         lastUpdateBlockNumber = morpho.lastPoolIndexes(_poolToken).lastUpdateBlockNumber;
     }
 
-    /// @notice Returns market's configuration.
+    /// @notice Returns the given market's configuration.
     /// @return underlying The underlying token address.
     /// @return isCreated Whether the market is created or not.
-    /// @return p2pDisabled Whether user are put in peer-to-peer or not.
+    /// @return p2pDisabled Whether the peer-to-peer market is enabled or not.
     /// @return isPaused Deprecated.
     /// @return isPartiallyPaused Deprecated.
     /// @return reserveFactor The reserve factor applied to this market.
@@ -135,7 +135,7 @@ abstract contract MarketsLens is RatesLens {
         (, collateralFactor, ) = comptroller.markets(_poolToken);
     }
 
-    /// @notice Returns market's pause statuses.
+    /// @notice Returns the given market's pause statuses.
     /// @param _poolToken The address of the market of which to get pause statuses.
     /// @return The market status struct.
     function getMarketPauseStatus(address _poolToken)
@@ -148,7 +148,7 @@ abstract contract MarketsLens is RatesLens {
 
     /// PUBLIC ///
 
-    /// @notice Computes and returns the total distribution of supply for a given market.
+    /// @notice Computes and returns the total distribution of supply for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
@@ -166,7 +166,7 @@ abstract contract MarketsLens is RatesLens {
         );
     }
 
-    /// @notice Computes and returns the total distribution of borrows for a given market.
+    /// @notice Computes and returns the total distribution of borrows for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
