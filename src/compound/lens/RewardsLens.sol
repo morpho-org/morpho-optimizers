@@ -28,20 +28,20 @@ abstract contract RewardsLens is MarketsLens {
         unclaimedRewards = rewardsManager.userUnclaimedCompRewards(_user);
 
         for (uint256 i; i < _poolTokens.length; ) {
-            address cTokenAddress = _poolTokens[i];
+            address poolToken = _poolTokens[i];
 
-            (bool isListed, , ) = comptroller.markets(cTokenAddress);
+            (bool isListed, , ) = comptroller.markets(poolToken);
             if (!isListed) revert InvalidPoolToken();
 
             unclaimedRewards += getAccruedSupplierComp(
                 _user,
-                cTokenAddress,
-                morpho.supplyBalanceInOf(cTokenAddress, _user).onPool
+                poolToken,
+                morpho.supplyBalanceInOf(poolToken, _user).onPool
             );
             unclaimedRewards += getAccruedBorrowerComp(
                 _user,
-                cTokenAddress,
-                morpho.borrowBalanceInOf(cTokenAddress, _user).onPool
+                poolToken,
+                morpho.borrowBalanceInOf(poolToken, _user).onPool
             );
 
             unchecked {
