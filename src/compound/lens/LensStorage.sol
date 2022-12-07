@@ -16,10 +16,12 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
 abstract contract LensStorage {
-    /// STORAGE ///
+    /// CONSTANTS ///
 
     uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
+
+    /// IMMUTABLES ///
 
     IMorpho public immutable morpho;
     IComptroller public immutable comptroller;
