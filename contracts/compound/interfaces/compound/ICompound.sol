@@ -212,7 +212,7 @@ interface IComptroller {
 
     function borrowGuardianPaused(address) external view returns (bool);
 
-    function seizeGuardianPaused(address) external view returns (bool);
+    function seizeGuardianPaused() external view returns (bool);
 
     function claimComp(address holder) external;
 
