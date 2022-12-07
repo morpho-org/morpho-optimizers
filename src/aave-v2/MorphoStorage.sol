@@ -19,6 +19,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice All storage variables used in Morpho contracts.
 abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+    using HeapOrdering for HeapOrdering.HeapArray;
+
     /// GLOBAL STORAGE ///
 
     uint8 public constant NO_REFERRAL_CODE = 0;
@@ -47,6 +49,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => HeapOrdering.HeapArray) internal suppliersOnPool; // For a given market, the suppliers on Aave.
     mapping(address => HeapOrdering.HeapArray) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
     mapping(address => HeapOrdering.HeapArray) internal borrowersOnPool; // For a given market, the borrowers on Aave.
+    mapping(address => mapping(address => Types.SupplyBalance)) private _supplyBalanceInOf; // Deprecated.
+    mapping(address => mapping(address => Types.BorrowBalance)) private _borrowBalanceInOf; // Deprecated.
     mapping(address => bytes32) public userMarkets; // The markets entered by a user as a bitmask.
 
     /// MARKETS STORAGE ///
@@ -81,4 +85,26 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice Constructs the contract.
     /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
     constructor() initializer {}
+
+    function supplyBalanceInOf(address _poolToken, address _user)
+        external
+        view
+        returns (uint256, uint256)
+    {
+        return (
+            suppliersInP2P[_poolToken].getValueOf(_user),
+            suppliersOnPool[_poolToken].getValueOf(_user)
+        );
+    }
+
+    function borrowBalanceInOf(address _poolToken, address _user)
+        external
+        view
+        returns (uint256, uint256)
+    {
+        return (
+            borrowersInP2P[_poolToken].getValueOf(_user),
+            borrowersOnPool[_poolToken].getValueOf(_user)
+        );
+    }
 }

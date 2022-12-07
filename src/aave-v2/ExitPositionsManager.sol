@@ -104,6 +104,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 poolSupplyIndex;
         uint256 p2pSupplyIndex;
         uint256 onPoolSupply;
+        uint256 inP2PSupply;
         uint256 toWithdraw;
     }
 
@@ -116,6 +117,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 p2pSupplyIndex;
         uint256 p2pBorrowIndex;
         uint256 borrowedOnPool;
+        uint256 borrowedInP2P;
         uint256 feeToRepay;
         uint256 toRepay;
     }
@@ -346,14 +348,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
 
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
-            _supplier
-        ];
-
         /// Pool withdraw ///
 
         // Withdraw supply on pool.
-        vars.onPoolSupply = supplierSupplyBalance.onPool;
+        vars.onPoolSupply = suppliersOnPool[_poolToken].getValueOf(_supplier);
         if (vars.onPoolSupply > 0) {
             vars.toWithdraw = Math.min(
                 vars.onPoolSupply.rayMul(vars.poolSupplyIndex),
@@ -361,15 +359,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplierSupplyBalance.onPool -= Math.min(
+            vars.onPoolSupply -= Math.min(
                 vars.onPoolSupply,
                 vars.toWithdraw.rayDiv(vars.poolSupplyIndex)
             );
 
             if (vars.remainingToWithdraw == 0) {
-                _updateSupplierInDS(_poolToken, _supplier);
+                vars.inP2PSupply = suppliersInP2P[_poolToken].getValueOf(_supplier);
+                _updateSupplierInDS(_poolToken, _supplier, vars.onPoolSupply, vars.inP2PSupply);
 
-                if (supplierSupplyBalance.inP2P == 0 && supplierSupplyBalance.onPool == 0)
+                if (vars.inP2PSupply == 0 && vars.onPoolSupply == 0)
                     _setSupplying(_supplier, borrowMask[_poolToken], false);
 
                 _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
@@ -380,8 +379,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     _receiver,
                     _poolToken,
                     _amount,
-                    supplierSupplyBalance.onPool,
-                    supplierSupplyBalance.inP2P
+                    vars.onPoolSupply,
+                    vars.inP2PSupply
                 );
 
                 return;
@@ -391,11 +390,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.Delta storage delta = deltas[_poolToken];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-        supplierSupplyBalance.inP2P -= Math.min(
-            supplierSupplyBalance.inP2P,
+        vars.inP2PSupply = suppliersInP2P[_poolToken].getValueOf(_supplier);
+        vars.inP2PSupply -= Math.min(
+            vars.inP2PSupply,
             vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
         ); // In peer-to-peer supply unit.
-        _updateSupplierInDS(_poolToken, _supplier);
+        _updateSupplierInDS(_poolToken, _supplier, vars.onPoolSupply, vars.inP2PSupply);
 
         // Reduce the peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
@@ -468,7 +468,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
         }
 
-        if (supplierSupplyBalance.inP2P == 0 && supplierSupplyBalance.onPool == 0)
+        if (vars.inP2PSupply == 0 && vars.onPoolSupply == 0)
             _setSupplying(_supplier, borrowMask[_poolToken], false);
         underlyingToken.safeTransfer(_receiver, _amount);
 
@@ -477,8 +477,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _receiver,
             _poolToken,
             _amount,
-            supplierSupplyBalance.onPool,
-            supplierSupplyBalance.inP2P
+            vars.onPoolSupply,
+            vars.inP2PSupply
         );
     }
 
@@ -502,14 +502,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = poolIndexes[_poolToken].poolBorrowIndex;
 
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
-            _onBehalf
-        ];
-
         /// Pool repay ///
 
         // Repay borrow on pool.
-        vars.borrowedOnPool = borrowerBorrowBalance.onPool;
+        vars.borrowedOnPool = borrowersOnPool[_poolToken].getValueOf(_onBehalf);
         if (vars.borrowedOnPool > 0) {
             vars.toRepay = Math.min(
                 vars.borrowedOnPool.rayMul(vars.poolBorrowIndex),
@@ -517,16 +513,17 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             );
             vars.remainingToRepay -= vars.toRepay;
 
-            borrowerBorrowBalance.onPool -= Math.min(
+            vars.borrowedOnPool -= Math.min(
                 vars.borrowedOnPool,
                 vars.toRepay.rayDiv(vars.poolBorrowIndex)
             ); // In adUnit.
 
             if (vars.remainingToRepay == 0) {
-                _updateBorrowerInDS(_poolToken, _onBehalf);
+                vars.borrowedInP2P = borrowersInP2P[_poolToken].getValueOf(_onBehalf);
+                _updateBorrowerInDS(_poolToken, _onBehalf, vars.borrowedOnPool, vars.borrowedInP2P);
                 _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
-                if (borrowerBorrowBalance.inP2P == 0 && borrowerBorrowBalance.onPool == 0)
+                if (vars.borrowedInP2P == 0 && vars.borrowedOnPool == 0)
                     _setBorrowing(_onBehalf, borrowMask[_poolToken], false);
 
                 emit Repaid(
@@ -534,8 +531,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     _onBehalf,
                     _poolToken,
                     _amount,
-                    borrowerBorrowBalance.onPool,
-                    borrowerBorrowBalance.inP2P
+                    vars.borrowedOnPool,
+                    vars.borrowedInP2P
                 );
 
                 return;
@@ -546,11 +543,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolToken];
         vars.poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
-        borrowerBorrowBalance.inP2P -= Math.min(
-            borrowerBorrowBalance.inP2P,
+        vars.borrowedInP2P = borrowersInP2P[_poolToken].getValueOf(_onBehalf);
+        vars.borrowedInP2P -= Math.min(
+            vars.borrowedInP2P,
             vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex)
         ); // In peer-to-peer borrow unit.
-        _updateBorrowerInDS(_poolToken, _onBehalf);
+        _updateBorrowerInDS(_poolToken, _onBehalf, vars.borrowedOnPool, vars.borrowedInP2P);
 
         // Reduce the peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
@@ -643,7 +641,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _supplyToPool(underlyingToken, vars.remainingToRepay); // Reverts on error.
         }
 
-        if (borrowerBorrowBalance.inP2P == 0 && borrowerBorrowBalance.onPool == 0)
+        if (vars.borrowedInP2P == 0 && vars.borrowedOnPool == 0)
             _setBorrowing(_onBehalf, borrowMask[_poolToken], false);
 
         emit Repaid(
@@ -651,8 +649,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _onBehalf,
             _poolToken,
             _amount,
-            borrowerBorrowBalance.onPool,
-            borrowerBorrowBalance.inP2P
+            vars.borrowedOnPool,
+            vars.borrowedInP2P
         );
     }
 

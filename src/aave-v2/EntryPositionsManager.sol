@@ -70,6 +70,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
+        uint256 onPoolNew;
+        uint256 inP2PNew;
+    }
+
+    struct BorrowVars {
+        uint256 toWithdraw;
+        uint256 onPoolNew;
+        uint256 inP2PNew;
     }
 
     // Struct to avoid stack too deep.
@@ -145,34 +153,26 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
         }
 
-        uint256 inP2PNew;
-        uint256 onPoolNew;
-
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
+
             delta.p2pSupplyAmount += toAddInP2P;
-            uint256 inP2POld = suppliersInP2P.getValueOf(_onBehalf);
-            inP2PNew = inP2POld + toAddInP2P;
+            vars.inP2PNew = suppliersInP2P[_poolToken].getValueOf(_onBehalf) + toAddInP2P;
 
-            suppliersInP2P.updateHeap(_onBehalf, inP2POld, inP2PNew);
             _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
-
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
-        /// Pool supply ///
-
         // Supply on pool.
         if (vars.remainingToSupply > 0) {
-            uint256 onPoolOld = suppliersInPool.getValueOf(_onBehalf);
-            onPoolNew =
-                onPoolOld +
-                vars.remainingToSupply.rayDiv(poolIndexes[_poolToken].poolSupplyIndex);
-            suppliersInPool.updateHeap(_onBehalf, onPoolOld, onPoolNew);
+            vars.onPoolNew =
+                suppliersOnPool[_poolToken].getValueOf(_onBehalf) +
+                vars.remainingToSupply.rayDiv(poolIndexes[_poolToken].poolSupplyIndex); // In scaled balance.
             _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
 
-        emit Supplied(_from, _onBehalf, _poolToken, _amount, onPoolNew, inP2PNew);
+        _updateSupplierInDS(_poolToken, _onBehalf, vars.onPoolNew, vars.inP2PNew);
+        emit Supplied(_from, _onBehalf, _poolToken, _amount, vars.onPoolNew, vars.inP2PNew);
     }
 
     /// @dev Implements borrow logic.
@@ -199,7 +199,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (!_borrowAllowed(msg.sender, _poolToken, _amount)) revert UnauthorisedBorrow();
 
         uint256 remainingToBorrow = _amount;
-        uint256 toWithdraw;
+        BorrowVars memory vars;
         Types.Delta storage delta = deltas[_poolToken];
         uint256 poolSupplyIndex = poolIndexes[_poolToken].poolSupplyIndex;
 
@@ -215,7 +215,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             delta.p2pSupplyDelta = delta.p2pSupplyDelta.zeroFloorSub(
                 remainingToBorrow.rayDiv(poolSupplyIndex)
             );
-            toWithdraw += matchedDelta;
+            vars.toWithdraw += matchedDelta;
             remainingToBorrow -= matchedDelta;
             emit P2PSupplyDeltaUpdated(_poolToken, delta.p2pSupplyDelta);
         }
@@ -232,45 +232,35 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 _maxGasForMatching
             ); // In underlying.
 
-            toWithdraw += matched;
+            vars.toWithdraw += matched;
             remainingToBorrow -= matched;
             delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
         }
 
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
-            msg.sender
-        ];
-
-        if (toWithdraw > 0) {
-            uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
+        if (vars.toWithdraw > 0) {
+            uint256 toAddInP2P = vars.toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
 
             delta.p2pBorrowAmount += toAddInP2P;
-            borrowerBorrowBalance.inP2P += toAddInP2P;
+            vars.inP2PNew = borrowersInP2P[_poolToken].getValueOf(msg.sender) + toAddInP2P;
             emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-            _withdrawFromPool(underlyingToken, _poolToken, toWithdraw); // Reverts on error.
+            _withdrawFromPool(underlyingToken, _poolToken, vars.toWithdraw); // Reverts on error.
         }
 
         /// Pool borrow ///
 
         // Borrow on pool.
         if (remainingToBorrow > 0) {
-            borrowerBorrowBalance.onPool += remainingToBorrow.rayDiv(
-                poolIndexes[_poolToken].poolBorrowIndex
-            ); // In adUnit.
+            vars.onPoolNew =
+                borrowersOnPool[_poolToken].getValueOf(msg.sender) +
+                remainingToBorrow.rayDiv(poolIndexes[_poolToken].poolBorrowIndex); // In adUnit.
             _borrowFromPool(underlyingToken, remainingToBorrow);
         }
 
-        _updateBorrowerInDS(_poolToken, msg.sender);
+        _updateBorrowerInDS(_poolToken, msg.sender, vars.onPoolNew, vars.inP2PNew);
         underlyingToken.safeTransfer(msg.sender, _amount);
 
-        emit Borrowed(
-            msg.sender,
-            _poolToken,
-            _amount,
-            borrowerBorrowBalance.onPool,
-            borrowerBorrowBalance.inP2P
-        );
+        emit Borrowed(msg.sender, _poolToken, _amount, vars.onPoolNew, vars.inP2PNew);
     }
 
     /// @dev Checks whether the user can borrow or not.
