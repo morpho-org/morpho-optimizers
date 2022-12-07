@@ -125,4 +125,40 @@ contract TestDeltas is TestSetup {
             );
         }
     }
+
+    function testShouldNotClearP2PWhenFullDelta() public virtual {
+        for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
+            // _revert(); // TODO: re-add as soon as https://github.com/foundry-rs/foundry/issues/3792 is resolved, to avoid sharing state changes with each market test
+
+            DeltasTest memory test;
+            test.market = markets[0];
+
+            (
+                test.p2pSupplyDelta,
+                test.p2pBorrowDelta,
+                test.p2pSupplyBefore,
+                test.p2pBorrowBefore
+            ) = morpho.deltas(test.market.poolToken);
+
+            (
+                test.p2pSupplyIndex,
+                test.p2pBorrowIndex,
+                test.poolSupplyIndex,
+                test.poolBorrowIndex
+            ) = lens.getIndexes(test.market.poolToken);
+
+            uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.rayMul(test.p2pSupplyIndex);
+            uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.rayMul(test.p2pBorrowIndex);
+            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.rayMul(test.poolSupplyIndex);
+            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.rayMul(test.poolBorrowIndex);
+            if (
+                p2pSupplyUnderlying > supplyDeltaUnderlyingBefore &&
+                p2pBorrowUnderlying > borrowDeltaUnderlyingBefore
+            ) continue;
+
+            vm.prank(morphoDao);
+            vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
+            morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
+        }
+    }
 }
