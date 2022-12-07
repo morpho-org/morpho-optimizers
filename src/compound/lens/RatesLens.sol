@@ -37,9 +37,7 @@ abstract contract RatesLens is UsersLens {
             uint256 totalBalance
         )
     {
-        Types.Delta memory delta;
-        Types.Indexes memory indexes;
-        (delta, indexes) = _getIndexes(_poolToken, true);
+        (Types.Delta memory delta, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
         if (_amount > 0 && delta.p2pBorrowDelta > 0) {
@@ -108,9 +106,7 @@ abstract contract RatesLens is UsersLens {
             uint256 totalBalance
         )
     {
-        Types.Delta memory delta;
-        Types.Indexes memory indexes;
-        (delta, indexes) = _getIndexes(_poolToken, true);
+        (Types.Delta memory delta, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
         if (_amount > 0 && delta.p2pSupplyDelta > 0) {
