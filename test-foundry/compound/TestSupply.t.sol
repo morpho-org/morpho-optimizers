@@ -2,9 +2,38 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
+import "@forge-std/console.sol";
 
 contract TestSupply is TestSetup {
     using CompoundMath for uint256;
+
+    function testShowUSDT() public {
+        IMorpho m = IMorpho(0x8888882f8f843896699869179fB6E4f7e3B58888);
+        address ox32a = 0x32a59b87352e980dD6aB1bAF462696D28e63525D;
+
+        // vm.prank(ox32a);
+        // m.withdraw({
+        //     _poolToken: 0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4,
+        //     _amount: 57896044618658097711785492504343953926634992332820282019728792003956564819967
+        // });
+
+        address[] memory markets = m.getEnteredMarkets(ox32a);
+        bool enteredUsdt;
+        for (uint256 i = 0; i < markets.length; i++) {
+            if (markets[i] == cUsdt) {
+                enteredUsdt = true;
+                break;
+            }
+        }
+        console.log("0x32a has Usdt in array", enteredUsdt);
+
+        Types.SupplyBalance memory supplyBalance = m.supplyBalanceInOf(cUsdt, ox32a);
+        console.log("0x32a supply on pool", supplyBalance.onPool);
+        console.log("0x32a supply in p2p ", supplyBalance.inP2P);
+        Types.BorrowBalance memory borrowBalance = m.borrowBalanceInOf(cUsdt, ox32a);
+        console.log("0x32a borrow on pool", borrowBalance.onPool);
+        console.log("0x32a borrow in p2p ", borrowBalance.inP2P);
+    }
 
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply1() public {
