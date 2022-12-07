@@ -94,6 +94,46 @@ contract TestUpgradeable is TestSetup {
         rewardsManagerImplV1.initialize(address(morpho));
     }
 
+    function testUpgradeLens() public {
+        Lens lensImplV2 = new Lens(address(morpho));
+
+        hevm.record();
+        proxyAdmin.upgrade(lensProxy, address(lensImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(lens));
+
+        // 1 write for the implemention.
+        assertEq(writes.length, 1);
+        address newImplem = bytes32ToAddress(
+            hevm.load(
+                address(lensProxy),
+                bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
+            )
+        );
+        assertEq(newImplem, address(lensImplV2));
+    }
+
+    function testOnlyProxyOwnerCanUpgradeLens() public {
+        Lens lensImplV2 = new Lens(address(morpho));
+
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgrade(lensProxy, address(lensImplV2));
+
+        proxyAdmin.upgrade(lensProxy, address(lensImplV2));
+    }
+
+    function testOnlyProxyOwnerCanUpgradeAndCallLens() public {
+        Lens lensImplV2 = new Lens(address(morpho));
+
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgradeAndCall(lensProxy, payable(address(lensImplV2)), "");
+
+        // Revert for wrong data not wrong caller.
+        hevm.expectRevert("Address: low-level delegate call failed");
+        proxyAdmin.upgradeAndCall(lensProxy, payable(address(lensImplV2)), "");
+    }
+
     function testPositionsManagerImplementationsShouldBeInitialized() public {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
