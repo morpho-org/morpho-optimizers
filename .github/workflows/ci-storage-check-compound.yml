@@ -8,8 +8,8 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
-      - contracts/compound/**
+      - src/common/**
+      - src/compound/**
       - "*.lock"
       - remappings.txt
       - .github/workflows/ci-storage-check-compound.yml
@@ -38,11 +38,11 @@ jobs:
           version: nightly
 
       - name: Check Morpho storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1
+        uses: Rubilmax/foundry-storage-check@v2.1.2
         with:
-          contract: contracts/compound/Morpho.sol:Morpho
+          contract: src/compound/Morpho.sol:Morpho
 
       - name: Check RewardsManager storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1
+        uses: Rubilmax/foundry-storage-check@v2.1.2
         with:
-          contract: contracts/compound/RewardsManager.sol:RewardsManager
+          contract: src/compound/RewardsManager.sol:RewardsManager

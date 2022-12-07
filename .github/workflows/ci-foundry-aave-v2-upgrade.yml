@@ -5,15 +5,12 @@ on:
     branches:
       - main
   pull_request:
-    # branches:
-    #   - main # disabled for testing
     paths:
       - "lib/**"
       - "config/**/aave-v2/**"
-      - "contracts/common/**"
-      - "contracts/aave-v2/**"
-      - "test-foundry/common/**"
-      - "test-foundry/aave-v2/**"
+      - "src/common/**"
+      - "src/aave-v2/**"
+      - "test/prod/aave-v2/**"
       - "*.lock"
       - "Makefile"
       - "foundry.toml"
