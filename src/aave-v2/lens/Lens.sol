@@ -7,7 +7,7 @@ import "./MarketsLens.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice This contract exposes an API to query on-chain data related to the Morpho Protocol, its markets and its users.
-contract Lens is ILens, MarketsLens {
+contract Lens is MarketsLens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
