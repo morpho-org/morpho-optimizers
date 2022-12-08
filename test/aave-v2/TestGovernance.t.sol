@@ -203,6 +203,8 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        morpho.setIsBorrowPaused(aDai, true);
+
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setIsDeprecated(aDai, true);
@@ -439,5 +441,19 @@ contract TestGovernance is TestSetup {
 
     function testFailCallIncreaseP2PDeltasFromImplementation() public {
         exitPositionsManager.increaseP2PDeltasLogic(aDai, 0);
+    }
+
+    function testDeprecateCycle() public {
+        hevm.expectRevert(abi.encodeWithSignature("BorrowNotPaused()"));
+        morpho.setIsDeprecated(aDai, true);
+
+        morpho.setIsBorrowPaused(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketIsDeprecated()"));
+        morpho.setIsBorrowPaused(aDai, false);
+
+        morpho.setIsDeprecated(aDai, false);
+        morpho.setIsBorrowPaused(aDai, false);
     }
 }
