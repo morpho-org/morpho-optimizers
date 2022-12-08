@@ -978,8 +978,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _user The address of the user to update.
     /// @param _poolToken The address of the market to check.
     function _enterMarketIfNeeded(address _poolToken, address _user) internal {
-        if (!userMembership[_poolToken][_user]) {
-            userMembership[_poolToken][_user] = true;
+        mapping(address => bool) storage userMembership = userMembership[_poolToken];
+        if (!userMembership[_user]) {
+            userMembership[_user] = true;
             enteredMarkets[_user].push(_poolToken);
         }
     }
@@ -988,25 +989,29 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _user The address of the user to update.
     /// @param _poolToken The address of the market to check.
     function _leaveMarketIfNeeded(address _poolToken, address _user) internal {
+        Types.SupplyBalance memory supplyBalance = supplyBalanceInOf[_poolToken][_user];
+        Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolToken][_user];
+        mapping(address => bool) storage userMembership = userMembership[_poolToken];
         if (
-            userMembership[_poolToken][_user] &&
-            supplyBalanceInOf[_poolToken][_user].inP2P == 0 &&
-            supplyBalanceInOf[_poolToken][_user].onPool == 0 &&
-            borrowBalanceInOf[_poolToken][_user].inP2P == 0 &&
-            borrowBalanceInOf[_poolToken][_user].onPool == 0
+            userMembership[_user] &&
+            supplyBalance.inP2P == 0 &&
+            supplyBalance.onPool == 0 &&
+            borrowBalance.inP2P == 0 &&
+            borrowBalance.onPool == 0
         ) {
+            address[] storage enteredMarkets = enteredMarkets[_user];
             uint256 index;
-            while (enteredMarkets[_user][index] != _poolToken) {
+            while (enteredMarkets[index] != _poolToken) {
                 unchecked {
                     ++index;
                 }
             }
-            userMembership[_poolToken][_user] = false;
 
-            uint256 length = enteredMarkets[_user].length;
-            if (index != length - 1)
-                enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
-            enteredMarkets[_user].pop();
+            userMembership[_user] = false;
+
+            uint256 length = enteredMarkets.length;
+            if (index != length - 1) enteredMarkets[index] = enteredMarkets[length - 1];
+            enteredMarkets.pop();
         }
     }
 
