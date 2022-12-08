@@ -2,13 +2,9 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IPositionsManager.sol";
-import "./interfaces/IIncentivesVault.sol";
-import "./interfaces/IRewardsManager.sol";
-import "./interfaces/IInterestRatesManager.sol";
+import "./interfaces/IMorpho.sol";
 
 import "./libraries/DoubleLinkedList.sol";
-import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -17,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice All storage variables used in Morpho contracts.
-abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract MorphoStorage is IMorpho, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// GLOBAL STORAGE ///
 
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.

@@ -113,7 +113,6 @@ contract TestMorphoGetters is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(10 ether));
 
         assertEq(morpho.enteredMarkets(address(borrower1), 0), cDai);
-        assertEq(IMorpho(address(morpho)).enteredMarkets(address(borrower1), 0), cDai); // test the interface
         assertEq(morpho.enteredMarkets(address(borrower1), 1), cUsdc);
 
         // Borrower1 withdraw, USDC should be the first in enteredMarkets.
