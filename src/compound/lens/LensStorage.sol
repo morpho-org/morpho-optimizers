@@ -10,25 +10,30 @@ import "@morpho-dao/morpho-utils/math/Math.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage is Initializable {
-    /// STORAGE ///
+abstract contract LensStorage {
+    /// CONSTANTS ///
 
     uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
-    IMorpho public morpho;
-    IComptroller public comptroller;
-    IRewardsManager public rewardsManager;
+    /// IMMUTABLES ///
+
+    IMorpho public immutable morpho;
+    IComptroller public immutable comptroller;
+    IRewardsManager public immutable rewardsManager;
 
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
-    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
-    constructor() initializer {}
+    /// @param _morpho The address of the main Morpho contract.
+    constructor(address _morpho) {
+        morpho = IMorpho(_morpho);
+        comptroller = IComptroller(morpho.comptroller());
+        rewardsManager = IRewardsManager(morpho.rewardsManager());
+    }
 }
