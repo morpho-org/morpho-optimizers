@@ -30,13 +30,13 @@
 | deltas                   | mapping(address => struct Types.Delta)                             | 166  | 0      | 32    | src/aave-v2/Morpho.sol:Morpho |
 | borrowMask               | mapping(address => bytes32)                                        | 167  | 0      | 32    | src/aave-v2/Morpho.sol:Morpho |
 | addressesProvider        | contract ILendingPoolAddressesProvider                             | 168  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
-| aaveIncentivesController | contract IAaveIncentivesController                                 | 169  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
+| aaveIncentivesController | address                                                            | 169  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
 | pool                     | contract ILendingPool                                              | 170  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
 | entryPositionsManager    | contract IEntryPositionsManager                                    | 171  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
 | exitPositionsManager     | contract IExitPositionsManager                                     | 172  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
 | interestRatesManager     | contract IInterestRatesManager                                     | 173  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
-| incentivesVault          | contract IIncentivesVault                                          | 174  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
-| rewardsManager           | contract IRewardsManager                                           | 175  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
+| incentivesVault          | address                                                            | 174  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
+| rewardsManager           | address                                                            | 175  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
 | treasuryVault            | address                                                            | 176  | 0      | 20    | src/aave-v2/Morpho.sol:Morpho |
 | marketPauseStatus        | mapping(address => struct Types.MarketPauseStatus)                 | 177  | 0      | 32    | src/aave-v2/Morpho.sol:Morpho |
 
