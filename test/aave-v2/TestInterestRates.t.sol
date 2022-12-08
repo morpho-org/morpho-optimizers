@@ -16,8 +16,8 @@ contract TestInterestRates is InterestRatesManager, Test {
     uint256 public p2pBorrowIndexTest = 1 * RAY;
     uint256 public poolSupplyIndexTest = 2 * RAY;
     uint256 public poolBorrowIndexTest = 3 * RAY;
-    uint256 public lastPoolSupplyIndexTest = 1 * RAY;
-    uint256 public lastPoolBorrowIndexTest = 1 * RAY;
+    Types.PoolIndexes public lastPoolIndexesTest =
+        Types.PoolIndexes(uint32(block.timestamp), uint112(1 * RAY), uint112(1 * RAY));
     uint256 public reserveFactor0PerCentTest = 0;
     uint256 public reserveFactor50PerCentTest = 5_000;
     uint256 public p2pIndexCursorTest = 3_333;
@@ -28,15 +28,15 @@ contract TestInterestRates is InterestRatesManager, Test {
         pure
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
     {
-        uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.rayDiv(_params.lastPoolSupplyIndex);
-        uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(_params.lastPoolBorrowIndex);
+        uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.rayDiv(_params.lastPoolIndexes.poolSupplyIndex);
+        uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(_params.lastPoolIndexes.poolBorrowIndex);
         uint256 p2pGrowthFactor = (poolSupplyGrowthFactor.percentMul(PercentageMath.PERCENTAGE_FACTOR - _params.p2pIndexCursor) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor));
         uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
-            ? (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
+            ? (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolIndexes.poolSupplyIndex)).rayDiv(
                 _params.delta.p2pSupplyAmount.rayMul(_params.lastP2PSupplyIndex))
             : 0;
         uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolBorrowIndex)).rayDiv(
+            ? (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolIndexes.poolBorrowIndex)).rayDiv(
                 _params.delta.p2pBorrowAmount.rayMul(_params.lastP2PBorrowIndex))
             : 0;
         if (poolSupplyGrowthFactor <= poolBorrowGrowthFactor) {
@@ -69,8 +69,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
             poolBorrowIndexTest,
-            lastPoolSupplyIndexTest,
-            lastPoolBorrowIndexTest,
+            lastPoolIndexesTest,
             reserveFactor0PerCentTest,
             p2pIndexCursorTest,
             Types.Delta(0, 0, 0, 0)
@@ -88,8 +87,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
             poolBorrowIndexTest,
-            lastPoolSupplyIndexTest,
-            lastPoolBorrowIndexTest,
+            lastPoolIndexesTest,
             reserveFactor50PerCentTest,
             p2pIndexCursorTest,
             Types.Delta(0, 0, 0, 0)
@@ -107,8 +105,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
             poolBorrowIndexTest,
-            lastPoolSupplyIndexTest,
-            lastPoolBorrowIndexTest,
+            lastPoolIndexesTest,
             reserveFactor0PerCentTest,
             p2pIndexCursorTest,
             Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
@@ -126,8 +123,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
             poolBorrowIndexTest,
-            lastPoolSupplyIndexTest,
-            lastPoolBorrowIndexTest,
+            lastPoolIndexesTest,
             reserveFactor50PerCentTest,
             p2pIndexCursorTest,
             Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
@@ -145,8 +141,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolBorrowIndexTest * 2,
             poolBorrowIndexTest,
-            lastPoolSupplyIndexTest,
-            lastPoolBorrowIndexTest,
+            lastPoolIndexesTest,
             reserveFactor50PerCentTest,
             p2pIndexCursorTest,
             Types.Delta(0, 0, 0, 0)
@@ -164,8 +159,7 @@ contract TestInterestRates is InterestRatesManager, Test {
             p2pBorrowIndexTest,
             poolBorrowIndexTest * 2,
             poolBorrowIndexTest,
-            lastPoolSupplyIndexTest,
-            lastPoolBorrowIndexTest,
+            lastPoolIndexesTest,
             reserveFactor50PerCentTest,
             p2pIndexCursorTest,
             Types.Delta(1 * RAY, 1 * RAY, 4 * RAY, 6 * RAY)
