@@ -310,15 +310,6 @@ abstract contract MatchingEngine is MorphoUtils {
 
         marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
         marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
-
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                aaveIncentivesController,
-                _user,
-                _poolToken,
-                formerValueOnPool,
-                IScaledBalanceToken(_poolToken).scaledTotalSupply()
-            );
     }
 
     /// @notice Updates the given `_user`'s position in the borrower data structures.
@@ -336,18 +327,5 @@ abstract contract MatchingEngine is MorphoUtils {
 
         marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
         marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
-
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            address variableDebtTokenAddress = pool
-            .getReserveData(market[_poolToken].underlyingToken)
-            .variableDebtTokenAddress;
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                aaveIncentivesController,
-                _user,
-                variableDebtTokenAddress,
-                formerValueOnPool,
-                IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
-            );
-        }
     }
 }

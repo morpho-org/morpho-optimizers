@@ -6,8 +6,6 @@ import "./aave/ILendingPool.sol";
 import "./IEntryPositionsManager.sol";
 import "./IExitPositionsManager.sol";
 import "./IInterestRatesManager.sol";
-import "./IIncentivesVault.sol";
-import "./IRewardsManager.sol";
 
 import "../libraries/Types.sol";
 
@@ -40,12 +38,12 @@ interface IMorpho {
     function p2pBorrowIndex(address) external view returns (uint256);
     function poolIndexes(address) external view returns (Types.PoolIndexes memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
-    function rewardsManager() external view returns (IRewardsManager);
+    function rewardsManager() external view returns (address);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
-    function aaveIncentivesController() external view returns (IAaveIncentivesController);
+    function aaveIncentivesController() external view returns (address);
     function addressesProvider() external view returns (ILendingPoolAddressesProvider);
-    function incentivesVault() external view returns (IIncentivesVault);
+    function incentivesVault() external view returns (address);
     function pool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (bytes32);
@@ -74,7 +72,6 @@ interface IMorpho {
     function setReserveFactor(address _poolToken, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolToken, uint16 _p2pIndexCursor) external;
     function setIsPausedForAllMarkets(bool _isPaused) external;
-    function setIsClaimRewardsPaused(bool _isPaused) external;
     function setIsSupplyPaused(address _poolToken, bool _isPaused) external;
     function setIsBorrowPaused(address _poolToken, bool _isPaused) external;
     function setIsWithdrawPaused(address _poolToken, bool _isPaused) external;
@@ -97,5 +94,4 @@ interface IMorpho {
     function repay(address _poolToken, uint256 _amount) external;
     function repay(address _poolToken, address _onBehalf, uint256 _amount) external;
     function liquidate(address _poolTokenBorrowed, address _poolTokenCollateral, address _borrower, uint256 _amount) external;
-    function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken) external returns (uint256 claimedAmount);
 }
