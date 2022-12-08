@@ -989,8 +989,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _user The address of the user to update.
     /// @param _poolToken The address of the market to check.
     function _leaveMarketIfNeeded(address _poolToken, address _user) internal {
-        Types.SupplyBalance memory supplyBalance = supplyBalanceInOf[_poolToken][_user];
-        Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolToken][_user];
+        Types.SupplyBalance storage supplyBalance = supplyBalanceInOf[_poolToken][_user];
+        Types.BorrowBalance storage borrowBalance = borrowBalanceInOf[_poolToken][_user];
         mapping(address => bool) storage userMembership = userMembership[_poolToken];
         if (
             userMembership[_user] &&
