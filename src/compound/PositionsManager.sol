@@ -998,13 +998,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.SupplyBalance storage supplyBalance = supplyBalanceInOf[_poolToken][_user];
         Types.BorrowBalance storage borrowBalance = borrowBalanceInOf[_poolToken][_user];
         mapping(address => bool) storage userMembership = userMembership[_poolToken];
+        Types.LastPoolIndexes storage lastPoolIndexes = lastPoolIndexes[_poolToken]; // indexes are updated at this point
         if (
             userMembership[_user] &&
-            supplyBalance.inP2P == 0 &&
-            supplyBalance.onPool == 0 &&
-            borrowBalance.inP2P == 0 &&
-            borrowBalance.onPool == 0
+            supplyBalance.inP2P.mul(p2pSupplyIndex[_poolToken]) == 0 &&
+            supplyBalance.onPool.mul(lastPoolIndexes.lastSupplyPoolIndex) == 0 &&
+            borrowBalance.inP2P.mul(p2pBorrowIndex[_poolToken]) == 0 &&
+            borrowBalance.onPool.mul(lastPoolIndexes.lastBorrowPoolIndex) == 0
         ) {
+            delete supplyBalanceInOf[_poolToken][_user];
+            delete borrowBalanceInOf[_poolToken][_user];
             address[] storage enteredMarkets = enteredMarkets[_user];
             uint256 index;
             while (enteredMarkets[index] != _poolToken) {
