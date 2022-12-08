@@ -506,21 +506,21 @@ contract TestLens is TestSetup {
 
         expectedStates.collateral = (amount * underlyingPriceDai) / tokenUnitDai;
         expectedStates.debt = (toBorrow * underlyingPriceUsdc) / tokenUnitUsdc;
-        expectedStates.liquidationThreshold = expectedStates.collateral.percentMul(
+        expectedStates.liquidationThresholdValue = expectedStates.collateral.percentMul(
             liquidationThresholdDai
         );
         expectedStates.maxDebt = expectedStates.collateral.percentMul(ltvDai);
 
-        uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
-        uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debt);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debt
         );
 
         assertEq(states.collateral, expectedStates.collateral, "collateral");
         assertEq(states.debt, expectedStates.debt, "debt");
         assertEq(
-            states.liquidationThreshold,
-            expectedStates.liquidationThreshold,
+            states.liquidationThresholdValue,
+            expectedStates.liquidationThresholdValue,
             "liquidationThreshold"
         );
         assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
@@ -550,7 +550,7 @@ contract TestLens is TestSetup {
         uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
             10**decimals;
         expectedStates.collateral += collateralValueToAdd;
-        expectedStates.liquidationThreshold += collateralValueToAdd.percentMul(
+        expectedStates.liquidationThresholdValue += collateralValueToAdd.percentMul(
             liquidationThreshold
         );
         expectedStates.maxDebt += collateralValueToAdd.percentMul(ltv);
@@ -559,7 +559,7 @@ contract TestLens is TestSetup {
         (ltv, liquidationThreshold, , decimals, ) = pool.getConfiguration(dai).getParamsMemory();
         collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**decimals;
         expectedStates.collateral += collateralValueToAdd;
-        expectedStates.liquidationThreshold += collateralValueToAdd.percentMul(
+        expectedStates.liquidationThresholdValue += collateralValueToAdd.percentMul(
             liquidationThreshold
         );
         expectedStates.maxDebt += collateralValueToAdd.percentMul(ltv);
@@ -572,16 +572,16 @@ contract TestLens is TestSetup {
         (, , , decimals, ) = pool.getConfiguration(usdt).getParamsMemory();
         expectedStates.debt += (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) / 10**decimals;
 
-        uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
-        uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debt);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debt
         );
 
         assertApproxEqAbs(states.collateral, expectedStates.collateral, 2, "collateral");
         assertApproxEqAbs(states.debt, expectedStates.debt, 1, "debt");
         assertEq(
-            states.liquidationThreshold,
-            expectedStates.liquidationThreshold,
+            states.liquidationThresholdValue,
+            expectedStates.liquidationThresholdValue,
             "liquidationThreshold"
         );
         assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
@@ -639,14 +639,18 @@ contract TestLens is TestSetup {
         uint256 collateralValueUsdt = (to6Decimals(amount) * oracle.getAssetPrice(usdt)) /
             10**decimals;
         expectedStates.collateral += collateralValueUsdt;
-        expectedStates.liquidationThreshold += collateralValueUsdt.percentMul(liquidationThreshold);
+        expectedStates.liquidationThresholdValue += collateralValueUsdt.percentMul(
+            liquidationThreshold
+        );
         expectedStates.maxDebt += collateralValueUsdt.percentMul(ltv);
 
         // DAI data
         (ltv, liquidationThreshold, , decimals, ) = pool.getConfiguration(dai).getParamsMemory();
         uint256 collateralValueDai = (amount * oracle.getAssetPrice(dai)) / 10**decimals;
         expectedStates.collateral += collateralValueDai;
-        expectedStates.liquidationThreshold += collateralValueDai.percentMul(liquidationThreshold);
+        expectedStates.liquidationThresholdValue += collateralValueDai.percentMul(
+            liquidationThreshold
+        );
         expectedStates.maxDebt += collateralValueDai.percentMul(ltv);
 
         // USDC data
@@ -657,16 +661,16 @@ contract TestLens is TestSetup {
         (, , , decimals, ) = pool.getConfiguration(usdt).getParamsMemory();
         expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdt)) / 10**decimals;
 
-        uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
-        uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
+        uint256 healthFactor = states.liquidationThresholdValue.wadDiv(states.debt);
+        uint256 expectedHealthFactor = expectedStates.liquidationThresholdValue.wadDiv(
             expectedStates.debt
         );
 
         assertApproxEqAbs(states.collateral, expectedStates.collateral, 1e3, "collateral");
         assertEq(states.debt, expectedStates.debt, "debt");
         assertEq(
-            states.liquidationThreshold,
-            expectedStates.liquidationThreshold,
+            states.liquidationThresholdValue,
+            expectedStates.liquidationThresholdValue,
             "liquidationThreshold"
         );
         assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
@@ -1248,7 +1252,7 @@ contract TestLens is TestSetup {
 
         uint256 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
 
-        if (states.debt <= states.liquidationThreshold) {
+        if (states.debt <= states.liquidationThresholdValue) {
             assertEq(toRepay, 0, "Should return 0 when the position is solvent");
             return;
         }
