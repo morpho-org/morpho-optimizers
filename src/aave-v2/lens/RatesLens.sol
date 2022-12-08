@@ -13,15 +13,6 @@ abstract contract RatesLens is UsersLens {
     using WadRayMath for uint256;
     using Math for uint256;
 
-    /// STRUCTS ///
-
-    struct Indexes {
-        uint256 p2pSupplyIndex;
-        uint256 p2pBorrowIndex;
-        uint256 poolSupplyIndex;
-        uint256 poolBorrowIndex;
-    }
-
     /// EXTERNAL ///
 
     /// @notice Returns the supply rate per year experienced on a market after having supplied the given amount on behalf of the given user.
@@ -50,7 +41,7 @@ abstract contract RatesLens is UsersLens {
     {
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
 
-        Indexes memory indexes;
+        Types.Indexes memory indexes;
         Types.Market memory market;
         (
             market,
@@ -130,7 +121,7 @@ abstract contract RatesLens is UsersLens {
     {
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
 
-        Indexes memory indexes;
+        Types.Indexes memory indexes;
         Types.Market memory market;
         (
             market,
