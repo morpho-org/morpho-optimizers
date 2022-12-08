@@ -4,46 +4,6 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
-    function _testUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl) internal {
-        hevm.record();
-        proxyAdmin.upgrade(_proxy, _impl);
-        (, bytes32[] memory writes) = hevm.accesses(address(_proxy));
-
-        assertEq(writes.length, 1);
-        assertEq(
-            bytes32ToAddress(
-                hevm.load(
-                    address(_proxy),
-                    bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
-                )
-            ),
-            _impl
-        );
-    }
-
-    function _testOnlyProxyOwnerCanUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl)
-        internal
-    {
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgrade(_proxy, _impl);
-
-        proxyAdmin.upgrade(_proxy, _impl);
-    }
-
-    function _testOnlyProxyOwnerCanUpgradeAndCallProxy(
-        TransparentUpgradeableProxy _proxy,
-        address _impl
-    ) internal {
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(_proxy, _impl, "");
-    }
-
-    function _testProxyImplementationShouldBeInitialized(address impl) public {
-        assertEq(uint256(hevm.load(impl, 0)), 1);
-    }
-
     /// Morpho ///
 
     function testUpgradeMorpho() public {
@@ -92,5 +52,46 @@ contract TestUpgradeable is TestSetup {
 
     function testOnlyProxyOwnerCanUpgradeAndCallLens() public {
         _testOnlyProxyOwnerCanUpgradeAndCallProxy(lensProxy, address(new Lens(address(morpho))));
+    }
+
+    /// INTERNAL ///
+    function _testUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl) internal {
+        hevm.record();
+        proxyAdmin.upgrade(_proxy, _impl);
+        (, bytes32[] memory writes) = hevm.accesses(address(_proxy));
+
+        assertEq(writes.length, 1);
+        assertEq(
+            bytes32ToAddress(
+                hevm.load(
+                    address(_proxy),
+                    bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
+                )
+            ),
+            _impl
+        );
+    }
+
+    function _testOnlyProxyOwnerCanUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl)
+        internal
+    {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgrade(_proxy, _impl);
+
+        proxyAdmin.upgrade(_proxy, _impl);
+    }
+
+    function _testOnlyProxyOwnerCanUpgradeAndCallProxy(
+        TransparentUpgradeableProxy _proxy,
+        address _impl
+    ) internal {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgradeAndCall(_proxy, _impl, "");
+    }
+
+    function _testProxyImplementationShouldBeInitialized(address impl) public {
+        assertEq(uint256(hevm.load(impl, 0)), 1);
     }
 }
