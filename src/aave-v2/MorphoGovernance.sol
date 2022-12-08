@@ -42,10 +42,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _exitPositionsManager The new address of the `exitPositionsManager`.
     event ExitPositionsManagerSet(address indexed _exitPositionsManager);
 
-    /// @notice Emitted when the `rewardsManager` is set.
-    /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
-    event RewardsManagerSet(address indexed _newRewardsManagerAddress);
-
     /// @notice Emitted when the `interestRatesManager` is set.
     /// @param _interestRatesManager The new address of the `interestRatesManager`.
     event InterestRatesSet(address indexed _interestRatesManager);
@@ -222,13 +218,6 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (address(_interestRatesManager) == address(0)) revert ZeroAddress();
         interestRatesManager = _interestRatesManager;
         emit InterestRatesSet(address(_interestRatesManager));
-    }
-
-    /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManager The new `rewardsManager`.
-    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
-        rewardsManager = _rewardsManager;
-        emit RewardsManagerSet(address(_rewardsManager));
     }
 
     /// @notice Sets the `treasuryVault`.
