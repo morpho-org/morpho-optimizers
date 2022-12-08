@@ -42,8 +42,8 @@ interface IMorpho {
 
     /// GETTERS ///
 
-    function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
-    function getAllMarkets() external view returns (address[] memory marketsCreated_);
+    function getEnteredMarkets(address _user) external view returns (address[] memory);
+    function getAllMarkets() external view returns (address[] memory);
     function getHead(address _poolToken, Types.PositionType _positionType) external view returns (address head);
     function getNext(address _poolToken, Types.PositionType _positionType, address _user) external view returns (address next);
 

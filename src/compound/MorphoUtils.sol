@@ -38,18 +38,14 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
-    /// @return enteredMarkets_ The list of markets entered by this user.
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets_)
-    {
+    /// @return The list of markets entered by this user.
+    function getEnteredMarkets(address _user) external view returns (address[] memory) {
         return enteredMarkets[_user];
     }
 
     /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+    /// @return The list of market addresses.
+    function getAllMarkets() external view returns (address[] memory) {
         return marketsCreated;
     }
 
