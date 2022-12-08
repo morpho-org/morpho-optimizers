@@ -22,7 +22,7 @@ interface IMorpho {
     function dustThreshold() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
-    function enteredMarkets(address) external view returns (address);
+    function enteredMarkets(address, uint256) external view returns (address);
     function deltas(address) external view returns (Types.Delta memory);
     function marketParameters(address) external view returns (Types.MarketParameters memory);
     function marketPauseStatus(address) external view returns (Types.MarketPauseStatus memory);
