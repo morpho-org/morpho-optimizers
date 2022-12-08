@@ -642,30 +642,41 @@ contract TestWithdraw is TestSetup {
         }
     }
 
-    function testWithdrawDoesNotLeaveDust() public {
-        uint256 supplyIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 rawAmount = 1e10;
-        uint256 amount = (rawAmount * 1e18 - ((rawAmount * 1e18) % supplyIndex)) / 1e18;
+    function testWithdrawShouldNotLeaveDust() public {
+        uint256 supplyIndex = ICToken(cUsdt).exchangeRateCurrent();
+        uint256 rawAmount = 1;
+        // uint256 amount = (rawAmount * 1e18 - ((rawAmount * 1e18) % supplyIndex)) / 1e18;
+        uint256 amount = 1;
 
         console.log("supplyIndex", supplyIndex);
         console.log("amount", amount);
         console.log((amount * 1e18) / supplyIndex);
         console.log((rawAmount * 1e18) / supplyIndex);
 
-        supplier1.approve(dai, address(morpho), amount);
-        supplier1.supply(cDai, amount);
+        supplier1.approve(usdt, address(morpho), amount);
+        supplier1.supply(cUsdt, amount);
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdt, address(supplier1));
         console.log("inP2P", inP2P);
         console.log("onPool", onPool);
 
-        vm.roll(block.number + 1000);
+        vm.roll(block.number + 1000000);
 
-        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cUsdt, amount);
 
-        (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        testEquality(inP2P, 0);
-        testEquality(onPool, 0);
+        uint256 newSupplyIndex = ICToken(cUsdt).exchangeRateCurrent();
+        console.log("supplyIndex", newSupplyIndex);
+        console.log("expected withdrawn scaled balance", (amount * 1e18) / newSupplyIndex);
+
+        (uint256 newInP2P, uint256 newOnPool) = morpho.supplyBalanceInOf(cUsdt, address(supplier1));
+        console.log("actual withdraw scaled balance   ", onPool - newOnPool);
+        (, , uint256 supplyBalanceInUnderlying) = lens.getCurrentSupplyBalanceInOf(
+            cUsdt,
+            address(supplier1)
+        );
+        console.log("supply balance", supplyBalanceInUnderlying);
+        testEquality(newInP2P, 0);
+        testEquality(newOnPool, 0);
     }
 
     function testShouldNotWithdrawWhenUnderCollaterized() public {

@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IWETH.sol";
+import "@forge-std/console.sol";
 
 import "./MatchingEngine.sol";
 
@@ -598,6 +599,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.remainingToWithdraw = _amount;
         vars.remainingGasForMatching = _maxGasForMatching;
         vars.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored(); // Exchange rate has already been updated.
+        console.log("supply index in withdraw", vars.poolSupplyIndex);
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
@@ -611,10 +613,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 onPoolSupply = supplierSupplyBalance.onPool;
         if (onPoolSupply > 0) {
             uint256 maxToWithdrawOnPool = onPoolSupply.mul(vars.poolSupplyIndex);
+            console.log("remaining to withdraw", vars.remainingToWithdraw);
+            console.log("maxToWithdrawOnPool  ", maxToWithdrawOnPool);
 
             if (maxToWithdrawOnPool > vars.remainingToWithdraw) {
                 vars.toWithdraw = vars.remainingToWithdraw;
                 vars.remainingToWithdraw = 0;
+                console.log("to withdraw", vars.toWithdraw);
+                console.log("scaled withdrawn", vars.toWithdraw.div(vars.poolSupplyIndex));
                 supplierSupplyBalance.onPool -= vars.toWithdraw.div(vars.poolSupplyIndex);
             } else {
                 vars.toWithdraw = maxToWithdrawOnPool;
