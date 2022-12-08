@@ -146,23 +146,6 @@ library InterestRatesModel {
         }
     }
 
-    /// @notice Computes and returns the raw peer-to-peer rate per block of a market given the pool rates.
-    /// @param _poolSupplyRate The pool supply rate per block.
-    /// @param _poolBorrowRate The pool borrow rate per block.
-    /// @param _p2pIndexCursor The market's p2p index cursor.
-    /// @return The raw peer-to-peer rate per block, without reserve factor, without delta.
-    function computeRawP2PRatePerBlock(
-        uint256 _poolSupplyRate,
-        uint256 _poolBorrowRate,
-        uint256 _p2pIndexCursor
-    ) internal pure returns (uint256) {
-        return
-            ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-                _poolSupplyRate +
-                _p2pIndexCursor *
-                _poolBorrowRate) / MAX_BASIS_POINTS;
-    }
-
     /// @notice Computes and returns the peer-to-peer supply rate per block of a market given its parameters.
     /// @param _params The computation parameters.
     /// @return p2pSupplyRate The peer-to-peer supply rate per block.
