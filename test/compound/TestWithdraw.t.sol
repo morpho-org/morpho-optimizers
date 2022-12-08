@@ -642,6 +642,32 @@ contract TestWithdraw is TestSetup {
         }
     }
 
+    function testWithdrawDoesNotLeaveDust() public {
+        uint256 supplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 rawAmount = 1e10;
+        uint256 amount = (rawAmount * 1e18 - ((rawAmount * 1e18) % supplyIndex)) / 1e18;
+
+        console.log("supplyIndex", supplyIndex);
+        console.log("amount", amount);
+        console.log((amount * 1e18) / supplyIndex);
+        console.log((rawAmount * 1e18) / supplyIndex);
+
+        supplier1.approve(dai, address(morpho), amount);
+        supplier1.supply(cDai, amount);
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        console.log("inP2P", inP2P);
+        console.log("onPool", onPool);
+
+        vm.roll(block.number + 1000);
+
+        supplier1.withdraw(cDai, amount);
+
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        testEquality(inP2P, 0);
+        testEquality(onPool, 0);
+    }
+
     function testShouldNotWithdrawWhenUnderCollaterized() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = toSupply / 2;
