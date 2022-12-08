@@ -258,7 +258,8 @@ contract TestBorrow is TestSetup {
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(aUsdc, to6Decimals(amount));
 
-        morpho.setAssetAsCollateral(aDai, false);
+        vm.prank(address(morpho));
+        pool.setUserUseReserveAsCollateral(dai, false);
 
         hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, to6Decimals(amount));

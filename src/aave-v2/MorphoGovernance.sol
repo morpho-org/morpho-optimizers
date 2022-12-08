@@ -401,17 +401,6 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit IsDeprecatedSet(_poolToken, _isDeprecated);
     }
 
-    /// @notice Sets a market's asset as collateral.
-    /// @param _poolToken The address of the market to (un)set as collateral.
-    /// @param _assetAsCollateral True to set the asset as collateral (True by default).
-    function setAssetAsCollateral(address _poolToken, bool _assetAsCollateral)
-        external
-        onlyOwner
-        isMarketCreated(_poolToken)
-    {
-        pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _assetAsCollateral);
-    }
-
     /// @notice Increases peer-to-peer deltas, to put some liquidity back on the pool.
     /// @dev The current Morpho supply on the pool might not be enough to borrow `_amount` before resuppling it.
     /// In this case, consider calling multiple times this function.
