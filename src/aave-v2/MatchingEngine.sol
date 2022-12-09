@@ -299,33 +299,43 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolToken, address _user) internal {
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][_user];
-        uint256 onPool = supplierSupplyBalance.onPool;
-        uint256 inP2P = supplierSupplyBalance.inP2P;
+        Types.SupplyBalance memory supplierSupplyBalance = supplyBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
 
-        uint256 formerValueOnPool = marketSuppliersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketSuppliersInP2P.getValueOf(_user);
-
-        marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
+        marketSuppliersOnPool.update(
+            _user,
+            marketSuppliersOnPool.getValueOf(_user),
+            supplierSupplyBalance.onPool,
+            maxSortedUsers
+        );
+        marketSuppliersInP2P.update(
+            _user,
+            marketSuppliersInP2P.getValueOf(_user),
+            supplierSupplyBalance.inP2P,
+            maxSortedUsers
+        );
     }
 
     /// @notice Updates the given `_user`'s position in the borrower data structures.
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_user];
-        uint256 onPool = borrowerBorrowBalance.onPool;
-        uint256 inP2P = borrowerBorrowBalance.inP2P;
+        Types.BorrowBalance memory borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
 
-        uint256 formerValueOnPool = marketBorrowersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketBorrowersInP2P.getValueOf(_user);
-
-        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
+        marketBorrowersOnPool.update(
+            _user,
+            marketBorrowersOnPool.getValueOf(_user),
+            borrowerBorrowBalance.onPool,
+            maxSortedUsers
+        );
+        marketBorrowersInP2P.update(
+            _user,
+            marketBorrowersInP2P.getValueOf(_user),
+            borrowerBorrowBalance.inP2P,
+            maxSortedUsers
+        );
     }
 }
