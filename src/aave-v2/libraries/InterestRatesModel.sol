@@ -30,8 +30,8 @@ library InterestRatesModel {
     }
 
     struct P2PRateComputeParams {
-        uint256 poolSupplyRate; // The pool supply rate per year (in ray).
-        uint256 poolBorrowRate; // The pool borrow rate per year (in ray).
+        uint256 poolSupplyRatePerYear; // The pool supply rate per year (in ray).
+        uint256 poolBorrowRatePerYear; // The pool borrow rate per year (in ray).
         uint256 poolIndex; // The last stored pool index (in ray).
         uint256 p2pIndex; // The last stored peer-to-peer index (in ray).
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
@@ -140,18 +140,18 @@ library InterestRatesModel {
         pure
         returns (uint256 p2pSupplyRate)
     {
-        if (_params.poolSupplyRate > _params.poolBorrowRate) {
-            p2pSupplyRate = _params.poolBorrowRate; // The p2pSupplyRate is set to the poolBorrowRate because there is no rate spread.
+        if (_params.poolSupplyRatePerYear > _params.poolBorrowRatePerYear) {
+            p2pSupplyRate = _params.poolBorrowRatePerYear; // The p2pSupplyRate is set to the poolBorrowRatePerYear because there is no rate spread.
         } else {
             uint256 p2pRate = PercentageMath.weightedAvg(
-                _params.poolSupplyRate,
-                _params.poolBorrowRate,
+                _params.poolSupplyRatePerYear,
+                _params.poolBorrowRatePerYear,
                 _params.p2pIndexCursor
             );
 
             p2pSupplyRate =
                 p2pRate -
-                (p2pRate - _params.poolSupplyRate).percentMul(_params.reserveFactor);
+                (p2pRate - _params.poolSupplyRatePerYear).percentMul(_params.reserveFactor);
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
@@ -164,7 +164,7 @@ library InterestRatesModel {
 
             p2pSupplyRate =
                 p2pSupplyRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
-                _params.poolSupplyRate.rayMul(shareOfTheDelta);
+                _params.poolSupplyRatePerYear.rayMul(shareOfTheDelta);
         }
     }
 
@@ -176,18 +176,18 @@ library InterestRatesModel {
         pure
         returns (uint256 p2pBorrowRate)
     {
-        if (_params.poolSupplyRate > _params.poolBorrowRate) {
-            p2pBorrowRate = _params.poolBorrowRate; // The p2pBorrowRate is set to the poolBorrowRate because there is no rate spread.
+        if (_params.poolSupplyRatePerYear > _params.poolBorrowRatePerYear) {
+            p2pBorrowRate = _params.poolBorrowRatePerYear; // The p2pBorrowRate is set to the poolBorrowRatePerYear because there is no rate spread.
         } else {
             uint256 p2pRate = PercentageMath.weightedAvg(
-                _params.poolSupplyRate,
-                _params.poolBorrowRate,
+                _params.poolSupplyRatePerYear,
+                _params.poolBorrowRatePerYear,
                 _params.p2pIndexCursor
             );
 
             p2pBorrowRate =
                 p2pRate +
-                (_params.poolBorrowRate - p2pRate).percentMul(_params.reserveFactor);
+                (_params.poolBorrowRatePerYear - p2pRate).percentMul(_params.reserveFactor);
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
@@ -200,7 +200,7 @@ library InterestRatesModel {
 
             p2pBorrowRate =
                 p2pBorrowRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
-                _params.poolBorrowRate.rayMul(shareOfTheDelta);
+                _params.poolBorrowRatePerYear.rayMul(shareOfTheDelta);
         }
     }
 }

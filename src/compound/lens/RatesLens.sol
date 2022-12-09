@@ -37,13 +37,11 @@ abstract contract RatesLens is UsersLens {
             uint256 totalBalance
         )
     {
-        Types.Delta memory delta;
-        Types.Indexes memory indexes;
-        (delta, indexes) = _getIndexes(_poolToken, true);
+        (Types.Delta memory delta, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
         if (_amount > 0 && delta.p2pBorrowDelta > 0) {
-            uint256 matchedDelta = CompoundMath.min(
+            uint256 matchedDelta = Math.min(
                 delta.p2pBorrowDelta.mul(indexes.poolBorrowIndex),
                 _amount
             );
@@ -60,10 +58,10 @@ abstract contract RatesLens is UsersLens {
             ).onPool;
 
             if (firstPoolBorrowerBalance > 0) {
-                uint256 borrowerBalanceInUnderlying = firstPoolBorrowerBalance.mul(
-                    indexes.poolBorrowIndex
+                uint256 matchedP2P = Math.min(
+                    firstPoolBorrowerBalance.mul(indexes.poolBorrowIndex),
+                    _amount
                 );
-                uint256 matchedP2P = CompoundMath.min(borrowerBalanceInUnderlying, _amount);
 
                 supplyBalance.inP2P += matchedP2P.div(indexes.p2pSupplyIndex);
                 _amount -= matchedP2P;
@@ -108,13 +106,11 @@ abstract contract RatesLens is UsersLens {
             uint256 totalBalance
         )
     {
-        Types.Delta memory delta;
-        Types.Indexes memory indexes;
-        (delta, indexes) = _getIndexes(_poolToken, true);
+        (Types.Delta memory delta, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
         if (_amount > 0 && delta.p2pSupplyDelta > 0) {
-            uint256 matchedDelta = CompoundMath.min(
+            uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.mul(indexes.poolSupplyIndex),
                 _amount
             );
@@ -131,10 +127,10 @@ abstract contract RatesLens is UsersLens {
             ).onPool;
 
             if (firstPoolSupplierBalance > 0) {
-                uint256 supplierBalanceInUnderlying = firstPoolSupplierBalance.mul(
-                    indexes.poolSupplyIndex
+                uint256 matchedP2P = Math.min(
+                    firstPoolSupplierBalance.mul(indexes.poolSupplyIndex),
+                    _amount
                 );
-                uint256 matchedP2P = CompoundMath.min(supplierBalanceInUnderlying, _amount);
 
                 borrowBalance.inP2P += matchedP2P.div(indexes.p2pBorrowIndex);
                 _amount -= matchedP2P;
