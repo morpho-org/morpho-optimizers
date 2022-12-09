@@ -25,10 +25,13 @@ abstract contract LensStorage is Initializable {
     IMorpho public morpho;
     IComptroller public comptroller;
     IRewardsManager public rewardsManager;
+    IInterestRatesManager internal immutable interestRatesManager;
 
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
     /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
-    constructor() initializer {}
+    constructor(address _interestRatesManager) initializer {
+        interestRatesManager = IInterestRatesManager(_interestRatesManager);
+    }
 }

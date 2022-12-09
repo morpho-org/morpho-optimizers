@@ -14,6 +14,7 @@ import "./MorphoStorage.sol";
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
+    using CompoundMath for uint256;
     using PercentageMath for uint256;
 
     /// STRUCTS ///
@@ -60,16 +61,16 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         uint256 poolBorrowIndex = ICToken(_poolToken).borrowIndex();
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(
-            Params(
-                p2pSupplyIndex[_poolToken],
-                p2pBorrowIndex[_poolToken],
-                poolSupplyIndex,
-                poolBorrowIndex,
-                poolIndexes,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolToken]
-            )
+            Params({
+                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
+                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                poolSupplyIndex: poolSupplyIndex,
+                poolBorrowIndex: poolBorrowIndex,
+                lastPoolIndexes: poolIndexes,
+                reserveFactor: marketParams.reserveFactor,
+                p2pIndexCursor: marketParams.p2pIndexCursor,
+                delta: deltas[_poolToken]
+            })
         );
 
         p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
@@ -86,6 +87,90 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             poolSupplyIndex,
             poolBorrowIndex
         );
+    }
+
+    /// PUBLIC ///
+
+    /// @dev Returns Compound's updated indexes of a given market.
+    /// @param _poolToken The address of the market.
+    /// @return poolSupplyIndex The supply index.
+    /// @return poolBorrowIndex The borrow index.
+    function getCurrentPoolIndexes(address _poolToken)
+        public
+        view
+        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
+    {
+        ICToken cToken = ICToken(_poolToken);
+
+        uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
+        if (block.number == accrualBlockNumberPrior)
+            return (cToken.exchangeRateStored(), cToken.borrowIndex());
+
+        // Read the previous values out of storage
+        uint256 cashPrior = cToken.getCash();
+        uint256 totalSupply = cToken.totalSupply();
+        uint256 borrowsPrior = cToken.totalBorrows();
+        uint256 reservesPrior = cToken.totalReserves();
+        uint256 borrowIndexPrior = cToken.borrowIndex();
+
+        // Calculate the current borrow interest rate
+        uint256 borrowRateMantissa = cToken.borrowRatePerBlock();
+        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
+
+        uint256 blockDelta = block.number - accrualBlockNumberPrior;
+
+        // Calculate the interest accumulated into borrows and reserves and the current index.
+        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
+        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
+        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
+        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
+            reservesPrior;
+
+        poolSupplyIndex = (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply);
+        poolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
+    }
+
+    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @param _poolToken The address of the market.
+    /// @param _updated Whether to compute virtually updated pool and peer-to-peer indexes.
+    /// @return indexes The given market's updated indexes.
+    /// @return delta The given market's deltas.
+    function getIndexes(address _poolToken, bool _updated)
+        public
+        view
+        returns (Types.Indexes memory indexes, Types.Delta memory delta)
+    {
+        if (!_updated) {
+            ICToken cToken = ICToken(_poolToken);
+
+            indexes.poolSupplyIndex = cToken.exchangeRateStored();
+            indexes.poolBorrowIndex = cToken.borrowIndex();
+        } else {
+            (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getCurrentPoolIndexes(_poolToken);
+        }
+
+        delta = deltas[_poolToken];
+        Types.LastPoolIndexes memory poolIndexes = lastPoolIndexes[_poolToken];
+
+        if (!_updated || block.number == poolIndexes.lastUpdateBlockNumber) {
+            indexes.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
+            indexes.p2pBorrowIndex = p2pBorrowIndex[_poolToken];
+        } else {
+            Types.MarketParameters memory marketParams = marketParameters[_poolToken];
+
+            (indexes.p2pSupplyIndex, indexes.p2pBorrowIndex) = _computeP2PIndexes(
+                Params({
+                    lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
+                    lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                    poolSupplyIndex: indexes.poolSupplyIndex,
+                    poolBorrowIndex: indexes.poolBorrowIndex,
+                    lastPoolIndexes: poolIndexes,
+                    reserveFactor: marketParams.reserveFactor,
+                    p2pIndexCursor: marketParams.p2pIndexCursor,
+                    delta: delta
+                })
+            );
+        }
     }
 
     /// INTERNAL ///
@@ -108,7 +193,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             _params.reserveFactor
         );
 
-        newP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
+        newP2PSupplyIndex = InterestRatesModel.computeP2PIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
@@ -118,7 +203,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pAmount: _params.delta.p2pSupplyAmount
             })
         );
-        newP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
+        newP2PBorrowIndex = InterestRatesModel.computeP2PIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pBorrowGrowthFactor,

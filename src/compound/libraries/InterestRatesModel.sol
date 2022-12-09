@@ -80,16 +80,16 @@ library InterestRatesModel {
         }
     }
 
-    /// @notice Computes and returns the new peer-to-peer supply index of a market given its parameters.
+    /// @notice Computes and returns the new peer-to-peer supply/borrow index of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return newP2PSupplyIndex The updated peer-to-peer index (in wad).
-    function computeP2PSupplyIndex(P2PIndexComputeParams memory _params)
+    /// @return newP2PIndex The updated peer-to-peer index (in wad).
+    function computeP2PIndex(P2PIndexComputeParams memory _params)
         internal
         pure
-        returns (uint256 newP2PSupplyIndex)
+        returns (uint256 newP2PIndex)
     {
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PSupplyIndex = _params.lastP2PIndex.mul(_params.p2pGrowthFactor);
+            newP2PIndex = _params.lastP2PIndex.mul(_params.p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
                 (_params.p2pDelta.mul(_params.lastPoolIndex)).div(
@@ -98,32 +98,7 @@ library InterestRatesModel {
                 CompoundMath.WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newP2PSupplyIndex = _params.lastP2PIndex.mul(
-                (CompoundMath.WAD - shareOfTheDelta).mul(_params.p2pGrowthFactor) +
-                    shareOfTheDelta.mul(_params.poolGrowthFactor)
-            );
-        }
-    }
-
-    /// @notice Computes and returns the new peer-to-peer borrow index of a market given its parameters.
-    /// @param _params The computation parameters.
-    /// @return newP2PBorrowIndex The updated peer-to-peer index (in wad).
-    function computeP2PBorrowIndex(P2PIndexComputeParams memory _params)
-        internal
-        pure
-        returns (uint256 newP2PBorrowIndex)
-    {
-        if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PBorrowIndex = _params.lastP2PIndex.mul(_params.p2pGrowthFactor);
-        } else {
-            uint256 shareOfTheDelta = Math.min(
-                (_params.p2pDelta.mul(_params.lastPoolIndex)).div(
-                    (_params.p2pAmount).mul(_params.lastP2PIndex)
-                ),
-                CompoundMath.WAD // To avoid shareOfTheDelta > 1 with rounding errors.
-            );
-
-            newP2PBorrowIndex = _params.lastP2PIndex.mul(
+            newP2PIndex = _params.lastP2PIndex.mul(
                 (CompoundMath.WAD - shareOfTheDelta).mul(_params.p2pGrowthFactor) +
                     shareOfTheDelta.mul(_params.poolGrowthFactor)
             );

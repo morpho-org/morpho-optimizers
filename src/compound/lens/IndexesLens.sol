@@ -56,41 +56,10 @@ abstract contract IndexesLens is LensStorage {
 
     /// @dev Returns Compound's updated indexes of a given market.
     /// @param _poolToken The address of the market.
-    /// @return poolSupplyIndex The supply index.
-    /// @return poolBorrowIndex The borrow index.
-    function getCurrentPoolIndexes(address _poolToken)
-        public
-        view
-        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
-    {
-        ICToken cToken = ICToken(_poolToken);
-
-        uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
-        if (block.number == accrualBlockNumberPrior)
-            return (cToken.exchangeRateStored(), cToken.borrowIndex());
-
-        // Read the previous values out of storage
-        uint256 cashPrior = cToken.getCash();
-        uint256 totalSupply = cToken.totalSupply();
-        uint256 borrowsPrior = cToken.totalBorrows();
-        uint256 reservesPrior = cToken.totalReserves();
-        uint256 borrowIndexPrior = cToken.borrowIndex();
-
-        // Calculate the current borrow interest rate
-        uint256 borrowRateMantissa = cToken.borrowRatePerBlock();
-        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
-
-        uint256 blockDelta = block.number - accrualBlockNumberPrior;
-
-        // Calculate the interest accumulated into borrows and reserves and the current index.
-        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
-        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
-        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
-        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
-            reservesPrior;
-
-        poolSupplyIndex = (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply);
-        poolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
+    /// @return The supply index.
+    /// @return The borrow index.
+    function getCurrentPoolIndexes(address _poolToken) public view returns (uint256, uint256) {
+        return interestRatesManager.getCurrentPoolIndexes(_poolToken);
     }
 
     /// INTERNAL ///
@@ -105,53 +74,6 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (Types.Delta memory delta, Types.Indexes memory indexes)
     {
-        delta = morpho.deltas(_poolToken);
-        Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolToken);
-
-        if (!_updated) {
-            ICToken cToken = ICToken(_poolToken);
-
-            indexes.poolSupplyIndex = cToken.exchangeRateStored();
-            indexes.poolBorrowIndex = cToken.borrowIndex();
-        } else {
-            (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getCurrentPoolIndexes(_poolToken);
-        }
-
-        if (!_updated || block.number == lastPoolIndexes.lastUpdateBlockNumber) {
-            indexes.p2pSupplyIndex = morpho.p2pSupplyIndex(_poolToken);
-            indexes.p2pBorrowIndex = morpho.p2pBorrowIndex(_poolToken);
-        } else {
-            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolToken);
-
-            InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
-            .computeGrowthFactors(
-                indexes.poolSupplyIndex,
-                indexes.poolBorrowIndex,
-                lastPoolIndexes,
-                marketParams.p2pIndexCursor,
-                marketParams.reserveFactor
-            );
-
-            indexes.p2pSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
-                InterestRatesModel.P2PIndexComputeParams({
-                    poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
-                    p2pGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
-                    lastPoolIndex: lastPoolIndexes.lastSupplyPoolIndex,
-                    lastP2PIndex: morpho.p2pSupplyIndex(_poolToken),
-                    p2pDelta: delta.p2pSupplyDelta,
-                    p2pAmount: delta.p2pSupplyAmount
-                })
-            );
-            indexes.p2pBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
-                InterestRatesModel.P2PIndexComputeParams({
-                    poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
-                    p2pGrowthFactor: growthFactors.p2pBorrowGrowthFactor,
-                    lastPoolIndex: lastPoolIndexes.lastBorrowPoolIndex,
-                    lastP2PIndex: morpho.p2pBorrowIndex(_poolToken),
-                    p2pDelta: delta.p2pBorrowDelta,
-                    p2pAmount: delta.p2pBorrowAmount
-                })
-            );
-        }
+        (indexes, delta) = interestRatesManager.getIndexes(_poolToken, _updated);
     }
 }
