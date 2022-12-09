@@ -263,11 +263,11 @@ abstract contract MorphoUtils is MorphoStorage {
         vars.userMarkets = userMarkets[_user];
 
         for (uint256 i; i < vars.poolTokensLength; ++i) {
-            vars.poolToken = marketsCreated[i];
             vars.borrowMask = borrowMask[vars.poolToken];
 
             if (!_isSupplyingOrBorrowing(vars.userMarkets, vars.borrowMask)) continue;
 
+            vars.poolToken = marketsCreated[i];
             vars.underlyingToken = market[vars.poolToken].underlyingToken;
             vars.underlyingPrice = oracle.getAssetPrice(vars.underlyingToken);
 
