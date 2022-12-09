@@ -60,7 +60,6 @@ interface IMorpho {
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external;
     function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
-    function setIncentivesVault(address _newIncentivesVault) external;
     function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
     function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager) external;
     function setInterestRatesManager(IInterestRatesManager _interestRatesManager) external;
