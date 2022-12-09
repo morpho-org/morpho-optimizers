@@ -290,7 +290,7 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                values.debt += _debtValue(
+                values.debtEth += _debtValue(
                     vars.poolToken,
                     _user,
                     vars.underlyingPrice,
@@ -307,29 +307,31 @@ abstract contract MorphoUtils is MorphoStorage {
                     vars.underlyingPrice,
                     assetData.tokenUnit
                 );
-                values.collateral += assetCollateralValue;
+                values.collateralEth += assetCollateralValue;
                 // Calculate LTV for borrow.
-                values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
+                values.borrowableEth += assetCollateralValue.percentMul(assetData.ltv);
             }
 
             // Update debt variable for borrowed token.
             if (_poolToken == vars.poolToken && _amountBorrowed > 0)
-                values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(assetData.tokenUnit);
+                values.debtEth += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    assetData.tokenUnit
+                );
 
             // Update LT variable for withdraw.
             if (assetCollateralValue > 0)
-                values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                values.liquidationThresholdEth += assetCollateralValue.percentMul(
                     assetData.liquidationThreshold
                 );
 
             // Subtract withdrawn amount from liquidation threshold and collateral.
             if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
                 uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) / assetData.tokenUnit;
-                values.collateral -= withdrawn;
-                values.liquidationThresholdValue -= withdrawn.percentMul(
+                values.collateralEth -= withdrawn;
+                values.liquidationThresholdEth -= withdrawn.percentMul(
                     assetData.liquidationThreshold
                 );
-                values.maxDebt -= withdrawn.percentMul(assetData.ltv);
+                values.borrowableEth -= withdrawn.percentMul(assetData.ltv);
             }
         }
     }

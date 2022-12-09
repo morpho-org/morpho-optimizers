@@ -290,6 +290,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _borrowedAmount
     ) internal returns (bool) {
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, 0, _borrowedAmount);
-        return values.debt <= values.maxDebt;
+        return values.debtEth <= values.borrowableEth;
     }
 }
