@@ -877,7 +877,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Breaking repay ///
 
-        // Unmote peer-to-peer suppliers.
+        // Demote peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolToken,
