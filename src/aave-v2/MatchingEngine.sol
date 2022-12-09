@@ -302,6 +302,7 @@ abstract contract MatchingEngine is MorphoUtils {
         Types.SupplyBalance memory supplyBalance = supplyBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
+        uint256 maxSortedUsers = maxSortedUsers;
 
         marketSuppliersOnPool.update(
             _user,
@@ -324,6 +325,7 @@ abstract contract MatchingEngine is MorphoUtils {
         Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
+        uint256 maxSortedUsers = maxSortedUsers;
 
         marketBorrowersOnPool.update(
             _user,
