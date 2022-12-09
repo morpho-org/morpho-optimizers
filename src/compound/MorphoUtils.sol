@@ -90,7 +90,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Updates the peer-to-peer indexes.
-    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
+    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRateStored() is necessary to get the most up to date exchange rate.
     /// @param _poolToken The address of the market to update.
     function updateP2PIndexes(address _poolToken) external isMarketCreated(_poolToken) {
         _updateP2PIndexes(_poolToken);
@@ -99,7 +99,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// INTERNAL ///
 
     /// @dev Updates the peer-to-peer indexes.
-    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
+    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRateStored() is necessary to get the most up to date exchange rate.
     /// @param _poolToken The address of the market to update.
     function _updateP2PIndexes(address _poolToken) internal {
         address(interestRatesManager).functionDelegateCall(
