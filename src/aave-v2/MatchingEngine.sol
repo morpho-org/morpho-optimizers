@@ -299,20 +299,20 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolToken, address _user) internal {
-        Types.SupplyBalance memory supplierSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+        Types.SupplyBalance memory supplyBalance = supplyBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
 
         marketSuppliersOnPool.update(
             _user,
             marketSuppliersOnPool.getValueOf(_user),
-            supplierSupplyBalance.onPool,
+            supplyBalance.onPool,
             maxSortedUsers
         );
         marketSuppliersInP2P.update(
             _user,
             marketSuppliersInP2P.getValueOf(_user),
-            supplierSupplyBalance.inP2P,
+            supplyBalance.inP2P,
             maxSortedUsers
         );
     }
@@ -321,20 +321,20 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        Types.BorrowBalance memory borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+        Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
 
         marketBorrowersOnPool.update(
             _user,
             marketBorrowersOnPool.getValueOf(_user),
-            borrowerBorrowBalance.onPool,
+            borrowBalance.onPool,
             maxSortedUsers
         );
         marketBorrowersInP2P.update(
             _user,
             marketBorrowersInP2P.getValueOf(_user),
-            borrowerBorrowBalance.inP2P,
+            borrowBalance.inP2P,
             maxSortedUsers
         );
     }

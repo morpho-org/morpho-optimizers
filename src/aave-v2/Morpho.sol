@@ -132,6 +132,9 @@ contract Morpho is MorphoGovernance {
         );
     }
 
+    /// @notice Deprecated.
+    function claimRewards(address[] calldata, bool) external returns (uint256) {}
+
     /// INTERNAL ///
 
     function _supply(
