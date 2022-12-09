@@ -92,13 +92,4 @@ library Types {
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
         bool isDeprecated; // Whether a market is deprecated or not.
     }
-
-    struct LiquidityStackVars {
-        address poolToken;
-        uint256 poolTokensLength;
-        bytes32 userMarkets;
-        bytes32 borrowMask;
-        address underlyingToken;
-        uint256 underlyingPrice;
-    }
 }
