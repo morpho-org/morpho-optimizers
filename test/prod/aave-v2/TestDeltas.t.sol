@@ -8,11 +8,7 @@ contract TestDeltas is TestSetup {
 
     struct DeltasTest {
         TestMarket market;
-        //
-        uint256 p2pSupplyIndex;
-        uint256 p2pBorrowIndex;
-        uint256 poolSupplyIndex;
-        uint256 poolBorrowIndex;
+        Types.Indexes indexes;
         //
         uint256 p2pSupplyDelta;
         uint256 p2pBorrowDelta;
@@ -43,17 +39,16 @@ contract TestDeltas is TestSetup {
                 test.p2pBorrowBefore
             ) = morpho.deltas(test.market.poolToken);
 
-            (
-                test.p2pSupplyIndex,
-                test.p2pBorrowIndex,
-                test.poolSupplyIndex,
-                test.poolBorrowIndex
-            ) = lens.getIndexes(test.market.poolToken);
+            test.indexes = lens.getIndexes(test.market.poolToken);
 
-            uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.rayMul(test.p2pSupplyIndex);
-            uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.rayMul(test.p2pBorrowIndex);
-            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.rayMul(test.poolSupplyIndex);
-            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.rayMul(test.poolBorrowIndex);
+            uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.rayMul(test.indexes.p2pSupplyIndex);
+            uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.rayMul(test.indexes.p2pBorrowIndex);
+            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.rayMul(
+                test.indexes.poolSupplyIndex
+            );
+            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.rayMul(
+                test.indexes.poolBorrowIndex
+            );
             if (
                 p2pSupplyUnderlying <= supplyDeltaUnderlyingBefore ||
                 p2pBorrowUnderlying <= borrowDeltaUnderlyingBefore
@@ -75,13 +70,13 @@ contract TestDeltas is TestSetup {
             ) = morpho.deltas(test.market.poolToken);
 
             assertApproxEqAbs(
-                test.p2pSupplyDelta.rayMul(test.poolSupplyIndex),
+                test.p2pSupplyDelta.rayMul(test.indexes.poolSupplyIndex),
                 p2pSupplyUnderlying,
                 10,
                 "p2p supply delta"
             );
             assertApproxEqAbs(
-                test.p2pBorrowDelta.rayMul(test.poolBorrowIndex),
+                test.p2pBorrowDelta.rayMul(test.indexes.poolBorrowIndex),
                 p2pBorrowUnderlying,
                 10,
                 "p2p borrow delta"
@@ -140,17 +135,16 @@ contract TestDeltas is TestSetup {
                 test.p2pBorrowBefore
             ) = morpho.deltas(test.market.poolToken);
 
-            (
-                test.p2pSupplyIndex,
-                test.p2pBorrowIndex,
-                test.poolSupplyIndex,
-                test.poolBorrowIndex
-            ) = lens.getIndexes(test.market.poolToken);
+            test.indexes = lens.getIndexes(test.market.poolToken);
 
-            uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.rayMul(test.p2pSupplyIndex);
-            uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.rayMul(test.p2pBorrowIndex);
-            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.rayMul(test.poolSupplyIndex);
-            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.rayMul(test.poolBorrowIndex);
+            uint256 p2pSupplyUnderlying = test.p2pSupplyBefore.rayMul(test.indexes.p2pSupplyIndex);
+            uint256 p2pBorrowUnderlying = test.p2pBorrowBefore.rayMul(test.indexes.p2pBorrowIndex);
+            uint256 supplyDeltaUnderlyingBefore = test.p2pSupplyDelta.rayMul(
+                test.indexes.poolSupplyIndex
+            );
+            uint256 borrowDeltaUnderlyingBefore = test.p2pBorrowDelta.rayMul(
+                test.indexes.poolBorrowIndex
+            );
             if (
                 p2pSupplyUnderlying > supplyDeltaUnderlyingBefore &&
                 p2pBorrowUnderlying > borrowDeltaUnderlyingBefore

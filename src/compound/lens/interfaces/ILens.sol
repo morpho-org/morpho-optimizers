@@ -70,10 +70,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex,
+            Types.Indexes memory indexes,
             uint32 lastUpdateBlockNumber,
             uint256 p2pSupplyDelta,
             uint256 p2pBorrowDelta
@@ -122,12 +119,7 @@ interface ILens {
     function getIndexes(address _poolToken, bool _computeUpdatedIndexes)
         external
         view
-        returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        );
+        returns (Types.Indexes memory indexes);
 
     /// USERS ///
 
@@ -201,24 +193,6 @@ interface ILens {
 
     /// RATES ///
 
-    function getAverageSupplyRatePerBlock(address _poolToken)
-        external
-        view
-        returns (
-            uint256 avgSupplyRatePerBlock,
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount
-        );
-
-    function getAverageBorrowRatePerBlock(address _poolToken)
-        external
-        view
-        returns (
-            uint256 avgBorrowRatePerBlock,
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount
-        );
-
     function getNextUserSupplyRatePerBlock(
         address _poolToken,
         address _user,
@@ -256,6 +230,24 @@ interface ILens {
         external
         view
         returns (uint256);
+
+    function getAverageSupplyRatePerBlock(address _poolToken)
+        external
+        view
+        returns (
+            uint256 avgSupplyRatePerBlock,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
+        );
+
+    function getAverageBorrowRatePerBlock(address _poolToken)
+        external
+        view
+        returns (
+            uint256 avgBorrowRatePerBlock,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        );
 
     function getRatesPerBlock(address _poolToken)
         external

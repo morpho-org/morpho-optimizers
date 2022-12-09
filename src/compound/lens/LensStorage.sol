@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
+import "./interfaces/ILens.sol";
 
 import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
@@ -15,7 +16,7 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage {
+abstract contract LensStorage is ILens {
     /// CONSTANTS ///
 
     uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
