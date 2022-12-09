@@ -129,7 +129,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             _params.reserveFactor
         );
 
-        newP2PSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
+        newP2PSupplyIndex = InterestRatesModel.computeP2PIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
@@ -139,7 +139,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pAmount: _params.delta.p2pSupplyAmount
             })
         );
-        newP2PBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
+        newP2PBorrowIndex = InterestRatesModel.computeP2PIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pBorrowGrowthFactor,

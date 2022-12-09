@@ -83,16 +83,16 @@ library InterestRatesModel {
         }
     }
 
-    /// @notice Computes and returns the new peer-to-peer supply index of a market given its parameters.
+    /// @notice Computes and returns the new peer-to-peer supply/borrow index of a market given its parameters.
     /// @param _params The computation parameters.
-    /// @return newP2PSupplyIndex The updated peer-to-peer index (in ray).
-    function computeP2PSupplyIndex(P2PIndexComputeParams memory _params)
+    /// @return newP2PIndex The updated peer-to-peer index (in ray).
+    function computeP2PIndex(P2PIndexComputeParams memory _params)
         internal
         pure
-        returns (uint256 newP2PSupplyIndex)
+        returns (uint256 newP2PIndex)
     {
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PSupplyIndex = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
+            newP2PIndex = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
                 _params.p2pDelta.rayMul(_params.lastPoolIndex).rayDiv(
@@ -101,32 +101,7 @@ library InterestRatesModel {
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             ); // In ray.
 
-            newP2PSupplyIndex = _params.lastP2PIndex.rayMul(
-                (WadRayMath.RAY - shareOfTheDelta).rayMul(_params.p2pGrowthFactor) +
-                    shareOfTheDelta.rayMul(_params.poolGrowthFactor)
-            );
-        }
-    }
-
-    /// @notice Computes and returns the new peer-to-peer borrow index of a market given its parameters.
-    /// @param _params The computation parameters.
-    /// @return newP2PBorrowIndex The updated peer-to-peer index (in ray).
-    function computeP2PBorrowIndex(P2PIndexComputeParams memory _params)
-        internal
-        pure
-        returns (uint256 newP2PBorrowIndex)
-    {
-        if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PBorrowIndex = _params.lastP2PIndex.rayMul(_params.p2pGrowthFactor);
-        } else {
-            uint256 shareOfTheDelta = Math.min(
-                _params.p2pDelta.rayMul(_params.lastPoolIndex).rayDiv(
-                    _params.p2pAmount.rayMul(_params.lastP2PIndex)
-                ), // Using ray division of an amount in underlying decimals by an amount in underlying decimals yields a value in ray.
-                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
-            ); // In ray.
-
-            newP2PBorrowIndex = _params.lastP2PIndex.rayMul(
+            newP2PIndex = _params.lastP2PIndex.rayMul(
                 (WadRayMath.RAY - shareOfTheDelta).rayMul(_params.p2pGrowthFactor) +
                     shareOfTheDelta.rayMul(_params.poolGrowthFactor)
             );
