@@ -308,7 +308,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (marketPauseStatus[_poolToken].isDeprecated && !_isPaused) revert MarketIsDeprecated();
+        if (!_isPaused && marketPauseStatus[_poolToken].isDeprecated) revert MarketIsDeprecated();
         marketPauseStatus[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
