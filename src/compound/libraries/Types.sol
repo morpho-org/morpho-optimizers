@@ -52,7 +52,7 @@ library Types {
 
     struct LiquidityData {
         uint256 collateralUsd; // The collateral value (in USD, wad).
-        uint256 maxDebtUsd; // The maximum debt value possible (in USD, wad).
+        uint256 maxDebtUsd; // The maximum debt value allowed before being liquidatable (in USD, wad).
         uint256 debtUsd; // The debt value (in USD, wad).
     }
 

@@ -320,7 +320,7 @@ abstract contract MorphoUtils is MorphoStorage {
 
             // Update LT variable for withdraw.
             if (assetCollateralValue > 0)
-                values.liquidationThresholdEth += assetCollateralValue.percentMul(
+                values.maxDebtEth += assetCollateralValue.percentMul(
                     assetData.liquidationThreshold
                 );
 
@@ -328,9 +328,7 @@ abstract contract MorphoUtils is MorphoStorage {
             if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
                 uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) / assetData.tokenUnit;
                 values.collateralEth -= withdrawn;
-                values.liquidationThresholdEth -= withdrawn.percentMul(
-                    assetData.liquidationThreshold
-                );
+                values.maxDebtEth -= withdrawn.percentMul(assetData.liquidationThreshold);
                 values.borrowableEth -= withdrawn.percentMul(assetData.ltv);
             }
         }

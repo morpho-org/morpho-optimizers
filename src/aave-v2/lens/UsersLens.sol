@@ -75,7 +75,7 @@ abstract contract UsersLens is IndexesLens {
 
         if (
             liquidityData.debtEth > 0 &&
-            liquidityData.liquidationThresholdEth.wadDiv(liquidityData.debtEth) <=
+            liquidityData.maxDebtEth.wadDiv(liquidityData.debtEth) <=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD
         ) return (0, 0);
 
@@ -98,7 +98,7 @@ abstract contract UsersLens is IndexesLens {
         if (assetData.liquidationThreshold > 0)
             withdrawable = Math.min(
                 withdrawable,
-                ((liquidityData.liquidationThresholdEth - liquidityData.debtEth).percentDiv(
+                ((liquidityData.maxDebtEth - liquidityData.debtEth).percentDiv(
                     assetData.liquidationThreshold
                 ) * assetData.tokenUnit) / assetData.underlyingPrice
             );
@@ -224,7 +224,7 @@ abstract contract UsersLens is IndexesLens {
 
                 liquidityData.collateralEth += assetData.collateralEth;
                 liquidityData.borrowableEth += assetData.collateralEth.percentMul(assetData.ltv);
-                liquidityData.liquidationThresholdEth += assetData.collateralEth.percentMul(
+                liquidityData.maxDebtEth += assetData.collateralEth.percentMul(
                     assetData.liquidationThreshold
                 );
                 liquidityData.debtEth += assetData.debtEth;
@@ -240,7 +240,7 @@ abstract contract UsersLens is IndexesLens {
 
                         liquidityData.collateralEth -= assetCollateral;
                         liquidityData.borrowableEth -= assetCollateral.percentMul(assetData.ltv);
-                        liquidityData.liquidationThresholdEth -= assetCollateral.percentMul(
+                        liquidityData.maxDebtEth -= assetCollateral.percentMul(
                             assetData.liquidationThreshold
                         );
                     }
@@ -325,7 +325,7 @@ abstract contract UsersLens is IndexesLens {
         );
         if (liquidityData.debtEth == 0) return type(uint256).max;
 
-        return liquidityData.liquidationThresholdEth.wadDiv(liquidityData.debtEth);
+        return liquidityData.maxDebtEth.wadDiv(liquidityData.debtEth);
     }
 
     /// @dev Checks whether a liquidation can be performed on a given user.
