@@ -312,19 +312,14 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (
-            Types.Market memory market,
-            uint256 p2pSupplyIndex,
-            uint256 poolSupplyIndex,
-
-        ) = _getSupplyIndexes(_poolToken);
+        (Types.Market memory market, , Types.Indexes memory indexes) = _getIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (balanceInP2P, balanceOnPool, totalBalance) = _getSupplyBalanceInOf(
             _poolToken,
             _user,
-            p2pSupplyIndex,
-            poolSupplyIndex
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex
         );
     }
 
@@ -345,19 +340,14 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (
-            Types.Market memory market,
-            uint256 p2pBorrowIndex,
-            ,
-            uint256 poolBorrowIndex
-        ) = _getBorrowIndexes(_poolToken);
+        (Types.Market memory market, , Types.Indexes memory indexes) = _getIndexes(_poolToken);
 
         underlyingToken = market.underlyingToken;
         (balanceInP2P, balanceOnPool, totalBalance) = _getBorrowBalanceInOf(
             _poolToken,
             _user,
-            p2pBorrowIndex,
-            poolBorrowIndex
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex
         );
     }
 
@@ -436,17 +426,11 @@ abstract contract UsersLens is IndexesLens {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal view returns (Types.AssetLiquidityData memory assetData) {
-        (
-            address underlyingToken,
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = _getIndexes(_poolToken);
+        (Types.Market memory market, , Types.Indexes memory indexes) = _getIndexes(_poolToken);
 
-        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingToken); // In ETH.
+        assetData.underlyingPrice = _oracle.getAssetPrice(market.underlyingToken); // In ETH.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
-        .getConfiguration(underlyingToken)
+        .getConfiguration(market.underlyingToken)
         .getParamsMemory();
 
         unchecked {
@@ -456,14 +440,14 @@ abstract contract UsersLens is IndexesLens {
         (, , uint256 totalCollateralBalance) = _getSupplyBalanceInOf(
             _poolToken,
             _user,
-            p2pSupplyIndex,
-            poolSupplyIndex
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex
         );
         (, , uint256 totalDebtBalance) = _getBorrowBalanceInOf(
             _poolToken,
             _user,
-            p2pBorrowIndex,
-            poolBorrowIndex
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex
         );
 
         assetData.debt = ((totalDebtBalance + _borrowedAmount) * assetData.underlyingPrice).divUp(

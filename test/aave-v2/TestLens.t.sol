@@ -842,23 +842,26 @@ contract TestLens is TestSetup {
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 31 days / 12);
-        (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = lens.getIndexes(aDai);
-
-        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
-        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+        Types.Indexes memory indexes = lens.getIndexes(aDai);
 
         assertEq(
-            poolSupplyIndex,
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(aDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(aDai),
+            "p2p borrow indexes different"
+        );
+
+        assertEq(
+            indexes.poolSupplyIndex,
             pool.getReserveNormalizedIncome(dai),
             "pool supply indexes different"
         );
         assertEq(
-            poolBorrowIndex,
+            indexes.poolBorrowIndex,
             pool.getReserveNormalizedVariableDebt(dai),
             "pool borrow indexes different"
         );
@@ -872,24 +875,27 @@ contract TestLens is TestSetup {
         borrower1.borrow(aDai, amount);
 
         hevm.roll(block.number + 31 days / 12);
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getIndexes(aDai);
+        Types.Indexes memory indexes = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+        assertEq(
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(aDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(aDai),
+            "p2p borrow indexes different"
+        );
 
         assertEq(
-            newPoolSupplyIndex,
+            indexes.poolSupplyIndex,
             pool.getReserveNormalizedIncome(dai),
             "pool supply indexes different"
         );
         assertEq(
-            newPoolBorrowIndex,
+            indexes.poolBorrowIndex,
             pool.getReserveNormalizedVariableDebt(dai),
             "pool borrow indexes different"
         );
@@ -898,21 +904,21 @@ contract TestLens is TestSetup {
     function testGetUpdatedP2PIndexesWithSupplyDelta() public {
         _createSupplyDelta();
         hevm.warp(block.timestamp + 365 days);
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
+        Types.Indexes memory indexes = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
+        assertApproxEqAbs(indexes.p2pBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(indexes.p2pSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PIndexesWithBorrowDelta() public {
         _createBorrowDelta();
         hevm.warp(block.timestamp + 365 days);
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(aDai);
+        Types.Indexes memory indexes = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
+        assertApproxEqAbs(indexes.p2pBorrowIndex, morpho.p2pBorrowIndex(aDai), 1);
+        assertApproxEqAbs(indexes.p2pSupplyIndex, morpho.p2pSupplyIndex(aDai), 1);
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
@@ -969,27 +975,30 @@ contract TestLens is TestSetup {
 
         vm.roll(block.number + 31 days / 12);
         vm.warp(block.timestamp + 1);
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getIndexes(aStEth);
+        Types.Indexes memory indexes = lens.getIndexes(aStEth);
 
         morpho.updateIndexes(aStEth);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aStEth), "p2p supply indexes different");
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aStEth), "p2p borrow indexes different");
+        assertEq(
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(aStEth),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(aStEth),
+            "p2p borrow indexes different"
+        );
 
         uint256 rebaseIndex = ILido(stEth).getPooledEthByShares(WadRayMath.RAY);
         uint256 baseRebaseIndex = morpho.ST_ETH_BASE_REBASE_INDEX();
 
         assertEq(
-            newPoolSupplyIndex,
+            indexes.poolSupplyIndex,
             pool.getReserveNormalizedIncome(stEth).rayMul(rebaseIndex).rayDiv(baseRebaseIndex),
             "pool supply indexes different"
         );
         assertEq(
-            newPoolBorrowIndex,
+            indexes.poolBorrowIndex,
             pool.getReserveNormalizedVariableDebt(stEth).rayMul(rebaseIndex).rayDiv(
                 baseRebaseIndex
             ),
@@ -1007,24 +1016,27 @@ contract TestLens is TestSetup {
         _invertPoolSpread(dai);
 
         hevm.roll(block.number + 31 days / 12);
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getIndexes(aDai);
+        Types.Indexes memory indexes = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+        assertEq(
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(aDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(aDai),
+            "p2p borrow indexes different"
+        );
 
         assertEq(
-            newPoolSupplyIndex,
+            indexes.poolSupplyIndex,
             pool.getReserveNormalizedIncome(dai),
             "pool supply indexes different"
         );
         assertEq(
-            newPoolBorrowIndex,
+            indexes.poolBorrowIndex,
             pool.getReserveNormalizedVariableDebt(dai),
             "pool borrow indexes different"
         );
@@ -1035,24 +1047,27 @@ contract TestLens is TestSetup {
         _invertPoolSpreadWithStorageManipulation(dai);
 
         hevm.roll(block.number + 31 days / 12);
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getIndexes(aDai);
+        Types.Indexes memory indexes = lens.getIndexes(aDai);
 
         morpho.updateIndexes(aDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai), "p2p supply indexes different");
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai), "p2p borrow indexes different");
+        assertEq(
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(aDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(aDai),
+            "p2p borrow indexes different"
+        );
 
         assertEq(
-            newPoolSupplyIndex,
+            indexes.poolSupplyIndex,
             pool.getReserveNormalizedIncome(dai),
             "pool supply indexes different"
         );
         assertEq(
-            newPoolBorrowIndex,
+            indexes.poolBorrowIndex,
             pool.getReserveNormalizedVariableDebt(dai),
             "pool borrow indexes different"
         );

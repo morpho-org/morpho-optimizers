@@ -253,12 +253,12 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
 
-        balanceOnPool = supplyBalance.onPool.mul(poolSupplyIndex);
-        balanceInP2P = supplyBalance.inP2P.mul(p2pSupplyIndex);
+        balanceOnPool = supplyBalance.onPool.mul(indexes.poolSupplyIndex);
+        balanceInP2P = supplyBalance.inP2P.mul(indexes.p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -278,12 +278,12 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
 
-        balanceOnPool = borrowBalance.onPool.mul(poolBorrowIndex);
-        balanceInP2P = borrowBalance.inP2P.mul(p2pBorrowIndex);
+        balanceOnPool = borrowBalance.onPool.mul(indexes.poolBorrowIndex);
+        balanceInP2P = borrowBalance.inP2P.mul(indexes.p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -417,13 +417,7 @@ abstract contract UsersLens is IndexesLens {
 
         (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
 
-        Types.Indexes memory indexes;
-        (
-            indexes.p2pSupplyIndex,
-            indexes.p2pBorrowIndex,
-            indexes.poolSupplyIndex,
-            indexes.poolBorrowIndex
-        ) = getIndexes(_poolToken, _getUpdatedIndexes);
+        Types.Indexes memory indexes = getIndexes(_poolToken, _getUpdatedIndexes);
 
         assetData.collateralValue = _getUserSupplyBalanceInOf(
             _poolToken,
