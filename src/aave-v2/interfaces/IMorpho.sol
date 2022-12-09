@@ -38,12 +38,9 @@ interface IMorpho {
     function p2pBorrowIndex(address) external view returns (uint256);
     function poolIndexes(address) external view returns (Types.PoolIndexes memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
-    function rewardsManager() external view returns (address);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
-    function aaveIncentivesController() external view returns (address);
     function addressesProvider() external view returns (ILendingPoolAddressesProvider);
-    function incentivesVault() external view returns (address);
     function pool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (bytes32);
