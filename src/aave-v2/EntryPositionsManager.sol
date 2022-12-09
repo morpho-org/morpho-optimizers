@@ -72,13 +72,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toRepay;
     }
 
-    // Struct to avoid stack too deep.
-    struct BorrowAllowedVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
