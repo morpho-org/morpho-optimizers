@@ -118,10 +118,8 @@ abstract contract IndexesLens is LensStorage {
             return (cToken.exchangeRateStored(), cToken.borrowIndex());
 
         // Read the previous values out of storage
-        uint256 cashPrior = cToken.getCash();
         uint256 totalSupply = cToken.totalSupply();
         uint256 borrowsPrior = cToken.totalBorrows();
-        uint256 reservesPrior = cToken.totalReserves();
         uint256 borrowIndexPrior = cToken.borrowIndex();
 
         // Calculate the current borrow interest rate
@@ -135,10 +133,10 @@ abstract contract IndexesLens is LensStorage {
         uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
         uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
         uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
-            reservesPrior;
+            cToken.totalReserves();
 
         currentPoolSupplyIndex = totalSupply > 0
-            ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
+            ? (cToken.getCash() + totalBorrowsNew - totalReservesNew).div(totalSupply)
             : cToken.initialExchangeRateMantissa();
         currentPoolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
