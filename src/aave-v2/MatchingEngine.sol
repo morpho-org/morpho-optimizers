@@ -18,6 +18,8 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 p2pIndex;
         uint256 toUnmatch;
         uint256 poolIndex;
+        uint256 formerValueOnPool;
+        uint256 formerValueInP2P;
     }
 
     // Struct to avoid stack too deep.
@@ -25,6 +27,8 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 p2pIndex;
         uint256 toMatch;
         uint256 poolIndex;
+        uint256 formerValueOnPool;
+        uint256 formerValueInP2P;
     }
 
     /// @notice Emitted when the position of a supplier is updated.
@@ -86,8 +90,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 firstPoolSupplier
             ];
 
-            uint256 poolSupplyBalance = firstPoolSupplierBalance.onPool;
-            uint256 p2pSupplyBalance = firstPoolSupplierBalance.inP2P;
+            vars.formerValueOnPool = firstPoolSupplierBalance.onPool;
+            vars.formerValueInP2P = firstPoolSupplierBalance.inP2P;
+
+            uint256 poolSupplyBalance = vars.formerValueOnPool;
+            uint256 p2pSupplyBalance = vars.formerValueInP2P;
 
             vars.toMatch = Math.min(poolSupplyBalance.rayMul(vars.poolIndex), remainingToMatch);
             remainingToMatch -= vars.toMatch;
@@ -98,7 +105,12 @@ abstract contract MatchingEngine is MorphoUtils {
             firstPoolSupplierBalance.onPool = poolSupplyBalance;
             firstPoolSupplierBalance.inP2P = p2pSupplyBalance;
 
-            _updateSupplierInDS(_poolToken, firstPoolSupplier);
+            _updateSupplierInDS(
+                _poolToken,
+                firstPoolSupplier,
+                vars.formerValueOnPool,
+                vars.formerValueInP2P
+            );
             emit SupplierPositionUpdated(
                 firstPoolSupplier,
                 _poolToken,
@@ -147,8 +159,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 firstP2PSupplier
             ];
 
-            uint256 poolSupplyBalance = firstP2PSupplierBalance.onPool;
-            uint256 p2pSupplyBalance = firstP2PSupplierBalance.inP2P;
+            vars.formerValueOnPool = firstP2PSupplierBalance.onPool;
+            vars.formerValueInP2P = firstP2PSupplierBalance.inP2P;
+
+            uint256 poolSupplyBalance = vars.formerValueOnPool;
+            uint256 p2pSupplyBalance = vars.formerValueInP2P;
 
             vars.toUnmatch = Math.min(p2pSupplyBalance.rayMul(vars.p2pIndex), remainingToUnmatch);
             remainingToUnmatch -= vars.toUnmatch;
@@ -159,7 +174,12 @@ abstract contract MatchingEngine is MorphoUtils {
             firstP2PSupplierBalance.onPool = poolSupplyBalance;
             firstP2PSupplierBalance.inP2P = p2pSupplyBalance;
 
-            _updateSupplierInDS(_poolToken, firstP2PSupplier);
+            _updateSupplierInDS(
+                _poolToken,
+                firstP2PSupplier,
+                vars.formerValueOnPool,
+                vars.formerValueInP2P
+            );
             emit SupplierPositionUpdated(
                 firstP2PSupplier,
                 _poolToken,
@@ -207,8 +227,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 firstPoolBorrower
             ];
 
-            uint256 poolBorrowBalance = firstPoolBorrowerBalance.onPool;
-            uint256 p2pBorrowBalance = firstPoolBorrowerBalance.inP2P;
+            vars.formerValueOnPool = firstPoolBorrowerBalance.onPool;
+            vars.formerValueInP2P = firstPoolBorrowerBalance.inP2P;
+
+            uint256 poolBorrowBalance = vars.formerValueOnPool;
+            uint256 p2pBorrowBalance = vars.formerValueInP2P;
 
             vars.toMatch = Math.min(poolBorrowBalance.rayMul(vars.poolIndex), remainingToMatch);
             remainingToMatch -= vars.toMatch;
@@ -219,7 +242,12 @@ abstract contract MatchingEngine is MorphoUtils {
             firstPoolBorrowerBalance.onPool = poolBorrowBalance;
             firstPoolBorrowerBalance.inP2P = p2pBorrowBalance;
 
-            _updateBorrowerInDS(_poolToken, firstPoolBorrower);
+            _updateBorrowerInDS(
+                _poolToken,
+                firstPoolBorrower,
+                vars.formerValueOnPool,
+                vars.formerValueInP2P
+            );
             emit BorrowerPositionUpdated(
                 firstPoolBorrower,
                 _poolToken,
@@ -268,8 +296,11 @@ abstract contract MatchingEngine is MorphoUtils {
                 firstP2PBorrower
             ];
 
-            uint256 poolBorrowBalance = firstP2PBorrowerBalance.onPool;
-            uint256 p2pBorrowBalance = firstP2PBorrowerBalance.inP2P;
+            vars.formerValueOnPool = firstP2PBorrowerBalance.onPool;
+            vars.formerValueInP2P = firstP2PBorrowerBalance.inP2P;
+
+            uint256 poolBorrowBalance = vars.formerValueOnPool;
+            uint256 p2pBorrowBalance = vars.formerValueInP2P;
 
             vars.toUnmatch = Math.min(p2pBorrowBalance.rayMul(vars.p2pIndex), remainingToUnmatch);
             remainingToUnmatch -= vars.toUnmatch;
@@ -280,7 +311,12 @@ abstract contract MatchingEngine is MorphoUtils {
             firstP2PBorrowerBalance.onPool = poolBorrowBalance;
             firstP2PBorrowerBalance.inP2P = p2pBorrowBalance;
 
-            _updateBorrowerInDS(_poolToken, firstP2PBorrower);
+            _updateBorrowerInDS(
+                _poolToken,
+                firstP2PBorrower,
+                vars.formerValueOnPool,
+                vars.formerValueInP2P
+            );
             emit BorrowerPositionUpdated(
                 firstP2PBorrower,
                 _poolToken,
@@ -298,18 +334,28 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @notice Updates the given `_user`'s position in the supplier data structures.
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function _updateSupplierInDS(address _poolToken, address _user) internal {
-        Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+    function _updateSupplierInDS(
+        address _poolToken,
+        address _user,
+        uint256 formerValueOnPool,
+        uint256 formerValueInP2P
+    ) internal {
+        mapping(address => Types.SupplyBalance) storage supplyBalance = supplyBalanceInOf[
+            _poolToken
+        ];
+        Types.SupplyBalance storage supplierSupplyBalance = supplyBalance[_user];
         uint256 onPool = supplierSupplyBalance.onPool;
         uint256 inP2P = supplierSupplyBalance.inP2P;
         HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
 
-        uint256 formerValueOnPool = marketSuppliersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketSuppliersInP2P.getValueOf(_user);
+        uint256 slot;
+        assembly {
+            slot := supplyBalance.slot
+        }
 
-        marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
+        marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers, slot, 1);
+        marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers, slot, 0);
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
             rewardsManager.updateUserAssetAndAccruedRewards(
@@ -324,18 +370,28 @@ abstract contract MatchingEngine is MorphoUtils {
     /// @notice Updates the given `_user`'s position in the borrower data structures.
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function _updateBorrowerInDS(address _poolToken, address _user) internal {
-        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+    function _updateBorrowerInDS(
+        address _poolToken,
+        address _user,
+        uint256 formerValueOnPool,
+        uint256 formerValueInP2P
+    ) internal {
+        mapping(address => Types.BorrowBalance) storage borrowBalance = borrowBalanceInOf[
+            _poolToken
+        ];
+        Types.BorrowBalance storage borrowerBorrowBalance = borrowBalance[_user];
         uint256 onPool = borrowerBorrowBalance.onPool;
         uint256 inP2P = borrowerBorrowBalance.inP2P;
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
 
-        uint256 formerValueOnPool = marketBorrowersOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = marketBorrowersInP2P.getValueOf(_user);
+        uint256 slot;
+        assembly {
+            slot := borrowBalance.slot
+        }
 
-        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
+        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers, slot, 1);
+        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers, slot, 0);
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
             address variableDebtTokenAddress = pool
