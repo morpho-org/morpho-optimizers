@@ -20,6 +20,7 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 amount;
         uint256 maxGasForMatching;
         bool borrow;
+        bool matching; // True for match, False for unmatch
     }
 
     /// @notice Emitted when the position of a supplier is updated.
@@ -51,8 +52,8 @@ abstract contract MatchingEngine is MorphoUtils {
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
         return
             _match(
-                supplyBalanceInOf[_poolToken],
                 suppliersOnPool[_poolToken],
+                suppliersInP2P[_poolToken],
                 _matchStep,
                 MatchVars(
                     _poolToken,
@@ -60,7 +61,8 @@ abstract contract MatchingEngine is MorphoUtils {
                     p2pSupplyIndex[_poolToken],
                     _amount,
                     _maxGasForMatching,
-                    false
+                    false,
+                    true
                 )
             );
     }
@@ -79,8 +81,8 @@ abstract contract MatchingEngine is MorphoUtils {
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
         return
             _match(
-                borrowBalanceInOf[_poolToken],
                 borrowersOnPool[_poolToken],
+                borrowersInP2P[_poolToken],
                 _matchStep,
                 MatchVars(
                     _poolToken,
@@ -88,6 +90,7 @@ abstract contract MatchingEngine is MorphoUtils {
                     p2pBorrowIndex[_poolToken],
                     _amount,
                     _maxGasForMatching,
+                    true,
                     true
                 )
             );
@@ -105,7 +108,7 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 _maxGasForMatching
     ) internal returns (uint256 unmatched) {
         (unmatched, ) = _match(
-            supplyBalanceInOf[_poolToken],
+            suppliersOnPool[_poolToken],
             suppliersInP2P[_poolToken],
             _unmatchStep,
             MatchVars(
@@ -114,6 +117,7 @@ abstract contract MatchingEngine is MorphoUtils {
                 p2pSupplyIndex[_poolToken],
                 _amount,
                 _maxGasForMatching,
+                false,
                 false
             )
         );
@@ -131,7 +135,7 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 _maxGasForMatching
     ) internal returns (uint256 unmatched) {
         (unmatched, ) = _match(
-            borrowBalanceInOf[_poolToken],
+            borrowersOnPool[_poolToken],
             borrowersInP2P[_poolToken],
             _unmatchStep,
             MatchVars(
@@ -140,14 +144,15 @@ abstract contract MatchingEngine is MorphoUtils {
                 p2pBorrowIndex[_poolToken],
                 _amount,
                 _maxGasForMatching,
-                true
+                true,
+                false
             )
         );
     }
 
     function _match(
-        mapping(address => Types.Balance) storage _balanceOf,
-        HeapOrdering.HeapArray storage _heap,
+        HeapOrdering.HeapArray storage _heapOnPool,
+        HeapOrdering.HeapArray storage _heapInP2P,
         function(uint256, uint256, uint256, uint256, uint256)
             pure
             returns (uint256, uint256, uint256) _f,
@@ -159,31 +164,29 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 remainingToMatch = vars.amount;
         uint256 gasLeftAtTheBeginning = gasleft();
 
-        while (remainingToMatch > 0 && (firstUser = _heap.getHead()) != address(0)) {
+        while (
+            remainingToMatch > 0 &&
+            (firstUser = vars.matching ? _heapOnPool.getHead() : _heapInP2P.getHead()) != address(0)
+        ) {
             // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
             unchecked {
                 if (gasLeftAtTheBeginning - gasleft() >= vars.maxGasForMatching) break;
             }
-            Types.Balance storage balance = _balanceOf[firstUser];
+            uint256 onPool;
+            uint256 inP2P;
 
-            (balance.onPool, balance.inP2P, remainingToMatch) = _f(
-                balance.onPool,
-                balance.inP2P,
+            (onPool, inP2P, remainingToMatch) = _f(
+                _heapOnPool.getValueOf(firstUser),
+                _heapInP2P.getValueOf(firstUser),
                 vars.poolIndex,
                 vars.p2pIndex,
                 remainingToMatch
             );
 
-            if (!vars.borrow) _updateSupplierInDS(vars.poolToken, firstUser);
-            else _updateBorrowerInDS(vars.poolToken, firstUser);
+            if (!vars.borrow) _updateSupplierInDS(vars.poolToken, firstUser, onPool, inP2P);
+            else _updateBorrowerInDS(vars.poolToken, firstUser, onPool, inP2P);
 
-            emit PositionUpdated(
-                vars.borrow,
-                firstUser,
-                vars.poolToken,
-                balance.onPool,
-                balance.inP2P
-            );
+            emit PositionUpdated(vars.borrow, firstUser, vars.poolToken, onPool, inP2P);
         }
 
         // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
@@ -236,48 +239,68 @@ abstract contract MatchingEngine is MorphoUtils {
         newP2PBalance = _p2pBalance - toProcess.rayDiv(_p2pIndex);
     }
 
+    /// @param _token The market to update.
+    /// @param _user The user.
+    /// @param _marketOnPool The data structure of the pool market. Pass in the supplier or borrower pool heap.
+    /// @param _marketInP2P The data structure of the P2P market. Pass in the supplier or borrower P2P heap.
+    /// @param onPool The new on pool value.
+    /// @param inP2P The new in P2P value.
     function _updateInDS(
         address _token,
         address _user,
-        Types.Balance storage _balance,
         HeapOrdering.HeapArray storage _marketOnPool,
-        HeapOrdering.HeapArray storage _marketInP2P
+        HeapOrdering.HeapArray storage _marketInP2P,
+        uint256 onPool,
+        uint256 inP2P
     ) internal {
-        uint256 onPool = _balance.onPool;
-        uint256 inP2P = _balance.inP2P;
-        uint256 formerValueOnPool = _marketOnPool.getValueOf(_user);
-        uint256 formerValueInP2P = _marketInP2P.getValueOf(_user);
+        uint256 formerOnPool = _marketOnPool.getValueOf(_user);
 
-        _marketOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers);
-        _marketInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
-
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                rewardsController,
-                _user,
-                _token,
-                formerValueOnPool,
-                IScaledBalanceToken(_token).scaledTotalSupply()
-            );
+        if (onPool != formerOnPool) {
+            if (address(rewardsManager) != address(0))
+                rewardsManager.updateUserAssetAndAccruedRewards(
+                    rewardsController,
+                    _user,
+                    _token,
+                    formerOnPool,
+                    IScaledBalanceToken(_token).scaledTotalSupply()
+                );
+            _marketOnPool.update(_user, onPool, maxSortedUsers);
+        }
+        _marketInP2P.update(_user, inP2P, maxSortedUsers);
     }
 
     /// @notice Updates the given `_user`'s position in the supplier data structures.
     /// @param _poolToken The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function _updateSupplierInDS(address _poolToken, address _user) internal {
+    /// @param onPool The new on pool value.
+    /// @param inP2P The new in P2P value.
+    function _updateSupplierInDS(
+        address _poolToken,
+        address _user,
+        uint256 onPool,
+        uint256 inP2P
+    ) internal {
         _updateInDS(
             _poolToken,
             _user,
-            supplyBalanceInOf[_poolToken][_user],
             suppliersOnPool[_poolToken],
-            suppliersInP2P[_poolToken]
+            suppliersInP2P[_poolToken],
+            onPool,
+            inP2P
         );
     }
 
     /// @notice Updates the given `_user`'s position in the borrower data structures.
     /// @param _poolToken The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function _updateBorrowerInDS(address _poolToken, address _user) internal {
+    /// @param onPool The new on pool value.
+    /// @param inP2P The new in P2P value.
+    function _updateBorrowerInDS(
+        address _poolToken,
+        address _user,
+        uint256 onPool,
+        uint256 inP2P
+    ) internal {
         address variableDebtTokenAddress = pool
         .getReserveData(market[_poolToken].underlyingToken)
         .variableDebtTokenAddress;
@@ -285,9 +308,10 @@ abstract contract MatchingEngine is MorphoUtils {
         _updateInDS(
             variableDebtTokenAddress,
             _user,
-            borrowBalanceInOf[_poolToken][_user],
             borrowersOnPool[_poolToken],
-            borrowersInP2P[_poolToken]
+            borrowersInP2P[_poolToken],
+            onPool,
+            inP2P
         );
     }
 }

@@ -191,10 +191,10 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
-        Types.Balance memory userSupplyBalance = supplyBalanceInOf[_poolToken][_user];
+        (uint256 onPool, uint256 inP2P) = supplyBalanceInOf(_poolToken, _user);
         return
-            userSupplyBalance.inP2P.rayMul(p2pSupplyIndex[_poolToken]) +
-            userSupplyBalance.onPool.rayMul(poolIndexes[_poolToken].poolSupplyIndex);
+            inP2P.rayMul(p2pSupplyIndex[_poolToken]) +
+            onPool.rayMul(poolIndexes[_poolToken].poolSupplyIndex);
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolToken` market.
@@ -207,10 +207,10 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
-        Types.Balance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
+        (uint256 onPool, uint256 inP2P) = borrowBalanceInOf(_poolToken, _user);
         return
-            userBorrowBalance.inP2P.rayMul(p2pBorrowIndex[_poolToken]) +
-            userBorrowBalance.onPool.rayMul(poolIndexes[_poolToken].poolBorrowIndex);
+            inP2P.rayMul(p2pBorrowIndex[_poolToken]) +
+            onPool.rayMul(poolIndexes[_poolToken].poolBorrowIndex);
     }
 
     /// @dev Calculates the value of the collateral.
@@ -331,5 +331,23 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.maxDebt -= withdrawn.percentMul(assetData.ltv);
             }
         }
+    }
+
+    function supplyBalanceInOf(address _poolToken, address _user)
+        public
+        view
+        returns (uint256 onPool, uint256 inP2P)
+    {
+        onPool = suppliersOnPool[_poolToken].getValueOf(_user);
+        inP2P = suppliersInP2P[_poolToken].getValueOf(_user);
+    }
+
+    function borrowBalanceInOf(address _poolToken, address _user)
+        public
+        view
+        returns (uint256 onPool, uint256 inP2P)
+    {
+        onPool = borrowersOnPool[_poolToken].getValueOf(_user);
+        inP2P = borrowersInP2P[_poolToken].getValueOf(_user);
     }
 }
