@@ -112,9 +112,6 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
-
     /// @notice Thrown when the input is above the max basis points value (100%).
     error ExceedsMaxBasisPoints();
 

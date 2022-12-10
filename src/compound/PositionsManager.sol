@@ -125,18 +125,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
     error AmountAboveWhatAllowedToRepay();
 
-    /// @notice Thrown when the borrow on Compound failed.
-    error BorrowOnCompoundFailed();
-
-    /// @notice Thrown when the redeem on Compound failed .
-    error RedeemOnCompoundFailed();
-
-    /// @notice Thrown when the repay on Compound failed.
-    error RepayOnCompoundFailed();
-
-    /// @notice Thrown when the mint on Compound failed.
-    error MintOnCompoundFailed();
-
     /// @notice Thrown when user is not a member of the market.
     error UserNotMemberOfMarket();
 
