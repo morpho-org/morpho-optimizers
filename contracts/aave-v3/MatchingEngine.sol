@@ -9,6 +9,7 @@ import "./MorphoUtils.sol";
 /// @notice Smart contract managing the matching engine.
 abstract contract MatchingEngine is MorphoUtils {
     using HeapOrdering for HeapOrdering.HeapArray;
+    using HeapOrdering2 for HeapOrdering.HeapArray;
     using WadRayMath for uint256;
 
     /// STRUCTS ///
