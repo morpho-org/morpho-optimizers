@@ -31,6 +31,11 @@ abstract contract MatchingEngine is MorphoUtils {
         uint256 formerValueInP2P;
     }
 
+    struct UpdateVars {
+        uint256 onPool;
+        uint256 inP2P;
+    }
+
     /// @notice Emitted when the position of a supplier is updated.
     /// @param _user The address of the supplier.
     /// @param _poolToken The address of the market.
@@ -344,8 +349,9 @@ abstract contract MatchingEngine is MorphoUtils {
             _poolToken
         ];
         Types.SupplyBalance storage supplierSupplyBalance = supplyBalance[_user];
-        uint256 onPool = supplierSupplyBalance.onPool;
-        uint256 inP2P = supplierSupplyBalance.inP2P;
+        UpdateVars memory vars;
+        vars.onPool = supplierSupplyBalance.onPool;
+        vars.inP2P = supplierSupplyBalance.inP2P;
         HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
 
@@ -354,10 +360,17 @@ abstract contract MatchingEngine is MorphoUtils {
             slot := supplyBalance.slot
         }
 
-        marketSuppliersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers, slot, 1);
-        marketSuppliersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers, slot, 0);
+        marketSuppliersOnPool.update(
+            _user,
+            formerValueOnPool,
+            vars.onPool,
+            maxSortedUsers,
+            slot,
+            1
+        );
+        marketSuppliersInP2P.update(_user, formerValueInP2P, vars.inP2P, maxSortedUsers, slot, 0);
 
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
+        if (formerValueOnPool != vars.onPool && address(rewardsManager) != address(0))
             rewardsManager.updateUserAssetAndAccruedRewards(
                 aaveIncentivesController,
                 _user,
@@ -380,8 +393,9 @@ abstract contract MatchingEngine is MorphoUtils {
             _poolToken
         ];
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalance[_user];
-        uint256 onPool = borrowerBorrowBalance.onPool;
-        uint256 inP2P = borrowerBorrowBalance.inP2P;
+        UpdateVars memory vars;
+        vars.onPool = borrowerBorrowBalance.onPool;
+        vars.inP2P = borrowerBorrowBalance.inP2P;
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
 
@@ -390,13 +404,20 @@ abstract contract MatchingEngine is MorphoUtils {
             slot := borrowBalance.slot
         }
 
-        marketBorrowersOnPool.update(_user, formerValueOnPool, onPool, maxSortedUsers, slot, 1);
-        marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers, slot, 0);
+        marketBorrowersOnPool.update(
+            _user,
+            formerValueOnPool,
+            vars.onPool,
+            maxSortedUsers,
+            slot,
+            1
+        );
+        marketBorrowersInP2P.update(_user, formerValueInP2P, vars.inP2P, maxSortedUsers, slot, 0);
 
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
+        if (formerValueOnPool != vars.onPool && address(rewardsManager) != address(0)) {
             address variableDebtTokenAddress = pool
-            .getReserveData(market[_poolToken].underlyingToken)
-            .variableDebtTokenAddress;
+                .getReserveData(market[_poolToken].underlyingToken)
+                .variableDebtTokenAddress;
             rewardsManager.updateUserAssetAndAccruedRewards(
                 aaveIncentivesController,
                 _user,

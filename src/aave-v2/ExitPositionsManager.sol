@@ -105,6 +105,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 p2pSupplyIndex;
         uint256 onPoolSupply;
         uint256 toWithdraw;
+        uint256 formerValueOnPool;
+        uint256 formerValueInP2P;
     }
 
     // Struct to avoid stack too deep.
@@ -118,6 +120,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 borrowedOnPool;
         uint256 feeToRepay;
         uint256 toRepay;
+        uint256 formerValueOnPool;
+        uint256 formerValueInP2P;
     }
 
     // Struct to avoid stack too deep.
@@ -349,8 +353,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.SupplyBalance storage supplierSupplyBalance = supplyBalanceInOf[_poolToken][
             _supplier
         ];
-        uint256 formerValueOnPool = supplierSupplyBalance.onPool;
-        uint256 formerValueInP2P = supplierSupplyBalance.inP2P;
+        vars.formerValueOnPool = supplierSupplyBalance.onPool;
+        vars.formerValueInP2P = supplierSupplyBalance.inP2P;
 
         /// Pool withdraw ///
 
@@ -369,7 +373,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             );
 
             if (vars.remainingToWithdraw == 0) {
-                _updateSupplierInDS(_poolToken, _supplier, formerValueOnPool, formerValueInP2P);
+                _updateSupplierInDS(
+                    _poolToken,
+                    _supplier,
+                    vars.formerValueOnPool,
+                    vars.formerValueInP2P
+                );
 
                 if (supplierSupplyBalance.inP2P == 0 && supplierSupplyBalance.onPool == 0)
                     _setSupplying(_supplier, borrowMask[_poolToken], false);
@@ -397,7 +406,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             supplierSupplyBalance.inP2P,
             vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
         ); // In peer-to-peer supply unit.
-        _updateSupplierInDS(_poolToken, _supplier, formerValueOnPool, formerValueInP2P);
+        _updateSupplierInDS(_poolToken, _supplier, vars.formerValueOnPool, vars.formerValueInP2P);
 
         // Reduce the peer-to-peer supply delta.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
@@ -507,8 +516,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.BorrowBalance storage borrowerBorrowBalance = borrowBalanceInOf[_poolToken][
             _onBehalf
         ];
-        uint256 formerValueOnPool = borrowerBorrowBalance.onPool;
-        uint256 formerValueInP2P = borrowerBorrowBalance.inP2P;
+        vars.formerValueOnPool = borrowerBorrowBalance.onPool;
+        vars.formerValueInP2P = borrowerBorrowBalance.inP2P;
 
         /// Pool repay ///
 
@@ -527,7 +536,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             ); // In adUnit.
 
             if (vars.remainingToRepay == 0) {
-                _updateBorrowerInDS(_poolToken, _onBehalf, formerValueOnPool, formerValueInP2P);
+                _updateBorrowerInDS(
+                    _poolToken,
+                    _onBehalf,
+                    vars.formerValueOnPool,
+                    vars.formerValueInP2P
+                );
                 _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
                 if (borrowerBorrowBalance.inP2P == 0 && borrowerBorrowBalance.onPool == 0)
@@ -554,7 +568,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             borrowerBorrowBalance.inP2P,
             vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex)
         ); // In peer-to-peer borrow unit.
-        _updateBorrowerInDS(_poolToken, _onBehalf, formerValueOnPool, formerValueInP2P);
+        _updateBorrowerInDS(_poolToken, _onBehalf, vars.formerValueOnPool, vars.formerValueInP2P);
 
         // Reduce the peer-to-peer borrow delta.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
