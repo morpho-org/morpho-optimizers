@@ -16,7 +16,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        hevm.expectRevert(EventsAndErrors.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 
@@ -208,7 +208,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount);
 
-        hevm.expectRevert(EntryPositionsManager.BorrowingNotEnabled.selector);
+        hevm.expectRevert(EventsAndErrors.BorrowingNotEnabled.selector);
         borrower1.borrow(aAave, amount / 2);
     }
 
@@ -221,7 +221,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        hevm.expectRevert(EventsAndErrors.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
     }
 
@@ -235,7 +235,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdt, type(uint256).max);
         borrower1.supply(aUsdt, amount * 10);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        hevm.expectRevert(EventsAndErrors.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, amount);
     }
 
@@ -252,7 +252,7 @@ contract TestBorrow is TestSetup {
 
         morpho.setAssetAsCollateral(aDai, false);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        hevm.expectRevert(EventsAndErrors.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, to6Decimals(amount));
     }
 

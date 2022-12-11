@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-library MarketLib {
-    function isCreated(Types.Market storage _market) internal view returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
-
-    function isCreatedMemory(Types.Market memory _market) internal pure returns (bool) {
-        return _market.underlyingToken != address(0);
-    }
-}
-
 /// @title Types.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
@@ -92,5 +82,27 @@ library Types {
         bytes32 borrowMask;
         address underlyingToken;
         uint256 underlyingPrice;
+    }
+
+    struct IRMParams {
+        uint256 lastP2PSupplyIndex; // The peer-to-peer supply index at last update.
+        uint256 lastP2PBorrowIndex; // The peer-to-peer borrow index at last update.
+        uint256 poolSupplyIndex; // The current pool supply index.
+        uint256 poolBorrowIndex; // The current pool borrow index.
+        uint256 lastPoolSupplyIndex; // The pool supply index at last update.
+        uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
+        uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
+        uint256 p2pIndexCursor; // The peer-to-peer index cursor (10 000 = 100%).
+        Types.Delta delta; // The deltas and peer-to-peer amounts.
+    }
+
+    struct MatchVars {
+        address poolToken;
+        uint256 poolIndex;
+        uint256 p2pIndex;
+        uint256 amount;
+        uint256 maxGasForMatching;
+        bool borrow;
+        bool matching; // True for match, False for unmatch
     }
 }

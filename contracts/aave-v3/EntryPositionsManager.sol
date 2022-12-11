@@ -3,13 +3,13 @@ pragma solidity 0.8.10;
 
 import "./interfaces/IEntryPositionsManager.sol";
 
-import "./PositionsManagerUtils.sol";
+import "./MorphoUtils.sol";
 
 /// @title EntryPositionsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's entry points: supply and borrow.
-contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils {
+contract EntryPositionsManager is IEntryPositionsManager, MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
@@ -17,52 +17,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     using MarketLib for Types.Market;
     using WadRayMath for uint256;
     using Math for uint256;
-
-    /// EVENTS ///
-
-    /// @notice Emitted when a supply happens.
-    /// @param _from The address of the account sending funds.
-    /// @param _onBehalf The address of the account whose positions will be updated.
-    /// @param _poolToken The address of the market where assets are supplied into.
-    /// @param _amount The amount of assets supplied (in underlying).
-    /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
-    event Supplied(
-        address indexed _from,
-        address indexed _onBehalf,
-        address indexed _poolToken,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// @notice Emitted when a borrow happens.
-    /// @param _borrower The address of the borrower.
-    /// @param _poolToken The address of the market where assets are borrowed.
-    /// @param _amount The amount of assets borrowed (in underlying).
-    /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in peer-to-peer after update
-    event Borrowed(
-        address indexed _borrower,
-        address indexed _poolToken,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// ERRORS ///
-
-    /// @notice Thrown when borrowing is impossible, because it is not enabled on pool for this specific market.
-    error BorrowingNotEnabled();
-
-    /// @notice Thrown when the user does not have enough collateral for the borrow.
-    error UnauthorisedBorrow();
-
-    /// @notice Thrown when someone tries to supply but the supply is paused.
-    error SupplyIsPaused();
-
-    /// @notice Thrown when someone tries to borrow but the borrow is paused.
-    error BorrowIsPaused();
 
     /// STRUCTS ///
 

@@ -23,7 +23,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     uint256 public p2pIndexCursorTest = 3_333;
 
     // prettier-ignore
-    function computeP2PIndexes(InterestRatesManager.Params memory _params)
+    function computeP2PIndexes(Types.IRMParams memory _params)
         public
         pure
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
@@ -64,7 +64,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputation() public {
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+        Types.IRMParams memory params = Types.IRMParams(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -83,7 +83,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputationWithReserveFactor() public {
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+        Types.IRMParams memory params = Types.IRMParams(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -102,7 +102,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputationWithDelta() public {
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+        Types.IRMParams memory params = Types.IRMParams(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -121,7 +121,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputationWithDeltaAndReserveFactor() public {
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+        Types.IRMParams memory params = Types.IRMParams(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolSupplyIndexTest,
@@ -140,7 +140,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputationWhenPoolSupplyIndexHasJumpedWithoutDelta() public {
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+        Types.IRMParams memory params = Types.IRMParams(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolBorrowIndexTest * 2,
@@ -159,7 +159,7 @@ contract TestInterestRates is InterestRatesManager, Test {
     }
 
     function testIndexComputationWhenPoolSupplyIndexHasJumpedWithDelta() public {
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+        Types.IRMParams memory params = Types.IRMParams(
             p2pSupplyIndexTest,
             p2pBorrowIndexTest,
             poolBorrowIndexTest * 2,

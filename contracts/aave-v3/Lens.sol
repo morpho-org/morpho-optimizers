@@ -7,6 +7,9 @@ import {IPool} from "./interfaces/aave/IPool.sol";
 import "./interfaces/IMorpho.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
+
+import "./libraries/MarketLib.sol";
+
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import {WadRayMath} from "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";

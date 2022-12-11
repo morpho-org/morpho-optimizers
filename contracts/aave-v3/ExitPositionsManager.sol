@@ -3,13 +3,13 @@ pragma solidity 0.8.10;
 
 import "./interfaces/IExitPositionsManager.sol";
 
-import "./PositionsManagerUtils.sol";
+import "./MorphoUtils.sol";
 
 /// @title ExitPositionsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's exit points: withdraw, repay and liquidate.
-contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
+contract ExitPositionsManager is IExitPositionsManager, MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
@@ -17,84 +17,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     using MarketLib for Types.Market;
     using WadRayMath for uint256;
     using Math for uint256;
-
-    /// EVENTS ///
-
-    /// @notice Emitted when a withdrawal happens.
-    /// @param _supplier The address of the supplier whose supply is withdrawn.
-    /// @param _receiver The address receiving the tokens.
-    /// @param _poolToken The address of the market from where assets are withdrawn.
-    /// @param _amount The amount of assets withdrawn (in underlying).
-    /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
-    event Withdrawn(
-        address indexed _supplier,
-        address indexed _receiver,
-        address indexed _poolToken,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// @notice Emitted when a repayment happens.
-    /// @param _repayer The address of the account repaying the debt.
-    /// @param _onBehalf The address of the account whose debt is repaid.
-    /// @param _poolToken The address of the market where assets are repaid.
-    /// @param _amount The amount of assets repaid (in underlying).
-    /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
-    event Repaid(
-        address indexed _repayer,
-        address indexed _onBehalf,
-        address indexed _poolToken,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// @notice Emitted when a liquidation happens.
-    /// @param _liquidator The address of the liquidator.
-    /// @param _liquidated The address of the liquidated.
-    /// @param _poolTokenBorrowed The address of the borrowed asset.
-    /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
-    /// @param _poolTokenCollateral The address of the collateral asset seized.
-    /// @param _amountSeized The amount of collateral asset seized (in underlying).
-    event Liquidated(
-        address _liquidator,
-        address indexed _liquidated,
-        address indexed _poolTokenBorrowed,
-        uint256 _amountRepaid,
-        address indexed _poolTokenCollateral,
-        uint256 _amountSeized
-    );
-
-    /// @notice Emitted when the peer-to-peer deltas are increased by the governance.
-    /// @param _poolToken The address of the market on which the deltas were increased.
-    /// @param _amount The amount that has been added to the deltas (in underlying).
-    event P2PDeltasIncreased(address indexed _poolToken, uint256 _amount);
-
-    /// ERRORS ///
-
-    /// @notice Thrown when user is not a member of the market.
-    error UserNotMemberOfMarket();
-
-    /// @notice Thrown when the user does not have enough remaining collateral to withdraw.
-    error UnauthorisedWithdraw();
-
-    /// @notice Thrown when the positions of the user is not liquidatable.
-    error UnauthorisedLiquidate();
-
-    /// @notice Thrown when someone tries to withdraw but the withdraw is paused.
-    error WithdrawIsPaused();
-
-    /// @notice Thrown when someone tries to repay but the repay is paused.
-    error RepayIsPaused();
-
-    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as collateral is paused.
-    error LiquidateCollateralIsPaused();
-
-    /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
-    error LiquidateBorrowIsPaused();
 
     /// STRUCTS ///
 
