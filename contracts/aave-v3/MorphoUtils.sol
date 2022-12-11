@@ -193,7 +193,7 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
-        (uint256 onPool, uint256 inP2P) = supplyBalanceInOf(_poolToken, _user);
+        (uint256 inP2P, uint256 onPool) = supplyBalanceInOf(_poolToken, _user);
         return
             inP2P.rayMul(p2pSupplyIndex[_poolToken]) +
             onPool.rayMul(poolIndexes[_poolToken].poolSupplyIndex);
@@ -209,7 +209,7 @@ abstract contract MorphoUtils is MorphoStorage {
         view
         returns (uint256)
     {
-        (uint256 onPool, uint256 inP2P) = borrowBalanceInOf(_poolToken, _user);
+        (uint256 inP2P, uint256 onPool) = borrowBalanceInOf(_poolToken, _user);
         return
             inP2P.rayMul(p2pBorrowIndex[_poolToken]) +
             onPool.rayMul(poolIndexes[_poolToken].poolBorrowIndex);
@@ -335,10 +335,11 @@ abstract contract MorphoUtils is MorphoStorage {
         }
     }
 
+    // inP2P and onPool are reversed in this POC because that is what the type originally was. This should be changed.
     function supplyBalanceInOf(address _poolToken, address _user)
         public
         view
-        returns (uint256 onPool, uint256 inP2P)
+        returns (uint256 inP2P, uint256 onPool)
     {
         onPool = suppliersOnPool[_poolToken].getValueOf(_user);
         inP2P = suppliersInP2P[_poolToken].getValueOf(_user);
@@ -347,7 +348,7 @@ abstract contract MorphoUtils is MorphoStorage {
     function borrowBalanceInOf(address _poolToken, address _user)
         public
         view
-        returns (uint256 onPool, uint256 inP2P)
+        returns (uint256 inP2P, uint256 onPool)
     {
         onPool = borrowersOnPool[_poolToken].getValueOf(_user);
         inP2P = borrowersInP2P[_poolToken].getValueOf(_user);

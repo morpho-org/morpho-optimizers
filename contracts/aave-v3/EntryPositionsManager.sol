@@ -146,7 +146,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
         }
 
-        (uint256 onPool, uint256 inP2P) = supplyBalanceInOf(_poolToken, _onBehalf);
+        (uint256 inP2P, uint256 onPool) = supplyBalanceInOf(_poolToken, _onBehalf);
 
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
@@ -233,7 +233,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
         }
 
-        (uint256 onPool, uint256 inP2P) = borrowBalanceInOf(_poolToken, msg.sender);
+        (uint256 inP2P, uint256 onPool) = borrowBalanceInOf(_poolToken, msg.sender);
 
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
