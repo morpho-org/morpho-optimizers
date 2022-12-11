@@ -351,8 +351,8 @@ contract TestRepay is TestSetup {
         // Allows only 10 unmatch borrowers
         if (
             block.chainid == stdChains.Polygon.chainId || block.chainid == stdChains.Mainnet.chainId
-        ) setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.1e6);
-        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.2e6);
+        ) setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1e6);
+        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
