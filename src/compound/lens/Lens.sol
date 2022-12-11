@@ -10,12 +10,6 @@ import "./RewardsLens.sol";
 contract Lens is RewardsLens {
     using CompoundMath for uint256;
 
-    function initialize(address _morphoAddress) external initializer {
-        morpho = IMorpho(_morphoAddress);
-        comptroller = IComptroller(morpho.comptroller());
-        rewardsManager = IRewardsManager(morpho.rewardsManager());
-    }
-
     /// @notice Computes and returns the total distribution of supply through Morpho, using virtually updated indexes.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in USD, 18 decimals).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in USD, 18 decimals).

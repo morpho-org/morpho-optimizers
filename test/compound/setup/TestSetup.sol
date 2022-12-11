@@ -19,8 +19,11 @@ import "@config/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/console2.sol";
 import "@forge-std/Vm.sol";
+import "@forge-std/StdStorage.sol";
 
 contract TestSetup is Config, Utils {
+    using stdStorage for StdStorage;
+
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
@@ -120,7 +123,26 @@ contract TestSetup is Config, Utils {
         lensImplV1 = new Lens();
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
         lens = Lens(address(lensProxy));
-        lens.initialize(address(morpho));
+
+        // Former version:
+        // lens.initialize(address(morpho));
+        hevm.store(address(lens), bytes32(uint256(0)), bytes32(uint256(uint160(address(morpho)))));
+        hevm.store(
+            address(lens),
+            bytes32(uint256(1)),
+            bytes32(uint256(uint160(address(morpho.comptroller()))))
+        );
+        hevm.store(
+            address(lens),
+            bytes32(uint256(2)),
+            bytes32(uint256(uint160(address(morpho.rewardsManager()))))
+        );
+        console2.log("log", address(morpho));
+        console2.log("log", address(comptroller));
+        console2.log("log", address(rewardsManager));
+        console2.log("log", address(lens.morpho()));
+        console2.log("log", address(lens.comptroller()));
+        console2.log("log", address(lens.rewardsManager()));
     }
 
     function createMarket(address _cToken) internal {

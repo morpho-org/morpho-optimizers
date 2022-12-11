@@ -134,11 +134,6 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgradeAndCall(lensProxy, payable(address(lensImplV2)), "");
     }
 
-    function testLensImplementationsShouldBeInitialized() public {
-        hevm.expectRevert("Initializable: contract is already initialized");
-        lensImplV1.initialize(address(morpho));
-    }
-
     function testPositionsManagerImplementationsShouldBeInitialized() public {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
