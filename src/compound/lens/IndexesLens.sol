@@ -42,7 +42,8 @@ abstract contract IndexesLens is LensStorage {
 
     /// PUBLIC ///
 
-    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @notice Returns the most up-to-date or virtually updated peer-to-peer and pool indexes.
+    /// @dev If not virtually updated, the indexes returned are those used by Morpho for non-updated markets during the liquidity check.
     /// @param _poolToken The address of the market.
     /// @param _updated Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return indexes The given market's virtually updated indexes.
@@ -54,7 +55,8 @@ abstract contract IndexesLens is LensStorage {
         (, indexes) = _getIndexes(_poolToken, _updated);
     }
 
-    /// @dev Returns Compound's updated indexes of a given market.
+    /// @notice Returns the virtually updated pool indexes of a given market.
+    /// @dev Mimicks `CToken.accrueInterest`'s calculations, without writing to the storage.
     /// @param _poolToken The address of the market.
     /// @return poolSupplyIndex The supply index.
     /// @return poolBorrowIndex The borrow index.
@@ -63,39 +65,13 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
     {
-        ICToken cToken = ICToken(_poolToken);
-
-        uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
-        if (block.number == accrualBlockNumberPrior)
-            return (cToken.exchangeRateStored(), cToken.borrowIndex());
-
-        // Read the previous values out of storage
-        uint256 cashPrior = cToken.getCash();
-        uint256 totalSupply = cToken.totalSupply();
-        uint256 borrowsPrior = cToken.totalBorrows();
-        uint256 reservesPrior = cToken.totalReserves();
-        uint256 borrowIndexPrior = cToken.borrowIndex();
-
-        // Calculate the current borrow interest rate
-        uint256 borrowRateMantissa = cToken.borrowRatePerBlock();
-        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
-
-        uint256 blockDelta = block.number - accrualBlockNumberPrior;
-
-        // Calculate the interest accumulated into borrows and reserves and the current index.
-        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
-        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
-        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
-        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
-            reservesPrior;
-
-        poolSupplyIndex = (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply);
-        poolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
+        return _getCurrentPoolIndexes(ICToken(_poolToken));
     }
 
     /// INTERNAL ///
 
-    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @notice Returns the most up-to-date or virtually updated peer-to-peer and pool indexes.
+    /// @dev If not virtually updated, the indexes returned are those used by Morpho for non-updated markets during the liquidity check.
     /// @param _poolToken The address of the market.
     /// @param _updated Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return delta The given market's deltas.
@@ -109,12 +85,12 @@ abstract contract IndexesLens is LensStorage {
         Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolToken);
 
         if (!_updated) {
-            ICToken cToken = ICToken(_poolToken);
-
-            indexes.poolSupplyIndex = cToken.exchangeRateStored();
-            indexes.poolBorrowIndex = cToken.borrowIndex();
+            indexes.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
+            indexes.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
         } else {
-            (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getCurrentPoolIndexes(_poolToken);
+            (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = _getCurrentPoolIndexes(
+                ICToken(_poolToken)
+            );
         }
 
         if (!_updated || block.number == lastPoolIndexes.lastUpdateBlockNumber) {
@@ -153,5 +129,39 @@ abstract contract IndexesLens is LensStorage {
                 })
             );
         }
+    }
+
+    /// @notice Returns the virtually updated pool indexes of a given market.
+    /// @dev Mimicks `CToken.accrueInterest`'s calculations, without writing to the storage.
+    /// @param _poolToken The address of the market.
+    /// @return poolSupplyIndex The supply index.
+    /// @return poolBorrowIndex The borrow index.
+    function _getCurrentPoolIndexes(ICToken _poolToken)
+        internal
+        view
+        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
+    {
+        uint256 blockDelta = block.number - _poolToken.accrualBlockNumber();
+        if (blockDelta == 0) return (_poolToken.exchangeRateStored(), _poolToken.borrowIndex());
+
+        // Read the previous values out of storage
+        uint256 borrowsPrior = _poolToken.totalBorrows();
+        uint256 borrowIndexPrior = _poolToken.borrowIndex();
+
+        // Calculate the current borrow interest rate
+        uint256 borrowRateMantissa = _poolToken.borrowRatePerBlock();
+        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
+
+        // Calculate the interest accumulated into borrows and reserves and the current index.
+        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
+        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
+        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
+        uint256 totalReservesNew = _poolToken.reserveFactorMantissa().mul(interestAccumulated) +
+            _poolToken.totalReserves();
+
+        poolSupplyIndex = (_poolToken.getCash() + totalBorrowsNew - totalReservesNew).div(
+            _poolToken.totalSupply()
+        );
+        poolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 }
