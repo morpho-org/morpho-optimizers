@@ -37,7 +37,6 @@ contract TestLifecycle is TestSetup {
         uint256 scaledPoolBalance;
         //
         MorphoPosition position;
-        uint256 unclaimedRewardsBefore;
     }
 
     function _initMarketSideTest(TestMarket memory _market, uint256 _amount)
@@ -105,21 +104,6 @@ contract TestLifecycle is TestSetup {
                 string.concat(supply.market.symbol, " borrow delta matched")
             );
 
-        address[] memory poolTokens = new address[](1);
-        poolTokens[0] = supply.market.poolToken;
-        if (address(rewardsManager) != address(0)) {
-            supply.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-                poolTokens,
-                address(user)
-            );
-
-            assertEq(
-                supply.unclaimedRewardsBefore,
-                0,
-                string.concat(supply.market.symbol, " unclaimed rewards")
-            );
-        }
-
         assertEq(
             ERC20(supply.market.underlying).balanceOf(address(morpho)),
             supply.morphoUnderlyingBalanceBefore,
@@ -157,17 +141,6 @@ contract TestLifecycle is TestSetup {
 
         (supply.position.p2p, supply.position.pool, supply.position.total) = lens
         .getCurrentSupplyBalanceInOf(supply.market.poolToken, address(user));
-
-        if (
-            supply.position.pool > 0 &&
-            address(rewardsManager) != address(0) &&
-            block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
-        )
-            assertGt(
-                rewardsManager.getUserUnclaimedRewards(poolTokens, address(user)),
-                supply.unclaimedRewardsBefore,
-                string.concat(supply.market.symbol, " unclaimed rewards after supply")
-            );
     }
 
     function _borrow(TestMarket memory _market, uint256 _amount)
@@ -214,15 +187,6 @@ contract TestLifecycle is TestSetup {
                 string.concat(borrow.market.symbol, " supply delta matched")
             );
 
-        address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = borrow.market.poolToken;
-        if (address(rewardsManager) != address(0)) {
-            borrow.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-                borrowedPoolTokens,
-                address(user)
-            );
-        }
-
         assertEq(
             ERC20(borrow.market.underlying).balanceOf(address(morpho)),
             borrow.morphoUnderlyingBalanceBefore,
@@ -260,17 +224,6 @@ contract TestLifecycle is TestSetup {
 
         (borrow.position.p2p, borrow.position.pool, borrow.position.total) = lens
         .getCurrentBorrowBalanceInOf(borrow.market.poolToken, address(user));
-
-        if (
-            borrow.position.pool > 0 &&
-            address(rewardsManager) != address(0) &&
-            block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
-        )
-            assertGt(
-                rewardsManager.getUserUnclaimedRewards(borrowedPoolTokens, address(user)),
-                borrow.unclaimedRewardsBefore,
-                string.concat(borrow.market.symbol, " unclaimed rewards after borrow")
-            );
     }
 
     function _repay(MarketSideTest memory borrow) internal virtual {
