@@ -28,6 +28,12 @@ abstract contract LensStorage is ILens {
     IComptroller public immutable comptroller;
     IRewardsManager public immutable rewardsManager;
 
+    /// STORAGE ///
+
+    address private deprecatedSlot0; // Formerly `morpho`.
+    address private deprecatedSlot1; // Formerly `comptroller`.
+    address private deprecatedSlot2; // Formerly `rewardsManager`.
+
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
