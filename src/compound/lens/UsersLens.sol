@@ -44,8 +44,7 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolToken != poolTokenEntered) {
@@ -99,8 +98,7 @@ abstract contract UsersLens is IndexesLens {
     ) external view returns (uint256 toRepay) {
         address[] memory updatedMarkets = new address[](_updatedMarkets.length + 2);
 
-        uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbUpdatedMarkets; ) {
+        for (uint256 i; i < _updatedMarkets.length; ) {
             updatedMarkets[i] = _updatedMarkets[i];
 
             unchecked {
@@ -165,7 +163,7 @@ abstract contract UsersLens is IndexesLens {
         address[] memory createdMarkets = morpho.getAllMarkets();
 
         uint256 nbCreatedMarkets = createdMarkets.length;
-        for (uint256 i; i < nbCreatedMarkets; ++i) {
+        for (uint256 i; i < nbCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
             Types.AssetLiquidityData memory assetData = _poolToken == poolToken
@@ -181,6 +179,10 @@ abstract contract UsersLens is IndexesLens {
 
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -204,9 +206,8 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             bool shouldUpdateIndexes;
@@ -434,9 +435,8 @@ abstract contract UsersLens is IndexesLens {
         uint256 debtValue;
         uint256 maxDebtValue;
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             bool shouldUpdateIndexes;
