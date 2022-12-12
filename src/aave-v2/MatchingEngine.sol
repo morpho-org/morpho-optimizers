@@ -338,15 +338,15 @@ abstract contract MatchingEngine is MorphoUtils {
         marketBorrowersInP2P.update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            address variableDebtToken = pool
+            address variableDebtTokenAddress = pool
             .getReserveData(market[_poolToken].underlyingToken)
             .variableDebtTokenAddress;
             rewardsManager.updateUserAssetAndAccruedRewards(
                 aaveIncentivesController,
                 _user,
-                variableDebtToken,
+                variableDebtTokenAddress,
                 formerValueOnPool,
-                IScaledBalanceToken(variableDebtToken).scaledTotalSupply()
+                IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
             );
         }
     }

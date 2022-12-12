@@ -239,15 +239,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             _getUserBorrowBalanceInOf(_poolTokenBorrowed, _borrower).percentMul(vars.closeFactor) // Max liquidatable debt.
         );
 
-        address tokenBorrowed = borrowMarket.underlyingToken;
-        address tokenCollateral = market[_poolTokenCollateral].underlyingToken;
+        address tokenBorrowedAddress = borrowMarket.underlyingToken;
+        address tokenCollateralAddress = market[_poolTokenCollateral].underlyingToken;
 
         ILendingPool poolMem = pool;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = poolMem
-        .getConfiguration(tokenCollateral)
+        .getConfiguration(tokenCollateralAddress)
         .getParamsMemory();
         (, , , vars.borrowedReserveDecimals, ) = poolMem
-        .getConfiguration(tokenBorrowed)
+        .getConfiguration(tokenBorrowedAddress)
         .getParamsMemory();
 
         unchecked {
@@ -256,8 +256,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         }
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        vars.borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowed);
-        vars.collateralPrice = oracle.getAssetPrice(tokenCollateral);
+        vars.borrowedTokenPrice = oracle.getAssetPrice(tokenBorrowedAddress);
+        vars.collateralPrice = oracle.getAssetPrice(tokenCollateralAddress);
         vars.amountToSeize = ((vars.amountToLiquidate *
             vars.borrowedTokenPrice *
             vars.collateralTokenUnit) / (vars.borrowedTokenUnit * vars.collateralPrice))

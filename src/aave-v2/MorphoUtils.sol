@@ -241,9 +241,6 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Calculates the total value of the collateral, debt, and LTV/LT value depending on the calculation type.
-    /// @dev Expects the given user's entered markets to include the given market.
-    /// @dev Expects the given market's pool & peer-to-peer indexes to have been updated.
-    /// @dev Expects `_amountWithdrawn` to be less than or equal to the given user's supply on the given market.
     /// @param _user The user address.
     /// @param _poolToken The pool token that is being borrowed or withdrawn.
     /// @param _amountWithdrawn The amount that is being withdrawn.
