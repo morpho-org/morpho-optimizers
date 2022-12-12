@@ -624,4 +624,20 @@ contract Morpho is MorphoUtils {
 
         emit MarketCreated(poolToken, _reserveFactor, _p2pIndexCursor);
     }
+
+    function supplyBalanceInOf(address _poolToken, address _user)
+        external
+        view
+        returns (uint256 inP2P, uint256 onPool)
+    {
+        return _supplyBalanceInOf(_poolToken, _user);
+    }
+
+    function borrowBalanceInOf(address _poolToken, address _user)
+        external
+        view
+        returns (uint256 inP2P, uint256 onPool)
+    {
+        return _borrowBalanceInOf(_poolToken, _user);
+    }
 }

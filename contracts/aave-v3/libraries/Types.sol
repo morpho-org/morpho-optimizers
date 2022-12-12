@@ -105,4 +105,52 @@ library Types {
         bool borrow;
         bool matching; // True for match, False for unmatch
     }
+
+    struct SupplyVars {
+        uint256 remainingToSupply;
+        uint256 poolBorrowIndex;
+        uint256 toRepay;
+    }
+
+    struct WithdrawVars {
+        uint256 remainingGasForMatching;
+        uint256 remainingToWithdraw;
+        uint256 poolSupplyIndex;
+        uint256 p2pSupplyIndex;
+        uint256 onPoolSupply;
+        uint256 toWithdraw;
+    }
+
+    struct RepayVars {
+        uint256 remainingGasForMatching;
+        uint256 remainingToRepay;
+        uint256 poolSupplyIndex;
+        uint256 poolBorrowIndex;
+        uint256 p2pSupplyIndex;
+        uint256 p2pBorrowIndex;
+        uint256 borrowedOnPool;
+        uint256 feeToRepay;
+        uint256 toRepay;
+    }
+
+    struct LiquidateVars {
+        uint256 liquidationBonus; // The liquidation bonus on Aave.
+        uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
+        uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
+        uint256 collateralBalance; // The collateral balance of the borrower.
+        uint256 collateralPrice; // The price of the collateral token.
+        uint256 amountToSeize; // The amount of collateral token to seize.
+        uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
+        uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 borrowedTokenPrice; // The price of the borrowed token.
+        uint256 amountToLiquidate; // The amount of debt token to repay.
+        uint256 closeFactor; // The close factor used during the liquidation.
+        bool liquidationAllowed; // Whether the liquidation is allowed or not.
+    }
+
+    struct HealthFactorVars {
+        uint256 i;
+        bytes32 userMarkets;
+        uint256 numberOfMarketsCreated;
+    }
 }

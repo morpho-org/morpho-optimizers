@@ -18,10 +18,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoUtils {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    /// STRUCTS ///
-
-    /// EXTERNAL ///
-
     /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolToken The address of the market to update.
     function updateIndexes(address _poolToken) external {

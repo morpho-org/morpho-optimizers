@@ -18,22 +18,6 @@ contract EntryPositionsManager is IEntryPositionsManager, MorphoUtils {
     using WadRayMath for uint256;
     using Math for uint256;
 
-    /// STRUCTS ///
-
-    // Struct to avoid stack too deep.
-    struct SupplyVars {
-        uint256 remainingToSupply;
-        uint256 poolBorrowIndex;
-        uint256 toRepay;
-    }
-
-    // Struct to avoid stack too deep.
-    struct BorrowAllowedVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
@@ -62,7 +46,7 @@ contract EntryPositionsManager is IEntryPositionsManager, MorphoUtils {
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
-        SupplyVars memory vars;
+        Types.SupplyVars memory vars;
         vars.poolBorrowIndex = poolIndexes[_poolToken].poolBorrowIndex;
         vars.remainingToSupply = _amount;
 
@@ -100,7 +84,7 @@ contract EntryPositionsManager is IEntryPositionsManager, MorphoUtils {
             delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolToken]);
         }
 
-        (uint256 inP2P, uint256 onPool) = supplyBalanceInOf(_poolToken, _onBehalf);
+        (uint256 inP2P, uint256 onPool) = _supplyBalanceInOf(_poolToken, _onBehalf);
 
         if (vars.toRepay > 0) {
             uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolToken]);
@@ -187,7 +171,7 @@ contract EntryPositionsManager is IEntryPositionsManager, MorphoUtils {
             delta.p2pSupplyAmount += matched.rayDiv(p2pSupplyIndex[_poolToken]);
         }
 
-        (uint256 inP2P, uint256 onPool) = borrowBalanceInOf(_poolToken, msg.sender);
+        (uint256 inP2P, uint256 onPool) = _borrowBalanceInOf(_poolToken, msg.sender);
 
         if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolToken]); // In peer-to-peer unit.
@@ -211,27 +195,5 @@ contract EntryPositionsManager is IEntryPositionsManager, MorphoUtils {
         underlyingToken.safeTransfer(msg.sender, _amount);
 
         emit Borrowed(msg.sender, _poolToken, _amount, onPool, inP2P);
-    }
-
-    /// @dev Checks whether the user can borrow or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolToken The market to hypothetically borrow in.
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return Whether the borrow is allowed or not.
-    function _borrowAllowed(
-        address _user,
-        address _poolToken,
-        uint256 _borrowedAmount
-    ) internal returns (bool) {
-        // Aave can enable an oracle sentinel in specific circumstances which can prevent users to borrow.
-        // In response, Morpho mirrors this behavior.
-        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
-        if (
-            priceOracleSentinel != address(0) &&
-            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
-        ) return false;
-
-        Types.LiquidityData memory values = _liquidityData(_user, _poolToken, 0, _borrowedAmount);
-        return values.debt <= values.maxDebt;
     }
 }
