@@ -302,19 +302,19 @@ abstract contract MatchingEngine is MorphoUtils {
         Types.SupplyBalance memory supplyBalance = supplyBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketSuppliersOnPool = suppliersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketSuppliersInP2P = suppliersInP2P[_poolToken];
-        uint256 maxSortedUsers = maxSortedUsers;
+        uint256 maxSortedUsersMem = maxSortedUsers;
 
         marketSuppliersOnPool.update(
             _user,
             marketSuppliersOnPool.getValueOf(_user),
             supplyBalance.onPool,
-            maxSortedUsers
+            maxSortedUsersMem
         );
         marketSuppliersInP2P.update(
             _user,
             marketSuppliersInP2P.getValueOf(_user),
             supplyBalance.inP2P,
-            maxSortedUsers
+            maxSortedUsersMem
         );
     }
 
@@ -325,19 +325,19 @@ abstract contract MatchingEngine is MorphoUtils {
         Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolToken][_user];
         HeapOrdering.HeapArray storage marketBorrowersOnPool = borrowersOnPool[_poolToken];
         HeapOrdering.HeapArray storage marketBorrowersInP2P = borrowersInP2P[_poolToken];
-        uint256 maxSortedUsers = maxSortedUsers;
+        uint256 maxSortedUsersMem = maxSortedUsers;
 
         marketBorrowersOnPool.update(
             _user,
             marketBorrowersOnPool.getValueOf(_user),
             borrowBalance.onPool,
-            maxSortedUsers
+            maxSortedUsersMem
         );
         marketBorrowersInP2P.update(
             _user,
             marketBorrowersInP2P.getValueOf(_user),
             borrowBalance.inP2P,
-            maxSortedUsers
+            maxSortedUsersMem
         );
     }
 }
