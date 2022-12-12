@@ -20,7 +20,7 @@ contract TestGovernance is TestSetup {
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
 
-        hevm.expectRevert(abi.encodeWithSignature("CompoundError(uint256)", 9));
+        hevm.expectRevert(abi.encodeWithSignature("MarketCreationFailedOnCompound(uint256)", 9));
         morpho.createMarket(address(supplier1), marketParams);
     }
 

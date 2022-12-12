@@ -125,6 +125,18 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
     error AmountAboveWhatAllowedToRepay();
 
+    /// @notice Thrown when the borrow on Compound failed and throws back the Compound error code.
+    error BorrowOnCompoundFailed(uint256 errorCode);
+
+    /// @notice Thrown when the redeem on Compound failed and throws back the Compound error code.
+    error RedeemOnCompoundFailed(uint256 errorCode);
+
+    /// @notice Thrown when the repay on Compound failed and throws back the Compound error code.
+    error RepayOnCompoundFailed(uint256 errorCode);
+
+    /// @notice Thrown when the mint on Compound failed and throws back the Compound error code.
+    error MintOnCompoundFailed(uint256 errorCode);
+
     /// @notice Thrown when user is not a member of the market.
     error UserNotMemberOfMarket();
 
@@ -166,9 +178,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
     error LiquidateBorrowIsPaused();
-
-    /// @notice Throws back Compound errors.
-    error CompoundError(uint256 errorCode);
 
     /// STRUCTS ///
 
@@ -918,7 +927,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         } else {
             _underlyingToken.safeApprove(_poolToken, _amount);
             uint256 errorCode = ICToken(_poolToken).mint(_amount);
-            if (errorCode != 0) revert CompoundError(errorCode);
+            if (errorCode != 0) revert MintOnCompoundFailed(errorCode);
         }
     }
 
@@ -930,7 +939,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _amount = CompoundMath.min(ICToken(_poolToken).balanceOfUnderlying(address(this)), _amount);
 
         uint256 errorCode = ICToken(_poolToken).redeemUnderlying(_amount);
-        if (errorCode != 0) revert CompoundError(errorCode);
+        if (errorCode != 0) revert RedeemOnCompoundFailed(errorCode);
 
         if (_poolToken == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
@@ -940,7 +949,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolToken, uint256 _amount) internal {
         uint256 errorCode = ICToken(_poolToken).borrow(_amount);
-        if (errorCode != 0) revert CompoundError(errorCode);
+        if (errorCode != 0) revert BorrowOnCompoundFailed(errorCode);
 
         if (_poolToken == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
@@ -967,7 +976,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             } else {
                 _underlyingToken.safeApprove(_poolToken, _amount);
                 uint256 errorCode = ICToken(_poolToken).repayBorrow(_amount);
-                if (errorCode != 0) revert CompoundError(errorCode);
+                if (errorCode != 0) revert RepayOnCompoundFailed(errorCode);
             }
         }
     }

@@ -112,6 +112,9 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// ERRORS ///
 
+    /// @notice Thrown when the creation of a market failed on Compound and kicks back Compound error code.
+    error MarketCreationFailedOnCompound(uint256 errorCode);
+
     /// @notice Thrown when the input is above the max basis points value (100%).
     error ExceedsMaxBasisPoints();
 
@@ -123,9 +126,6 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
-
-    /// @notice Throws back Compound errors.
-    error CompoundError(uint256 errorCode);
 
     /// UPGRADE ///
 
@@ -440,7 +440,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolToken;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
-        if (results[0] != 0) revert CompoundError(results[0]);
+        if (results[0] != 0) revert MarketCreationFailedOnCompound(results[0]);
 
         // Same initial index as Compound.
         uint256 initialIndex;
