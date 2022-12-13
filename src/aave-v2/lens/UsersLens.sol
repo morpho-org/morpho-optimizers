@@ -295,7 +295,7 @@ abstract contract UsersLens is IndexesLens {
 
     /// INTERNAL ///
 
-    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @dev Returns wheter the given user is borrowing from the given market.
     /// @param _user The address of the user to check.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
@@ -303,7 +303,7 @@ abstract contract UsersLens is IndexesLens {
         return morpho.userMarkets(_user) & morpho.borrowMask(_market) != 0;
     }
 
-    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @dev Returns whether the given user is borrowing or supplying on the given market.
     /// @param _userMarkets The bytes representation of entered markets of the user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.

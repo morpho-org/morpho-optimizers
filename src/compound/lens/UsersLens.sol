@@ -163,7 +163,7 @@ abstract contract UsersLens is IndexesLens {
         address[] memory createdMarkets = morpho.getAllMarkets();
 
         uint256 nbCreatedMarkets = createdMarkets.length;
-        for (uint256 i; i < nbCreatedMarkets; ) {
+        for (uint256 i; i < nbCreatedMarkets; ++i) {
             address poolToken = createdMarkets[i];
 
             Types.AssetLiquidityData memory assetData = _poolToken == poolToken
@@ -179,10 +179,6 @@ abstract contract UsersLens is IndexesLens {
 
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -339,7 +335,7 @@ abstract contract UsersLens is IndexesLens {
         if (morpho.marketPauseStatus(_poolToken).isDeprecated)
             return _isLiquidatable(_user, _poolToken, _updatedMarkets);
 
-        return isLiquidatable(_user, _updatedMarkets);
+        return _isLiquidatable(_user, address(0), _updatedMarkets);
     }
 
     /// INTERNAL ///
@@ -377,7 +373,7 @@ abstract contract UsersLens is IndexesLens {
             borrowBalance.inP2P.mul(_p2pBorrowIndex) + borrowBalance.onPool.mul(_poolBorrowIndex);
     }
 
-    /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
+    /// @dev Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
     /// @param _user The user to determine data for.
     /// @param _poolToken The address of the market.
     /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
@@ -419,7 +415,8 @@ abstract contract UsersLens is IndexesLens {
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
-    /// @notice Returns whether a liquidation can be performed on a given user borrowing from a given deprecated market.
+    /// @dev Returns whether a liquidation can be performed on the given user.
+    ///      This function checks for the user's health factor as well as whether the user is borrowing from the given deprecated market.
     /// @param _user The address of the user to check.
     /// @param _poolTokenDeprecated The address of the deprecated borrowed market to check.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
