@@ -43,17 +43,17 @@ library Types {
     }
 
     struct AssetLiquidityData {
-        uint256 collateralValue; // The collateral value of the asset.
-        uint256 maxDebtValue; // The maximum possible debt value of the asset.
-        uint256 debtValue; // The debt value of the asset.
+        uint256 collateralUsd; // The collateral value of the asset (in USD, wad).
+        uint256 maxDebtUsd; // The maximum possible debt value of the asset (in USD, wad).
+        uint256 debtUsd; // The debt value of the asset (in USD, wad).
         uint256 underlyingPrice; // The price of the token.
         uint256 collateralFactor; // The liquidation threshold applied on this token.
     }
 
     struct LiquidityData {
-        uint256 collateralValue; // The collateral value.
-        uint256 maxDebtValue; // The maximum debt value possible.
-        uint256 debtValue; // The debt value.
+        uint256 collateralUsd; // The collateral value (in USD, wad).
+        uint256 maxDebtUsd; // The maximum debt value allowed before being liquidatable (in USD, wad).
+        uint256 debtUsd; // The debt value (in USD, wad).
     }
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).

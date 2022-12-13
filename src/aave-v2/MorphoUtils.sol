@@ -295,7 +295,7 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                values.debt += _debtValue(
+                values.debtEth += _debtValue(
                     vars.poolToken,
                     _user,
                     vars.underlyingPrice,
@@ -304,37 +304,36 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             // Cache current asset collateral value.
-            uint256 assetCollateralValue;
             if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
-                assetCollateralValue = _collateralValue(
+                uint256 assetCollateralEth = _collateralValue(
                     vars.poolToken,
                     _user,
                     vars.underlyingPrice,
                     assetData.tokenUnit
                 );
-                values.collateral += assetCollateralValue;
+                values.collateralEth += assetCollateralEth;
                 // Calculate LTV for borrow.
-                values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
+                values.borrowableEth += assetCollateralEth.percentMul(assetData.ltv);
 
                 // Update LT variable for withdraw.
-                if (assetCollateralValue > 0)
-                    values.liquidationThresholdValue += assetCollateralValue.percentMul(
+                if (assetCollateralEth > 0)
+                    values.maxDebtEth += assetCollateralEth.percentMul(
                         assetData.liquidationThreshold
                     );
             }
 
             // Update debt variable for borrowed token.
             if (_poolToken == vars.poolToken && _amountBorrowed > 0)
-                values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(assetData.tokenUnit);
+                values.debtEth += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    assetData.tokenUnit
+                );
 
             // Subtract withdrawn amount from liquidation threshold and collateral.
             if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
                 uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) / assetData.tokenUnit;
-                values.collateral -= withdrawn;
-                values.liquidationThresholdValue -= withdrawn.percentMul(
-                    assetData.liquidationThreshold
-                );
-                values.maxDebt -= withdrawn.percentMul(assetData.ltv);
+                values.collateralEth -= withdrawn;
+                values.maxDebtEth -= withdrawn.percentMul(assetData.liquidationThreshold);
+                values.borrowableEth -= withdrawn.percentMul(assetData.ltv);
             }
         }
     }

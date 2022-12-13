@@ -664,10 +664,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, _withdrawnAmount, 0);
 
-        return
-            values.debt > 0
-                ? values.liquidationThresholdValue.wadDiv(values.debt)
-                : type(uint256).max;
+        return values.debtEth > 0 ? values.maxDebtEth.wadDiv(values.debtEth) : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.

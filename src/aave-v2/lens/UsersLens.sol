@@ -74,8 +74,8 @@ abstract contract UsersLens is IndexesLens {
         );
 
         if (
-            liquidityData.debt > 0 &&
-            liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debt) <=
+            liquidityData.debtEth > 0 &&
+            liquidityData.maxDebtEth.wadDiv(liquidityData.debtEth) <=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD
         ) return (0, 0);
 
@@ -83,22 +83,22 @@ abstract contract UsersLens is IndexesLens {
             _poolToken
         );
 
-        if (liquidityData.debt < liquidityData.maxDebt)
+        if (liquidityData.debtEth < liquidityData.borrowableEth)
             borrowable = Math.min(
                 poolTokenBalance,
-                ((liquidityData.maxDebt - liquidityData.debt) * assetData.tokenUnit) /
+                ((liquidityData.borrowableEth - liquidityData.debtEth) * assetData.tokenUnit) /
                     assetData.underlyingPrice
             );
 
         withdrawable = Math.min(
             poolTokenBalance,
-            (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice
+            (assetData.collateralEth * assetData.tokenUnit) / assetData.underlyingPrice
         );
 
         if (assetData.liquidationThreshold > 0)
             withdrawable = Math.min(
                 withdrawable,
-                ((liquidityData.liquidationThresholdValue - liquidityData.debt).percentDiv(
+                ((liquidityData.maxDebtEth - liquidityData.debtEth).percentDiv(
                     assetData.liquidationThreshold
                 ) * assetData.tokenUnit) / assetData.underlyingPrice
             );
@@ -222,26 +222,25 @@ abstract contract UsersLens is IndexesLens {
                     oracle
                 );
 
-                liquidityData.collateral += assetData.collateral;
-                liquidityData.maxDebt += assetData.collateral.percentMul(assetData.ltv);
-                liquidityData.liquidationThresholdValue += assetData.collateral.percentMul(
+                liquidityData.collateralEth += assetData.collateralEth;
+                liquidityData.borrowableEth += assetData.collateralEth.percentMul(assetData.ltv);
+                liquidityData.maxDebtEth += assetData.collateralEth.percentMul(
                     assetData.liquidationThreshold
                 );
-                liquidityData.debt += assetData.debt;
+                liquidityData.debtEth += assetData.debtEth;
 
                 if (_poolToken == poolToken) {
                     if (_borrowedAmount > 0)
-                        liquidityData.debt += (_borrowedAmount * assetData.underlyingPrice).divUp(
-                            assetData.tokenUnit
-                        );
+                        liquidityData.debtEth += (_borrowedAmount * assetData.underlyingPrice)
+                        .divUp(assetData.tokenUnit);
 
                     if (_withdrawnAmount > 0) {
                         uint256 assetCollateral = (_withdrawnAmount * assetData.underlyingPrice) /
                             assetData.tokenUnit;
 
-                        liquidityData.collateral -= assetCollateral;
-                        liquidityData.maxDebt -= assetCollateral.percentMul(assetData.ltv);
-                        liquidityData.liquidationThresholdValue -= assetCollateral.percentMul(
+                        liquidityData.collateralEth -= assetCollateral;
+                        liquidityData.borrowableEth -= assetCollateral.percentMul(assetData.ltv);
+                        liquidityData.maxDebtEth -= assetCollateral.percentMul(
                             assetData.liquidationThreshold
                         );
                     }
@@ -291,8 +290,10 @@ abstract contract UsersLens is IndexesLens {
         );
 
         assetData.tokenUnit = 10**assetData.decimals;
-        assetData.debt = (totalDebtBalance * assetData.underlyingPrice).divUp(assetData.tokenUnit);
-        assetData.collateral =
+        assetData.debtEth = (totalDebtBalance * assetData.underlyingPrice).divUp(
+            assetData.tokenUnit
+        );
+        assetData.collateralEth =
             (totalCollateralBalance * assetData.underlyingPrice) /
             assetData.tokenUnit;
     }
@@ -322,9 +323,9 @@ abstract contract UsersLens is IndexesLens {
             _withdrawnAmount,
             _borrowedAmount
         );
-        if (liquidityData.debt == 0) return type(uint256).max;
+        if (liquidityData.debtEth == 0) return type(uint256).max;
 
-        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debt);
+        return liquidityData.maxDebtEth.wadDiv(liquidityData.debtEth);
     }
 
     /// @dev Checks whether a liquidation can be performed on a given user.
