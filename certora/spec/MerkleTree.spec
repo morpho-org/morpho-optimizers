@@ -11,5 +11,8 @@ methods {
 invariant inializedUnset(address addr)
     ! initialized() => ! isCreated(addr)
 
+invariant alwaysInitialized()
+    initialized()
+
 invariant wellFormed(address addr)
     isWellFormed(addr)
