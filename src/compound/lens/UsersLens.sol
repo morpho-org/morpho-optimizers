@@ -326,7 +326,7 @@ abstract contract UsersLens is IndexesLens {
     }
 
     /// @notice Returns whether a liquidation can be performed on a given user borrowing from a given market.
-    /// @dev This function checks for the user's health factor as well as whether they are borrowing from a deprecated market.
+    /// @dev This function checks for the user's health factor as well as whether the given market is deprecated & the user is borrowing from it.
     /// @param _user The address of the user to check.
     /// @param _poolToken The address of the borrowed market to check.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
