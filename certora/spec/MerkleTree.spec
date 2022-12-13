@@ -8,11 +8,9 @@ methods {
     value(address) returns uint256 envfree
 }
 
-invariant inializedUnset(address addr)
-    ! initialized() => ! isCreated(addr)
-
-invariant alwaysInitialized()
-    initialized()
-
 invariant wellFormed(address addr)
     isWellFormed(addr)
+    { preserved {
+        require initialized();
+      }
+    }
