@@ -9,13 +9,11 @@ methods {
     T1.wellFormed(address) returns bool envfree
     T1.notEmpty() returns bool envfree
     T1.hash(address) returns bytes32 envfree
-    T1.isValid() returns bool envfree
     T1.value(address) returns uint256 envfree
     T2.root() returns address envfree
     T2.wellFormed(address) returns bool envfree
     T2.notEmpty() returns bool envfree
     T2.hash(address) returns bytes32 envfree
-    T2.isValid() returns bool envfree
     T2.value(address) returns uint256 envfree
 }
 
@@ -34,7 +32,7 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
 rule claimOnlyValue(address _account, uint256 _claimable, bytes32[] _proof) {
     env e;
     require T1.hash(T1.root()) == prevRoot() && T2.hash(T2.root()) == currRoot();
-    require T1.isValid() && T2.isValid();
+    // require T1.isValid() && T2.isValid(); // TODO: require that each node is valid
 
     claim(_account, _claimable, _proof);
 
