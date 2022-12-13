@@ -1,6 +1,6 @@
 diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
 --- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2022-12-06 18:46:39.505835328 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2022-12-13 15:33:55.871080178 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -10,7 +10,7 @@ diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distributio
 +contract MerkleTree1 is MerkleTree {}
 diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
 --- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2022-12-06 18:47:04.652604544 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2022-12-13 15:33:55.881080214 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -20,13 +20,14 @@ diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distributio
 +contract MerkleTree2 is MerkleTree {}
 diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
 --- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-12-06 19:53:31.893517000 +0100
-@@ -0,0 +1,58 @@
++++ common/rewards-distribution/MerkleTree.sol	2022-12-13 16:36:28.726254289 +0100
+@@ -0,0 +1,56 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
 +abstract contract MerkleTree {
 +    struct Node {
++        bool inTree;
 +        address left;
 +        address right;
 +        uint256 value;
@@ -41,31 +42,28 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +        return nodes[addr].hashNode;
 +    }
 +
-+    function _isValidFrom(address addr) private view returns (bool) {
-+        Node memory node = nodes[addr];
-+        if (addr == address(0) || node.hashNode == bytes32(0)) return false;
++    function wellFormed(address addr) public view returns (bool) {
++        Node storage node = nodes[addr];
 +
-+        bool leftValid = true;
-+        bool rightValid = true;
-+        if (node.left != address(0)) leftValid = _isValidFrom(node.left);
-+        if (node.right != address(0)) rightValid = _isValidFrom(node.right);
++        if (!node.inTree) return false;
 +
-+        bool leafHashed = true;
 +        if (node.left == address(0) && node.right == address(0))
-+            leafHashed = node.hashNode == keccak256(abi.encodePacked(addr, node.value));
-+
-+        bool pairSorted = true;
-+        bytes32 leftHash = nodes[node.left].hashNode;
-+        bytes32 rightHash = nodes[node.right].hashNode;
-+        if (node.left != address(0) && node.right != address(0)) pairSorted = leftHash <= rightHash;
-+
-+        bool hashedNode = node.hashNode == keccak256(abi.encode(leftHash, rightHash));
-+
-+        return leftValid && rightValid && leafHashed && pairSorted && hashedNode;
++            return
++                node.value != 0 && node.hashNode == keccak256(abi.encodePacked(addr, node.value));
++        else {
++            // Well-formed nodes have exactly 0 or 2 children.
++            if (node.left == address(0) || node.right == address(0)) return false;
++            bytes32 leftHash = nodes[node.left].hashNode;
++            bytes32 rightHash = nodes[node.right].hashNode;
++            return
++                node.value == 0 &&
++                leftHash <= rightHash && // Well-formed nodes should be pair sorted.
++                node.hashNode == keccak256(abi.encode(leftHash, rightHash));
++        }
 +    }
 +
-+    function isValid() public view returns (bool) {
-+        return _isValidFrom(root);
++    function notEmpty() public view returns (bool) {
++        return nodes[root].inTree;
 +    }
 +
 +    function _valueFrom(address user, address addr) private view returns (uint256) {
@@ -82,6 +80,6 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-12-06 17:24:59.360976786 +0100
++++ .gitignore	2022-12-13 15:33:55.881080214 +0100
 @@ -0,0 +1 @@
 +*

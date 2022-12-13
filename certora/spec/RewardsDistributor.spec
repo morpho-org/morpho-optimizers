@@ -6,10 +6,14 @@ methods {
     currRoot() returns bytes32 envfree
     claim(address, uint256, bytes32[]) envfree
     T1.root() returns address envfree
+    T1.wellFormed(address) returns bool envfree
+    T1.notEmpty() returns bool envfree
     T1.hash(address) returns bytes32 envfree
     T1.isValid() returns bool envfree
     T1.value(address) returns uint256 envfree
     T2.root() returns address envfree
+    T2.wellFormed(address) returns bool envfree
+    T2.notEmpty() returns bool envfree
     T2.hash(address) returns bytes32 envfree
     T2.isValid() returns bool envfree
     T2.value(address) returns uint256 envfree
