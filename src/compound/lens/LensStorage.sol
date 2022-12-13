@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
+import "./interfaces/ILens.sol";
 
 import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
@@ -10,28 +11,38 @@ import "@morpho-dao/morpho-utils/math/Math.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage is Initializable {
-    /// STORAGE ///
+abstract contract LensStorage is ILens {
+    /// CONSTANTS ///
 
     uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
 
-    IMorpho public morpho;
-    IComptroller public comptroller;
-    IRewardsManager public rewardsManager;
+    /// IMMUTABLES ///
+
+    IMorpho public immutable morpho;
+    IComptroller public immutable comptroller;
+    IRewardsManager public immutable rewardsManager;
     IInterestRatesManager internal immutable interestRatesManager;
+
+    /// STORAGE ///
+
+    address private deprecatedSlot0; // Formerly `morpho`.
+    address private deprecatedSlot1; // Formerly `comptroller`.
+    address private deprecatedSlot2; // Formerly `rewardsManager`.
 
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
-    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
-    constructor(address _interestRatesManager) initializer {
-        interestRatesManager = IInterestRatesManager(_interestRatesManager);
+    /// @param _morpho The address of the main Morpho contract.
+    constructor(address _morpho) {
+        morpho = IMorpho(_morpho);
+        comptroller = IComptroller(morpho.comptroller());
+        rewardsManager = IRewardsManager(morpho.rewardsManager());
+        interestRatesManager = IInterestRatesManager(morpho.interestRatesManager());
     }
 }
