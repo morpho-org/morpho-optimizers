@@ -32,6 +32,18 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
+    /// STRUCTS ///
+
+    // Struct to avoid stack too deep.
+    struct LiquidityVars {
+        address poolToken;
+        uint256 poolTokensLength;
+        bytes32 userMarkets;
+        bytes32 borrowMask;
+        address underlyingToken;
+        uint256 underlyingPrice;
+    }
+
     /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
@@ -254,7 +266,7 @@ abstract contract MorphoUtils is MorphoStorage {
     ) internal returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         Types.AssetLiquidityData memory assetData;
-        Types.LiquidityStackVars memory vars;
+        LiquidityVars memory vars;
 
         DataTypes.UserConfigurationMap memory morphoPoolConfig = pool.getUserConfiguration(
             address(this)
@@ -310,18 +322,18 @@ abstract contract MorphoUtils is MorphoStorage {
                 values.collateralEth += assetCollateralValue;
                 // Calculate LTV for borrow.
                 values.borrowableEth += assetCollateralValue.percentMul(assetData.ltv);
+
+                // Update LT variable for withdraw.
+                if (assetCollateralValue > 0)
+                    values.maxDebtEth += assetCollateralValue.percentMul(
+                        assetData.liquidationThreshold
+                    );
             }
 
             // Update debt variable for borrowed token.
             if (_poolToken == vars.poolToken && _amountBorrowed > 0)
                 values.debtEth += (_amountBorrowed * vars.underlyingPrice).divUp(
                     assetData.tokenUnit
-                );
-
-            // Update LT variable for withdraw.
-            if (assetCollateralValue > 0)
-                values.maxDebtEth += assetCollateralValue.percentMul(
-                    assetData.liquidationThreshold
                 );
 
             // Subtract withdrawn amount from liquidation threshold and collateral.

@@ -136,13 +136,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         bool liquidationAllowed; // Whether the liquidation is allowed or not.
     }
 
-    // Struct to avoid stack too deep.
-    struct HealthFactorVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements withdraw logic with security checks.
@@ -666,11 +659,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolToken,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        HealthFactorVars memory vars;
-        vars.userMarkets = userMarkets[_user];
-
         // If the user is not borrowing any asset, return an infinite health factor.
-        if (!_isBorrowingAny(vars.userMarkets)) return type(uint256).max;
+        if (!_isBorrowingAny(userMarkets[_user])) return type(uint256).max;
 
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, _withdrawnAmount, 0);
 

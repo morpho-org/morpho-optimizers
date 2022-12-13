@@ -38,18 +38,14 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
-    /// @return enteredMarkets_ The list of markets entered by this user.
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets_)
-    {
+    /// @return The list of markets entered by this user.
+    function getEnteredMarkets(address _user) external view returns (address[] memory) {
         return enteredMarkets[_user];
     }
 
     /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market addresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+    /// @return The list of market addresses.
+    function getAllMarkets() external view returns (address[] memory) {
         return marketsCreated;
     }
 
@@ -94,7 +90,7 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @notice Updates the peer-to-peer indexes.
-    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
+    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRateStored() is necessary to get the most up to date exchange rate.
     /// @param _poolToken The address of the market to update.
     function updateP2PIndexes(address _poolToken) external isMarketCreated(_poolToken) {
         _updateP2PIndexes(_poolToken);
@@ -103,7 +99,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// INTERNAL ///
 
     /// @dev Updates the peer-to-peer indexes.
-    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
+    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRateStored() is necessary to get the most up to date exchange rate.
     /// @param _poolToken The address of the market to update.
     function _updateP2PIndexes(address _poolToken) internal {
         address(interestRatesManager).functionDelegateCall(

@@ -12,19 +12,6 @@ contract Morpho is MorphoGovernance {
     using DelegateCall for address;
     using WadRayMath for uint256;
 
-    /// EVENTS ///
-
-    /// @notice Emitted when a user claims rewards.
-    /// @param _user The address of the claimer.
-    /// @param _amountClaimed The amount of reward token claimed.
-    /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
-    event RewardsClaimed(address indexed _user, uint256 _amountClaimed, bool indexed _traded);
-
-    /// ERRORS ///
-
-    /// @notice Thrown when claiming rewards is paused.
-    error ClaimRewardsPaused();
-
     /// EXTERNAL ///
 
     /// @notice Supplies underlying tokens to a specific market.
@@ -145,31 +132,8 @@ contract Morpho is MorphoGovernance {
         );
     }
 
-    /// @notice Claims rewards for the given assets.
-    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    /// @param _tradeForMorphoToken Whether or not to trade reward tokens for MORPHO tokens.
-    /// @return claimedAmount The amount of rewards claimed (in reward token).
-    function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken)
-        external
-        nonReentrant
-        returns (uint256 claimedAmount)
-    {
-        if (isClaimRewardsPaused) revert ClaimRewardsPaused();
-        claimedAmount = rewardsManager.claimRewards(aaveIncentivesController, _assets, msg.sender);
-
-        if (claimedAmount > 0) {
-            if (_tradeForMorphoToken) {
-                aaveIncentivesController.claimRewards(
-                    _assets,
-                    claimedAmount,
-                    address(incentivesVault)
-                );
-                incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, claimedAmount);
-            } else aaveIncentivesController.claimRewards(_assets, claimedAmount, msg.sender);
-
-            emit RewardsClaimed(msg.sender, claimedAmount, _tradeForMorphoToken);
-        }
-    }
+    /// @notice Deprecated.
+    function claimRewards(address[] calldata, bool) external returns (uint256) {}
 
     /// INTERNAL ///
 

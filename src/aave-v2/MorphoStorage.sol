@@ -5,8 +5,6 @@ import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IEntryPositionsManager.sol";
 import "./interfaces/IExitPositionsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
-import "./interfaces/IIncentivesVault.sol";
-import "./interfaces/IRewardsManager.sol";
 
 import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
 import "./libraries/Types.sol";
@@ -37,7 +35,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     // and used for internal calculations to convert `stEth.balanceOf` into an amount in scaled units.
     uint256 public constant ST_ETH_BASE_REBASE_INDEX = 1_086492192583716523804482274;
 
-    bool public isClaimRewardsPaused; // Whether claiming rewards is paused or not.
+    bool public isClaimRewardsPaused; // Deprecated: whether claiming rewards is paused or not.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
 
@@ -64,14 +62,14 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// CONTRACTS AND ADDRESSES ///
 
     ILendingPoolAddressesProvider public addressesProvider;
-    IAaveIncentivesController public aaveIncentivesController;
+    address public aaveIncentivesController; // Deprecated.
     ILendingPool public pool;
 
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
     IInterestRatesManager public interestRatesManager;
-    IIncentivesVault public incentivesVault;
-    IRewardsManager public rewardsManager;
+    address public incentivesVault; // Deprecated.
+    address public rewardsManager; // Deprecated.
     address public treasuryVault;
 
     /// APPENDIX STORAGE ///
