@@ -1,5 +1,5 @@
-name: Foundry tests
-description: Runs full forge test suite given a protocol and a network
+name: Foundry size check
+description: Compiles & checks a contract
 
 inputs:
   protocol:
@@ -42,6 +42,13 @@ runs:
       with:
         path: ~/.foundry/cache
         key: foundry-${{ hashFiles('Makefile', 'foundry.toml') }} # where fork block numbers & RPC are stored
+
+    - name: Check contracts sizes
+      run: make contracts
+      shell: bash
+      env:
+        PROTOCOL: ${{ inputs.protocol }}
+        NETWORK: ${{ inputs.network }}
 
     - name: Foundry compilation cache
       uses: actions/cache@v3

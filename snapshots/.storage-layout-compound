@@ -63,5 +63,8 @@
 ➡ Lens
 =======================
 
-| Name | Type | Slot | Offset | Bytes | Contract |
-|------|------|------|--------|-------|----------|
+| Name            | Type    | Slot | Offset | Bytes | Contract                        |
+|-----------------|---------|------|--------|-------|---------------------------------|
+| deprecatedSlot0 | address | 0    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
+| deprecatedSlot1 | address | 1    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
+| deprecatedSlot2 | address | 2    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
