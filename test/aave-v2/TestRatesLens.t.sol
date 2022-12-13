@@ -102,7 +102,7 @@ contract TestRatesLens is TestSetup {
         uint256 supplyRatePerYear = lens.getCurrentUserSupplyRatePerYear(aDai, address(supplier1));
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1);
+        assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1e3);
     }
 
     function testUserBorrowRateShouldEqualMidrateWhenHalfMatched() public {
@@ -956,7 +956,7 @@ contract TestRatesLens is TestSetup {
         (uint256 supplyRatePerYear, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1);
+        assertApproxEqAbs(supplyRatePerYear, (p2pSupplyRate + poolSupplyRate) / 2, 1e3);
     }
 
     function testAverageBorrowRateShouldEqualMidrateWhenHalfMatched() public {
