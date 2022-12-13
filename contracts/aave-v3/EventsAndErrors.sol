@@ -224,6 +224,18 @@ abstract contract EventsAndErrors {
         uint256 _poolBorrowIndex
     );
 
+    /// @notice Emitted when a user claims rewards.
+    /// @param _user The address of the claimer.
+    /// @param _reward The reward token address.
+    /// @param _amountClaimed The amount of reward token claimed.
+    /// @param _traded Whether or not the pool tokens are traded against Morpho tokens.
+    event RewardsClaimed(
+        address indexed _user,
+        address indexed _reward,
+        uint256 _amountClaimed,
+        bool indexed _traded
+    );
+
     /// ERRORS ///
 
     /// @notice Thrown when borrowing is impossible, because it is not enabled on pool for this specific market.
@@ -298,4 +310,7 @@ abstract contract EventsAndErrors {
         uint256 _balanceOnPool,
         uint256 _balanceInP2P
     );
+
+    /// @notice Thrown when claiming rewards is paused.
+    error ClaimRewardsPaused();
 }
