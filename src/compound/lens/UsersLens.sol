@@ -335,7 +335,7 @@ abstract contract UsersLens is IndexesLens {
         if (morpho.marketPauseStatus(_poolToken).isDeprecated)
             return _isLiquidatable(_user, _poolToken, _updatedMarkets);
 
-        return _isLiquidatable(_user, address(0), _updatedMarkets);
+        return isLiquidatable(_user, _updatedMarkets);
     }
 
     /// INTERNAL ///
