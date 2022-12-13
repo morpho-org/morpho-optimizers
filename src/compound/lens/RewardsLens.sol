@@ -33,16 +33,17 @@ abstract contract RewardsLens is MarketsLens {
             (bool isListed, , ) = comptroller.markets(poolToken);
             if (!isListed) revert InvalidPoolToken();
 
-            unclaimedRewards += getAccruedSupplierComp(
-                _user,
-                poolToken,
-                morpho.supplyBalanceInOf(poolToken, _user).onPool
-            );
-            unclaimedRewards += getAccruedBorrowerComp(
-                _user,
-                poolToken,
-                morpho.borrowBalanceInOf(poolToken, _user).onPool
-            );
+            unclaimedRewards +=
+                getAccruedSupplierComp(
+                    _user,
+                    poolToken,
+                    morpho.supplyBalanceInOf(poolToken, _user).onPool
+                ) +
+                getAccruedBorrowerComp(
+                    _user,
+                    poolToken,
+                    morpho.borrowBalanceInOf(poolToken, _user).onPool
+                );
 
             unchecked {
                 ++i;
@@ -62,11 +63,10 @@ abstract contract RewardsLens is MarketsLens {
         address _poolToken,
         uint256 _balance
     ) public view returns (uint256) {
-        uint256 supplyIndex = getCurrentCompSupplyIndex(_poolToken);
         uint256 supplierIndex = rewardsManager.compSupplierIndex(_poolToken, _supplier);
 
         if (supplierIndex == 0) return 0;
-        return (_balance * (supplyIndex - supplierIndex)) / 1e36;
+        return (_balance * (getCurrentCompSupplyIndex(_poolToken) - supplierIndex)) / 1e36;
     }
 
     /// @notice Returns the accrued COMP rewards of a user since the last update.
@@ -78,13 +78,12 @@ abstract contract RewardsLens is MarketsLens {
         view
         returns (uint256)
     {
-        uint256 supplyIndex = getCurrentCompSupplyIndex(_poolToken);
-        uint256 supplierIndex = rewardsManager.compSupplierIndex(_poolToken, _supplier);
-
-        if (supplierIndex == 0) return 0;
         return
-            (morpho.supplyBalanceInOf(_poolToken, _supplier).onPool *
-                (supplyIndex - supplierIndex)) / 1e36;
+            getAccruedSupplierComp(
+                _supplier,
+                _poolToken,
+                morpho.supplyBalanceInOf(_poolToken, _supplier).onPool
+            );
     }
 
     /// @notice Returns the accrued COMP rewards of a user since the last update.
@@ -97,11 +96,10 @@ abstract contract RewardsLens is MarketsLens {
         address _poolToken,
         uint256 _balance
     ) public view returns (uint256) {
-        uint256 borrowIndex = getCurrentCompBorrowIndex(_poolToken);
         uint256 borrowerIndex = rewardsManager.compBorrowerIndex(_poolToken, _borrower);
 
         if (borrowerIndex == 0) return 0;
-        return (_balance * (borrowIndex - borrowerIndex)) / 1e36;
+        return (_balance * (getCurrentCompBorrowIndex(_poolToken) - borrowerIndex)) / 1e36;
     }
 
     /// @notice Returns the accrued COMP rewards of a user since the last update.
@@ -113,13 +111,12 @@ abstract contract RewardsLens is MarketsLens {
         view
         returns (uint256)
     {
-        uint256 borrowIndex = getCurrentCompBorrowIndex(_poolToken);
-        uint256 borrowerIndex = rewardsManager.compBorrowerIndex(_poolToken, _borrower);
-
-        if (borrowerIndex == 0) return 0;
         return
-            (morpho.borrowBalanceInOf(_poolToken, _borrower).onPool *
-                (borrowIndex - borrowerIndex)) / 1e36;
+            getAccruedBorrowerComp(
+                _borrower,
+                _poolToken,
+                morpho.borrowBalanceInOf(_poolToken, _borrower).onPool
+            );
     }
 
     /// @notice Returns the updated COMP supply index.
@@ -140,8 +137,9 @@ abstract contract RewardsLens is MarketsLens {
 
             if (deltaBlocks > 0 && supplySpeed > 0) {
                 uint256 supplyTokens = ICToken(_poolToken).totalSupply();
-                uint256 compAccrued = deltaBlocks * supplySpeed;
-                uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
+                uint256 ratio = supplyTokens > 0
+                    ? (deltaBlocks * supplySpeed * 1e36) / supplyTokens
+                    : 0;
 
                 return supplyState.index + ratio;
             }
@@ -166,11 +164,12 @@ abstract contract RewardsLens is MarketsLens {
             uint256 borrowSpeed = comptroller.compBorrowSpeeds(_poolToken);
 
             if (deltaBlocks > 0 && borrowSpeed > 0) {
-                ICToken cToken = ICToken(_poolToken);
-
-                uint256 borrowAmount = cToken.totalBorrows().div(cToken.borrowIndex());
-                uint256 compAccrued = deltaBlocks * borrowSpeed;
-                uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
+                uint256 borrowAmount = ICToken(_poolToken).totalBorrows().div(
+                    ICToken(_poolToken).borrowIndex()
+                );
+                uint256 ratio = borrowAmount > 0
+                    ? (deltaBlocks * borrowSpeed * 1e36) / borrowAmount
+                    : 0;
 
                 return borrowState.index + ratio;
             }

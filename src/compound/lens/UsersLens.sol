@@ -44,8 +44,7 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolToken != poolTokenEntered) {
@@ -99,8 +98,7 @@ abstract contract UsersLens is IndexesLens {
     ) external view returns (uint256 toRepay) {
         address[] memory updatedMarkets = new address[](_updatedMarkets.length + 2);
 
-        uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbUpdatedMarkets; ) {
+        for (uint256 i; i < _updatedMarkets.length; ) {
             updatedMarkets[i] = _updatedMarkets[i];
 
             unchecked {
@@ -110,7 +108,7 @@ abstract contract UsersLens is IndexesLens {
 
         updatedMarkets[updatedMarkets.length - 2] = _poolTokenBorrowed;
         updatedMarkets[updatedMarkets.length - 1] = _poolTokenCollateral;
-        if (!isLiquidatable(_user, updatedMarkets)) return 0;
+        if (!isLiquidatable(_user, _poolTokenBorrowed, updatedMarkets)) return 0;
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
@@ -192,7 +190,7 @@ abstract contract UsersLens is IndexesLens {
     /// @return collateralValue The collateral value of the user.
     /// @return debtValue The current debt value of the user.
     /// @return maxDebtValue The maximum possible debt value of the user.
-    function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
+    function getUserBalanceStates(address _user, address[] memory _updatedMarkets)
         public
         view
         returns (
@@ -204,9 +202,8 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             bool shouldUpdateIndexes;
@@ -311,8 +308,9 @@ abstract contract UsersLens is IndexesLens {
             );
     }
 
-    /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
-    /// @param _user The user to check.
+    /// @notice Returns whether a liquidation can be performed on a given user.
+    /// @dev This function checks for the user's health factor, without treating borrow positions from deprecated market as instantly liquidatable.
+    /// @param _user The address of the user to check.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     /// @return whether or not the user is liquidatable.
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
@@ -320,45 +318,24 @@ abstract contract UsersLens is IndexesLens {
         view
         returns (bool)
     {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+        return _isLiquidatable(_user, address(0), _updatedMarkets);
+    }
 
-        uint256 maxDebtValue;
-        uint256 debtValue;
+    /// @notice Returns whether a liquidation can be performed on a given user borrowing from a given market.
+    /// @dev This function checks for the user's health factor as well as whether the given market is deprecated & the user is borrowing from it.
+    /// @param _user The address of the user to check.
+    /// @param _poolToken The address of the borrowed market to check.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
+    /// @return whether or not the user is liquidatable.
+    function isLiquidatable(
+        address _user,
+        address _poolToken,
+        address[] memory _updatedMarkets
+    ) public view returns (bool) {
+        if (morpho.marketPauseStatus(_poolToken).isDeprecated)
+            return _isLiquidatable(_user, _poolToken, _updatedMarkets);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
-
-            bool shouldUpdateIndexes;
-            for (uint256 j; j < nbUpdatedMarkets; ) {
-                if (_updatedMarkets[j] == poolTokenEntered) {
-                    shouldUpdateIndexes = true;
-                    break;
-                }
-
-                unchecked {
-                    ++j;
-                }
-            }
-
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                shouldUpdateIndexes,
-                oracle
-            );
-
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        return debtValue > maxDebtValue;
+        return isLiquidatable(_user, _updatedMarkets);
     }
 
     /// INTERNAL ///
@@ -396,7 +373,7 @@ abstract contract UsersLens is IndexesLens {
             borrowBalance.inP2P.mul(_p2pBorrowIndex) + borrowBalance.onPool.mul(_poolBorrowIndex);
     }
 
-    /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
+    /// @dev Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
     /// @param _user The user to determine data for.
     /// @param _poolToken The address of the market.
     /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
@@ -436,5 +413,58 @@ abstract contract UsersLens is IndexesLens {
         .mul(assetData.underlyingPrice);
 
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
+    }
+
+    /// @dev Returns whether a liquidation can be performed on the given user.
+    ///      This function checks for the user's health factor as well as whether the user is borrowing from the given deprecated market.
+    /// @param _user The address of the user to check.
+    /// @param _poolTokenDeprecated The address of the deprecated borrowed market to check.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
+    /// @return whether or not the user is liquidatable.
+    function _isLiquidatable(
+        address _user,
+        address _poolTokenDeprecated,
+        address[] memory _updatedMarkets
+    ) internal view returns (bool) {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+
+        uint256 debtValue;
+        uint256 maxDebtValue;
+
+        uint256 nbUpdatedMarkets = _updatedMarkets.length;
+        for (uint256 i; i < enteredMarkets.length; ) {
+            address poolTokenEntered = enteredMarkets[i];
+
+            bool shouldUpdateIndexes;
+            for (uint256 j; j < nbUpdatedMarkets; ) {
+                if (_updatedMarkets[j] == poolTokenEntered) {
+                    shouldUpdateIndexes = true;
+                    break;
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                shouldUpdateIndexes,
+                oracle
+            );
+
+            if (_poolTokenDeprecated == poolTokenEntered && assetData.debtValue > 0) return true;
+
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return debtValue > maxDebtValue;
     }
 }

@@ -184,6 +184,12 @@ interface ILens {
         view
         returns (bool);
 
+    function isLiquidatable(
+        address _user,
+        address _poolToken,
+        address[] memory _updatedMarkets
+    ) external view returns (bool);
+
     function computeLiquidationRepayAmount(
         address _user,
         address _poolTokenBorrowed,

@@ -1451,6 +1451,20 @@ contract TestLens is TestSetup {
         testLiquidation(0, 0.5 ether);
     }
 
+    function testIsLiquidatableDeprecatedMarket() public {
+        uint256 amount = 1_000 ether;
+
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(cDai, 2 * amount);
+        borrower1.borrow(cUsdc, to6Decimals(amount));
+
+        assertFalse(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
+
+        morpho.setIsDeprecated(cUsdc, true);
+
+        assertTrue(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
+    }
+
     struct Amounts {
         uint256 totalP2PSupply;
         uint256 totalPoolSupply;
