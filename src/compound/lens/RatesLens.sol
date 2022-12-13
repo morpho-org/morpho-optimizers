@@ -435,7 +435,7 @@ abstract contract RatesLens is UsersLens {
     /// @param _poolRate The pool rate (in a unit common to `_p2pRate` & `weightedRate`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool`).
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P`).
-    /// @return weightedRate The rate experienced by the given distribution (in wad).
+    /// @return weightedRate The rate experienced by the given distribution (in a unit common to `_p2pRate` & `_poolRate`).
     /// @return totalBalance The sum of peer-to-peer & pool balances.
     function _getWeightedRate(
         uint256 _p2pRate,
