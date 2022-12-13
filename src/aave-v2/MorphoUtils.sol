@@ -311,21 +311,20 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             // Cache current asset collateral value.
-            uint256 assetCollateralValue;
             if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
-                assetCollateralValue = _collateralValue(
+                uint256 assetCollateralEth = _collateralValue(
                     vars.poolToken,
                     _user,
                     vars.underlyingPrice,
                     assetData.tokenUnit
                 );
-                values.collateralEth += assetCollateralValue;
+                values.collateralEth += assetCollateralEth;
                 // Calculate LTV for borrow.
-                values.borrowableEth += assetCollateralValue.percentMul(assetData.ltv);
+                values.borrowableEth += assetCollateralEth.percentMul(assetData.ltv);
 
                 // Update LT variable for withdraw.
-                if (assetCollateralValue > 0)
-                    values.maxDebtEth += assetCollateralValue.percentMul(
+                if (assetCollateralEth > 0)
+                    values.maxDebtEth += assetCollateralEth.percentMul(
                         assetData.liquidationThreshold
                     );
             }
