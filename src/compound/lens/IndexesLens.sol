@@ -65,7 +65,34 @@ abstract contract IndexesLens is LensStorage {
         view
         returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
     {
-        return _getCurrentPoolIndexes(ICToken(_poolToken));
+        ICToken cToken = ICToken(_poolToken);
+
+        uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
+        if (block.number == accrualBlockNumberPrior)
+            return (cToken.exchangeRateStored(), cToken.borrowIndex());
+
+        // Read the previous values out of storage
+        uint256 cashPrior = cToken.getCash();
+        uint256 totalSupply = cToken.totalSupply();
+        uint256 borrowsPrior = cToken.totalBorrows();
+        uint256 reservesPrior = cToken.totalReserves();
+        uint256 borrowIndexPrior = cToken.borrowIndex();
+
+        // Calculate the current borrow interest rate
+        uint256 borrowRateMantissa = cToken.borrowRatePerBlock();
+        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
+
+        uint256 blockDelta = block.number - accrualBlockNumberPrior;
+
+        // Calculate the interest accumulated into borrows and reserves and the current index.
+        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
+        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
+        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
+        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
+            reservesPrior;
+
+        poolSupplyIndex = (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply);
+        poolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 
     /// INTERNAL ///
@@ -88,9 +115,7 @@ abstract contract IndexesLens is LensStorage {
             indexes.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
             indexes.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
         } else {
-            (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = _getCurrentPoolIndexes(
-                ICToken(_poolToken)
-            );
+            (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getCurrentPoolIndexes(_poolToken);
         }
 
         if (!_updated || block.number == lastPoolIndexes.lastUpdateBlockNumber) {
@@ -129,39 +154,5 @@ abstract contract IndexesLens is LensStorage {
                 })
             );
         }
-    }
-
-    /// @notice Returns the virtually updated pool indexes of a given market.
-    /// @dev Mimicks `CToken.accrueInterest`'s calculations, without writing to the storage.
-    /// @param _poolToken The address of the market.
-    /// @return poolSupplyIndex The supply index.
-    /// @return poolBorrowIndex The borrow index.
-    function _getCurrentPoolIndexes(ICToken _poolToken)
-        internal
-        view
-        returns (uint256 poolSupplyIndex, uint256 poolBorrowIndex)
-    {
-        uint256 blockDelta = block.number - _poolToken.accrualBlockNumber();
-        if (blockDelta == 0) return (_poolToken.exchangeRateStored(), _poolToken.borrowIndex());
-
-        // Read the previous values out of storage
-        uint256 borrowsPrior = _poolToken.totalBorrows();
-        uint256 borrowIndexPrior = _poolToken.borrowIndex();
-
-        // Calculate the current borrow interest rate
-        uint256 borrowRateMantissa = _poolToken.borrowRatePerBlock();
-        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
-
-        // Calculate the interest accumulated into borrows and reserves and the current index.
-        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
-        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
-        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
-        uint256 totalReservesNew = _poolToken.reserveFactorMantissa().mul(interestAccumulated) +
-            _poolToken.totalReserves();
-
-        poolSupplyIndex = (_poolToken.getCash() + totalBorrowsNew - totalReservesNew).div(
-            _poolToken.totalSupply()
-        );
-        poolBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 }
