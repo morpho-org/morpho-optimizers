@@ -179,6 +179,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when someone tries to liquidate but the liquidation with this asset as debt is paused.
     error LiquidateBorrowIsPaused();
 
+    /// @notice Thrown when the liquidator is the borrower.
+    error LiquidatorIsBorrower();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -486,6 +489,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
+        if (_borrower == msg.sender) revert LiquidatorIsBorrower();
         if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
             revert LiquidateCollateralIsPaused();

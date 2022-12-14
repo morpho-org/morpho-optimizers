@@ -70,7 +70,7 @@ contract TestPausableMarket is TestSetup {
             supplier1.repay(pools[i], 1);
 
             hevm.expectRevert(abi.encodeWithSignature("LiquidateCollateralIsPaused()"));
-            supplier1.liquidate(pools[i], pools[0], address(supplier1), 1);
+            supplier2.liquidate(pools[i], pools[0], address(supplier1), 1);
         }
     }
 
