@@ -9,6 +9,7 @@ import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
@@ -16,7 +17,7 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Base layer to the Morpho Protocol Lens, managing the upgradeable storage layout.
-abstract contract LensStorage is ILens {
+abstract contract LensStorage is ILens, Initializable {
     /// CONSTANTS ///
 
     uint256 public constant MAX_BASIS_POINTS = 100_00; // 100% (in basis points).
@@ -30,9 +31,9 @@ abstract contract LensStorage is ILens {
 
     /// STORAGE ///
 
-    address private deprecatedSlot0; // Formerly `morpho`.
-    address private deprecatedSlot1; // Formerly `comptroller`.
-    address private deprecatedSlot2; // Formerly `rewardsManager`.
+    address private deprecatedMorpho;
+    address private deprecatedComptroller;
+    address private deprecatedRewardsManager;
 
     /// CONSTRUCTOR ///
 
