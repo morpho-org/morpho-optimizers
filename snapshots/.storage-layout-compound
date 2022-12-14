@@ -65,8 +65,8 @@
 
 | Name                     | Type    | Slot | Offset | Bytes | Contract                        |
 |--------------------------|---------|------|--------|-------|---------------------------------|
-| deprecatedInitialized    | bool    | 0    | 0      | 1     | src/compound/lens/Lens.sol:Lens |
-| deprecatedInitializing   | bool    | 0    | 1      | 1     | src/compound/lens/Lens.sol:Lens |
+| _initialized             | bool    | 0    | 0      | 1     | src/compound/lens/Lens.sol:Lens |
+| _initializing            | bool    | 0    | 1      | 1     | src/compound/lens/Lens.sol:Lens |
 | deprecatedMorpho         | address | 0    | 2      | 20    | src/compound/lens/Lens.sol:Lens |
 | deprecatedComptroller    | address | 1    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
 | deprecatedRewardsManager | address | 2    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
