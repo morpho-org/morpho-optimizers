@@ -1,5 +1,5 @@
-name: Foundry size check
-description: Compiles & checks a contract
+name: Foundry tests
+description: Given a protocol and a network, compiles the contracts, checks for their size & runs the full forge test suite
 
 inputs:
   protocol:
