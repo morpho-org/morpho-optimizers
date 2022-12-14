@@ -30,9 +30,11 @@ abstract contract LensStorage is ILens {
 
     /// STORAGE ///
 
-    address private deprecatedSlot0; // Formerly `morpho`.
-    address private deprecatedSlot1; // Formerly `comptroller`.
-    address private deprecatedSlot2; // Formerly `rewardsManager`.
+    bool private deprecatedInitialized;
+    bool private deprecatedInitializing;
+    address private deprecatedMorpho;
+    address private deprecatedComptroller;
+    address private deprecatedRewardsManager;
 
     /// CONSTRUCTOR ///
 
