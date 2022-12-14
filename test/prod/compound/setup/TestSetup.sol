@@ -36,6 +36,8 @@ contract TestSetup is Config, Test {
         //
         bool mintGuardianPaused;
         bool borrowGuardianPaused;
+        //
+        Types.MarketPauseStatus status;
     }
 
     TestMarket[] public markets;
@@ -155,7 +157,8 @@ contract TestSetup is Config, Test {
                 maxBorrows: comptroller.borrowCaps(poolToken),
                 totalBorrows: ICToken(poolToken).totalBorrows(),
                 mintGuardianPaused: comptroller.mintGuardianPaused(poolToken),
-                borrowGuardianPaused: comptroller.borrowGuardianPaused(poolToken)
+                borrowGuardianPaused: comptroller.borrowGuardianPaused(poolToken),
+                status: IMorpho(address(morpho)).marketPauseStatus(poolToken)
             });
 
             (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
