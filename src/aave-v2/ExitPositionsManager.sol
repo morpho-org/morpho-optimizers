@@ -200,6 +200,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
+        if (_amount == 0) revert AmountIsZero();
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)

@@ -486,6 +486,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
+        if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
             revert LiquidateCollateralIsPaused();

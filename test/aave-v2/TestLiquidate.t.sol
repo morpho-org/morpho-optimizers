@@ -26,6 +26,25 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
     }
 
+    function testShouldNotLiquidateZero() public {
+        uint256 collateral = 100_000 ether;
+
+        borrower1.approve(usdc, address(morpho), to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+        borrower1.borrow(aDai, amount);
+
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 95) / 100);
+
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(morpho), amount);
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), 0);
+    }
+
     function testLiquidateWhenMarketDeprecated() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = to6Decimals(3 * amount);
