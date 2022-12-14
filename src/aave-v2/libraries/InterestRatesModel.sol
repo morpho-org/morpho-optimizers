@@ -14,35 +14,36 @@ library InterestRatesModel {
     /// STRUCTS ///
 
     struct GrowthFactors {
-        uint256 poolSupplyGrowthFactor; // The pool's supply index growth factor (in ray).
-        uint256 poolBorrowGrowthFactor; // The pool's borrow index growth factor (in ray).
+        uint256 poolSupplyGrowthFactor; // The pool supply index growth factor (in ray).
+        uint256 poolBorrowGrowthFactor; // The pool borrow index growth factor (in ray).
         uint256 p2pSupplyGrowthFactor; // Peer-to-peer supply index growth factor (in ray).
         uint256 p2pBorrowGrowthFactor; // Peer-to-peer borrow index growth factor (in ray).
     }
 
     struct P2PIndexComputeParams {
-        uint256 poolGrowthFactor; // The pool's index growth factor (in ray).
+        uint256 poolGrowthFactor; // The pool index growth factor (in ray).
         uint256 p2pGrowthFactor; // Morpho's peer-to-peer median index growth factor (in ray).
-        uint256 lastPoolIndex; // The pool's last stored index (in ray).
-        uint256 lastP2PIndex; // Morpho's last stored peer-to-peer index (in ray).
+        uint256 lastPoolIndex; // The last stored pool index (in ray).
+        uint256 lastP2PIndex; // The last stored peer-to-peer index (in ray).
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
     }
 
     struct P2PRateComputeParams {
-        uint256 poolRate; // The pool's index growth factor (in wad).
-        uint256 p2pRate; // Morpho peer-to-peer's median index growth factor (in wad).
-        uint256 poolIndex; // The pool's last stored index (in ray).
-        uint256 p2pIndex; // Morpho's last stored peer-to-peer index (in ray).
+        uint256 poolSupplyRatePerYear; // The pool supply rate per year (in ray).
+        uint256 poolBorrowRatePerYear; // The pool borrow rate per year (in ray).
+        uint256 poolIndex; // The last stored pool index (in ray).
+        uint256 p2pIndex; // The last stored peer-to-peer index (in ray).
         uint256 p2pDelta; // The peer-to-peer delta for the given market (in pool unit).
         uint256 p2pAmount; // The peer-to-peer amount for the given market (in peer-to-peer unit).
+        uint256 p2pIndexCursor; // The index cursor of the given market (in bps).
         uint256 reserveFactor; // The reserve factor of the given market (in bps).
     }
 
-    /// @notice Computes and returns the new growth factors associated to a given pool's supply/borrow index & Morpho's peer-to-peer index.
-    /// @param _newPoolSupplyIndex The pool's last current supply index.
-    /// @param _newPoolBorrowIndex The pool's last current borrow index.
-    /// @param _lastPoolIndexes The pool's last stored indexes.
+    /// @notice Computes and returns the new supply/borrow growth factors associated to the given market's pool & peer-to-peer indexes.
+    /// @param _newPoolSupplyIndex The current pool supply index.
+    /// @param _newPoolBorrowIndex The current pool borrow index.
+    /// @param _lastPoolIndexes The last stored pool indexes.
     /// @param _p2pIndexCursor The peer-to-peer index cursor for the given market.
     /// @param _reserveFactor The reserve factor of the given market.
     /// @return growthFactors The market's indexes growth factors (in ray).
@@ -139,15 +140,18 @@ library InterestRatesModel {
         pure
         returns (uint256 p2pSupplyRate)
     {
-        // When poolSupplyRate > poolBorrowRate, the p2pRate is equal to the
-        // poolBorrowRate. In this case, the p2pSupplyRate is set to the
-        // p2pRate (= poolBorrowRate), because there is no rate spread.
-        if (_params.p2pRate < _params.poolRate) {
-            p2pSupplyRate = _params.p2pRate;
+        if (_params.poolSupplyRatePerYear > _params.poolBorrowRatePerYear) {
+            p2pSupplyRate = _params.poolBorrowRatePerYear; // The p2pSupplyRate is set to the poolBorrowRatePerYear because there is no rate spread.
         } else {
+            uint256 p2pRate = PercentageMath.weightedAvg(
+                _params.poolSupplyRatePerYear,
+                _params.poolBorrowRatePerYear,
+                _params.p2pIndexCursor
+            );
+
             p2pSupplyRate =
-                _params.p2pRate -
-                (_params.p2pRate - _params.poolRate).percentMul(_params.reserveFactor);
+                p2pRate -
+                (p2pRate - _params.poolSupplyRatePerYear).percentMul(_params.reserveFactor);
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
@@ -160,7 +164,7 @@ library InterestRatesModel {
 
             p2pSupplyRate =
                 p2pSupplyRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
-                _params.poolRate.rayMul(shareOfTheDelta);
+                _params.poolSupplyRatePerYear.rayMul(shareOfTheDelta);
         }
     }
 
@@ -172,9 +176,19 @@ library InterestRatesModel {
         pure
         returns (uint256 p2pBorrowRate)
     {
-        p2pBorrowRate =
-            _params.p2pRate +
-            (_params.poolRate - _params.p2pRate).percentMul(_params.reserveFactor);
+        if (_params.poolSupplyRatePerYear > _params.poolBorrowRatePerYear) {
+            p2pBorrowRate = _params.poolBorrowRatePerYear; // The p2pBorrowRate is set to the poolBorrowRatePerYear because there is no rate spread.
+        } else {
+            uint256 p2pRate = PercentageMath.weightedAvg(
+                _params.poolSupplyRatePerYear,
+                _params.poolBorrowRatePerYear,
+                _params.p2pIndexCursor
+            );
+
+            p2pBorrowRate =
+                p2pRate +
+                (_params.poolBorrowRatePerYear - p2pRate).percentMul(_params.reserveFactor);
+        }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
             uint256 shareOfTheDelta = Math.min(
@@ -186,7 +200,7 @@ library InterestRatesModel {
 
             p2pBorrowRate =
                 p2pBorrowRate.rayMul(WadRayMath.RAY - shareOfTheDelta) +
-                _params.poolRate.rayMul(shareOfTheDelta);
+                _params.poolBorrowRatePerYear.rayMul(shareOfTheDelta);
         }
     }
 }

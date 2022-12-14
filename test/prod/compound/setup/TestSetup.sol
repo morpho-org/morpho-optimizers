@@ -260,7 +260,7 @@ contract TestSetup is Config, Test {
         proxyAdmin.upgrade(morphoProxy, morphoImplV2);
         vm.label(morphoImplV2, "MorphoImplV2");
 
-        address lensImplV2 = address(new Lens());
+        address lensImplV2 = address(new Lens(address(morpho)));
         proxyAdmin.upgrade(lensProxy, lensImplV2);
         vm.label(lensImplV2, "LensImplV2");
 

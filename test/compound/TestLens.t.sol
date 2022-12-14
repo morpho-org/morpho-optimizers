@@ -702,6 +702,50 @@ contract TestLens is TestSetup {
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
+    function testUserHypotheticalBalanceStatesUnenteredMarket() public {
+        uint256 amount = 10_001 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+
+        uint256 hypotheticalBorrow = 500e6;
+        (uint256 debtValue, uint256 maxDebtValue) = lens.getUserHypotheticalBalanceStates(
+            address(borrower1),
+            cUsdc,
+            amount / 2,
+            hypotheticalBorrow
+        );
+
+        (, uint256 daiCollateralFactor, ) = comptroller.markets(cDai);
+
+        assertApproxEqAbs(
+            maxDebtValue,
+            amount.mul(oracle.getUnderlyingPrice(cDai)).mul(daiCollateralFactor),
+            1e9,
+            "maxDebtValue"
+        );
+        assertEq(debtValue, hypotheticalBorrow.mul(oracle.getUnderlyingPrice(cUsdc)), "debtValue");
+    }
+
+    function testUserHypotheticalBalanceStatesAfterUnauthorisedBorrowWithdraw() public {
+        uint256 amount = 10_001 ether;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+
+        uint256 hypotheticalWithdraw = 2 * amount;
+        uint256 hypotheticalBorrow = amount;
+        (uint256 debtValue, uint256 maxDebtValue) = lens.getUserHypotheticalBalanceStates(
+            address(borrower1),
+            cDai,
+            hypotheticalWithdraw,
+            hypotheticalBorrow
+        );
+
+        assertEq(maxDebtValue, 0, "maxDebtValue");
+        assertEq(debtValue, hypotheticalBorrow.mul(oracle.getUnderlyingPrice(cDai)), "debtValue");
+    }
+
     function testGetMainMarketData() public {
         uint256 amount = 10_000 ether;
 
@@ -761,22 +805,29 @@ contract TestLens is TestSetup {
         borrower1.borrow(cDai, amount);
 
         hevm.roll(block.number + (31 * 24 * 60 * 4));
-        (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = lens.getIndexes(cDai, false);
-
-        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(cDai), "p2p supply indexes different");
-        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(cDai), "p2p borrow indexes different");
+        Types.Indexes memory indexes = lens.getIndexes(cDai, false);
 
         assertEq(
-            poolSupplyIndex,
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(cDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(cDai),
+            "p2p borrow indexes different"
+        );
+
+        assertEq(
+            indexes.poolSupplyIndex,
             ICToken(cDai).exchangeRateStored(),
             "pool supply indexes different"
         );
-        assertEq(poolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
+        assertEq(
+            indexes.poolBorrowIndex,
+            ICToken(cDai).borrowIndex(),
+            "pool borrow indexes different"
+        );
     }
 
     function testGetUpdatedIndexes() public {
@@ -787,68 +838,75 @@ contract TestLens is TestSetup {
         borrower1.borrow(cDai, amount);
 
         hevm.roll(block.number + (31 * 24 * 60 * 4));
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getIndexes(cDai, true);
+        Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), "p2p supply indexes different");
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), "p2p borrow indexes different");
+        assertEq(
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(cDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(cDai),
+            "p2p borrow indexes different"
+        );
 
         assertEq(
-            newPoolSupplyIndex,
+            indexes.poolSupplyIndex,
             ICToken(cDai).exchangeRateCurrent(),
             "pool supply indexes different"
         );
-        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
+        assertEq(
+            indexes.poolBorrowIndex,
+            ICToken(cDai).borrowIndex(),
+            "pool borrow indexes different"
+        );
     }
 
     function testGetUpdatedP2PIndexesWithSupplyDelta() public {
         _createSupplyDelta();
         hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(cDai, true);
+        Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), 1);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), 1);
+        assertApproxEqAbs(indexes.p2pBorrowIndex, morpho.p2pBorrowIndex(cDai), 1);
+        assertApproxEqAbs(indexes.p2pSupplyIndex, morpho.p2pSupplyIndex(cDai), 1);
     }
 
     function testGetUpdatedP2PIndexesWithBorrowDelta() public {
         _createBorrowDelta();
         hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex, , ) = lens.getIndexes(cDai, true);
+        Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
-        assertApproxEqAbs(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), 1);
-        assertApproxEqAbs(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), 1);
+        assertApproxEqAbs(indexes.p2pBorrowIndex, morpho.p2pBorrowIndex(cDai), 1);
+        assertApproxEqAbs(indexes.p2pSupplyIndex, morpho.p2pSupplyIndex(cDai), 1);
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
+        uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
+        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(cDai));
     }
 
     function testGetUpdatedP2PBorrowIndex() public {
         hevm.roll(block.number + (24 * 60 * 4));
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
+        uint256 p2pBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
+        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(cDai));
     }
 
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
         _createBorrowDelta();
         hevm.roll(block.number + (365 * 24 * 60 * 4));
-        uint256 newP2PBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
+        uint256 p2pBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
+        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(cDai));
     }
 
     function testGetUpdatedIndexesWithTransferToCTokenContract() public {
@@ -859,22 +917,29 @@ contract TestLens is TestSetup {
 
         hevm.roll(block.number + 1);
 
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getIndexes(cDai, true);
+        Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), "p2p supply indexes different");
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), "p2p borrow indexes different");
         assertEq(
-            newPoolSupplyIndex,
+            indexes.p2pSupplyIndex,
+            morpho.p2pSupplyIndex(cDai),
+            "p2p supply indexes different"
+        );
+        assertEq(
+            indexes.p2pBorrowIndex,
+            morpho.p2pBorrowIndex(cDai),
+            "p2p borrow indexes different"
+        );
+        assertEq(
+            indexes.poolSupplyIndex,
             ICToken(cDai).exchangeRateCurrent(),
             "pool supply indexes different"
         );
-        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
+        assertEq(
+            indexes.poolBorrowIndex,
+            ICToken(cDai).borrowIndex(),
+            "pool borrow indexes different"
+        );
     }
 
     function _createSupplyDelta() public {
@@ -1384,6 +1449,20 @@ contract TestLens is TestSetup {
      */
     function testNoRepayLiquidation() public {
         testLiquidation(0, 0.5 ether);
+    }
+
+    function testIsLiquidatableDeprecatedMarket() public {
+        uint256 amount = 1_000 ether;
+
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(cDai, 2 * amount);
+        borrower1.borrow(cUsdc, to6Decimals(amount));
+
+        assertFalse(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
+
+        morpho.setIsDeprecated(cUsdc, true);
+
+        assertTrue(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
     }
 
     struct Amounts {
