@@ -5,7 +5,6 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
-import "./libraries/aave/UserConfiguration.sol";
 
 import "@morpho-dao/morpho-utils/DelegateCall.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
@@ -20,7 +19,6 @@ import "./MorphoStorage.sol";
 /// @notice Modifiers, getters and other util functions for Morpho.
 abstract contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using UserConfiguration for DataTypes.UserConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using DelegateCall for address;
@@ -268,9 +266,6 @@ abstract contract MorphoUtils is MorphoStorage {
         Types.AssetLiquidityData memory assetData;
         LiquidityVars memory vars;
 
-        DataTypes.UserConfigurationMap memory morphoPoolConfig = pool.getUserConfiguration(
-            address(this)
-        );
         vars.poolTokensLength = marketsCreated.length;
         vars.userMarkets = userMarkets[_user];
 
