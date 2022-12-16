@@ -408,7 +408,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (remainingToBorrow > 0) {
             borrowerBorrowBalance.onPool += remainingToBorrow.div(
                 lastPoolIndexes[_poolToken].lastBorrowPoolIndex
-            ); // In cdUnit.
+            ); // In pool borrow unit.
             _borrowFromPool(_poolToken, remainingToBorrow);
         }
 
@@ -779,7 +779,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 borrowerBorrowBalance.onPool -= CompoundMath.min(
                     vars.borrowedOnPool,
                     vars.toRepay.div(vars.poolBorrowIndex)
-                ); // In cdUnit.
+                ); // In pool borrow unit.
                 _updateBorrowerInDS(_poolToken, _onBehalf);
 
                 _repayToPool(_poolToken, underlyingToken, vars.toRepay); // Reverts on error.

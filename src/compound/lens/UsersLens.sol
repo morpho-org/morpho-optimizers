@@ -151,8 +151,8 @@ abstract contract UsersLens is IndexesLens {
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The amount to hypothetically withdraw from the given market (in underlying).
     /// @param _borrowedAmount The amount to hypothetically borrow from the given market (in underlying).
-    /// @return debtUsd The current debt value of the user.
-    /// @return maxDebtUsd The maximum debt value possible of the user.
+    /// @return debtUsd The current debt value of the user (in wad).
+    /// @return maxDebtUsd The maximum debt value possible of the user (in wad).
     function getUserHypotheticalBalanceStates(
         address _user,
         address _poolToken,
@@ -187,9 +187,9 @@ abstract contract UsersLens is IndexesLens {
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return collateralUsd The collateral value of the user.
-    /// @return debtUsd The current debt value of the user.
-    /// @return maxDebtUsd The maximum possible debt value of the user.
+    /// @return collateralUsd The collateral value of the user (in wad).
+    /// @return debtUsd The current debt value of the user (in wad).
+    /// @return maxDebtUsd The maximum possible debt value of the user (in wad).
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         public
         view

@@ -29,7 +29,7 @@ abstract contract LensStorage is ILens {
     /// IMMUTABLES ///
 
     // stETH is a rebasing token, so the rebase index's value when the astEth market was created is stored
-    // and used for internal calculations to convert `stEth.balanceOf` into an amount in scaled units.
+    // and used for internal calculations to convert `stEth.balanceOf` into an amount in pool supply unit.
     uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
 
     IMorpho public immutable morpho;
