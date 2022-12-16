@@ -18,20 +18,20 @@ library Types {
     /// STRUCTS ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In peer-to-peer supply scaled unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
-        uint256 onPool; // In pool supply scaled unit. Multiply by the pool supply index to get the underlying amount.
+        uint256 inP2P; // In peer-to-peer supply unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
+        uint256 onPool; // In pool supply unit. Multiply by the pool supply index to get the underlying amount.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In peer-to-peer borrow scaled unit, a unit that grows in underlying value, to keep track of the interests paid by borrowers in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount.
-        uint256 onPool; // In pool borrow scaled unit, a unit that grows in value, to keep track of the debt increase when borrowers are on Aave. Multiply by the pool borrow index to get the underlying amount.
+        uint256 inP2P; // In peer-to-peer borrow unit, a unit that grows in underlying value, to keep track of the interests paid by borrowers in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount.
+        uint256 onPool; // In pool borrow unit, a unit that grows in value, to keep track of the debt increase when borrowers are on Aave. Multiply by the pool borrow index to get the underlying amount.
     }
 
     struct Indexes {
-        uint256 p2pSupplyIndex; // The peer-to-peer supply index (in ray), used to multiply the scaled peer-to-peer supply balance and get the peer-to-peer supply balance (in underlying).
-        uint256 p2pBorrowIndex; // The peer-to-peer borrow index (in ray), used to multiply the scaled peer-to-peer borrow balance and get the peer-to-peer borrow balance (in underlying).
-        uint256 poolSupplyIndex; // The pool supply index (in ray), used to multiply the scaled pool supply balance and get the pool supply balance (in underlying).
-        uint256 poolBorrowIndex; // The pool borrow index (in ray), used to multiply the scaled pool borrow balance and get the pool borrow balance (in underlying).
+        uint256 p2pSupplyIndex; // The peer-to-peer supply index (in ray), used to multiply the peer-to-peer supply scaled balance and get the peer-to-peer supply balance (in underlying).
+        uint256 p2pBorrowIndex; // The peer-to-peer borrow index (in ray), used to multiply the peer-to-peer borrow scaled balance and get the peer-to-peer borrow balance (in underlying).
+        uint256 poolSupplyIndex; // The pool supply index (in ray), used to multiply the pool supply scaled balance and get the pool supply balance (in underlying).
+        uint256 poolBorrowIndex; // The pool borrow index (in ray), used to multiply the pool borrow scaled balance and get the pool borrow balance (in underlying).
     }
 
     // Max gas to consume during the matching process for supply, borrow, withdraw and repay functions.
