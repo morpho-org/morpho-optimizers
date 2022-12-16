@@ -14,7 +14,7 @@ contract FlashLoan {
     }
 
     function callFlashLoan(address _asset, uint256 _amount) public {
-        address receiverAddress = address(this);
+        address receiver = address(this);
         address[] memory assets = new address[](1);
         assets[0] = _asset;
         uint256[] memory amounts = new uint256[](1);
@@ -25,7 +25,7 @@ contract FlashLoan {
         address onBehalfOf = address(this);
         bytes memory params = "";
         uint16 referralCode = 0;
-        pool.flashLoan(receiverAddress, assets, amounts, modes, onBehalfOf, params, referralCode);
+        pool.flashLoan(receiver, assets, amounts, modes, onBehalfOf, params, referralCode);
     }
 
     function executeOperation(

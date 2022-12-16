@@ -97,12 +97,28 @@ contract TestLifecycle is TestSetup {
             1,
             string.concat(supply.market.symbol, " total supply")
         );
-        if (supply.p2pDisabled && supply.p2pBorrowDelta == 0)
+        if (supply.p2pDisabled)
             assertEq(
                 supply.scaledP2PBalance,
                 0,
                 string.concat(supply.market.symbol, " borrow delta matched")
             );
+        else {
+            uint256 underlyingBorrowDelta = supply.p2pBorrowDelta.rayMul(supply.poolBorrowIndex);
+            if (underlyingBorrowDelta <= supply.amount)
+                assertGe(
+                    supply.position.p2p,
+                    underlyingBorrowDelta,
+                    string.concat(supply.market.symbol, " borrow delta minimum match")
+                );
+            else
+                assertApproxEqAbs(
+                    supply.position.p2p,
+                    supply.amount,
+                    1,
+                    string.concat(supply.market.symbol, " borrow delta full match")
+                );
+        }
 
         assertEq(
             ERC20(supply.market.underlying).balanceOf(address(morpho)),
@@ -121,21 +137,6 @@ contract TestLifecycle is TestSetup {
             10,
             string.concat(supply.market.symbol, " morpho pool borrow")
         );
-
-        uint256 underlyingBorrowDelta = supply.p2pBorrowDelta.rayMul(supply.poolBorrowIndex);
-        if (underlyingBorrowDelta <= supply.amount)
-            assertGe(
-                supply.position.p2p,
-                underlyingBorrowDelta,
-                string.concat(supply.market.symbol, " borrow delta minimum match")
-            );
-        else
-            assertApproxEqAbs(
-                supply.position.p2p,
-                supply.amount,
-                1,
-                string.concat(supply.market.symbol, " borrow delta full match")
-            );
 
         _forward(100_000);
 
@@ -180,12 +181,28 @@ contract TestLifecycle is TestSetup {
             1,
             string.concat(borrow.market.symbol, " total borrow")
         );
-        if (borrow.p2pDisabled && borrow.p2pSupplyDelta == 0)
+        if (borrow.p2pDisabled)
             assertEq(
                 borrow.scaledP2PBalance,
                 0,
                 string.concat(borrow.market.symbol, " supply delta matched")
             );
+        else {
+            uint256 underlyingSupplyDelta = borrow.p2pSupplyDelta.rayMul(borrow.poolSupplyIndex);
+            if (underlyingSupplyDelta <= borrow.amount)
+                assertGe(
+                    borrow.position.p2p,
+                    underlyingSupplyDelta,
+                    string.concat(borrow.market.symbol, " supply delta minimum match")
+                );
+            else
+                assertApproxEqAbs(
+                    borrow.position.p2p,
+                    borrow.amount,
+                    1,
+                    string.concat(borrow.market.symbol, " supply delta full match")
+                );
+        }
 
         assertEq(
             ERC20(borrow.market.underlying).balanceOf(address(morpho)),
@@ -204,21 +221,6 @@ contract TestLifecycle is TestSetup {
             1,
             string.concat(borrow.market.symbol, " morpho borrowed pool borrow")
         );
-
-        uint256 underlyingSupplyDelta = borrow.p2pSupplyDelta.rayMul(borrow.poolSupplyIndex);
-        if (underlyingSupplyDelta <= borrow.amount)
-            assertGe(
-                borrow.position.p2p,
-                underlyingSupplyDelta,
-                string.concat(borrow.market.symbol, " supply delta minimum match")
-            );
-        else
-            assertApproxEqAbs(
-                borrow.position.p2p,
-                borrow.amount,
-                1,
-                string.concat(borrow.market.symbol, " supply delta full match")
-            );
 
         _forward(100_000);
 

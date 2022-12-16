@@ -208,6 +208,12 @@ interface IComptroller {
 
     function checkMembership(address, address) external view returns (bool);
 
+    function mintGuardianPaused(address) external view returns (bool);
+
+    function borrowGuardianPaused(address) external view returns (bool);
+
+    function seizeGuardianPaused() external view returns (bool);
+
     function claimComp(address holder) external;
 
     function claimComp(address holder, address[] memory cTokens) external;
@@ -342,8 +348,6 @@ interface ICToken {
     function interestRateModel() external view returns (IInterestRateModel);
 
     function reserveFactorMantissa() external view returns (uint256);
-
-    function initialExchangeRateMantissa() external view returns (uint256);
 
     /*** Admin Functions ***/
 

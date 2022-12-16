@@ -9,6 +9,7 @@ import "./IndexesLens.sol";
 /// @notice Intermediary layer exposing endpoints to query live data related to the Morpho Protocol users and their positions.
 abstract contract UsersLens is IndexesLens {
     using CompoundMath for uint256;
+    using Math for uint256;
 
     /// ERRORS ///
 
@@ -28,8 +29,7 @@ abstract contract UsersLens is IndexesLens {
         return morpho.getEnteredMarkets(_user);
     }
 
-    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolToken` (in underlyings).
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
+    /// @notice Returns the maximum amount available to withdraw & borrow for a given user, on a given market.
     /// @param _user The user to determine the capacities for.
     /// @param _poolToken The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
@@ -44,8 +44,7 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolToken != poolTokenEntered) {
@@ -82,10 +81,7 @@ abstract contract UsersLens is IndexesLens {
         );
 
         if (assetData.collateralFactor != 0) {
-            withdrawable = CompoundMath.min(
-                withdrawable,
-                borrowable.div(assetData.collateralFactor)
-            );
+            withdrawable = Math.min(withdrawable, borrowable.div(assetData.collateralFactor));
         }
     }
 
@@ -102,8 +98,7 @@ abstract contract UsersLens is IndexesLens {
     ) external view returns (uint256 toRepay) {
         address[] memory updatedMarkets = new address[](_updatedMarkets.length + 2);
 
-        uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbUpdatedMarkets; ) {
+        for (uint256 i; i < _updatedMarkets.length; ) {
             updatedMarkets[i] = _updatedMarkets[i];
 
             unchecked {
@@ -113,7 +108,7 @@ abstract contract UsersLens is IndexesLens {
 
         updatedMarkets[updatedMarkets.length - 2] = _poolTokenBorrowed;
         updatedMarkets[updatedMarkets.length - 1] = _poolTokenCollateral;
-        if (!isLiquidatable(_user, updatedMarkets)) return 0;
+        if (!isLiquidatable(_user, _poolTokenBorrowed, updatedMarkets)) return 0;
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
@@ -151,6 +146,42 @@ abstract contract UsersLens is IndexesLens {
         return maxDebtUsd.div(debtUsd);
     }
 
+    /// @dev Returns the debt value, max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolToken The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The amount to hypothetically withdraw from the given market (in underlying).
+    /// @param _borrowedAmount The amount to hypothetically borrow from the given market (in underlying).
+    /// @return debtUsd The current debt value of the user.
+    /// @return maxDebtUsd The maximum debt value possible of the user.
+    function getUserHypotheticalBalanceStates(
+        address _user,
+        address _poolToken,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) external view returns (uint256 debtUsd, uint256 maxDebtUsd) {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        address[] memory createdMarkets = morpho.getAllMarkets();
+
+        uint256 nbCreatedMarkets = createdMarkets.length;
+        for (uint256 i; i < nbCreatedMarkets; ++i) {
+            address poolToken = createdMarkets[i];
+
+            Types.AssetLiquidityData memory assetData = _poolToken == poolToken
+                ? _getUserHypotheticalLiquidityDataForAsset(
+                    _user,
+                    poolToken,
+                    true,
+                    oracle,
+                    _withdrawnAmount,
+                    _borrowedAmount
+                )
+                : _getUserHypotheticalLiquidityDataForAsset(_user, poolToken, true, oracle, 0, 0);
+
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
+        }
+    }
+
     /// PUBLIC ///
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
@@ -171,9 +202,8 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             bool shouldUpdateIndexes;
@@ -220,12 +250,12 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pSupplyIndex, uint256 poolSupplyIndex, ) = _getCurrentP2PSupplyIndex(_poolToken);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
 
-        balanceOnPool = supplyBalance.onPool.mul(poolSupplyIndex);
-        balanceInP2P = supplyBalance.inP2P.mul(p2pSupplyIndex);
+        balanceOnPool = supplyBalance.onPool.mul(indexes.poolSupplyIndex);
+        balanceInP2P = supplyBalance.inP2P.mul(indexes.p2pSupplyIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
     }
@@ -245,58 +275,14 @@ abstract contract UsersLens is IndexesLens {
             uint256 totalBalance
         )
     {
-        (uint256 p2pBorrowIndex, , uint256 poolBorrowIndex) = _getCurrentP2PBorrowIndex(_poolToken);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, true);
 
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
 
-        balanceOnPool = borrowBalance.onPool.mul(poolBorrowIndex);
-        balanceInP2P = borrowBalance.inP2P.mul(p2pBorrowIndex);
+        balanceOnPool = borrowBalance.onPool.mul(indexes.poolBorrowIndex);
+        balanceInP2P = borrowBalance.inP2P.mul(indexes.p2pBorrowIndex);
 
         totalBalance = balanceOnPool + balanceInP2P;
-    }
-
-    /// @dev Returns the debt value, max debt value of a given user.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolToken The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtUsd The current debt value of the user.
-    /// @return maxDebtUsd The maximum debt value possible of the user.
-    function getUserHypotheticalBalanceStates(
-        address _user,
-        address _poolToken,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) public view returns (uint256 debtUsd, uint256 maxDebtUsd) {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
-
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                true,
-                oracle
-            );
-
-            maxDebtUsd += assetData.maxDebtUsd;
-            debtUsd += assetData.debtUsd;
-            unchecked {
-                ++i;
-            }
-
-            if (_poolToken == poolTokenEntered) {
-                if (_borrowedAmount > 0) debtUsd += _borrowedAmount.mul(assetData.underlyingPrice);
-
-                if (_withdrawnAmount > 0)
-                    maxDebtUsd -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                        assetData.collateralFactor
-                    );
-            }
-        }
     }
 
     /// @notice Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
@@ -310,38 +296,21 @@ abstract contract UsersLens is IndexesLens {
         address _poolToken,
         bool _getUpdatedIndexes,
         ICompoundOracle _oracle
-    ) public view returns (Types.AssetLiquidityData memory assetData) {
-        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
-        if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
-
-        (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
-
-        (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        ) = getIndexes(_poolToken, _getUpdatedIndexes);
-
-        assetData.collateralUsd = _getUserSupplyBalanceInOf(
-            _poolToken,
-            _user,
-            p2pSupplyIndex,
-            poolSupplyIndex
-        ).mul(assetData.underlyingPrice);
-
-        assetData.debtUsd = _getUserBorrowBalanceInOf(
-            _poolToken,
-            _user,
-            p2pBorrowIndex,
-            poolBorrowIndex
-        ).mul(assetData.underlyingPrice);
-
-        assetData.maxDebtUsd = assetData.collateralUsd.mul(assetData.collateralFactor);
+    ) public view returns (Types.AssetLiquidityData memory) {
+        return
+            _getUserHypotheticalLiquidityDataForAsset(
+                _user,
+                _poolToken,
+                _getUpdatedIndexes,
+                _oracle,
+                0,
+                0
+            );
     }
 
-    /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
-    /// @param _user The user to check.
+    /// @notice Returns whether a liquidation can be performed on a given user.
+    /// @dev This function checks for the user's health factor, without treating borrow positions from deprecated market as instantly liquidatable.
+    /// @param _user The address of the user to check.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     /// @return whether or not the user is liquidatable.
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
@@ -349,45 +318,24 @@ abstract contract UsersLens is IndexesLens {
         view
         returns (bool)
     {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+        return _isLiquidatable(_user, address(0), _updatedMarkets);
+    }
 
-        uint256 maxDebtUsd;
-        uint256 debtUsd;
+    /// @notice Returns whether a liquidation can be performed on a given user borrowing from a given market.
+    /// @dev This function checks for the user's health factor as well as whether the given market is deprecated & the user is borrowing from it.
+    /// @param _user The address of the user to check.
+    /// @param _poolToken The address of the borrowed market to check.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
+    /// @return whether or not the user is liquidatable.
+    function isLiquidatable(
+        address _user,
+        address _poolToken,
+        address[] memory _updatedMarkets
+    ) public view returns (bool) {
+        if (morpho.marketPauseStatus(_poolToken).isDeprecated)
+            return _isLiquidatable(_user, _poolToken, _updatedMarkets);
 
-        uint256 nbEnteredMarkets = enteredMarkets.length;
-        uint256 nbUpdatedMarkets = _updatedMarkets.length;
-        for (uint256 i; i < nbEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
-
-            bool shouldUpdateIndexes;
-            for (uint256 j; j < nbUpdatedMarkets; ) {
-                if (_updatedMarkets[j] == poolTokenEntered) {
-                    shouldUpdateIndexes = true;
-                    break;
-                }
-
-                unchecked {
-                    ++j;
-                }
-            }
-
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                shouldUpdateIndexes,
-                oracle
-            );
-
-            maxDebtUsd += assetData.maxDebtUsd;
-            debtUsd += assetData.debtUsd;
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        return debtUsd > maxDebtUsd;
+        return isLiquidatable(_user, _updatedMarkets);
     }
 
     /// INTERNAL ///
@@ -423,5 +371,100 @@ abstract contract UsersLens is IndexesLens {
 
         return
             borrowBalance.inP2P.mul(_p2pBorrowIndex) + borrowBalance.onPool.mul(_poolBorrowIndex);
+    }
+
+    /// @dev Returns the data related to `_poolToken` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
+    /// @param _user The user to determine data for.
+    /// @param _poolToken The address of the market.
+    /// @param _getUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
+    /// @param _oracle The oracle used.
+    /// @param _withdrawnAmount The amount to hypothetically withdraw from the given market (in underlying).
+    /// @param _borrowedAmount The amount to hypothetically borrow from the given market (in underlying).
+    /// @return assetData The data related to this asset.
+    function _getUserHypotheticalLiquidityDataForAsset(
+        address _user,
+        address _poolToken,
+        bool _getUpdatedIndexes,
+        ICompoundOracle _oracle,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) public view returns (Types.AssetLiquidityData memory assetData) {
+        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
+        if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
+
+        (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
+
+        Types.Indexes memory indexes = getIndexes(_poolToken, _getUpdatedIndexes);
+
+        assetData.collateralUsd = _getUserSupplyBalanceInOf(
+            _poolToken,
+            _user,
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex
+        ).zeroFloorSub(_withdrawnAmount)
+        .mul(assetData.underlyingPrice);
+
+        assetData.debtUsd = (_getUserBorrowBalanceInOf(
+            _poolToken,
+            _user,
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex
+        ) + _borrowedAmount)
+        .mul(assetData.underlyingPrice);
+
+        assetData.maxDebtUsd = assetData.collateralUsd.mul(assetData.collateralFactor);
+    }
+
+    /// @dev Returns whether a liquidation can be performed on the given user.
+    ///      This function checks for the user's health factor as well as whether the user is borrowing from the given deprecated market.
+    /// @param _user The address of the user to check.
+    /// @param _poolTokenDeprecated The address of the deprecated borrowed market to check.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
+    /// @return whether or not the user is liquidatable.
+    function _isLiquidatable(
+        address _user,
+        address _poolTokenDeprecated,
+        address[] memory _updatedMarkets
+    ) internal view returns (bool) {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
+
+        uint256 maxDebtUsd;
+        uint256 debtUsd;
+
+        uint256 nbUpdatedMarkets = _updatedMarkets.length;
+        for (uint256 i; i < enteredMarkets.length; ) {
+            address poolTokenEntered = enteredMarkets[i];
+
+            bool shouldUpdateIndexes;
+            for (uint256 j; j < nbUpdatedMarkets; ) {
+                if (_updatedMarkets[j] == poolTokenEntered) {
+                    shouldUpdateIndexes = true;
+                    break;
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                shouldUpdateIndexes,
+                oracle
+            );
+
+            if (_poolTokenDeprecated == poolTokenEntered && assetData.debtUsd > 0) return true;
+
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return debtUsd > maxDebtUsd;
     }
 }

@@ -111,13 +111,13 @@ contract User {
         morpho.repay(_poolToken, _onBehalf, _amount);
     }
 
-    function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
-        ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
-        pool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
+    function aaveSupply(address _underlyingToken, uint256 _amount) external {
+        ERC20(_underlyingToken).safeApprove(address(pool), type(uint256).max);
+        pool.deposit(_underlyingToken, _amount, address(this), 0); // 0 : no refferal code
     }
 
-    function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
-        pool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
+    function aaveBorrow(address _underlyingToken, uint256 _amount) external {
+        pool.borrow(_underlyingToken, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 
     function liquidate(
