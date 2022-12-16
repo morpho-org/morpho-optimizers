@@ -8,8 +8,8 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
-      - contracts/aave-v2/**
+      - src/common/**
+      - src/aave-v2/**
       - "*.lock"
       - remappings.txt
       - .github/workflows/ci-storage-check-aave-v2.yml
@@ -37,6 +37,6 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: make storage-layout-check
+        run: make storage-layout-check-no-rewards
         env:
           PROTOCOL: aave-v2

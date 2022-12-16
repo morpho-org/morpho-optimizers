@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/IRewardsManager.sol";
-import "@contracts/compound/interfaces/IIncentivesVault.sol";
-import "@contracts/compound/interfaces/IInterestRatesManager.sol";
-import "@contracts/compound/interfaces/IPositionsManager.sol";
-import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "src/compound/interfaces/IRewardsManager.sol";
+import "src/compound/interfaces/IIncentivesVault.sol";
+import "src/compound/interfaces/IInterestRatesManager.sol";
+import "src/compound/interfaces/IPositionsManager.sol";
+import "src/compound/interfaces/compound/ICompound.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
-import {RewardsManager} from "@contracts/compound/RewardsManager.sol";
-import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
-import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
-import {Morpho} from "@contracts/compound/Morpho.sol";
-import {Lens} from "@contracts/compound/lens/Lens.sol";
+import {IncentivesVault} from "src/compound/IncentivesVault.sol";
+import {RewardsManager} from "src/compound/RewardsManager.sol";
+import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
+import {PositionsManager} from "src/compound/PositionsManager.sol";
+import {Morpho} from "src/compound/Morpho.sol";
+import {Lens} from "src/compound/lens/Lens.sol";
 
 import "@config/Config.sol";
 import "forge-std/Script.sol";
@@ -79,7 +79,7 @@ contract Deploy is Script, Config {
         morpho.setRewardsManager(IRewardsManager(address(rewardsManager)));
 
         // Deploy Lens
-        Lens lensImpl = new Lens();
+        Lens lensImpl = new Lens(address(morpho));
         TransparentUpgradeableProxy lensProxy = new TransparentUpgradeableProxy(
             address(lensImpl),
             address(proxyAdmin),

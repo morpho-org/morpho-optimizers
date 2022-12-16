@@ -1,5 +1,5 @@
 name: Foundry tests
-description: Runs full forge test suite given a protocol and a network
+description: Given a protocol and a network, compiles the contracts, checks for their size & runs the full forge test suite
 
 inputs:
   protocol:
@@ -43,6 +43,13 @@ runs:
         path: ~/.foundry/cache
         key: foundry-${{ hashFiles('Makefile', 'foundry.toml') }} # where fork block numbers & RPC are stored
 
+    - name: Check contracts sizes
+      run: make contracts
+      shell: bash
+      env:
+        PROTOCOL: ${{ inputs.protocol }}
+        NETWORK: ${{ inputs.network }}
+
     - name: Foundry compilation cache
       uses: actions/cache@v3
       with:
@@ -70,7 +77,7 @@ runs:
 
     - name: Check coverage threshold
       if: ${{ inputs.codecovToken != '' }}
-      run: npx lcov-total lcov.info --gte=88
+      run: npx lcov-total lcov.info --gte=90.3
       shell: bash
 
     - name: Upload coverage to Codecov

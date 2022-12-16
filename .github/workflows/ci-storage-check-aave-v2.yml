@@ -8,8 +8,8 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
-      - contracts/aave-v2/**
+      - src/common/**
+      - src/aave-v2/**
       - "*.lock"
       - remappings.txt
       - .github/workflows/ci-storage-check-aave-v2.yml
@@ -37,12 +37,12 @@ jobs:
         with:
           version: nightly
 
+      - name: Check Lens storage layout
+        uses: Rubilmax/foundry-storage-check@v2.1.2
+        with:
+          contract: src/aave-v2/lens/Lens.sol:Lens
+
       - name: Check Morpho storage layout
         uses: Rubilmax/foundry-storage-check@v2.1.2
         with:
-          contract: contracts/aave-v2/Morpho.sol:Morpho
-
-      - name: Check RewardsManager storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1.2
-        with:
-          contract: contracts/aave-v2/RewardsManager.sol:RewardsManager
+          contract: src/aave-v2/Morpho.sol:Morpho

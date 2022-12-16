@@ -2,7 +2,6 @@
 
 [![Morpho-Compound](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
 [![Morpho-AaveV2](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
-[![Morpho-AaveV3](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v3.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v3.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
@@ -117,10 +116,10 @@ or to run only a specific set of tests of a specific protocol (e.g. for Morpho-A
 make c-TestBorrow PROTOCOL=aave-v2
 ```
 
-or to run an individual test of a specific protocol (e.g. for Morpho-Aave V3):
+or to run an individual test of a specific protocol (e.g. for Morpho-Aave V2):
 
 ```bash
-make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
+make test-testBorrow1 PROTOCOL=aave-v2
 ```
 
 For the other commands, check the [Makefile](./Makefile).
@@ -129,7 +128,7 @@ For the other commands, check the [Makefile](./Makefile).
 
 ## Testing with Hardhat
 
-Only tests for the [RewardsDistributor](./contracts/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
+Only tests for the [RewardsDistributor](./src/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
 
 Just run:
 
@@ -154,7 +153,20 @@ The report is then usable either:
 - via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
 - via html, using `make lcov-html` to transform the report and opening `coverage/index.html`
 
-:warning: Test coverage is not available on Morpho-AaveV2 nor Morpho-AaveV3 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+:warning: Test coverage is not available on Morpho-AaveV2 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+
+---
+
+## Storage seatbelt
+
+2 CI pipelines are currently running on every PR to check that the changes introduced are not modifying the storage layout of proxied smart contracts in an unsafe way:
+
+- [storage-layout.sh](./scripts/storage-layout.sh) checks that the latest foundry storage layout snapshot is identical to the committed storage layout snapshot
+- [foundry-storage-check](https://github.com/Rubilmax/foundry-storage-diff) is in test phase and will progressively replace the snapshot check
+
+In the case the storage layout snapshots checked by `storage-layout.sh` are not identical, the developer must commit the updated storage layout snapshot stored under [snapshots/](./snapshots/) by running:
+
+- `make storage-layout-generate` with the appropriate protocol parameters
 
 ---
 

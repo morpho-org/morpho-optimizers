@@ -21,4 +21,5 @@ contract BaseConfig {
     address constant sushi = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2;
     address constant crv = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address constant stEth = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address constant frax = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
 }

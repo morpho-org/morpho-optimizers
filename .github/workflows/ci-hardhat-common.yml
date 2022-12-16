@@ -8,7 +8,7 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
+      - src/common/**
       - test/**
       - "*.lock"
       - Makefile

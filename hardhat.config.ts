@@ -26,6 +26,10 @@ const config: HardhatUserConfig = {
         blockNumber: Number(process.env.BLOCK_NUMBER || 15_500_000),
       },
     },
+    mainnet: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      chainId: 1,
+    },
   },
   preprocess: {
     eachLine: () => ({
@@ -57,6 +61,13 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  paths: {
+    sources: "./src",
+    tests: "./test-ts",
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
 
