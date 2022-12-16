@@ -247,6 +247,22 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aUsdc, amount);
     }
 
+    function testCannotBorrowOnFrozenPool() public {
+        uint256 amount = 10_000 ether;
+
+        DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(dai);
+        reserveConfig.setFrozen(true);
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        vm.prank(address(lendingPoolConfigurator));
+        pool.setConfiguration(dai, reserveConfig.data);
+
+        hevm.expectRevert(EntryPositionsManager.FrozenOnPool.selector);
+        borrower1.borrow(aDai, amount);
+    }
+
     function testBorrowLargerThanDeltaShouldClearDelta() public {
         // Allows only 10 unmatch suppliers.
 
