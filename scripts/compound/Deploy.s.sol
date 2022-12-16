@@ -79,7 +79,7 @@ contract Deploy is Script, Config {
         morpho.setRewardsManager(IRewardsManager(address(rewardsManager)));
 
         // Deploy Lens
-        Lens lensImpl = new Lens();
+        Lens lensImpl = new Lens(address(morpho));
         TransparentUpgradeableProxy lensProxy = new TransparentUpgradeableProxy(
             address(lensImpl),
             address(proxyAdmin),

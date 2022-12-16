@@ -4,77 +4,94 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
+    /// Morpho ///
+
     function testUpgradeMorpho() public {
-        uint256 amount = 10_000 ether;
-        supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
-
-        Morpho morphoImplV2 = new Morpho();
-
-        hevm.record();
-        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
-        (, bytes32[] memory writes) = hevm.accesses(address(morpho));
-
-        // 1 write for the implemention.
-        assertEq(writes.length, 1);
-        address newImplem = bytes32ToAddress(
-            hevm.load(
-                address(morphoProxy),
-                bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
-            )
-        );
-        assertEq(newImplem, address(morphoImplV2));
+        _testUpgradeProxy(morphoProxy, address(new Morpho()));
     }
 
     function testOnlyProxyOwnerCanUpgradeMorpho() public {
-        Morpho morphoImplV2 = new Morpho();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
-
-        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
+        _testOnlyProxyOwnerCanUpgradeProxy(morphoProxy, address(new Morpho()));
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallMorpho() public {
-        Morpho morphoImplV2 = new Morpho();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(morphoProxy, address(morphoImplV2), "");
-
-        // Revert for wrong data not wrong caller
-        hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(morphoProxy, address(morphoImplV2), "");
+        _testOnlyProxyOwnerCanUpgradeAndCallProxy(morphoProxy, address(new Morpho()));
     }
 
     function testPositionsManagerImplementationsShouldBeInitialized() public {
-        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
+        _testProxyImplementationShouldBeInitialized(address(morphoImplV1));
 
-        // Test for Morpho Implementation.
         hevm.expectRevert("Initializable: contract is already initialized");
         morphoImplV1.initialize(
             entryPositionsManager,
             exitPositionsManager,
             interestRatesManager,
             poolAddressesProvider,
-            defaultMaxGasForMatching,
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6}),
             20
         );
+    }
 
-        // Test for EntryPositionsManager Implementation.
-        // `_initialized` value is at slot 0.
-        uint256 _initialized = uint256(hevm.load(address(entryPositionsManager), bytes32(0)));
-        assertEq(_initialized, 1);
+    function testEntryPositionsManagerImplementationShouldBeInitialized() public {
+        _testProxyImplementationShouldBeInitialized(address(entryPositionsManager));
+    }
 
-        // Test for ExitPositionsManager Implementation.
-        // `_initialized` value is at slot 0.
-        _initialized = uint256(hevm.load(address(exitPositionsManager), bytes32(0)));
-        assertEq(_initialized, 1);
+    function testExitPositionsManagerImplementationShouldBeInitialized() public {
+        _testProxyImplementationShouldBeInitialized(address(exitPositionsManager));
+    }
+
+    /// Lens ///
+
+    function testUpgradeLens() public {
+        _testUpgradeProxy(lensProxy, address(new Lens(address(morpho))));
+    }
+
+    function testOnlyProxyOwnerCanUpgradeLens() public {
+        _testOnlyProxyOwnerCanUpgradeProxy(lensProxy, address(new Lens(address(morpho))));
+    }
+
+    function testOnlyProxyOwnerCanUpgradeAndCallLens() public {
+        _testOnlyProxyOwnerCanUpgradeAndCallProxy(lensProxy, address(new Lens(address(morpho))));
+    }
+
+    /// INTERNAL ///
+    function _testUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl) internal {
+        hevm.record();
+        proxyAdmin.upgrade(_proxy, _impl);
+        (, bytes32[] memory writes) = hevm.accesses(address(_proxy));
+
+        assertEq(writes.length, 1);
+        assertEq(
+            bytes32ToAddress(
+                hevm.load(
+                    address(_proxy),
+                    bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
+                )
+            ),
+            _impl
+        );
+    }
+
+    function _testOnlyProxyOwnerCanUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl)
+        internal
+    {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgrade(_proxy, _impl);
+
+        proxyAdmin.upgrade(_proxy, _impl);
+    }
+
+    function _testOnlyProxyOwnerCanUpgradeAndCallProxy(
+        TransparentUpgradeableProxy _proxy,
+        address _impl
+    ) internal {
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgradeAndCall(_proxy, _impl, "");
+    }
+
+    function _testProxyImplementationShouldBeInitialized(address impl) public {
+        assertEq(uint256(hevm.load(impl, 0)), 1);
     }
 }

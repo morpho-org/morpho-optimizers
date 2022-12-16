@@ -13,24 +13,15 @@ abstract contract RatesLens is UsersLens {
     using WadRayMath for uint256;
     using Math for uint256;
 
-    /// STRUCTS ///
-
-    struct Indexes {
-        uint256 p2pSupplyIndex;
-        uint256 p2pBorrowIndex;
-        uint256 poolSupplyIndex;
-        uint256 poolBorrowIndex;
-    }
-
     /// EXTERNAL ///
 
     /// @notice Returns the supply rate per year experienced on a market after having supplied the given amount on behalf of the given user.
-    /// @dev Note: the returned supply rate is a lower bound: when supplying through Morpho-Aave,
+    /// @dev Note: the returned supply rate is a low estimate: when supplying through Morpho-Aave,
     /// a supplier could be matched more than once instantly or later and thus benefit from a higher supply rate.
     /// @param _poolToken The address of the market.
     /// @param _user The address of the user on behalf of whom to supply.
     /// @param _amount The amount to supply.
-    /// @return nextSupplyRatePerYear An approximation of the next supply rate per year experienced after having supplied (in wad).
+    /// @return nextSupplyRatePerYear An approximation of the next supply rate per year experienced after having supplied (in ray).
     /// @return balanceInP2P The total balance matched peer-to-peer after having supplied (in underlying).
     /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return totalBalance The total balance supplied through Morpho (in underlying).
@@ -48,36 +39,31 @@ abstract contract RatesLens is UsersLens {
             uint256 totalBalance
         )
     {
-        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
-
-        Indexes memory indexes;
-        Types.Market memory market;
         (
-            market,
-            indexes.p2pSupplyIndex,
-            indexes.poolSupplyIndex,
-            indexes.poolBorrowIndex
-        ) = _getSupplyIndexes(_poolToken);
+            Types.Market memory market,
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
+        ) = _getIndexes(_poolToken);
 
-        if (_amount > 0) {
-            uint256 deltaInUnderlying = morpho.deltas(_poolToken).p2pBorrowDelta.rayMul(
-                indexes.poolBorrowIndex
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
+        if (_amount > 0 && delta.p2pBorrowDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex),
+                _amount
             );
 
-            if (deltaInUnderlying > 0) {
-                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
-
-                supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
-                _amount -= matchedDelta;
-            }
+            supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
+            _amount -= matchedDelta;
         }
 
         if (_amount > 0 && !market.isP2PDisabled) {
-            uint256 firstPoolBorrowerBalance = morpho
-            .borrowBalanceInOf(
+            address firstPoolBorrower = morpho.getHead(
                 _poolToken,
-                morpho.getHead(_poolToken, Types.PositionType.BORROWERS_ON_POOL)
-            ).onPool;
+                Types.PositionType.BORROWERS_ON_POOL
+            );
+            uint256 firstPoolBorrowerBalance = morpho
+            .borrowBalanceInOf(_poolToken, firstPoolBorrower)
+            .onPool;
 
             if (firstPoolBorrowerBalance > 0) {
                 uint256 matchedP2P = Math.min(
@@ -94,23 +80,21 @@ abstract contract RatesLens is UsersLens {
 
         balanceOnPool = supplyBalance.onPool.rayMul(indexes.poolSupplyIndex);
         balanceInP2P = supplyBalance.inP2P.rayMul(indexes.p2pSupplyIndex);
-        totalBalance = balanceOnPool + balanceInP2P;
 
-        nextSupplyRatePerYear = _getUserSupplyRatePerYear(
+        (nextSupplyRatePerYear, totalBalance) = _getUserSupplyRatePerYear(
             _poolToken,
-            balanceOnPool,
             balanceInP2P,
-            totalBalance
+            balanceOnPool
         );
     }
 
     /// @notice Returns the borrow rate per year experienced on a market after having supplied the given amount on behalf of the given user.
-    /// @dev Note: the returned borrow rate is an upper bound: when borrowing through Morpho-Aave,
+    /// @dev Note: the returned borrow rate is a high estimate: when borrowing through Morpho-Aave,
     /// a borrower could be matched more than once instantly or later and thus benefit from a lower borrow rate.
     /// @param _poolToken The address of the market.
     /// @param _user The address of the user on behalf of whom to borrow.
     /// @param _amount The amount to borrow.
-    /// @return nextBorrowRatePerYear An approximation of the next borrow rate per year experienced after having supplied (in wad).
+    /// @return nextBorrowRatePerYear An approximation of the next borrow rate per year experienced after having supplied (in ray).
     /// @return balanceInP2P The total balance matched peer-to-peer after having supplied (in underlying).
     /// @return balanceOnPool The total balance supplied on pool after having supplied (in underlying).
     /// @return totalBalance The total balance supplied through Morpho (in underlying).
@@ -128,36 +112,31 @@ abstract contract RatesLens is UsersLens {
             uint256 totalBalance
         )
     {
-        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
-
-        Indexes memory indexes;
-        Types.Market memory market;
         (
-            market,
-            indexes.p2pBorrowIndex,
-            indexes.poolSupplyIndex,
-            indexes.poolBorrowIndex
-        ) = _getBorrowIndexes(_poolToken);
+            Types.Market memory market,
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
+        ) = _getIndexes(_poolToken);
 
-        if (_amount > 0) {
-            uint256 deltaInUnderlying = morpho.deltas(_poolToken).p2pSupplyDelta.rayMul(
-                indexes.poolSupplyIndex
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
+        if (_amount > 0 && delta.p2pSupplyDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex),
+                _amount
             );
 
-            if (deltaInUnderlying > 0) {
-                uint256 matchedDelta = Math.min(deltaInUnderlying, _amount);
-
-                borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
-                _amount -= matchedDelta;
-            }
+            borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
+            _amount -= matchedDelta;
         }
 
         if (_amount > 0 && !market.isP2PDisabled) {
-            uint256 firstPoolSupplierBalance = morpho
-            .supplyBalanceInOf(
+            address firstPoolSupplier = morpho.getHead(
                 _poolToken,
-                morpho.getHead(_poolToken, Types.PositionType.SUPPLIERS_ON_POOL)
-            ).onPool;
+                Types.PositionType.SUPPLIERS_ON_POOL
+            );
+            uint256 firstPoolSupplierBalance = morpho
+            .supplyBalanceInOf(_poolToken, firstPoolSupplier)
+            .onPool;
 
             if (firstPoolSupplierBalance > 0) {
                 uint256 matchedP2P = Math.min(
@@ -174,21 +153,53 @@ abstract contract RatesLens is UsersLens {
 
         balanceOnPool = borrowBalance.onPool.rayMul(indexes.poolBorrowIndex);
         balanceInP2P = borrowBalance.inP2P.rayMul(indexes.p2pBorrowIndex);
-        totalBalance = balanceOnPool + balanceInP2P;
 
-        nextBorrowRatePerYear = _getUserBorrowRatePerYear(
+        (nextBorrowRatePerYear, totalBalance) = _getUserBorrowRatePerYear(
             _poolToken,
-            balanceOnPool,
             balanceInP2P,
-            totalBalance
+            balanceOnPool
         );
+    }
+
+    /// @notice Returns the supply rate per year a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the supply rate per year for.
+    /// @return supplyRatePerYear The supply rate per year the user is currently experiencing (in wad).
+    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256 supplyRatePerYear)
+    {
+        (, uint256 balanceInP2P, uint256 balanceOnPool, ) = _getCurrentSupplyBalanceInOf(
+            _poolToken,
+            _user
+        );
+
+        (supplyRatePerYear, ) = _getUserSupplyRatePerYear(_poolToken, balanceInP2P, balanceOnPool);
+    }
+
+    /// @notice Returns the borrow rate per year a given user is currently experiencing on a given market.
+    /// @param _poolToken The address of the market.
+    /// @param _user The user to compute the borrow rate per year for.
+    /// @return borrowRatePerYear The borrow rate per year the user is currently experiencing (in wad).
+    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
+        external
+        view
+        returns (uint256 borrowRatePerYear)
+    {
+        (, uint256 balanceInP2P, uint256 balanceOnPool, ) = _getCurrentBorrowBalanceInOf(
+            _poolToken,
+            _user
+        );
+
+        (borrowRatePerYear, ) = _getUserBorrowRatePerYear(_poolToken, balanceInP2P, balanceOnPool);
     }
 
     /// PUBLIC ///
 
     /// @notice Computes and returns the current supply rate per year experienced on average on a given market.
     /// @param _poolToken The market address.
-    /// @return avgSupplyRatePerYear The market's average supply rate per year (in wad).
+    /// @return avgSupplyRatePerYear The market's average supply rate per year (in ray).
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     function getAverageSupplyRatePerYear(address _poolToken)
@@ -202,50 +213,45 @@ abstract contract RatesLens is UsersLens {
     {
         (
             Types.Market memory market,
-            uint256 p2pSupplyIndex,
-            uint256 poolSupplyIndex,
-
-        ) = _getSupplyIndexes(_poolToken);
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
+        ) = _getIndexes(_poolToken);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
-        uint256 poolSupplyRate = reserve.currentLiquidityRate;
-        uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
+        uint256 poolSupplyRatePerYear = reserve.currentLiquidityRate;
 
         // Do not take delta into account as it's already taken into account in p2pSupplyAmount & poolSupplyAmount
-        uint256 p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
+        uint256 p2pSupplyRatePerYear = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: poolBorrowRate < poolSupplyRate
-                    ? poolBorrowRate
-                    : PercentageMath.weightedAvg(
-                        poolSupplyRate,
-                        poolBorrowRate,
-                        market.p2pIndexCursor
-                    ),
-                poolRate: poolSupplyRate,
-                poolIndex: poolSupplyIndex,
-                p2pIndex: p2pSupplyIndex,
+                poolSupplyRatePerYear: poolSupplyRatePerYear,
+                poolBorrowRatePerYear: reserve.currentVariableBorrowRate,
+                poolIndex: indexes.poolSupplyIndex,
+                p2pIndex: indexes.p2pSupplyIndex,
                 p2pDelta: 0,
                 p2pAmount: 0,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
 
         (p2pSupplyAmount, poolSupplyAmount) = _getMarketSupply(
             _poolToken,
-            p2pSupplyIndex,
-            poolSupplyIndex
+            indexes.p2pSupplyIndex,
+            indexes.poolSupplyIndex,
+            delta
         );
 
-        uint256 totalSupply = p2pSupplyAmount + poolSupplyAmount;
-        if (p2pSupplyAmount > 0)
-            avgSupplyRatePerYear += p2pSupplyRate.wadMul(p2pSupplyAmount.wadDiv(totalSupply));
-        if (poolSupplyAmount > 0)
-            avgSupplyRatePerYear += poolSupplyRate.wadMul(poolSupplyAmount.wadDiv(totalSupply));
+        (avgSupplyRatePerYear, ) = _getWeightedRate(
+            p2pSupplyRatePerYear,
+            poolSupplyRatePerYear,
+            p2pSupplyAmount,
+            poolSupplyAmount
+        );
     }
 
     /// @notice Computes and returns the current average borrow rate per year experienced on a given market.
     /// @param _poolToken The market address.
-    /// @return avgBorrowRatePerYear The market's average borrow rate per year (in wad).
+    /// @return avgBorrowRatePerYear The market's average borrow rate per year (in ray).
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function getAverageBorrowRatePerYear(address _poolToken)
@@ -259,49 +265,44 @@ abstract contract RatesLens is UsersLens {
     {
         (
             Types.Market memory market,
-            uint256 p2pBorrowIndex,
-            ,
-            uint256 poolBorrowIndex
-        ) = _getBorrowIndexes(_poolToken);
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
+        ) = _getIndexes(_poolToken);
 
         DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
-        uint256 poolSupplyRate = reserve.currentLiquidityRate;
-        uint256 poolBorrowRate = reserve.currentVariableBorrowRate;
+        uint256 poolBorrowRatePerYear = reserve.currentVariableBorrowRate;
 
         // Do not take delta into account as it's already taken into account in p2pBorrowAmount & poolBorrowAmount
-        uint256 p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
+        uint256 p2pBorrowRatePerYear = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: poolBorrowRate < poolSupplyRate
-                    ? poolBorrowRate
-                    : PercentageMath.weightedAvg(
-                        poolSupplyRate,
-                        poolBorrowRate,
-                        market.p2pIndexCursor
-                    ),
-                poolRate: poolBorrowRate,
-                poolIndex: poolBorrowIndex,
-                p2pIndex: p2pBorrowIndex,
+                poolSupplyRatePerYear: reserve.currentLiquidityRate,
+                poolBorrowRatePerYear: poolBorrowRatePerYear,
+                poolIndex: indexes.poolBorrowIndex,
+                p2pIndex: indexes.p2pBorrowIndex,
                 p2pDelta: 0,
                 p2pAmount: 0,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
 
         (p2pBorrowAmount, poolBorrowAmount) = _getMarketBorrow(
             reserve,
-            p2pBorrowIndex,
-            poolBorrowIndex
+            indexes.p2pBorrowIndex,
+            indexes.poolBorrowIndex,
+            delta
         );
 
-        uint256 totalBorrow = p2pBorrowAmount + poolBorrowAmount;
-        if (p2pBorrowAmount > 0)
-            avgBorrowRatePerYear += p2pBorrowRate.wadMul(p2pBorrowAmount.wadDiv(totalBorrow));
-        if (poolBorrowAmount > 0)
-            avgBorrowRatePerYear += poolBorrowRate.wadMul(poolBorrowAmount.wadDiv(totalBorrow));
+        (avgBorrowRatePerYear, ) = _getWeightedRate(
+            p2pBorrowRatePerYear,
+            poolBorrowRatePerYear,
+            p2pBorrowAmount,
+            poolBorrowAmount
+        );
     }
 
     /// @notice Computes and returns peer-to-peer and pool rates for a specific market.
-    /// @dev Note: prefer using getAverageSupplyRatePerYear & getAverageBorrowRatePerYear to get the experienced supply/borrow rate instead of this.
+    /// @dev Note: prefer using getAverageSupplyRatePerYear & getAverageBorrowRatePerYear to get the actual experienced supply/borrow rate.
     /// @param _poolToken The market address.
     /// @return p2pSupplyRate The market's peer-to-peer supply rate per year (in ray).
     /// @return p2pBorrowRate The market's peer-to-peer borrow rate per year (in ray).
@@ -318,121 +319,78 @@ abstract contract RatesLens is UsersLens {
         )
     {
         (
-            address underlyingToken,
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
+            Types.Market memory market,
+            Types.Delta memory delta,
+            Types.Indexes memory indexes
         ) = _getIndexes(_poolToken);
 
-        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingToken);
+        DataTypes.ReserveData memory reserve = pool.getReserveData(market.underlyingToken);
         poolSupplyRate = reserve.currentLiquidityRate;
         poolBorrowRate = reserve.currentVariableBorrowRate;
 
-        Types.Market memory market = morpho.market(_poolToken);
-        uint256 p2pRate = poolBorrowRate < poolSupplyRate
-            ? poolBorrowRate
-            : PercentageMath.weightedAvg(poolSupplyRate, poolBorrowRate, market.p2pIndexCursor);
-
-        Types.Delta memory delta = morpho.deltas(_poolToken);
-
         p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: p2pRate,
-                poolRate: poolSupplyRate,
-                poolIndex: poolSupplyIndex,
-                p2pIndex: p2pSupplyIndex,
+                poolSupplyRatePerYear: poolSupplyRate,
+                poolBorrowRatePerYear: poolBorrowRate,
+                poolIndex: indexes.poolSupplyIndex,
+                p2pIndex: indexes.p2pSupplyIndex,
                 p2pDelta: delta.p2pSupplyDelta,
                 p2pAmount: delta.p2pSupplyAmount,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
 
         p2pBorrowRate = InterestRatesModel.computeP2PBorrowRatePerYear(
             InterestRatesModel.P2PRateComputeParams({
-                p2pRate: p2pRate,
-                poolRate: poolBorrowRate,
-                poolIndex: poolBorrowIndex,
-                p2pIndex: p2pBorrowIndex,
+                poolSupplyRatePerYear: poolSupplyRate,
+                poolBorrowRatePerYear: poolBorrowRate,
+                poolIndex: indexes.poolBorrowIndex,
+                p2pIndex: indexes.p2pBorrowIndex,
                 p2pDelta: delta.p2pBorrowDelta,
                 p2pAmount: delta.p2pBorrowAmount,
+                p2pIndexCursor: market.p2pIndexCursor,
                 reserveFactor: market.reserveFactor
             })
         );
     }
 
-    /// @notice Returns the supply rate per year a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the supply rate per year for.
-    /// @return The supply rate per year the user is currently experiencing (in wad).
-    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        ) = getCurrentSupplyBalanceInOf(_poolToken, _user);
-
-        return _getUserSupplyRatePerYear(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
-    }
-
-    /// @notice Returns the borrow rate per year a given user is currently experiencing on a given market.
-    /// @param _poolToken The address of the market.
-    /// @param _user The user to compute the borrow rate per year for.
-    /// @return The borrow rate per year the user is currently experiencing (in wad).
-    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        ) = getCurrentBorrowBalanceInOf(_poolToken, _user);
-
-        return _getUserBorrowRatePerYear(_poolToken, balanceOnPool, balanceInP2P, totalBalance);
-    }
-
     /// INTERNAL ///
 
-    /// @notice Computes and returns the total distribution of supply for a given market, optionally using virtually updated indexes.
+    /// @notice Computes and returns the total distribution of supply for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @param _p2pSupplyIndex The given market's peer-to-peer supply index.
-    /// @param _poolSupplyIndex The underlying pool's supply index.
+    /// @param _poolSupplyIndex The given market's pool supply index.
+    /// @param _delta The given market's deltas.
     /// @return p2pSupplyAmount The total supplied amount matched peer-to-peer, subtracting the supply delta (in underlying).
     /// @return poolSupplyAmount The total supplied amount on the underlying pool, adding the supply delta (in underlying).
     function _getMarketSupply(
         address _poolToken,
         uint256 _p2pSupplyIndex,
-        uint256 _poolSupplyIndex
+        uint256 _poolSupplyIndex,
+        Types.Delta memory _delta
     ) internal view returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount) {
-        Types.Delta memory delta = morpho.deltas(_poolToken);
-
-        p2pSupplyAmount =
-            delta.p2pSupplyAmount.rayMul(_p2pSupplyIndex) -
-            delta.p2pSupplyDelta.rayMul(_poolSupplyIndex);
+        p2pSupplyAmount = _delta.p2pSupplyAmount.rayMul(_p2pSupplyIndex).zeroFloorSub(
+            _delta.p2pSupplyDelta.rayMul(_poolSupplyIndex)
+        );
         poolSupplyAmount = IAToken(_poolToken).balanceOf(address(morpho));
     }
 
-    /// @notice Computes and returns the total distribution of borrows for a given market, optionally using virtually updated indexes.
+    /// @notice Computes and returns the total distribution of borrows for a given market, using virtually updated indexes.
     /// @param reserve The reserve data of the underlying pool.
     /// @param _p2pBorrowIndex The given market's peer-to-peer borrow index.
-    /// @param _poolBorrowIndex The underlying pool's borrow index.
+    /// @param _poolBorrowIndex The given market's pool borrow index.
+    /// @param _delta The given market's deltas.
     /// @return p2pBorrowAmount The total borrowed amount matched peer-to-peer, subtracting the borrow delta (in underlying).
     /// @return poolBorrowAmount The total borrowed amount on the underlying pool, adding the borrow delta (in underlying).
     function _getMarketBorrow(
         DataTypes.ReserveData memory reserve,
         uint256 _p2pBorrowIndex,
-        uint256 _poolBorrowIndex
+        uint256 _poolBorrowIndex,
+        Types.Delta memory _delta
     ) internal view returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount) {
-        Types.Delta memory delta = morpho.deltas(reserve.aTokenAddress);
-
-        p2pBorrowAmount = delta.p2pBorrowAmount.rayMul(_p2pBorrowIndex).zeroFloorSub(
-            delta.p2pBorrowDelta.rayMul(_poolBorrowIndex)
+        p2pBorrowAmount = _delta.p2pBorrowAmount.rayMul(_p2pBorrowIndex).zeroFloorSub(
+            _delta.p2pBorrowDelta.rayMul(_poolBorrowIndex)
         );
         poolBorrowAmount = IVariableDebtToken(reserve.variableDebtTokenAddress)
         .scaledBalanceOf(address(morpho))
@@ -441,45 +399,70 @@ abstract contract RatesLens is UsersLens {
 
     /// @dev Returns the supply rate per year experienced on a market based on a given position distribution.
     /// @param _poolToken The address of the market.
-    /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P` and `_totalBalance`).
-    /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
-    /// @param _totalBalance The total amount of balance (should equal `_balanceOnPool + _balanceInP2P` but is used for saving gas).
-    /// @return supplyRatePerYear The supply rate per year experienced by the given position (in wad).
+    /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P`).
+    /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool`).
+    /// @return The supply rate per year experienced by the given position (in ray).
+    /// @return The sum of peer-to-peer & pool balances.
     function _getUserSupplyRatePerYear(
         address _poolToken,
-        uint256 _balanceOnPool,
         uint256 _balanceInP2P,
-        uint256 _totalBalance
-    ) internal view returns (uint256 supplyRatePerYear) {
-        if (_totalBalance == 0) return 0;
+        uint256 _balanceOnPool
+    ) internal view returns (uint256, uint256) {
+        (uint256 p2pSupplyRatePerYear, , uint256 poolSupplyRatePerYear, ) = getRatesPerYear(
+            _poolToken
+        );
 
-        (uint256 p2pSupplyRate, , uint256 poolSupplyRate, ) = getRatesPerYear(_poolToken);
-
-        if (_balanceOnPool > 0)
-            supplyRatePerYear += poolSupplyRate.wadMul(_balanceOnPool.wadDiv(_totalBalance));
-        if (_balanceInP2P > 0)
-            supplyRatePerYear += p2pSupplyRate.wadMul(_balanceInP2P.wadDiv(_totalBalance));
+        return
+            _getWeightedRate(
+                p2pSupplyRatePerYear,
+                poolSupplyRatePerYear,
+                _balanceInP2P,
+                _balanceOnPool
+            );
     }
 
     /// @dev Returns the borrow rate per year experienced on a market based on a given position distribution.
     /// @param _poolToken The address of the market.
-    /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P` and `_totalBalance`).
-    /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool` and `_totalBalance`).
-    /// @param _totalBalance The total amount of balance (should equal `_balanceOnPool + _balanceInP2P` but is used for saving gas).
-    /// @return borrowRatePerYear The borrow rate per year experienced by the given position (in wad).
+    /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P`).
+    /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool`).
+    /// @return The borrow rate per year experienced by the given position (in ray).
+    /// @return The sum of peer-to-peer & pool balances.
     function _getUserBorrowRatePerYear(
         address _poolToken,
-        uint256 _balanceOnPool,
         uint256 _balanceInP2P,
-        uint256 _totalBalance
-    ) internal view returns (uint256 borrowRatePerYear) {
-        if (_totalBalance == 0) return 0;
+        uint256 _balanceOnPool
+    ) internal view returns (uint256, uint256) {
+        (, uint256 p2pBorrowRatePerYear, , uint256 poolBorrowRatePerYear) = getRatesPerYear(
+            _poolToken
+        );
 
-        (, uint256 p2pBorrowRate, , uint256 poolBorrowRate) = getRatesPerYear(_poolToken);
+        return
+            _getWeightedRate(
+                p2pBorrowRatePerYear,
+                poolBorrowRatePerYear,
+                _balanceInP2P,
+                _balanceOnPool
+            );
+    }
 
+    /// @dev Returns the rate experienced based on a given pool & peer-to-peer distribution.
+    /// @param _p2pRate The peer-to-peer rate (in a unit common to `_poolRate` & `weightedRate`).
+    /// @param _poolRate The pool rate (in a unit common to `_p2pRate` & `weightedRate`).
+    /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool`).
+    /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P`).
+    /// @return weightedRate The rate experienced by the given distribution (in a unit common to `_p2pRate` & `_poolRate`).
+    /// @return totalBalance The sum of peer-to-peer & pool balances.
+    function _getWeightedRate(
+        uint256 _p2pRate,
+        uint256 _poolRate,
+        uint256 _balanceInP2P,
+        uint256 _balanceOnPool
+    ) internal pure returns (uint256 weightedRate, uint256 totalBalance) {
+        totalBalance = _balanceInP2P + _balanceOnPool;
+        if (totalBalance == 0) return (weightedRate, totalBalance);
+
+        if (_balanceInP2P > 0) weightedRate += _p2pRate.rayMul(_balanceInP2P.rayDiv(totalBalance));
         if (_balanceOnPool > 0)
-            borrowRatePerYear += poolBorrowRate.wadMul(_balanceOnPool.wadDiv(_totalBalance));
-        if (_balanceInP2P > 0)
-            borrowRatePerYear += p2pBorrowRate.wadMul(_balanceInP2P.wadDiv(_totalBalance));
+            weightedRate += _poolRate.rayMul(_balanceOnPool.rayDiv(totalBalance));
     }
 }
