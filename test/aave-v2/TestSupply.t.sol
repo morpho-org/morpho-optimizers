@@ -271,8 +271,7 @@ contract TestSupply is TestSetup {
         DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(dai);
         reserveConfig.setFrozen(true);
 
-        // Lending pool configurator
-        vm.prank(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
+        vm.prank(address(lendingPoolConfigurator));
         pool.setConfiguration(dai, reserveConfig.data);
 
         supplier1.approve(dai, amount);

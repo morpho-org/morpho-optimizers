@@ -256,8 +256,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
-        // Lending pool configurator
-        vm.prank(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
+        vm.prank(address(lendingPoolConfigurator));
         pool.setConfiguration(dai, reserveConfig.data);
 
         hevm.expectRevert(EntryPositionsManager.FrozenOnPool.selector);
