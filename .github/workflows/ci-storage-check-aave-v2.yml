@@ -37,6 +37,11 @@ jobs:
         with:
           version: nightly
 
+      - name: Check Lens storage layout
+        uses: Rubilmax/foundry-storage-check@v2.1.2
+        with:
+          contract: src/aave-v2/lens/Lens.sol:Lens
+
       - name: Check Morpho storage layout
         uses: Rubilmax/foundry-storage-check@v2.1.2
         with:
