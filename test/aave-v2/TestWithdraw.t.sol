@@ -391,8 +391,8 @@ contract TestWithdraw is TestSetup {
                 aDai,
                 address(supplier1)
             );
-            testEquality(onPoolSupplier, 0, "on pool supplier");
-            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
+            assertApproxEqAbs(onPoolSupplier, 0, 10, "on pool supplier");
+            assertApproxEqAbs(inP2PSupplier, expectedSupplyBalanceInP2P, 20, "in P2P supplier");
 
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
             uint256 expectedBorrowBalanceInP2P = borrowedAmount.rayDiv(p2pBorrowIndex);
@@ -445,7 +445,7 @@ contract TestWithdraw is TestSetup {
                 10,
                 "borrow delta not expected 2"
             );
-            assertEq(onPoolSupplier, 0, "on pool supplier not 0");
+            assertApproxEqAbs(onPoolSupplier, 0, 10, "on pool supplier not 0");
             assertEq(
                 inP2PSupplier,
                 expectedSupplyBalanceInP2P,

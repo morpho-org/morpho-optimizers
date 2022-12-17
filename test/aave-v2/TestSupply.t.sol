@@ -199,7 +199,7 @@ contract TestSupply is TestSetup {
         uint256 expectedOnPool = (2 * amount).rayDiv(pool.getReserveNormalizedIncome(dai));
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        assertEq(onPool, expectedOnPool);
+        assertApproxEqAbs(onPool, expectedOnPool, 10);
     }
 
     function testShouldNotSupplyZero() public {
