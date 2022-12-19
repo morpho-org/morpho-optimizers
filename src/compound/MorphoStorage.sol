@@ -7,7 +7,7 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
 
-import "./libraries/DoubleLinkedList.sol";
+import "@morpho-dao/morpho-data-structures/DoubleLinkedList.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
