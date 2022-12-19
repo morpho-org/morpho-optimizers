@@ -55,22 +55,22 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         if (block.timestamp == marketPoolIndexes.lastUpdateTimestamp) return;
 
-        Types.Market memory market = market[_poolToken];
+        Types.Market storage market = market[_poolToken];
         (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _getPoolIndexes(
             market.underlyingToken
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(
-            Params(
-                p2pSupplyIndex[_poolToken],
-                p2pBorrowIndex[_poolToken],
-                newPoolSupplyIndex,
-                newPoolBorrowIndex,
-                marketPoolIndexes,
-                market.reserveFactor,
-                market.p2pIndexCursor,
-                deltas[_poolToken]
-            )
+            Params({
+                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
+                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                poolSupplyIndex: newPoolSupplyIndex,
+                poolBorrowIndex: newPoolBorrowIndex,
+                lastPoolIndexes: marketPoolIndexes,
+                reserveFactor: market.reserveFactor,
+                p2pIndexCursor: market.p2pIndexCursor,
+                delta: deltas[_poolToken]
+            })
         );
 
         p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;

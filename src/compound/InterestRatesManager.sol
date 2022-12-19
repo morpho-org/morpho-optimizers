@@ -52,7 +52,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     function updateP2PIndexes(address _poolToken) external {
         Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolToken];
 
-        if (block.number <= poolIndexes.lastUpdateBlockNumber) return;
+        if (block.number == poolIndexes.lastUpdateBlockNumber) return;
 
         Types.MarketParameters memory marketParams = marketParameters[_poolToken];
 
@@ -60,16 +60,16 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         uint256 poolBorrowIndex = ICToken(_poolToken).borrowIndex();
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(
-            Params(
-                p2pSupplyIndex[_poolToken],
-                p2pBorrowIndex[_poolToken],
-                poolSupplyIndex,
-                poolBorrowIndex,
-                poolIndexes,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolToken]
-            )
+            Params({
+                lastP2PSupplyIndex: p2pSupplyIndex[_poolToken],
+                lastP2PBorrowIndex: p2pBorrowIndex[_poolToken],
+                poolSupplyIndex: poolSupplyIndex,
+                poolBorrowIndex: poolBorrowIndex,
+                lastPoolIndexes: poolIndexes,
+                reserveFactor: marketParams.reserveFactor,
+                p2pIndexCursor: marketParams.p2pIndexCursor,
+                delta: deltas[_poolToken]
+            })
         );
 
         p2pSupplyIndex[_poolToken] = newP2PSupplyIndex;
