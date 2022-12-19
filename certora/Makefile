@@ -1,5 +1,5 @@
 PATCH         = applyHarness.patch
-CONTRACTS_DIR = ../contracts
+CONTRACTS_DIR = ../src
 MUNGED_DIR    = munged
 
 help:
@@ -14,7 +14,7 @@ munged:  $(wildcard $(CONTRACTS_DIR)/*.sol) $(PATCH)
 	patch -p0 -d $@ < $(PATCH)
 
 record:
-	diff -ruN $(CONTRACTS_DIR) $(MUNGED_DIR) | sed 's+\.\./contracts/++g' | sed 's+munged/++g' > $(PATCH)
+	diff -ruN $(CONTRACTS_DIR) $(MUNGED_DIR) | sed 's+\.\./src/++g' | sed 's+munged/++g' > $(PATCH)
 
 munged-rewards: $(wildcard $(CONTRACTS_DIR)/*.sol) applyHarnessRewards.patch
 	rm -rf munged-rewards
@@ -22,7 +22,7 @@ munged-rewards: $(wildcard $(CONTRACTS_DIR)/*.sol) applyHarnessRewards.patch
 	patch -p0 -d $@ < applyHarnessRewards.patch
 
 record-rewards:
-	diff -ruN $(CONTRACTS_DIR) munged-rewards | sed 's+\.\./contracts/++g' | sed 's+munged-rewards/++g' > applyHarnessRewards.patch
+	diff -ruN $(CONTRACTS_DIR) munged-rewards | sed 's+\.\./src/++g' | sed 's+munged-rewards/++g' > applyHarnessRewards.patch
 
 clean:
 	git clean -fdX
