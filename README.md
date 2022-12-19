@@ -75,7 +75,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 
 ### Morpho-Aave-V2 Ethereum
 
-- Morpho Proxy: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
+- Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
 - Morpho Implementation: [0x206a1609a484db5129ca118f138e5a8abb9c61e0](https://etherscan.io/address/0x206a1609a484db5129ca118f138e5a8abb9c61e0)
 - EntryPositionsManager: [0x2a46cad23484c15f60663ece368395b3a249632a](https://etherscan.io/address/0x2a46cad23484c15f60663ece368395b3a249632a)
 - ExitPositionsManager: [0xfa652aa169c23277a941cf2d23d2d707fda60ed9](https://etherscan.io/address/0xfa652aa169c23277a941cf2d23d2d707fda60ed9)
