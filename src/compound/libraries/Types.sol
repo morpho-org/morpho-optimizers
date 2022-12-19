@@ -18,13 +18,20 @@ library Types {
     /// STRUCTS ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In peer-to-peer supply scaled unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
-        uint256 onPool; // In pool supply scaled unit. Multiply by the pool supply index to get the underlying amount.
+        uint256 inP2P; // In peer-to-peer supply unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
+        uint256 onPool; // In pool supply unit. Multiply by the pool supply index to get the underlying amount.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In peer-to-peer borrow scaled unit, a unit that grows in underlying value, to keep track of the interests paid by borrowers in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount.
+        uint256 inP2P; // In peer-to-peer borrow unit, a unit that grows in underlying value, to keep track of the interests paid by borrowers in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount.
         uint256 onPool; // In pool borrow unit, a unit that grows in value, to keep track of the debt increase when borrowers are on Compound. Multiply by the pool borrow index to get the underlying amount.
+    }
+
+    struct Indexes {
+        uint256 p2pSupplyIndex; // The peer-to-peer supply index (in wad), used to multiply the peer-to-peer supply scaled balance and get the peer-to-peer supply balance (in underlying).
+        uint256 p2pBorrowIndex; // The peer-to-peer borrow index (in wad), used to multiply the peer-to-peer borrow scaled balance and get the peer-to-peer borrow balance (in underlying).
+        uint256 poolSupplyIndex; // The pool supply index (in wad), used to multiply the pool supply scaled balance and get the pool supply balance (in underlying).
+        uint256 poolBorrowIndex; // The pool borrow index (in wad), used to multiply the pool borrow scaled balance and get the pool borrow balance (in underlying).
     }
 
     // Max gas to consume during the matching process for supply, borrow, withdraw and repay functions.
@@ -43,17 +50,17 @@ library Types {
     }
 
     struct AssetLiquidityData {
-        uint256 collateralUsd; // The collateral value of the asset (in USD, wad).
-        uint256 maxDebtUsd; // The maximum possible debt value of the asset (in USD, wad).
-        uint256 debtUsd; // The debt value of the asset (in USD, wad).
+        uint256 collateralUsd; // The collateral value of the asset (in wad).
+        uint256 maxDebtUsd; // The maximum possible debt value of the asset (in wad).
+        uint256 debtUsd; // The debt value of the asset (in wad).
         uint256 underlyingPrice; // The price of the token.
-        uint256 collateralFactor; // The liquidation threshold applied on this token.
+        uint256 collateralFactor; // The liquidation threshold applied on this token (in wad).
     }
 
     struct LiquidityData {
-        uint256 collateralUsd; // The collateral value (in USD, wad).
-        uint256 maxDebtUsd; // The maximum debt value allowed before being liquidatable (in USD, wad).
-        uint256 debtUsd; // The debt value (in USD, wad).
+        uint256 collateralUsd; // The collateral value (in wad).
+        uint256 maxDebtUsd; // The maximum debt value allowed before being liquidatable (in wad).
+        uint256 debtUsd; // The debt value (in wad).
     }
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).

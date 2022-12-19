@@ -44,6 +44,11 @@ contract TestSetup is Config, Test {
         uint256 ltv;
         uint256 liquidationThreshold;
         Types.Market config;
+        //
+        bool isActive;
+        bool isFrozen;
+        //
+        Types.MarketPauseStatus status;
     }
 
     TestMarket[] public markets;
@@ -171,17 +176,22 @@ contract TestSetup is Config, Test {
                 ltv: 0,
                 liquidationThreshold: 0,
                 decimals: 0,
-                config: marketConfig
+                config: marketConfig,
+                isActive: false,
+                isFrozen: false,
+                status: IMorpho(address(morpho)).marketPauseStatus(poolToken)
             });
 
             DataTypes.ReserveConfigurationMap memory config = pool.getConfiguration(underlying);
             (market.ltv, market.liquidationThreshold, , market.decimals, ) = config
             .getParamsMemory();
-            (bool isActive, bool isFrozen, bool isBorrowable, ) = config.getFlagsMemory();
+
+            bool isBorrowable;
+            (market.isActive, market.isFrozen, isBorrowable, ) = config.getFlagsMemory();
 
             markets.push(market);
 
-            if (isActive && !isFrozen && !market.config.isPaused) {
+            if (!market.config.isPaused) {
                 unpausedMarkets.push(market);
 
                 if (!market.config.isPartiallyPaused) {

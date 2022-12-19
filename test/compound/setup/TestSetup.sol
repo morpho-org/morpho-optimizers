@@ -117,10 +117,9 @@ contract TestSetup is Config, Utils {
 
         morpho.setRewardsManager(rewardsManager);
 
-        lensImplV1 = new Lens();
+        lensImplV1 = new Lens(address(morpho));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
         lens = Lens(address(lensProxy));
-        lens.initialize(address(morpho));
     }
 
     function createMarket(address _cToken) internal {

@@ -63,10 +63,10 @@
 ➡ Lens
 =======================
 
-| Name           | Type                     | Slot | Offset | Bytes | Contract                        |
-|----------------|--------------------------|------|--------|-------|---------------------------------|
-| _initialized   | bool                     | 0    | 0      | 1     | src/compound/lens/Lens.sol:Lens |
-| _initializing  | bool                     | 0    | 1      | 1     | src/compound/lens/Lens.sol:Lens |
-| morpho         | contract IMorpho         | 0    | 2      | 20    | src/compound/lens/Lens.sol:Lens |
-| comptroller    | contract IComptroller    | 1    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
-| rewardsManager | contract IRewardsManager | 2    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
+| Name                     | Type    | Slot | Offset | Bytes | Contract                        |
+|--------------------------|---------|------|--------|-------|---------------------------------|
+| _initialized             | bool    | 0    | 0      | 1     | src/compound/lens/Lens.sol:Lens |
+| _initializing            | bool    | 0    | 1      | 1     | src/compound/lens/Lens.sol:Lens |
+| deprecatedMorpho         | address | 0    | 2      | 20    | src/compound/lens/Lens.sol:Lens |
+| deprecatedComptroller    | address | 1    | 0      | 20    | src/compound/lens/Lens.sol:Lens |
+| deprecatedRewardsManager | address | 2    | 0      | 20    | src/compound/lens/Lens.sol:Lens |

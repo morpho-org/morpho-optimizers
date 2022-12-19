@@ -108,6 +108,9 @@ abstract contract MorphoUtils is MorphoStorage {
     }
 
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
+    /// @dev Expects the given user's entered markets to include the given market.
+    /// @dev Expects the given market's pool & peer-to-peer indexes to have been updated.
+    /// @dev Expects `_withdrawnAmount` to be less than or equal to the given user's supply on the given market.
     /// @param _user The user to check.
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The amount of tokens to hypothetically withdraw (in underlying).
@@ -203,7 +206,7 @@ abstract contract MorphoUtils is MorphoStorage {
         Types.BorrowBalance memory userBorrowBalance = borrowBalanceInOf[_poolToken][_user];
         return
             userBorrowBalance.inP2P.mul(p2pBorrowIndex[_poolToken]) +
-            userBorrowBalance.onPool.mul(lastPoolIndexes[_poolToken].lastBorrowPoolIndex);
+            userBorrowBalance.onPool.mul(ICToken(_poolToken).borrowIndex());
     }
 
     /// @dev Returns the underlying ERC20 token related to the pool token.

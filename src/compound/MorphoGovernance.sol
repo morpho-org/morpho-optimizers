@@ -112,8 +112,8 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
+    /// @notice Thrown when the creation of a market failed on Compound and kicks back Compound error code.
+    error MarketCreationFailedOnCompound(uint256 errorCode);
 
     /// @notice Thrown when the input is above the max basis points value (100%).
     error ExceedsMaxBasisPoints();
@@ -126,6 +126,12 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
+
+    /// @notice Thrown when market borrow is not paused.
+    error BorrowNotPaused();
+
+    /// @notice Thrown when market is deprecated.
+    error MarketIsDeprecated();
 
     /// UPGRADE ///
 
@@ -279,6 +285,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
+        if (!_isPaused && marketPauseStatus[_poolToken].isDeprecated) revert MarketIsDeprecated();
         marketPauseStatus[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -374,6 +381,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
+        if (!marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowNotPaused();
         marketPauseStatus[_poolToken].isDeprecated = _isDeprecated;
         emit IsDeprecatedSet(_poolToken, _isDeprecated);
     }
@@ -440,7 +448,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolToken;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
-        if (results[0] != 0) revert MarketCreationFailedOnCompound();
+        if (results[0] != 0) revert MarketCreationFailedOnCompound(results[0]);
 
         // Same initial index as Compound.
         uint256 initialIndex;

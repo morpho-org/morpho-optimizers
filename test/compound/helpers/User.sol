@@ -4,46 +4,43 @@ pragma solidity ^0.8.0;
 import "src/compound/interfaces/IRewardsManager.sol";
 
 import "src/compound/Morpho.sol";
-import "src/compound/InterestRatesManager.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
 
     Morpho internal morpho;
-    InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
     IComptroller internal comptroller;
 
     constructor(Morpho _morpho) {
         morpho = _morpho;
-        interestRatesManager = InterestRatesManager(address(_morpho.interestRatesManager()));
         rewardsManager = _morpho.rewardsManager();
         comptroller = morpho.comptroller();
     }
 
     receive() external payable {}
 
-    function compoundSupply(address _cTokenAddress, uint256 _amount) external {
+    function compoundSupply(address _poolToken, uint256 _amount) external {
         address[] memory marketToEnter = new address[](1);
-        marketToEnter[0] = _cTokenAddress;
+        marketToEnter[0] = _poolToken;
         comptroller.enterMarkets(marketToEnter);
-        address underlying = ICToken(_cTokenAddress).underlying();
-        ERC20(underlying).safeApprove(_cTokenAddress, type(uint256).max);
-        require(ICToken(_cTokenAddress).mint(_amount) == 0, "Mint fail");
+        address underlying = ICToken(_poolToken).underlying();
+        ERC20(underlying).safeApprove(_poolToken, type(uint256).max);
+        require(ICToken(_poolToken).mint(_amount) == 0, "Mint fail");
     }
 
-    function compoundBorrow(address _cTokenAddress, uint256 _amount) external {
-        require(ICToken(_cTokenAddress).borrow(_amount) == 0, "Borrow fail");
+    function compoundBorrow(address _poolToken, uint256 _amount) external {
+        require(ICToken(_poolToken).borrow(_amount) == 0, "Borrow fail");
     }
 
-    function compoundWithdraw(address _cTokenAddress, uint256 _amount) external {
-        ICToken(_cTokenAddress).redeemUnderlying(_amount);
+    function compoundWithdraw(address _poolToken, uint256 _amount) external {
+        ICToken(_poolToken).redeemUnderlying(_amount);
     }
 
-    function compoundRepay(address _cTokenAddress, uint256 _amount) external {
-        address underlying = ICToken(_cTokenAddress).underlying();
-        ERC20(underlying).safeApprove(_cTokenAddress, type(uint256).max);
-        ICToken(_cTokenAddress).repayBorrow(_amount);
+    function compoundRepay(address _poolToken, uint256 _amount) external {
+        address underlying = ICToken(_poolToken).underlying();
+        ERC20(underlying).safeApprove(_poolToken, type(uint256).max);
+        ICToken(_poolToken).repayBorrow(_amount);
     }
 
     function compoundClaimRewards(address[] memory assets) external {
@@ -66,11 +63,10 @@ contract User {
         ERC20(_token).safeApprove(_spender, _amount);
     }
 
-    function createMarket(
-        address _underlyingTokenAddress,
-        Types.MarketParameters calldata _marketParams
-    ) external {
-        morpho.createMarket(_underlyingTokenAddress, _marketParams);
+    function createMarket(address _underlyingToken, Types.MarketParameters calldata _marketParams)
+        external
+    {
+        morpho.createMarket(_underlyingToken, _marketParams);
     }
 
     function setReserveFactor(address _poolToken, uint16 _reserveFactor) external {
@@ -168,8 +164,8 @@ contract User {
         return morpho.claimRewards(_assets, _toSwap);
     }
 
-    function setIsP2PDisabled(address _marketAddress, bool _isPaused) external {
-        morpho.setIsP2PDisabled(_marketAddress, _isPaused);
+    function setIsP2PDisabled(address _market, bool _isPaused) external {
+        morpho.setIsP2PDisabled(_market, _isPaused);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {

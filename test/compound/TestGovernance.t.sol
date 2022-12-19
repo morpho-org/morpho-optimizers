@@ -20,7 +20,7 @@ contract TestGovernance is TestSetup {
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
 
-        hevm.expectRevert(abi.encodeWithSignature("MarketCreationFailedOnCompound()"));
+        hevm.expectRevert(abi.encodeWithSignature("MarketCreationFailedOnCompound(uint256)", 9));
         morpho.createMarket(address(supplier1), marketParams);
     }
 
@@ -230,6 +230,8 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        morpho.setIsBorrowPaused(cDai, true);
+
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setIsDeprecated(cDai, true);
@@ -446,5 +448,19 @@ contract TestGovernance is TestSetup {
 
     function testFailCallIncreaseP2PDeltasFromImplementation() public {
         positionsManager.increaseP2PDeltasLogic(cDai, 0);
+    }
+
+    function testDeprecateCycle() public {
+        hevm.expectRevert(abi.encodeWithSignature("BorrowNotPaused()"));
+        morpho.setIsDeprecated(cDai, true);
+
+        morpho.setIsBorrowPaused(cDai, true);
+        morpho.setIsDeprecated(cDai, true);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketIsDeprecated()"));
+        morpho.setIsBorrowPaused(cDai, false);
+
+        morpho.setIsDeprecated(cDai, false);
+        morpho.setIsBorrowPaused(cDai, false);
     }
 }

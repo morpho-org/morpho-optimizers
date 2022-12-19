@@ -5,6 +5,7 @@ import "src/compound/interfaces/compound/ICompound.sol";
 import {IIncentivesVault} from "src/compound/interfaces/IIncentivesVault.sol";
 import {IPositionsManager} from "src/compound/interfaces/IPositionsManager.sol";
 import {IInterestRatesManager} from "src/compound/interfaces/IInterestRatesManager.sol";
+import {IMorpho} from "src/compound/interfaces/IMorpho.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
