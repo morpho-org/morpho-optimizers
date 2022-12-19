@@ -107,7 +107,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a new market is created.
     /// @param _poolToken The address of the market that has been created.
     /// @param _reserveFactor The reserve factor set for this market.
-    /// @param _poolToken The P2P index cursor set for this market.
+    /// @param _p2pIndexCursor The P2P index cursor set for this market.
     event MarketCreated(address indexed _poolToken, uint16 _reserveFactor, uint16 _p2pIndexCursor);
 
     /// ERRORS ///

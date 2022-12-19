@@ -26,6 +26,11 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
     }
 
+    function testShouldNotLiquidateZero() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        borrower2.liquidate(aDai, aUsdc, address(borrower1), 0);
+    }
+
     function testLiquidateWhenMarketDeprecated() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = to6Decimals(3 * amount);

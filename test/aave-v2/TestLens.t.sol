@@ -41,8 +41,8 @@ contract TestLens is TestSetup {
         assertEq(assetData.decimals, decimals);
         assertEq(assetData.underlyingPrice, underlyingPrice);
         assertEq(assetData.tokenUnit, tokenUnit);
-        assertEq(assetData.collateral, 0);
-        assertEq(assetData.debt, 0);
+        assertEq(assetData.collateralEth, 0);
+        assertEq(assetData.debtEth, 0);
     }
 
     function testUserLiquidityDataForAssetWithSupply() public {
@@ -68,8 +68,8 @@ contract TestLens is TestSetup {
         assertEq(assetData.liquidationThreshold, liquidationThreshold, "liquidationThreshold");
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
         assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
-        assertEq(assetData.collateral, collateral, "collateral");
-        assertEq(assetData.debt, 0, "debt");
+        assertEq(assetData.collateralEth, collateral, "collateral");
+        assertEq(assetData.debtEth, 0, "debt");
     }
 
     function testUserLiquidityDataForAssetWithSupplyAndBorrow() public {
@@ -99,8 +99,8 @@ contract TestLens is TestSetup {
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
         assertEq(assetData.decimals, decimals, "decimals");
         assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
-        assertApproxEqAbs(assetData.collateral, collateral, 2, "collateral");
-        assertEq(assetData.debt, debt, "debt");
+        assertApproxEqAbs(assetData.collateralEth, collateral, 2, "collateral");
+        assertEq(assetData.debtEth, debt, "debt");
     }
 
     function testUserLiquidityDataForAssetWithSupplyAndBorrowWithMultipleAssets() public {
@@ -131,7 +131,7 @@ contract TestLens is TestSetup {
         .getParamsMemory();
         expectedDataUsdc.underlyingPrice = oracle.getAssetPrice(usdc);
         expectedDataUsdc.tokenUnit = 10**decimalsUsdc;
-        expectedDataUsdc.debt =
+        expectedDataUsdc.debtEth =
             (toBorrow * expectedDataUsdc.underlyingPrice) /
             expectedDataUsdc.tokenUnit;
 
@@ -147,8 +147,8 @@ contract TestLens is TestSetup {
             "underlyingPriceUsdc"
         );
         assertEq(assetDataUsdc.tokenUnit, expectedDataUsdc.tokenUnit, "tokenUnitUsdc");
-        assertEq(assetDataUsdc.collateral, 0, "collateralUsdc");
-        assertEq(assetDataUsdc.debt, expectedDataUsdc.debt, "debtUsdc");
+        assertEq(assetDataUsdc.collateralEth, 0, "collateralUsdc");
+        assertEq(assetDataUsdc.debtEth, expectedDataUsdc.debtEth, "debtUsdc");
 
         Types.AssetLiquidityData memory expectedDataDai;
         uint256 decimalsDai;
@@ -158,7 +158,7 @@ contract TestLens is TestSetup {
         .getParamsMemory();
         expectedDataDai.underlyingPrice = oracle.getAssetPrice(dai);
         expectedDataDai.tokenUnit = 10**decimalsDai;
-        expectedDataDai.collateral =
+        expectedDataDai.collateralEth =
             (amount * expectedDataDai.underlyingPrice) /
             expectedDataDai.tokenUnit;
 
@@ -174,8 +174,8 @@ contract TestLens is TestSetup {
             "underlyingPriceDai"
         );
         assertEq(assetDataDai.tokenUnit, expectedDataDai.tokenUnit, "tokenUnitDai");
-        assertEq(assetDataDai.collateral, expectedDataDai.collateral, "collateralDai");
-        assertEq(assetDataDai.debt, 0, "debtDai");
+        assertEq(assetDataDai.collateralEth, expectedDataDai.collateralEth, "collateralDai");
+        assertEq(assetDataDai.debtEth, 0, "debtDai");
     }
 
     function testMaxCapacitiesWithNothing() public {
@@ -206,9 +206,10 @@ contract TestLens is TestSetup {
             oracle
         );
 
-        uint256 expectedBorrowableUsdc = (assetDataUsdc.collateral.percentMul(assetDataUsdc.ltv) *
-            assetDataUsdc.tokenUnit) / assetDataUsdc.underlyingPrice;
-        uint256 expectedBorrowableDai = (assetDataUsdc.collateral.percentMul(assetDataUsdc.ltv) *
+        uint256 expectedBorrowableUsdc = (assetDataUsdc.collateralEth.percentMul(
+            assetDataUsdc.ltv
+        ) * assetDataUsdc.tokenUnit) / assetDataUsdc.underlyingPrice;
+        uint256 expectedBorrowableDai = (assetDataUsdc.collateralEth.percentMul(assetDataUsdc.ltv) *
             assetDataDai.tokenUnit) / assetDataDai.underlyingPrice;
 
         (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
@@ -460,8 +461,9 @@ contract TestLens is TestSetup {
         (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aUsdc);
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aUsdt);
 
-        uint256 expectedBorrowableUsdt = ((assetDataUsdc.collateral.percentMul(assetDataUsdc.ltv) +
-            assetDataDai.collateral.percentMul(assetDataDai.ltv)) * assetDataUsdt.tokenUnit) /
+        uint256 expectedBorrowableUsdt = ((assetDataUsdc.collateralEth.percentMul(
+            assetDataUsdc.ltv
+        ) + assetDataDai.collateralEth.percentMul(assetDataDai.ltv)) * assetDataUsdt.tokenUnit) /
             assetDataUsdt.underlyingPrice;
 
         assertEq(withdrawableUsdc, to6Decimals(amount), "unexpected new withdrawable usdc");
@@ -504,26 +506,20 @@ contract TestLens is TestSetup {
         uint256 underlyingPriceDai = oracle.getAssetPrice(dai);
         uint256 tokenUnitDai = 10**decimalsDai;
 
-        expectedStates.collateral = (amount * underlyingPriceDai) / tokenUnitDai;
-        expectedStates.debt = (toBorrow * underlyingPriceUsdc) / tokenUnitUsdc;
-        expectedStates.liquidationThreshold = expectedStates.collateral.percentMul(
+        expectedStates.collateralEth = (amount * underlyingPriceDai) / tokenUnitDai;
+        expectedStates.debtEth = (toBorrow * underlyingPriceUsdc) / tokenUnitUsdc;
+        expectedStates.maxDebtEth = expectedStates.collateralEth.percentMul(
             liquidationThresholdDai
         );
-        expectedStates.maxDebt = expectedStates.collateral.percentMul(ltvDai);
+        expectedStates.borrowableEth = expectedStates.collateralEth.percentMul(ltvDai);
 
-        uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
-        uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
-            expectedStates.debt
-        );
+        uint256 healthFactor = states.maxDebtEth.wadDiv(states.debtEth);
+        uint256 expectedHealthFactor = expectedStates.maxDebtEth.wadDiv(expectedStates.debtEth);
 
-        assertEq(states.collateral, expectedStates.collateral, "collateral");
-        assertEq(states.debt, expectedStates.debt, "debt");
-        assertEq(
-            states.liquidationThreshold,
-            expectedStates.liquidationThreshold,
-            "liquidationThreshold"
-        );
-        assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
+        assertEq(states.collateralEth, expectedStates.collateralEth, "collateral");
+        assertEq(states.debtEth, expectedStates.debtEth, "debt");
+        assertEq(states.maxDebtEth, expectedStates.maxDebtEth, "liquidationThreshold");
+        assertEq(states.borrowableEth, expectedStates.borrowableEth, "maxDebt");
         assertEq(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
@@ -549,42 +545,34 @@ contract TestLens is TestSetup {
         .getParamsMemory();
         uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
             10**decimals;
-        expectedStates.collateral += collateralValueToAdd;
-        expectedStates.liquidationThreshold += collateralValueToAdd.percentMul(
-            liquidationThreshold
-        );
-        expectedStates.maxDebt += collateralValueToAdd.percentMul(ltv);
+        expectedStates.collateralEth += collateralValueToAdd;
+        expectedStates.maxDebtEth += collateralValueToAdd.percentMul(liquidationThreshold);
+        expectedStates.borrowableEth += collateralValueToAdd.percentMul(ltv);
 
         // DAI data
         (ltv, liquidationThreshold, , decimals, ) = pool.getConfiguration(dai).getParamsMemory();
         collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**decimals;
-        expectedStates.collateral += collateralValueToAdd;
-        expectedStates.liquidationThreshold += collateralValueToAdd.percentMul(
-            liquidationThreshold
-        );
-        expectedStates.maxDebt += collateralValueToAdd.percentMul(ltv);
+        expectedStates.collateralEth += collateralValueToAdd;
+        expectedStates.maxDebtEth += collateralValueToAdd.percentMul(liquidationThreshold);
+        expectedStates.borrowableEth += collateralValueToAdd.percentMul(ltv);
 
         // WBTC data
         (, , , decimals, ) = pool.getConfiguration(wbtc).getParamsMemory();
-        expectedStates.debt += (toBorrowWbtc * oracle.getAssetPrice(wbtc)) / 10**decimals;
+        expectedStates.debtEth += (toBorrowWbtc * oracle.getAssetPrice(wbtc)) / 10**decimals;
 
         // USDT data
         (, , , decimals, ) = pool.getConfiguration(usdt).getParamsMemory();
-        expectedStates.debt += (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) / 10**decimals;
+        expectedStates.debtEth +=
+            (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
+            10**decimals;
 
-        uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
-        uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
-            expectedStates.debt
-        );
+        uint256 healthFactor = states.maxDebtEth.wadDiv(states.debtEth);
+        uint256 expectedHealthFactor = expectedStates.maxDebtEth.wadDiv(expectedStates.debtEth);
 
-        assertApproxEqAbs(states.collateral, expectedStates.collateral, 2, "collateral");
-        assertApproxEqAbs(states.debt, expectedStates.debt, 1, "debt");
-        assertEq(
-            states.liquidationThreshold,
-            expectedStates.liquidationThreshold,
-            "liquidationThreshold"
-        );
-        assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
+        assertApproxEqAbs(states.collateralEth, expectedStates.collateralEth, 2, "collateral");
+        assertApproxEqAbs(states.debtEth, expectedStates.debtEth, 1, "debt");
+        assertEq(states.maxDebtEth, expectedStates.maxDebtEth, "liquidationThreshold");
+        assertEq(states.borrowableEth, expectedStates.borrowableEth, "maxDebt");
         assertApproxEqAbs(healthFactor, expectedHealthFactor, 1e4, "healthFactor");
     }
 
@@ -638,38 +626,32 @@ contract TestLens is TestSetup {
         (ltv, liquidationThreshold, , decimals, ) = pool.getConfiguration(usdt).getParamsMemory();
         uint256 collateralValueUsdt = (to6Decimals(amount) * oracle.getAssetPrice(usdt)) /
             10**decimals;
-        expectedStates.collateral += collateralValueUsdt;
-        expectedStates.liquidationThreshold += collateralValueUsdt.percentMul(liquidationThreshold);
-        expectedStates.maxDebt += collateralValueUsdt.percentMul(ltv);
+        expectedStates.collateralEth += collateralValueUsdt;
+        expectedStates.maxDebtEth += collateralValueUsdt.percentMul(liquidationThreshold);
+        expectedStates.borrowableEth += collateralValueUsdt.percentMul(ltv);
 
         // DAI data
         (ltv, liquidationThreshold, , decimals, ) = pool.getConfiguration(dai).getParamsMemory();
         uint256 collateralValueDai = (amount * oracle.getAssetPrice(dai)) / 10**decimals;
-        expectedStates.collateral += collateralValueDai;
-        expectedStates.liquidationThreshold += collateralValueDai.percentMul(liquidationThreshold);
-        expectedStates.maxDebt += collateralValueDai.percentMul(ltv);
+        expectedStates.collateralEth += collateralValueDai;
+        expectedStates.maxDebtEth += collateralValueDai.percentMul(liquidationThreshold);
+        expectedStates.borrowableEth += collateralValueDai.percentMul(ltv);
 
         // USDC data
         (, , , decimals, ) = pool.getConfiguration(usdc).getParamsMemory();
-        expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdc)) / 10**decimals;
+        expectedStates.debtEth += (toBorrow * oracle.getAssetPrice(usdc)) / 10**decimals;
 
         // USDT data
         (, , , decimals, ) = pool.getConfiguration(usdt).getParamsMemory();
-        expectedStates.debt += (toBorrow * oracle.getAssetPrice(usdt)) / 10**decimals;
+        expectedStates.debtEth += (toBorrow * oracle.getAssetPrice(usdt)) / 10**decimals;
 
-        uint256 healthFactor = states.liquidationThreshold.wadDiv(states.debt);
-        uint256 expectedHealthFactor = expectedStates.liquidationThreshold.wadDiv(
-            expectedStates.debt
-        );
+        uint256 healthFactor = states.maxDebtEth.wadDiv(states.debtEth);
+        uint256 expectedHealthFactor = expectedStates.maxDebtEth.wadDiv(expectedStates.debtEth);
 
-        assertApproxEqAbs(states.collateral, expectedStates.collateral, 1e3, "collateral");
-        assertEq(states.debt, expectedStates.debt, "debt");
-        assertEq(
-            states.liquidationThreshold,
-            expectedStates.liquidationThreshold,
-            "liquidationThreshold"
-        );
-        assertEq(states.maxDebt, expectedStates.maxDebt, "maxDebt");
+        assertApproxEqAbs(states.collateralEth, expectedStates.collateralEth, 1e3, "collateral");
+        assertEq(states.debtEth, expectedStates.debtEth, "debt");
+        assertEq(states.maxDebtEth, expectedStates.maxDebtEth, "liquidationThreshold");
+        assertEq(states.borrowableEth, expectedStates.borrowableEth, "maxDebt");
         assertEq(healthFactor, expectedHealthFactor, "healthFactor");
     }
 
@@ -1248,7 +1230,7 @@ contract TestLens is TestSetup {
 
         uint256 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), aUsdc, aDai);
 
-        if (states.debt <= states.liquidationThreshold) {
+        if (states.debtEth <= states.maxDebtEth) {
             assertEq(toRepay, 0, "Should return 0 when the position is solvent");
             return;
         }
@@ -1270,14 +1252,14 @@ contract TestLens is TestSetup {
             } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
 
             // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationBonus] threshold and returned to a solvent position
-            if (states.collateral.percentDiv(liquidationBonus) > states.debt) {
+            if (states.collateralEth.percentDiv(liquidationBonus) > states.debtEth) {
                 assertFalse(lens.isLiquidatable(address(borrower1)), "borrower1 liquidatable");
             } else {
                 // or the liquidator has drained all the collateral
                 states = lens.getUserBalanceStates(address(borrower1));
                 assertGt(
-                    states.debt,
-                    states.collateral.percentDiv(liquidationBonus),
+                    states.debtEth,
+                    states.collateralEth.percentDiv(liquidationBonus),
                     "debt value under collateral value"
                 );
                 assertEq(toRepay, 0, "to repay not zero");
@@ -1285,8 +1267,8 @@ contract TestLens is TestSetup {
         } else {
             // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
             assertGt(
-                states.debt,
-                states.collateral.percentDiv(liquidationBonus),
+                states.debtEth,
+                states.collateralEth.percentDiv(liquidationBonus),
                 "debt value under collateral value"
             );
         }

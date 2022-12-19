@@ -51,8 +51,8 @@ abstract contract UsersLens is IndexesLens {
             if (_poolToken != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, false, oracle);
 
-                data.maxDebtValue += assetData.maxDebtValue;
-                data.debtValue += assetData.debtValue;
+                data.maxDebtUsd += assetData.maxDebtUsd;
+                data.debtUsd += assetData.debtUsd;
             }
 
             unchecked {
@@ -62,11 +62,11 @@ abstract contract UsersLens is IndexesLens {
 
         assetData = getUserLiquidityDataForAsset(_user, _poolToken, true, oracle);
 
-        data.maxDebtValue += assetData.maxDebtValue;
-        data.debtValue += assetData.debtValue;
+        data.maxDebtUsd += assetData.maxDebtUsd;
+        data.debtUsd += assetData.debtUsd;
 
         // Not possible to withdraw nor borrow.
-        if (data.maxDebtValue < data.debtValue) return (0, 0);
+        if (data.maxDebtUsd < data.debtUsd) return (0, 0);
 
         uint256 poolTokenBalance = _poolToken == morpho.cEth()
             ? _poolToken.balance
@@ -74,11 +74,11 @@ abstract contract UsersLens is IndexesLens {
 
         borrowable = Math.min(
             poolTokenBalance,
-            (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice)
+            (data.maxDebtUsd - data.debtUsd).div(assetData.underlyingPrice)
         );
         withdrawable = Math.min(
             poolTokenBalance,
-            assetData.collateralValue.div(assetData.underlyingPrice)
+            assetData.collateralUsd.div(assetData.underlyingPrice)
         );
 
         if (assetData.collateralFactor != 0) {
@@ -145,10 +145,10 @@ abstract contract UsersLens is IndexesLens {
         view
         returns (uint256)
     {
-        (, uint256 debtValue, uint256 maxDebtValue) = getUserBalanceStates(_user, _updatedMarkets);
-        if (debtValue == 0) return type(uint256).max;
+        (, uint256 debtUsd, uint256 maxDebtUsd) = getUserBalanceStates(_user, _updatedMarkets);
+        if (debtUsd == 0) return type(uint256).max;
 
-        return maxDebtValue.div(debtValue);
+        return maxDebtUsd.div(debtUsd);
     }
 
     /// PUBLIC ///
@@ -156,16 +156,16 @@ abstract contract UsersLens is IndexesLens {
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return collateralValue The collateral value of the user.
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum possible debt value of the user.
+    /// @return collateralUsd The collateral value of the user.
+    /// @return debtUsd The current debt value of the user.
+    /// @return maxDebtUsd The maximum possible debt value of the user.
     function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         public
         view
         returns (
-            uint256 collateralValue,
-            uint256 debtValue,
-            uint256 maxDebtValue
+            uint256 collateralUsd,
+            uint256 debtUsd,
+            uint256 maxDebtUsd
         )
     {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
@@ -195,9 +195,9 @@ abstract contract UsersLens is IndexesLens {
                 oracle
             );
 
-            collateralValue += assetData.collateralValue;
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            collateralUsd += assetData.collateralUsd;
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
 
             unchecked {
                 ++i;
@@ -260,14 +260,14 @@ abstract contract UsersLens is IndexesLens {
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum debt value possible of the user.
+    /// @return debtUsd The current debt value of the user.
+    /// @return maxDebtUsd The maximum debt value possible of the user.
     function getUserHypotheticalBalanceStates(
         address _user,
         address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) public view returns (uint256 debtValue, uint256 maxDebtValue) {
+    ) public view returns (uint256 debtUsd, uint256 maxDebtUsd) {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
@@ -282,18 +282,17 @@ abstract contract UsersLens is IndexesLens {
                 oracle
             );
 
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
             unchecked {
                 ++i;
             }
 
             if (_poolToken == poolTokenEntered) {
-                if (_borrowedAmount > 0)
-                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
+                if (_borrowedAmount > 0) debtUsd += _borrowedAmount.mul(assetData.underlyingPrice);
 
                 if (_withdrawnAmount > 0)
-                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
+                    maxDebtUsd -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
                         assetData.collateralFactor
                     );
             }
@@ -324,21 +323,21 @@ abstract contract UsersLens is IndexesLens {
             uint256 poolBorrowIndex
         ) = getIndexes(_poolToken, _getUpdatedIndexes);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(
+        assetData.collateralUsd = _getUserSupplyBalanceInOf(
             _poolToken,
             _user,
             p2pSupplyIndex,
             poolSupplyIndex
         ).mul(assetData.underlyingPrice);
 
-        assetData.debtValue = _getUserBorrowBalanceInOf(
+        assetData.debtUsd = _getUserBorrowBalanceInOf(
             _poolToken,
             _user,
             p2pBorrowIndex,
             poolBorrowIndex
         ).mul(assetData.underlyingPrice);
 
-        assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
+        assetData.maxDebtUsd = assetData.collateralUsd.mul(assetData.collateralFactor);
     }
 
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
@@ -353,8 +352,8 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 maxDebtValue;
-        uint256 debtValue;
+        uint256 maxDebtUsd;
+        uint256 debtUsd;
 
         uint256 nbEnteredMarkets = enteredMarkets.length;
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
@@ -380,15 +379,15 @@ abstract contract UsersLens is IndexesLens {
                 oracle
             );
 
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
 
             unchecked {
                 ++i;
             }
         }
 
-        return debtValue > maxDebtValue;
+        return debtUsd > maxDebtUsd;
     }
 
     /// INTERNAL ///

@@ -48,15 +48,15 @@ library Types {
         uint256 liquidationThreshold; // The liquidation threshold applied on this token (in basis point).
         uint256 ltv; // The LTV applied on this token (in basis point).
         uint256 underlyingPrice; // The price of the token (in ETH).
-        uint256 collateral; // The collateral value of the asset (in ETH).
-        uint256 debt; // The debt value of the asset (in ETH).
+        uint256 collateralEth; // The collateral value of the asset (in ETH).
+        uint256 debtEth; // The debt value of the asset (in ETH).
     }
 
     struct LiquidityData {
-        uint256 collateral; // The collateral value (in ETH).
-        uint256 maxDebt; // The max debt value (in ETH).
-        uint256 liquidationThreshold; // The liquidation threshold value (in ETH).
-        uint256 debt; // The debt value (in ETH).
+        uint256 collateralEth; // The collateral value (in ETH).
+        uint256 borrowableEth; // The maximum debt value allowed to borrow (in ETH).
+        uint256 maxDebtEth; // The maximum debt value allowed before being liquidatable (in ETH).
+        uint256 debtEth; // The debt value (in ETH).
     }
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
@@ -84,14 +84,5 @@ library Types {
         bool isLiquidateCollateralPaused; // Whether the liquidation on this market as collateral is paused or not.
         bool isLiquidateBorrowPaused; // Whether the liquidatation on this market as borrow is paused or not.
         bool isDeprecated; // Whether a market is deprecated or not.
-    }
-
-    struct LiquidityStackVars {
-        address poolToken;
-        uint256 poolTokensLength;
-        bytes32 userMarkets;
-        bytes32 borrowMask;
-        address underlyingToken;
-        uint256 underlyingPrice;
     }
 }

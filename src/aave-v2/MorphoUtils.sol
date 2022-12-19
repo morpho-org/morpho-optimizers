@@ -5,7 +5,6 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
-import "./libraries/aave/UserConfiguration.sol";
 
 import "@morpho-dao/morpho-utils/DelegateCall.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
@@ -20,7 +19,6 @@ import "./MorphoStorage.sol";
 /// @notice Modifiers, getters and other util functions for Morpho.
 abstract contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using UserConfiguration for DataTypes.UserConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using DelegateCall for address;
@@ -31,6 +29,18 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
+
+    /// STRUCTS ///
+
+    // Struct to avoid stack too deep.
+    struct LiquidityVars {
+        address poolToken;
+        uint256 poolTokensLength;
+        bytes32 userMarkets;
+        bytes32 borrowMask;
+        address underlyingToken;
+        uint256 underlyingPrice;
+    }
 
     /// MODIFIERS ///
 
@@ -254,11 +264,8 @@ abstract contract MorphoUtils is MorphoStorage {
     ) internal returns (Types.LiquidityData memory values) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         Types.AssetLiquidityData memory assetData;
-        Types.LiquidityStackVars memory vars;
+        LiquidityVars memory vars;
 
-        DataTypes.UserConfigurationMap memory morphoPoolConfig = pool.getUserConfiguration(
-            address(this)
-        );
         vars.poolTokensLength = marketsCreated.length;
         vars.userMarkets = userMarkets[_user];
 
@@ -273,24 +280,17 @@ abstract contract MorphoUtils is MorphoStorage {
 
             if (vars.poolToken != _poolToken) _updateIndexes(vars.poolToken);
 
+            // Assumes that the Morpho contract has not disabled the asset as collateral in the underlying pool.
             (assetData.ltv, assetData.liquidationThreshold, , assetData.decimals, ) = pool
             .getConfiguration(vars.underlyingToken)
             .getParamsMemory();
-
-            // LTV and liquidation threshold should be zero if Morpho has not enabled this asset as collateral.
-            if (
-                !morphoPoolConfig.isUsingAsCollateral(pool.getReserveData(vars.underlyingToken).id)
-            ) {
-                assetData.ltv = 0;
-                assetData.liquidationThreshold = 0;
-            }
 
             unchecked {
                 assetData.tokenUnit = 10**assetData.decimals;
             }
 
             if (_isBorrowing(vars.userMarkets, vars.borrowMask)) {
-                values.debt += _debtValue(
+                values.debtEth += _debtValue(
                     vars.poolToken,
                     _user,
                     vars.underlyingPrice,
@@ -299,35 +299,36 @@ abstract contract MorphoUtils is MorphoStorage {
             }
 
             // Cache current asset collateral value.
-            uint256 assetCollateralValue;
             if (_isSupplying(vars.userMarkets, vars.borrowMask)) {
-                assetCollateralValue = _collateralValue(
+                uint256 assetCollateralEth = _collateralValue(
                     vars.poolToken,
                     _user,
                     vars.underlyingPrice,
                     assetData.tokenUnit
                 );
-                values.collateral += assetCollateralValue;
+                values.collateralEth += assetCollateralEth;
                 // Calculate LTV for borrow.
-                values.maxDebt += assetCollateralValue.percentMul(assetData.ltv);
+                values.borrowableEth += assetCollateralEth.percentMul(assetData.ltv);
+
+                // Update LT variable for withdraw.
+                if (assetCollateralEth > 0)
+                    values.maxDebtEth += assetCollateralEth.percentMul(
+                        assetData.liquidationThreshold
+                    );
             }
 
             // Update debt variable for borrowed token.
             if (_poolToken == vars.poolToken && _amountBorrowed > 0)
-                values.debt += (_amountBorrowed * vars.underlyingPrice).divUp(assetData.tokenUnit);
-
-            // Update LT variable for withdraw.
-            if (assetCollateralValue > 0)
-                values.liquidationThreshold += assetCollateralValue.percentMul(
-                    assetData.liquidationThreshold
+                values.debtEth += (_amountBorrowed * vars.underlyingPrice).divUp(
+                    assetData.tokenUnit
                 );
 
             // Subtract withdrawn amount from liquidation threshold and collateral.
             if (_poolToken == vars.poolToken && _amountWithdrawn > 0) {
                 uint256 withdrawn = (_amountWithdrawn * vars.underlyingPrice) / assetData.tokenUnit;
-                values.collateral -= withdrawn;
-                values.liquidationThreshold -= withdrawn.percentMul(assetData.liquidationThreshold);
-                values.maxDebt -= withdrawn.percentMul(assetData.ltv);
+                values.collateralEth -= withdrawn;
+                values.maxDebtEth -= withdrawn.percentMul(assetData.liquidationThreshold);
+                values.borrowableEth -= withdrawn.percentMul(assetData.ltv);
             }
         }
     }

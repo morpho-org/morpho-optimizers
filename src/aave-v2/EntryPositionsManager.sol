@@ -72,13 +72,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toRepay;
     }
 
-    // Struct to avoid stack too deep.
-    struct BorrowAllowedVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
@@ -290,6 +283,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _borrowedAmount
     ) internal returns (bool) {
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, 0, _borrowedAmount);
-        return values.debt <= values.maxDebt;
+        return values.debtEth <= values.borrowableEth;
     }
 }
