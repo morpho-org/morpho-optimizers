@@ -69,7 +69,7 @@ test-upgrade:
 	@FOUNDRY_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
 
 test-common:
-	@FOUNDRY_TEST=test/common/ FOUNDRY_PROFILE=common make test
+	@FOUNDRY_TEST=test/common/ make test
 
 test-upgrade-%:
 	@FOUNDRY_MATCH_TEST=$* make test-upgrade
