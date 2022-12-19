@@ -35,11 +35,12 @@ contract TestLiquidate is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 collateral = to6Decimals(3 * amount);
 
-        morpho.setIsDeprecated(aDai, true);
-
         borrower1.approve(usdc, address(morpho), collateral);
         borrower1.supply(aUsdc, collateral);
         borrower1.borrow(aDai, amount);
+
+        morpho.setIsBorrowPaused(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
 
         (, uint256 supplyOnPoolBefore) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
         (, uint256 borrowOnPoolBefore) = morpho.borrowBalanceInOf(aDai, address(borrower1));

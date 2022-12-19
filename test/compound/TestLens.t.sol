@@ -1684,6 +1684,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetMarketPauseStatusesDeprecatedMarket() public {
+        morpho.setIsBorrowPaused(cDai, true);
         morpho.setIsDeprecated(cDai, true);
         assertTrue(lens.getMarketPauseStatus(cDai).isDeprecated);
     }
