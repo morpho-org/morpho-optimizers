@@ -89,6 +89,28 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 
 ---
 
+## Importing package
+
+Using npm:
+
+```bash
+npm install @morpho-dao/morpho-v1
+```
+
+Using forge:
+
+```bash
+forge install @morpho-dao/morpho-v1@v2.0.0
+```
+
+Using git submodules:
+
+```bash
+git submodules add @morpho-dao/morpho-v1@v2.0.0
+```
+
+---
+
 ## Testing with [Foundry](https://github.com/foundry-rs/foundry) 🔨
 
 Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
