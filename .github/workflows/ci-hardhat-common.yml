@@ -8,15 +8,13 @@ on:
   pull_request:
     paths:
       - lib/**
-      - contracts/common/**
+      - src/common/**
       - test/**
       - "*.lock"
       - Makefile
       - foundry.toml
       - remappings.txt
       - .github/workflows/ci-hardhat-common.yml
-    paths-ignore:
-      - test/upgrades/**
 
 jobs:
   morpho-hardhat-tests:
@@ -27,15 +25,16 @@ jobs:
         with:
           submodules: recursive
 
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        cache: yarn
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Run tests
-      run: yarn test
-      env:
-        ALCHEMY_KEY: ${{ secrets.alchemyKey }}
+      - name: Run tests
+        run: yarn test
+        env:
+          NETWORK: eth-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
