@@ -47,6 +47,8 @@ contract TestSetup is Config, Test {
         //
         bool isActive;
         bool isFrozen;
+        //
+        Types.MarketPauseStatus status;
     }
 
     TestMarket[] public markets;
@@ -176,7 +178,8 @@ contract TestSetup is Config, Test {
                 decimals: 0,
                 config: marketConfig,
                 isActive: false,
-                isFrozen: false
+                isFrozen: false,
+                status: IMorpho(address(morpho)).marketPauseStatus(poolToken)
             });
 
             DataTypes.ReserveConfigurationMap memory config = pool.getConfiguration(underlying);

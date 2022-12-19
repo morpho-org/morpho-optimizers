@@ -320,6 +320,8 @@ contract TestLifecycle is TestSetup {
                 TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
+                if (supplyMarket.status.isSupplyPaused) continue;
+
                 uint256 borrowAmount = _boundBorrowAmount(
                     borrowMarket,
                     _amount,
@@ -337,11 +339,17 @@ contract TestLifecycle is TestSetup {
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);
 
-                MarketSideTest memory borrow = _borrow(borrowMarket, borrowAmount);
-                _testBorrow(borrow);
+                if (!borrowMarket.status.isBorrowPaused) {
+                    MarketSideTest memory borrow = _borrow(borrowMarket, borrowAmount);
+                    _testBorrow(borrow);
 
-                _repay(borrow);
-                _testRepay(borrow);
+                    if (!borrowMarket.status.isRepayPaused) {
+                        _repay(borrow);
+                        _testRepay(borrow);
+                    }
+                }
+
+                if (supplyMarket.status.isWithdrawPaused) continue;
 
                 _withdraw(supply);
                 _testWithdraw(supply);
@@ -364,6 +372,9 @@ contract TestLifecycle is TestSetup {
 
                 TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
+
+                if (supplyMarket.status.isSupplyPaused || borrowMarket.status.isBorrowPaused)
+                    continue;
 
                 uint256 borrowAmount = _boundBorrowAmount(
                     borrowMarket,
@@ -428,8 +439,59 @@ contract TestLifecycle is TestSetup {
         vm.assume(_amount > 0);
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (market.status.isWithdrawPaused) continue; // isWithdrawPaused check is before user-market membership check
+
             vm.expectRevert(ExitPositionsManager.UserNotMemberOfMarket.selector);
-            user.withdraw(activeMarkets[marketIndex].poolToken, _amount);
+            user.withdraw(market.poolToken, _amount);
+        }
+    }
+
+    function testShouldNotSupplyWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isSupplyPaused) continue;
+
+            vm.expectRevert(EntryPositionsManager.SupplyIsPaused.selector);
+            user.supply(market.poolToken, _amount);
+        }
+    }
+
+    function testShouldNotBorrowWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isBorrowPaused) continue;
+
+            vm.expectRevert(EntryPositionsManager.BorrowIsPaused.selector);
+            user.borrow(market.poolToken, _amount);
+        }
+    }
+
+    function testShouldNotRepayWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isRepayPaused) continue;
+
+            vm.expectRevert(ExitPositionsManager.RepayIsPaused.selector);
+            user.repay(market.poolToken, type(uint256).max);
+        }
+    }
+
+    function testShouldNotWithdrawWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isWithdrawPaused) continue;
+
+            vm.expectRevert(ExitPositionsManager.WithdrawIsPaused.selector);
+            user.withdraw(market.poolToken, type(uint256).max);
         }
     }
 }
