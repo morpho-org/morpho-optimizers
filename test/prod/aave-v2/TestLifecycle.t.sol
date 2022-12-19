@@ -37,7 +37,6 @@ contract TestLifecycle is TestSetup {
         uint256 scaledPoolBalance;
         //
         MorphoPosition position;
-        uint256 unclaimedRewardsBefore;
     }
 
     function _initMarketSideTest(TestMarket memory _market, uint256 _amount)
@@ -98,26 +97,27 @@ contract TestLifecycle is TestSetup {
             1,
             string.concat(supply.market.symbol, " total supply")
         );
-        if (supply.p2pDisabled && supply.p2pBorrowDelta == 0)
+        if (supply.p2pDisabled)
             assertEq(
                 supply.scaledP2PBalance,
                 0,
                 string.concat(supply.market.symbol, " borrow delta matched")
             );
-
-        address[] memory poolTokens = new address[](1);
-        poolTokens[0] = supply.market.poolToken;
-        if (address(rewardsManager) != address(0)) {
-            supply.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-                poolTokens,
-                address(user)
-            );
-
-            assertEq(
-                supply.unclaimedRewardsBefore,
-                0,
-                string.concat(supply.market.symbol, " unclaimed rewards")
-            );
+        else {
+            uint256 underlyingBorrowDelta = supply.p2pBorrowDelta.rayMul(supply.poolBorrowIndex);
+            if (underlyingBorrowDelta <= supply.amount)
+                assertGe(
+                    supply.position.p2p,
+                    underlyingBorrowDelta,
+                    string.concat(supply.market.symbol, " borrow delta minimum match")
+                );
+            else
+                assertApproxEqAbs(
+                    supply.position.p2p,
+                    supply.amount,
+                    1,
+                    string.concat(supply.market.symbol, " borrow delta full match")
+                );
         }
 
         assertEq(
@@ -138,36 +138,10 @@ contract TestLifecycle is TestSetup {
             string.concat(supply.market.symbol, " morpho pool borrow")
         );
 
-        uint256 underlyingBorrowDelta = supply.p2pBorrowDelta.rayMul(supply.poolBorrowIndex);
-        if (underlyingBorrowDelta <= supply.amount)
-            assertGe(
-                supply.position.p2p,
-                underlyingBorrowDelta,
-                string.concat(supply.market.symbol, " borrow delta minimum match")
-            );
-        else
-            assertApproxEqAbs(
-                supply.position.p2p,
-                supply.amount,
-                1,
-                string.concat(supply.market.symbol, " borrow delta full match")
-            );
-
         _forward(100_000);
 
         (supply.position.p2p, supply.position.pool, supply.position.total) = lens
         .getCurrentSupplyBalanceInOf(supply.market.poolToken, address(user));
-
-        if (
-            supply.position.pool > 0 &&
-            address(rewardsManager) != address(0) &&
-            block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
-        )
-            assertGt(
-                rewardsManager.getUserUnclaimedRewards(poolTokens, address(user)),
-                supply.unclaimedRewardsBefore,
-                string.concat(supply.market.symbol, " unclaimed rewards after supply")
-            );
     }
 
     function _borrow(TestMarket memory _market, uint256 _amount)
@@ -207,20 +181,27 @@ contract TestLifecycle is TestSetup {
             1,
             string.concat(borrow.market.symbol, " total borrow")
         );
-        if (borrow.p2pDisabled && borrow.p2pSupplyDelta == 0)
+        if (borrow.p2pDisabled)
             assertEq(
                 borrow.scaledP2PBalance,
                 0,
                 string.concat(borrow.market.symbol, " supply delta matched")
             );
-
-        address[] memory borrowedPoolTokens = new address[](1);
-        borrowedPoolTokens[0] = borrow.market.poolToken;
-        if (address(rewardsManager) != address(0)) {
-            borrow.unclaimedRewardsBefore = rewardsManager.getUserUnclaimedRewards(
-                borrowedPoolTokens,
-                address(user)
-            );
+        else {
+            uint256 underlyingSupplyDelta = borrow.p2pSupplyDelta.rayMul(borrow.poolSupplyIndex);
+            if (underlyingSupplyDelta <= borrow.amount)
+                assertGe(
+                    borrow.position.p2p,
+                    underlyingSupplyDelta,
+                    string.concat(borrow.market.symbol, " supply delta minimum match")
+                );
+            else
+                assertApproxEqAbs(
+                    borrow.position.p2p,
+                    borrow.amount,
+                    1,
+                    string.concat(borrow.market.symbol, " supply delta full match")
+                );
         }
 
         assertEq(
@@ -241,36 +222,10 @@ contract TestLifecycle is TestSetup {
             string.concat(borrow.market.symbol, " morpho borrowed pool borrow")
         );
 
-        uint256 underlyingSupplyDelta = borrow.p2pSupplyDelta.rayMul(borrow.poolSupplyIndex);
-        if (underlyingSupplyDelta <= borrow.amount)
-            assertGe(
-                borrow.position.p2p,
-                underlyingSupplyDelta,
-                string.concat(borrow.market.symbol, " supply delta minimum match")
-            );
-        else
-            assertApproxEqAbs(
-                borrow.position.p2p,
-                borrow.amount,
-                1,
-                string.concat(borrow.market.symbol, " supply delta full match")
-            );
-
         _forward(100_000);
 
         (borrow.position.p2p, borrow.position.pool, borrow.position.total) = lens
         .getCurrentBorrowBalanceInOf(borrow.market.poolToken, address(user));
-
-        if (
-            borrow.position.pool > 0 &&
-            address(rewardsManager) != address(0) &&
-            block.timestamp < aaveIncentivesController.DISTRIBUTION_END()
-        )
-            assertGt(
-                rewardsManager.getUserUnclaimedRewards(borrowedPoolTokens, address(user)),
-                borrow.unclaimedRewardsBefore,
-                string.concat(borrow.market.symbol, " unclaimed rewards after borrow")
-            );
     }
 
     function _repay(MarketSideTest memory borrow) internal virtual {
@@ -365,6 +320,8 @@ contract TestLifecycle is TestSetup {
                 TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
+                if (supplyMarket.status.isSupplyPaused) continue;
+
                 uint256 borrowAmount = _boundBorrowAmount(
                     borrowMarket,
                     _amount,
@@ -382,11 +339,17 @@ contract TestLifecycle is TestSetup {
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);
 
-                MarketSideTest memory borrow = _borrow(borrowMarket, borrowAmount);
-                _testBorrow(borrow);
+                if (!borrowMarket.status.isBorrowPaused) {
+                    MarketSideTest memory borrow = _borrow(borrowMarket, borrowAmount);
+                    _testBorrow(borrow);
 
-                _repay(borrow);
-                _testRepay(borrow);
+                    if (!borrowMarket.status.isRepayPaused) {
+                        _repay(borrow);
+                        _testRepay(borrow);
+                    }
+                }
+
+                if (supplyMarket.status.isWithdrawPaused) continue;
 
                 _withdraw(supply);
                 _testWithdraw(supply);
@@ -409,6 +372,9 @@ contract TestLifecycle is TestSetup {
 
                 TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
+
+                if (supplyMarket.status.isSupplyPaused || borrowMarket.status.isBorrowPaused)
+                    continue;
 
                 uint256 borrowAmount = _boundBorrowAmount(
                     borrowMarket,
@@ -473,8 +439,59 @@ contract TestLifecycle is TestSetup {
         vm.assume(_amount > 0);
 
         for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (market.status.isWithdrawPaused) continue; // isWithdrawPaused check is before user-market membership check
+
             vm.expectRevert(ExitPositionsManager.UserNotMemberOfMarket.selector);
-            user.withdraw(activeMarkets[marketIndex].poolToken, _amount);
+            user.withdraw(market.poolToken, _amount);
+        }
+    }
+
+    function testShouldNotSupplyWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isSupplyPaused) continue;
+
+            vm.expectRevert(EntryPositionsManager.SupplyIsPaused.selector);
+            user.supply(market.poolToken, _amount);
+        }
+    }
+
+    function testShouldNotBorrowWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isBorrowPaused) continue;
+
+            vm.expectRevert(EntryPositionsManager.BorrowIsPaused.selector);
+            user.borrow(market.poolToken, _amount);
+        }
+    }
+
+    function testShouldNotRepayWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isRepayPaused) continue;
+
+            vm.expectRevert(ExitPositionsManager.RepayIsPaused.selector);
+            user.repay(market.poolToken, type(uint256).max);
+        }
+    }
+
+    function testShouldNotWithdrawWhenPaused(uint96 _amount) public {
+        vm.assume(_amount > 0);
+
+        for (uint256 marketIndex; marketIndex < activeMarkets.length; ++marketIndex) {
+            TestMarket memory market = activeMarkets[marketIndex];
+            if (!market.status.isWithdrawPaused) continue;
+
+            vm.expectRevert(ExitPositionsManager.WithdrawIsPaused.selector);
+            user.withdraw(market.poolToken, type(uint256).max);
         }
     }
 }

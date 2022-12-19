@@ -137,15 +137,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.entryPositionsManager()), address(entryPositionsManagerV2));
     }
 
-    function testOnlyOwnerShouldSetRewardsManager() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setRewardsManager(IRewardsManager(address(1)));
-
-        morpho.setRewardsManager(IRewardsManager(address(1)));
-        assertEq(address(morpho.rewardsManager()), address(1));
-    }
-
     function testOnlyOwnerShouldSetInterestRatesManager() public {
         IInterestRatesManager interestRatesV2 = new InterestRatesManager();
 
@@ -157,23 +148,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.interestRatesManager()), address(interestRatesV2));
     }
 
-    function testOnlyOwnerShouldSetIncentivesVault() public {
-        IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            IMorpho(address(morpho)),
-            morphoToken,
-            ERC20(address(1)),
-            address(2),
-            dumbOracle
-        );
-
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setIncentivesVault(incentivesVaultV2);
-
-        morpho.setIncentivesVault(incentivesVaultV2);
-        assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
-    }
-
     function testOnlyOwnerShouldSetTreasuryVault() public {
         address treasuryVaultV2 = address(2);
 
@@ -183,15 +157,6 @@ contract TestGovernance is TestSetup {
 
         morpho.setTreasuryVault(treasuryVaultV2);
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
-    }
-
-    function testOnlyOwnerCanSetIsClaimRewardsPaused() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setIsClaimRewardsPaused(true);
-
-        morpho.setIsClaimRewardsPaused(true);
-        assertTrue(morpho.isClaimRewardsPaused());
     }
 
     function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {

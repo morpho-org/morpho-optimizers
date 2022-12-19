@@ -12,6 +12,10 @@ interface ILens {
 
     function HEALTH_FACTOR_LIQUIDATION_THRESHOLD() external view returns (uint256);
 
+    function ST_ETH() external view returns (address);
+
+    function ST_ETH_BASE_REBASE_INDEX() external view returns (uint256);
+
     function morpho() external view returns (IMorpho);
 
     function addressesProvider() external view returns (ILendingPoolAddressesProvider);
@@ -69,10 +73,7 @@ interface ILens {
         external
         view
         returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex,
+            Types.Indexes memory indexes,
             uint32 lastUpdateTimestamp,
             uint256 p2pSupplyDelta,
             uint256 p2pBorrowDelta
@@ -84,11 +85,15 @@ interface ILens {
         returns (
             address underlying,
             bool isCreated,
-            bool p2pDisabled,
+            bool isP2PDisabled,
             bool isPaused,
             bool isPartiallyPaused,
             uint16 reserveFactor,
-            uint16 p2pIndexCursor
+            uint16 p2pIndexCursor,
+            uint256 loanToValue,
+            uint256 liquidationThreshold,
+            uint256 liquidationBonus,
+            uint256 decimals
         );
 
     function getMarketPauseStatus(address _poolToken)
@@ -112,15 +117,7 @@ interface ILens {
 
     function getCurrentP2PBorrowIndex(address _poolToken) external view returns (uint256);
 
-    function getIndexes(address _poolToken)
-        external
-        view
-        returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        );
+    function getIndexes(address _poolToken) external view returns (Types.Indexes memory indexes);
 
     /// USERS ///
 
@@ -181,6 +178,8 @@ interface ILens {
 
     function isLiquidatable(address _user) external view returns (bool);
 
+    function isLiquidatable(address _user, address _poolToken) external view returns (bool);
+
     function computeLiquidationRepayAmount(
         address _user,
         address _poolTokenBorrowed,
@@ -188,24 +187,6 @@ interface ILens {
     ) external view returns (uint256 toRepay);
 
     /// RATES ///
-
-    function getAverageSupplyRatePerYear(address _poolToken)
-        external
-        view
-        returns (
-            uint256 avgSupplyRatePerYear,
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount
-        );
-
-    function getAverageBorrowRatePerYear(address _poolToken)
-        external
-        view
-        returns (
-            uint256 avgBorrowRatePerYear,
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount
-        );
 
     function getNextUserSupplyRatePerYear(
         address _poolToken,
@@ -244,6 +225,24 @@ interface ILens {
         external
         view
         returns (uint256);
+
+    function getAverageSupplyRatePerYear(address _poolToken)
+        external
+        view
+        returns (
+            uint256 avgSupplyRatePerYear,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
+        );
+
+    function getAverageBorrowRatePerYear(address _poolToken)
+        external
+        view
+        returns (
+            uint256 avgBorrowRatePerYear,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        );
 
     function getRatesPerYear(address _poolToken)
         external

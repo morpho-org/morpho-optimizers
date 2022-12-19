@@ -65,8 +65,8 @@ abstract contract UsersLens is IndexesLens {
         );
 
         if (
-            liquidityData.debt > 0 &&
-            liquidityData.liquidationThreshold.wadDiv(liquidityData.debt) <=
+            liquidityData.debtEth > 0 &&
+            liquidityData.maxDebtEth.wadDiv(liquidityData.debtEth) <=
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD
         ) return (0, 0);
 
@@ -74,22 +74,22 @@ abstract contract UsersLens is IndexesLens {
             _poolToken
         );
 
-        if (liquidityData.debt < liquidityData.maxDebt)
+        if (liquidityData.debtEth < liquidityData.borrowableEth)
             borrowable = Math.min(
                 poolTokenBalance,
-                ((liquidityData.maxDebt - liquidityData.debt) * assetData.tokenUnit) /
+                ((liquidityData.borrowableEth - liquidityData.debtEth) * assetData.tokenUnit) /
                     assetData.underlyingPrice
             );
 
         withdrawable = Math.min(
             poolTokenBalance,
-            (assetData.collateral * assetData.tokenUnit) / assetData.underlyingPrice
+            (assetData.collateralEth * assetData.tokenUnit) / assetData.underlyingPrice
         );
 
         if (assetData.liquidationThreshold > 0)
             withdrawable = Math.min(
                 withdrawable,
-                ((liquidityData.liquidationThreshold - liquidityData.debt).percentDiv(
+                ((liquidityData.maxDebtEth - liquidityData.debtEth).percentDiv(
                     assetData.liquidationThreshold
                 ) * assetData.tokenUnit) / assetData.underlyingPrice
             );
@@ -105,7 +105,7 @@ abstract contract UsersLens is IndexesLens {
         address _poolTokenBorrowed,
         address _poolTokenCollateral
     ) external view returns (uint256) {
-        if (!isLiquidatable(_user)) return 0;
+        if (!isLiquidatable(_user, _poolTokenBorrowed)) return 0;
 
         (
             address collateralToken,
@@ -186,8 +186,8 @@ abstract contract UsersLens is IndexesLens {
         return getUserHypotheticalBalanceStates(_user, address(0), 0, 0);
     }
 
-    /// @dev Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
-    ///      using virtually updated pool & peer-to-peer indexes for all markets.
+    /// @notice Returns the aggregated position of a given user, following an hypothetical borrow/withdraw on a given market,
+    ///         using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine liquidity for.
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw from the given market (in underlying).
@@ -220,12 +220,12 @@ abstract contract UsersLens is IndexesLens {
                 )
                 : _getUserHypotheticalLiquidityDataForAsset(_user, poolToken, oracle, 0, 0);
 
-            liquidityData.collateral += assetData.collateral;
-            liquidityData.maxDebt += assetData.collateral.percentMul(assetData.ltv);
-            liquidityData.liquidationThreshold += assetData.collateral.percentMul(
+            liquidityData.collateralEth += assetData.collateralEth;
+            liquidityData.borrowableEth += assetData.collateralEth.percentMul(assetData.ltv);
+            liquidityData.maxDebtEth += assetData.collateralEth.percentMul(
                 assetData.liquidationThreshold
             );
-            liquidityData.debt += assetData.debt;
+            liquidityData.debtEth += assetData.debtEth;
         }
     }
 
@@ -242,14 +242,15 @@ abstract contract UsersLens is IndexesLens {
         return _getUserHypotheticalLiquidityDataForAsset(_user, _poolToken, _oracle, 0, 0);
     }
 
-    /// @dev Computes the health factor of a given user, given a list of markets of which to compute virtually updated pool & peer-to-peer indexes.
+    /// @notice Returns the health factor of a given user, using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user of whom to get the health factor.
     /// @return The health factor of the given user (in wad).
     function getUserHealthFactor(address _user) public view returns (uint256) {
         return getUserHypotheticalHealthFactor(_user, address(0), 0, 0);
     }
 
-    /// @dev Returns the hypothetical health factor of a user
+    /// @notice Returns the hypothetical health factor of a user, following an hypothetical borrow/withdraw on a given market,
+    ///         using virtually updated pool & peer-to-peer indexes for all markets.
     /// @param _user The user to determine liquidity for.
     /// @param _poolToken The market to hypothetically withdraw/borrow from.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
@@ -267,21 +268,42 @@ abstract contract UsersLens is IndexesLens {
             _withdrawnAmount,
             _borrowedAmount
         );
-        if (liquidityData.debt == 0) return type(uint256).max;
+        if (liquidityData.debtEth == 0) return type(uint256).max;
 
-        return liquidityData.liquidationThreshold.wadDiv(liquidityData.debt);
+        return liquidityData.maxDebtEth.wadDiv(liquidityData.debtEth);
     }
 
-    /// @dev Checks whether a liquidation can be performed on a given user.
-    /// @param _user The user to check.
+    /// @notice Returns whether a liquidation can be performed on a given user, based on their health factor.
+    /// @dev This function checks for the user's health factor, without treating borrow positions from deprecated market as instantly liquidatable.
+    /// @param _user The address of the user to check.
     /// @return whether or not the user is liquidatable.
     function isLiquidatable(address _user) public view returns (bool) {
         return getUserHealthFactor(_user) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
+    /// @notice Returns whether a liquidation can be performed on a given user borrowing from a given market.
+    /// @dev This function checks for the user's health factor as well as whether the given market is deprecated & the user is borrowing from it.
+    /// @param _user The address of the user to check.
+    /// @param _poolToken The address of the borrowed market to check.
+    /// @return whether or not the user is liquidatable.
+    function isLiquidatable(address _user, address _poolToken) public view returns (bool) {
+        if (morpho.marketPauseStatus(_poolToken).isDeprecated && _isBorrowing(_user, _poolToken))
+            return true;
+
+        return isLiquidatable(_user);
+    }
+
     /// INTERNAL ///
 
-    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @dev Returns wheter the given user is borrowing from the given market.
+    /// @param _user The address of the user to check.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been supplying or borrowing on this market, false otherwise.
+    function _isBorrowing(address _user, address _market) internal view returns (bool) {
+        return morpho.userMarkets(_user) & morpho.borrowMask(_market) != 0;
+    }
+
+    /// @dev Returns whether the given user is borrowing or supplying on the given market.
     /// @param _userMarkets The bytes representation of entered markets of the user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying or borrowing on this market, false otherwise.
@@ -450,10 +472,9 @@ abstract contract UsersLens is IndexesLens {
             indexes.poolBorrowIndex
         );
 
-        assetData.debt = ((totalDebtBalance + _borrowedAmount) * assetData.underlyingPrice).divUp(
-            assetData.tokenUnit
-        );
-        assetData.collateral =
+        assetData.debtEth = ((totalDebtBalance + _borrowedAmount) * assetData.underlyingPrice)
+        .divUp(assetData.tokenUnit);
+        assetData.collateralEth =
             ((totalCollateralBalance.zeroFloorSub(_withdrawnAmount)) * assetData.underlyingPrice) /
             assetData.tokenUnit;
     }

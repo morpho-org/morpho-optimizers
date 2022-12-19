@@ -42,7 +42,8 @@ abstract contract IndexesLens is LensStorage {
 
     /// PUBLIC ///
 
-    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @notice Returns the most up-to-date or virtually updated peer-to-peer and pool indexes.
+    /// @dev If not virtually updated, the indexes returned are those used by Morpho for non-updated markets during the liquidity check.
     /// @param _poolToken The address of the market.
     /// @param _updated Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return indexes The given market's virtually updated indexes.
@@ -54,7 +55,8 @@ abstract contract IndexesLens is LensStorage {
         (, indexes) = _getIndexes(_poolToken, _updated);
     }
 
-    /// @dev Returns Compound's updated indexes of a given market.
+    /// @notice Returns the virtually updated pool indexes of a given market.
+    /// @dev Mimicks `CToken.accrueInterest`'s calculations, without writing to the storage.
     /// @param _poolToken The address of the market.
     /// @return poolSupplyIndex The supply index.
     /// @return poolBorrowIndex The borrow index.
@@ -95,7 +97,8 @@ abstract contract IndexesLens is LensStorage {
 
     /// INTERNAL ///
 
-    /// @notice Returns the updated peer-to-peer and pool indexes.
+    /// @notice Returns the most up-to-date or virtually updated peer-to-peer and pool indexes.
+    /// @dev If not virtually updated, the indexes returned are those used by Morpho for non-updated markets during the liquidity check.
     /// @param _poolToken The address of the market.
     /// @param _updated Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return delta The given market's deltas.
@@ -109,10 +112,8 @@ abstract contract IndexesLens is LensStorage {
         Types.LastPoolIndexes memory lastPoolIndexes = morpho.lastPoolIndexes(_poolToken);
 
         if (!_updated) {
-            ICToken cToken = ICToken(_poolToken);
-
-            indexes.poolSupplyIndex = cToken.exchangeRateStored();
-            indexes.poolBorrowIndex = cToken.borrowIndex();
+            indexes.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
+            indexes.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
         } else {
             (indexes.poolSupplyIndex, indexes.poolBorrowIndex) = getCurrentPoolIndexes(_poolToken);
         }

@@ -63,6 +63,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @notice Thrown when someone tries to borrow but the borrow is paused.
     error BorrowIsPaused();
 
+    /// @notice Thrown when underlying pool is frozen.
+    error FrozenOnPool();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -70,13 +73,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 remainingToSupply;
         uint256 poolBorrowIndex;
         uint256 toRepay;
-    }
-
-    // Struct to avoid stack too deep.
-    struct BorrowAllowedVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
     }
 
     /// LOGIC ///
@@ -97,13 +93,15 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
+
         if (!market.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
+        if (pool.getConfiguration(address(underlyingToken)).getFrozen()) revert FrozenOnPool();
 
         _updateIndexes(_poolToken);
         _setSupplying(_onBehalf, borrowMask[_poolToken], true);
 
-        ERC20 underlyingToken = ERC20(market.underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
@@ -196,8 +194,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
-        if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
-            revert BorrowingNotEnabled();
+        DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(
+            address(underlyingToken)
+        );
+
+        if (!reserveConfig.getBorrowingEnabled()) revert BorrowingNotEnabled();
+        if (reserveConfig.getFrozen()) revert FrozenOnPool();
 
         _updateIndexes(_poolToken);
         _setBorrowing(msg.sender, borrowMask[_poolToken], true);
@@ -290,6 +292,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _borrowedAmount
     ) internal returns (bool) {
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, 0, _borrowedAmount);
-        return values.debt <= values.maxDebt;
+        return values.debtEth <= values.borrowableEth;
     }
 }

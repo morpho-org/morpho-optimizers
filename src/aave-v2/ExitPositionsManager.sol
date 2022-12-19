@@ -136,13 +136,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         bool liquidationAllowed; // Whether the liquidation is allowed or not.
     }
 
-    // Struct to avoid stack too deep.
-    struct HealthFactorVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements withdraw logic with security checks.
@@ -207,6 +200,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _borrower,
         uint256 _amount
     ) external {
+        if (_amount == 0) revert AmountIsZero();
         Types.Market memory collateralMarket = market[_poolTokenCollateral];
         if (!collateralMarket.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
@@ -666,16 +660,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         address _poolToken,
         uint256 _withdrawnAmount
     ) internal returns (uint256) {
-        HealthFactorVars memory vars;
-        vars.userMarkets = userMarkets[_user];
-
         // If the user is not borrowing any asset, return an infinite health factor.
-        if (!_isBorrowingAny(vars.userMarkets)) return type(uint256).max;
+        if (!_isBorrowingAny(userMarkets[_user])) return type(uint256).max;
 
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, _withdrawnAmount, 0);
 
-        return
-            values.debt > 0 ? values.liquidationThreshold.wadDiv(values.debt) : type(uint256).max;
+        return values.debtEth > 0 ? values.maxDebtEth.wadDiv(values.debtEth) : type(uint256).max;
     }
 
     /// @dev Checks whether the user can withdraw or not.

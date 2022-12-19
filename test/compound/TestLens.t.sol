@@ -7,10 +7,10 @@ contract TestLens is TestSetup {
     using CompoundMath for uint256;
 
     struct UserBalanceStates {
-        uint256 collateralValue;
-        uint256 debtValue;
-        uint256 maxDebtValue;
-        uint256 liquidationValue;
+        uint256 collateralUsd;
+        uint256 debtUsd;
+        uint256 maxDebtUsd;
+        uint256 liquidationUsd;
     }
 
     struct UserBalance {
@@ -32,9 +32,9 @@ contract TestLens is TestSetup {
 
         assertEq(assetData.collateralFactor, collateralFactor);
         assertEq(assetData.underlyingPrice, underlyingPrice);
-        assertEq(assetData.collateralValue, 0);
-        assertEq(assetData.maxDebtValue, 0);
-        assertEq(assetData.debtValue, 0);
+        assertEq(assetData.collateralUsd, 0);
+        assertEq(assetData.maxDebtUsd, 0);
+        assertEq(assetData.debtUsd, 0);
     }
 
     function testUserLiquidityDataForAssetWithSupply() public {
@@ -59,9 +59,9 @@ contract TestLens is TestSetup {
 
         assertEq(assetData.collateralFactor, collateralFactor, "collateralFactor");
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
-        assertEq(assetData.collateralValue, collateralValue, "collateralValue");
-        assertEq(assetData.maxDebtValue, maxDebtValue, "maxDebtValue");
-        assertEq(assetData.debtValue, 0, "debtValue");
+        assertEq(assetData.collateralUsd, collateralValue, "collateralValue");
+        assertEq(assetData.maxDebtUsd, maxDebtValue, "maxDebtValue");
+        assertEq(assetData.debtUsd, 0, "debtValue");
     }
 
     struct Indexes {
@@ -107,9 +107,9 @@ contract TestLens is TestSetup {
         uint256 debtValue = toBorrow.div(p2pBorrowIndex).mul(p2pBorrowIndex).mul(underlyingPrice);
 
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
-        assertEq(assetData.collateralValue, collateralValue, "collateralValue");
-        assertEq(assetData.maxDebtValue, maxDebtValue, "maxDebtValue");
-        assertEq(assetData.debtValue, debtValue, "debtValue");
+        assertEq(assetData.collateralUsd, collateralValue, "collateralValue");
+        assertEq(assetData.maxDebtUsd, maxDebtValue, "maxDebtValue");
+        assertEq(assetData.debtUsd, debtValue, "debtValue");
     }
 
     function testUserLiquidityDataForAssetWithSupplyAndBorrowWithMultipleAssets() public {
@@ -138,7 +138,7 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory expectedDataCUsdc;
         expectedDataCUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
-        expectedDataCUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
+        expectedDataCUsdc.debtUsd = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
         .mul(expectedDataCUsdc.underlyingPrice);
 
         assertEq(
@@ -146,9 +146,9 @@ contract TestLens is TestSetup {
             expectedDataCUsdc.underlyingPrice,
             "underlyingPriceUsdc"
         );
-        assertEq(assetDataCUsdc.collateralValue, 0, "collateralValue");
-        assertEq(assetDataCUsdc.maxDebtValue, 0, "maxDebtValue");
-        assertEq(assetDataCUsdc.debtValue, expectedDataCUsdc.debtValue, "debtValueUsdc");
+        assertEq(assetDataCUsdc.collateralUsd, 0, "collateralValue");
+        assertEq(assetDataCUsdc.maxDebtUsd, 0, "maxDebtValue");
+        assertEq(assetDataCUsdc.debtUsd, expectedDataCUsdc.debtUsd, "debtValueUsdc");
 
         // Avoid stack too deep error.
         Types.AssetLiquidityData memory expectedDataCDai;
@@ -156,11 +156,11 @@ contract TestLens is TestSetup {
         (, expectedDataCDai.collateralFactor, ) = comptroller.markets(cDai);
 
         expectedDataCDai.underlyingPrice = oracle.getUnderlyingPrice(cDai);
-        expectedDataCDai.collateralValue = getBalanceOnCompound(
+        expectedDataCDai.collateralUsd = getBalanceOnCompound(
             amount,
             ICToken(cDai).exchangeRateStored()
         ).mul(expectedDataCDai.underlyingPrice);
-        expectedDataCDai.maxDebtValue = expectedDataCDai.collateralValue.mul(
+        expectedDataCDai.maxDebtUsd = expectedDataCDai.collateralUsd.mul(
             expectedDataCDai.collateralFactor
         );
 
@@ -175,13 +175,9 @@ contract TestLens is TestSetup {
             "underlyingPriceDai"
         );
 
-        assertEq(
-            assetDataCDai.collateralValue,
-            expectedDataCDai.collateralValue,
-            "collateralValueDai"
-        );
-        assertEq(assetDataCDai.maxDebtValue, expectedDataCDai.maxDebtValue, "maxDebtValueDai");
-        assertEq(assetDataCDai.debtValue, 0, "debtValueDai");
+        assertEq(assetDataCDai.collateralUsd, expectedDataCDai.collateralUsd, "collateralValueDai");
+        assertEq(assetDataCDai.maxDebtUsd, expectedDataCDai.maxDebtUsd, "maxDebtValueDai");
+        assertEq(assetDataCDai.debtUsd, 0, "debtValueDai");
     }
 
     function testMaxCapacitiesWithNothing() public {
@@ -214,10 +210,10 @@ contract TestLens is TestSetup {
             oracle
         );
 
-        uint256 expectedBorrowableUsdc = assetDataCUsdc.maxDebtValue.div(
+        uint256 expectedBorrowableUsdc = assetDataCUsdc.maxDebtUsd.div(
             assetDataCUsdc.underlyingPrice
         );
-        uint256 expectedBorrowableDai = assetDataCUsdc.maxDebtValue.div(
+        uint256 expectedBorrowableDai = assetDataCUsdc.maxDebtUsd.div(
             assetDataCDai.underlyingPrice
         );
 
@@ -476,8 +472,9 @@ contract TestLens is TestSetup {
         (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdt);
 
-        uint256 expectedBorrowableUsdt = (assetDataCDai.maxDebtValue + assetDataCUsdc.maxDebtValue)
-        .div(assetDataCUsdt.underlyingPrice);
+        uint256 expectedBorrowableUsdt = (assetDataCDai.maxDebtUsd + assetDataCUsdc.maxDebtUsd).div(
+            assetDataCUsdt.underlyingPrice
+        );
 
         assertEq(
             withdrawableUsdc,
@@ -516,7 +513,7 @@ contract TestLens is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
+        (states.collateralUsd, states.debtUsd, states.maxDebtUsd) = lens.getUserBalanceStates(
             address(borrower1),
             new address[](0)
         );
@@ -526,19 +523,19 @@ contract TestLens is TestSetup {
         // DAI data
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPriceDai = oracle.getUnderlyingPrice(cDai);
-        expectedStates.collateralValue = getBalanceOnCompound(
+        expectedStates.collateralUsd = getBalanceOnCompound(
             amount,
             ICToken(cDai).exchangeRateStored()
         ).mul(underlyingPriceDai);
 
-        expectedStates.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex()).mul(
+        expectedStates.debtUsd = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex()).mul(
             underlyingPriceUsdc
         );
-        expectedStates.maxDebtValue = expectedStates.collateralValue.mul(collateralFactor);
+        expectedStates.maxDebtUsd = expectedStates.collateralUsd.mul(collateralFactor);
 
-        assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
-        assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
-        assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
+        assertEq(states.collateralUsd, expectedStates.collateralUsd, "Collateral Value");
+        assertEq(states.maxDebtUsd, expectedStates.maxDebtUsd, "Max Debt Value");
+        assertEq(states.debtUsd, expectedStates.debtUsd, "Debt Value");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrowWithMultipleAssets() public {
@@ -562,36 +559,36 @@ contract TestLens is TestSetup {
             to6Decimals(amount),
             ICToken(cUsdc).exchangeRateStored()
         ).mul(oracle.getUnderlyingPrice(cUsdc));
-        expectedStates.collateralValue += collateralValueToAdd;
+        expectedStates.collateralUsd += collateralValueToAdd;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
-        expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
+        expectedStates.maxDebtUsd += collateralValueToAdd.mul(collateralFactor);
 
         // DAI data
         collateralValueToAdd = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored()).mul(
             oracle.getUnderlyingPrice(cDai)
         );
-        expectedStates.collateralValue += collateralValueToAdd;
+        expectedStates.collateralUsd += collateralValueToAdd;
         (, collateralFactor, ) = comptroller.markets(cDai);
-        expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
+        expectedStates.maxDebtUsd += collateralValueToAdd.mul(collateralFactor);
 
         // BAT
-        expectedStates.debtValue += getBalanceOnCompound(toBorrow, ICToken(cBat).borrowIndex()).mul(
+        expectedStates.debtUsd += getBalanceOnCompound(toBorrow, ICToken(cBat).borrowIndex()).mul(
             oracle.getUnderlyingPrice(cBat)
         );
         // USDT
-        expectedStates.debtValue += getBalanceOnCompound(
+        expectedStates.debtUsd += getBalanceOnCompound(
             to6Decimals(toBorrow),
             ICToken(cUsdt).borrowIndex()
         ).mul(oracle.getUnderlyingPrice(cUsdt));
 
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
+        (states.collateralUsd, states.debtUsd, states.maxDebtUsd) = lens.getUserBalanceStates(
             address(borrower1),
             new address[](0)
         );
 
-        assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
-        assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
-        assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
+        assertEq(states.collateralUsd, expectedStates.collateralUsd, "Collateral Value");
+        assertEq(states.debtUsd, expectedStates.debtUsd, "Debt Value");
+        assertEq(states.maxDebtUsd, expectedStates.maxDebtUsd, "Max Debt Value");
     }
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
@@ -657,7 +654,7 @@ contract TestLens is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
+        (states.collateralUsd, states.debtUsd, states.maxDebtUsd) = lens.getUserBalanceStates(
             address(borrower1),
             new address[](0)
         );
@@ -679,27 +676,29 @@ contract TestLens is TestSetup {
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cUsdt);
 
         uint256 collateralValueToAdd = total.mul(underlyingPrice);
-        expectedStates.collateralValue += collateralValueToAdd;
-        expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
+        expectedStates.collateralUsd += collateralValueToAdd;
+        expectedStates.maxDebtUsd += collateralValueToAdd.mul(collateralFactor);
 
         // DAI data
         (, collateralFactor, ) = comptroller.markets(cDai);
         collateralValueToAdd = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent())
         .mul(oracle.getUnderlyingPrice(cDai));
-        expectedStates.collateralValue += collateralValueToAdd;
-        expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
+        expectedStates.collateralUsd += collateralValueToAdd;
+        expectedStates.maxDebtUsd += collateralValueToAdd.mul(collateralFactor);
 
         // USDC data
-        expectedStates.debtValue += getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
-        .mul(oracle.getUnderlyingPrice(cUsdc));
+        expectedStates.debtUsd += getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex()).mul(
+            oracle.getUnderlyingPrice(cUsdc)
+        );
 
         // USDT data
-        expectedStates.debtValue += getBalanceOnCompound(toBorrow, ICToken(cUsdt).borrowIndex())
-        .mul(oracle.getUnderlyingPrice(cUsdt));
+        expectedStates.debtUsd += getBalanceOnCompound(toBorrow, ICToken(cUsdt).borrowIndex()).mul(
+            oracle.getUnderlyingPrice(cUsdt)
+        );
 
-        assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
-        assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
-        assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
+        assertEq(states.collateralUsd, expectedStates.collateralUsd, "Collateral Value");
+        assertEq(states.debtUsd, expectedStates.debtUsd, "Debt Value");
+        assertEq(states.maxDebtUsd, expectedStates.maxDebtUsd, "Max Debt Value");
     }
 
     function testUserHypotheticalBalanceStatesUnenteredMarket() public {
@@ -1449,6 +1448,20 @@ contract TestLens is TestSetup {
      */
     function testNoRepayLiquidation() public {
         testLiquidation(0, 0.5 ether);
+    }
+
+    function testIsLiquidatableDeprecatedMarket() public {
+        uint256 amount = 1_000 ether;
+
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(cDai, 2 * amount);
+        borrower1.borrow(cUsdc, to6Decimals(amount));
+
+        assertFalse(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
+
+        morpho.setIsDeprecated(cUsdc, true);
+
+        assertTrue(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
     }
 
     struct Amounts {

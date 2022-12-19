@@ -33,6 +33,11 @@ contract TestSetup is Config, Test {
         uint256 collateralFactor;
         uint256 maxBorrows;
         uint256 totalBorrows;
+        //
+        bool mintGuardianPaused;
+        bool borrowGuardianPaused;
+        //
+        Types.MarketPauseStatus status;
     }
 
     TestMarket[] public markets;
@@ -150,7 +155,10 @@ contract TestSetup is Config, Test {
                 decimals: ERC20(underlying).decimals(),
                 collateralFactor: 0,
                 maxBorrows: comptroller.borrowCaps(poolToken),
-                totalBorrows: ICToken(poolToken).totalBorrows()
+                totalBorrows: ICToken(poolToken).totalBorrows(),
+                mintGuardianPaused: comptroller.mintGuardianPaused(poolToken),
+                borrowGuardianPaused: comptroller.borrowGuardianPaused(poolToken),
+                status: IMorpho(address(morpho)).marketPauseStatus(poolToken)
             });
 
             (, bool isPaused, bool isPartiallyPaused) = morpho.marketStatus(poolToken);
@@ -255,7 +263,7 @@ contract TestSetup is Config, Test {
         proxyAdmin.upgrade(morphoProxy, morphoImplV2);
         vm.label(morphoImplV2, "MorphoImplV2");
 
-        address lensImplV2 = address(new Lens());
+        address lensImplV2 = address(new Lens(address(morpho)));
         proxyAdmin.upgrade(lensProxy, lensImplV2);
         vm.label(lensImplV2, "LensImplV2");
 

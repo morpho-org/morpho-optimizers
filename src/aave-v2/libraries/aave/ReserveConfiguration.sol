@@ -182,11 +182,7 @@ library ReserveConfiguration {
      * @param self The reserve configuration
      * @return The frozen state
      **/
-    function getFrozen(DataTypes.ReserveConfigurationMap storage self)
-        internal
-        view
-        returns (bool)
-    {
+    function getFrozen(DataTypes.ReserveConfigurationMap memory self) internal pure returns (bool) {
         return (self.data & ~FROZEN_MASK) != 0;
     }
 

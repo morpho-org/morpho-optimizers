@@ -107,13 +107,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a new market is created.
     /// @param _poolToken The address of the market that has been created.
     /// @param _reserveFactor The reserve factor set for this market.
-    /// @param _poolToken The P2P index cursor set for this market.
+    /// @param _p2pIndexCursor The P2P index cursor set for this market.
     event MarketCreated(address indexed _poolToken, uint16 _reserveFactor, uint16 _p2pIndexCursor);
 
     /// ERRORS ///
 
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
+    /// @notice Thrown when the creation of a market failed on Compound and kicks back Compound error code.
+    error MarketCreationFailedOnCompound(uint256 errorCode);
 
     /// @notice Thrown when the input is above the max basis points value (100%).
     error ExceedsMaxBasisPoints();
@@ -440,7 +440,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolToken;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
-        if (results[0] != 0) revert MarketCreationFailedOnCompound();
+        if (results[0] != 0) revert MarketCreationFailedOnCompound(results[0]);
 
         // Same initial index as Compound.
         uint256 initialIndex;

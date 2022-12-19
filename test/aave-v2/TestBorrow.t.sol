@@ -247,21 +247,20 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aUsdc, amount);
     }
 
-    function testShouldNotBorrowWithDisabledCollateral() public {
-        uint256 amount = 100 ether;
+    function testCannotBorrowOnFrozenPool() public {
+        uint256 amount = 10_000 ether;
 
-        borrower1.approve(dai, type(uint256).max);
-        borrower1.supply(aDai, amount * 10);
+        DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(dai);
+        reserveConfig.setFrozen(true);
 
-        // Give Morpho a position on the pool to be able to unset the DAI asset as collateral.
-        // Without this position on the pool, it's not possible to do so.
-        supplier1.approve(usdc, to6Decimals(amount));
-        supplier1.supply(aUsdc, to6Decimals(amount));
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
 
-        morpho.setAssetAsCollateral(aDai, false);
+        vm.prank(address(lendingPoolConfigurator));
+        pool.setConfiguration(dai, reserveConfig.data);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
-        borrower1.borrow(aUsdc, to6Decimals(amount));
+        hevm.expectRevert(EntryPositionsManager.FrozenOnPool.selector);
+        borrower1.borrow(aDai, amount);
     }
 
     function testBorrowLargerThanDeltaShouldClearDelta() public {

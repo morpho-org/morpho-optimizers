@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestSupply is TestSetup {
     using stdStorage for StdStorage;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
@@ -261,6 +262,22 @@ contract TestSupply is TestSetup {
         flashLoan.callFlashLoan(dai, flashLoanAmount);
 
         vm.warp(block.timestamp + 1);
+        supplier1.supply(aDai, amount);
+    }
+
+    function testCannotSupplyOnFrozenPool() public {
+        uint256 amount = 10_000 ether;
+
+        DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(dai);
+        reserveConfig.setFrozen(true);
+
+        vm.prank(address(lendingPoolConfigurator));
+        pool.setConfiguration(dai, reserveConfig.data);
+
+        supplier1.approve(dai, amount);
+
+        hevm.expectRevert(EntryPositionsManager.FrozenOnPool.selector);
+
         supplier1.supply(aDai, amount);
     }
 
