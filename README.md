@@ -106,7 +106,7 @@ forge install @morpho-dao/morpho-v1@v2.0.0
 Using git submodules:
 
 ```bash
-git submodules add @morpho-dao/morpho-v1@v2.0.0
+git submodule add @morpho-dao/morpho-v1@v2.0.0 lib/morpho-v1
 ```
 
 ---
