@@ -3,8 +3,8 @@
 make -C certora munged-rewards
 
 certoraRun \
-    certora/munged-rewards/common/rewards-distribution/MockMerkleTree.sol \
-    --verify MockMerkleTree:certora/spec/MerkleTree.spec \
+    certora/munged-rewards/common/rewards-distribution/MerkleTreeMock.sol \
+    --verify MerkleTreeMock:certora/spec/MerkleTree.spec \
     --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \

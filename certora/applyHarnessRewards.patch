@@ -1,31 +1,31 @@
 diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
 --- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 11:11:11.940819092 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 11:35:45.280758761 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
-+import "./MockMerkleTree.sol";
++import "./MerkleTreeMock.sol";
 +
-+contract MerkleTree1 {}
++contract MerkleTree1 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
 --- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 11:11:31.367489957 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 11:36:07.384088818 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
-+import "./MockMerkleTree.sol";
++import "./MerkleTreeMock.sol";
 +
-+contract MerkleTree2 {}
-diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
---- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-12-20 11:09:15.620809933 +0100
++contract MerkleTree2 is MerkleTreeMock {}
+diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribution/MerkleTreeLib.sol
+--- common/rewards-distribution/MerkleTreeLib.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTreeLib.sol	2022-12-20 11:28:15.444152578 +0100
 @@ -0,0 +1,103 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
-+library MerkleTree {
++library MerkleTreeLib {
 +    struct Node {
 +        bool created;
 +        address left;
@@ -125,19 +125,19 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +        return tree.nodes[addr].hashNode;
 +    }
 +}
-diff -ruN common/rewards-distribution/MockMerkleTree.sol common/rewards-distribution/MockMerkleTree.sol
---- common/rewards-distribution/MockMerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MockMerkleTree.sol	2022-12-20 11:08:58.840813725 +0100
+diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribution/MerkleTreeMock.sol
+--- common/rewards-distribution/MerkleTreeMock.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTreeMock.sol	2022-12-20 11:28:15.447485911 +0100
 @@ -0,0 +1,61 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
-+import "./MerkleTree.sol";
++import "./MerkleTreeLib.sol";
 +
-+contract MockMerkleTree {
-+    using MerkleTree for MerkleTree.Tree;
++contract MerkleTreeMock {
++    using MerkleTreeLib for MerkleTreeLib.Tree;
 +
-+    MerkleTree.Tree tree;
++    MerkleTreeLib.Tree tree;
 +
 +    bool public initialized;
 +
@@ -192,6 +192,6 @@ diff -ruN common/rewards-distribution/MockMerkleTree.sol common/rewards-distribu
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-12-20 10:50:29.837728815 +0100
++++ .gitignore	2022-12-20 11:28:15.447485911 +0100
 @@ -0,0 +1 @@
 +*
