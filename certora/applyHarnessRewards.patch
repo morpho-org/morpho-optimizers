@@ -1,6 +1,6 @@
 diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
 --- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2022-12-13 21:34:36.870605662 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 10:06:25.268442026 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -10,7 +10,7 @@ diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distributio
 +contract MerkleTree1 is MerkleTree {}
 diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
 --- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2022-12-13 21:34:36.870605662 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 10:06:25.268442026 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -20,8 +20,8 @@ diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distributio
 +contract MerkleTree2 is MerkleTree {}
 diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
 --- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-12-13 21:34:36.870605662 +0100
-@@ -0,0 +1,101 @@
++++ common/rewards-distribution/MerkleTree.sol	2022-12-20 10:07:48.818403897 +0100
+@@ -0,0 +1,98 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
@@ -45,13 +45,30 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +        initialized = true;
 +    }
 +
-+    function isCreated(address addr) public view returns (bool) {
++    function getCreated(address addr) public view returns (bool) {
 +        return nodes[addr].created;
++    }
++
++    function getLeft(address addr) public view returns (address) {
++        return nodes[addr].left;
++    }
++
++    function getRight(address addr) public view returns (address) {
++        return nodes[addr].right;
++    }
++
++    function getValue(address addr) public view returns (uint256) {
++        return nodes[addr].value;
++    }
++
++    function getHash(address addr) public view returns (bytes32) {
++        return nodes[addr].hashNode;
 +    }
 +
 +    function newAccount(address _user, uint256 _value) public {
 +        Node storage node = nodes[_user];
 +        require(!node.created);
++        require(_value != 0);
 +
 +        node.created = true;
 +        node.value = _value;
@@ -81,10 +98,6 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +        root = addr;
 +    }
 +
-+    function hash(address addr) public view returns (bytes32) {
-+        return nodes[addr].hashNode;
-+    }
-+
 +    function isWellFormed(address addr) public view returns (bool) {
 +        Node storage node = nodes[addr];
 +
@@ -106,25 +119,9 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +                node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
 +        }
 +    }
-+
-+    function notEmpty() public view returns (bool) {
-+        return nodes[root].created;
-+    }
-+
-+    function _valueFrom(address user, address addr) private view returns (uint256) {
-+        if (root == address(0)) return 0;
-+        if (user == addr) return nodes[addr].value;
-+        uint256 foundLeft = _valueFrom(user, nodes[addr].left);
-+        uint256 foundRight = _valueFrom(user, nodes[addr].right);
-+        return foundLeft > foundRight ? foundLeft : foundRight;
-+    }
-+
-+    function value(address user) public view returns (uint256) {
-+        return _valueFrom(user, root);
-+    }
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-12-13 21:34:36.870605662 +0100
++++ .gitignore	2022-12-20 10:06:25.268442026 +0100
 @@ -0,0 +1 @@
 +*
