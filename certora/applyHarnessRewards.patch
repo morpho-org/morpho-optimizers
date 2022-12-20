@@ -1,6 +1,26 @@
+diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
+--- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 11:11:11.940819092 +0100
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GNU AGPLv3
++pragma solidity ^0.8.0;
++
++import "./MockMerkleTree.sol";
++
++contract MerkleTree1 {}
+diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
+--- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 11:11:31.367489957 +0100
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GNU AGPLv3
++pragma solidity ^0.8.0;
++
++import "./MockMerkleTree.sol";
++
++contract MerkleTree2 {}
 diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
 --- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-12-20 10:49:47.891071377 +0100
++++ common/rewards-distribution/MerkleTree.sol	2022-12-20 11:09:15.620809933 +0100
 @@ -0,0 +1,103 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -21,17 +41,17 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +
 +    function newAccount(
 +        Tree storage tree,
-+        address _user,
-+        uint256 _value
++        address addr,
++        uint256 value
 +    ) public {
-+        Node storage node = tree.nodes[_user];
-+        require(_user != address(0));
++        Node storage node = tree.nodes[addr];
++        require(addr != address(0));
 +        require(!node.created);
-+        require(_value != 0);
++        require(value != 0);
 +
 +        node.created = true;
-+        node.value = _value;
-+        node.hashNode = keccak256(abi.encodePacked(_user, _value));
++        node.value = value;
++        node.hashNode = keccak256(abi.encodePacked(addr, value));
 +    }
 +
 +    function newNode(
@@ -107,7 +127,7 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +}
 diff -ruN common/rewards-distribution/MockMerkleTree.sol common/rewards-distribution/MockMerkleTree.sol
 --- common/rewards-distribution/MockMerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MockMerkleTree.sol	2022-12-20 10:50:13.244399135 +0100
++++ common/rewards-distribution/MockMerkleTree.sol	2022-12-20 11:08:58.840813725 +0100
 @@ -0,0 +1,61 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -126,8 +146,8 @@ diff -ruN common/rewards-distribution/MockMerkleTree.sol common/rewards-distribu
 +        initialized = true;
 +    }
 +
-+    function newAccount(address _user, uint256 _value) public {
-+        tree.newAccount(_user, _value);
++    function newAccount(address addr, uint256 value) public {
++        tree.newAccount(addr, value);
 +    }
 +
 +    function newNode(
@@ -172,6 +192,6 @@ diff -ruN common/rewards-distribution/MockMerkleTree.sol common/rewards-distribu
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-12-20 10:48:24.354423021 +0100
++++ .gitignore	2022-12-20 10:50:29.837728815 +0100
 @@ -0,0 +1 @@
 +*

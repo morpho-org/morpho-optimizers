@@ -5,16 +5,31 @@ methods {
     prevRoot() returns bytes32 envfree
     currRoot() returns bytes32 envfree
     claim(address, uint256, bytes32[]) envfree
-    T1.root() returns address envfree
+
+    T1.initialized() returns bool envfree
+    T1.newAccount(address, uint256) envfree
+    T1.newNode(address, address, address) envfree
+    T1.setRoot(address) envfree
+    T1.getRoot() returns address envfree
+    T1.getCreated(address) returns bool envfree
+    T1.getLeft(address) returns address envfree
+    T1.getRight(address) returns address envfree
+    T1.getValue(address) returns uint256 envfree
+    T1.getHash(address) returns bytes32 envfree
     T1.isWellFormed(address) returns bool envfree
-    T1.notEmpty() returns bool envfree
-    T1.hash(address) returns bytes32 envfree
-    T1.value(address) returns uint256 envfree
-    T2.root() returns address envfree
+
+    T2.initialized() returns bool envfree
+    T2.newAccount(address, uint256) envfree
+    T2.newNode(address, address, address) envfree
+    T2.setRoot(address) envfree
+    T2.getRoot() returns address envfree
+    T2.getCreated(address) returns bool envfree
+    T2.getLeft(address) returns address envfree
+    T2.getRight(address) returns address envfree
+    T2.getValue(address) returns uint256 envfree
+    T2.getHash(address) returns bytes32 envfree
     T2.isWellFormed(address) returns bool envfree
-    T2.notEmpty() returns bool envfree
-    T2.hash(address) returns bytes32 envfree
-    T2.value(address) returns uint256 envfree
+
 }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
