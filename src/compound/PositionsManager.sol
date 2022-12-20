@@ -241,7 +241,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
+        if (
+            marketPauseStatus[_poolToken].isSupplyPaused ||
+            comptroller.mintGuardianPaused(_poolToken)
+        ) revert SupplyIsPaused();
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, _onBehalf);
@@ -337,7 +340,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
-        if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
+        if (
+            marketPauseStatus[_poolToken].isBorrowPaused ||
+            comptroller.borrowGuardianPaused(_poolToken)
+        ) revert BorrowIsPaused();
 
         _updateP2PIndexes(_poolToken);
         _enterMarketIfNeeded(_poolToken, msg.sender);
