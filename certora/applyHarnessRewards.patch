@@ -1,31 +1,11 @@
-diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
---- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 10:23:47.541425986 +0100
-@@ -0,0 +1,6 @@
-+// SPDX-License-Identifier: GNU AGPLv3
-+pragma solidity ^0.8.0;
-+
-+import "./MerkleTree.sol";
-+
-+contract MerkleTree1 is MerkleTree {}
-diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
---- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 10:23:47.541425986 +0100
-@@ -0,0 +1,6 @@
-+// SPDX-License-Identifier: GNU AGPLv3
-+pragma solidity ^0.8.0;
-+
-+import "./MerkleTree.sol";
-+
-+contract MerkleTree2 is MerkleTree {}
 diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution/MerkleTree.sol
 --- common/rewards-distribution/MerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree.sol	2022-12-20 10:24:51.758075900 +0100
-@@ -0,0 +1,100 @@
++++ common/rewards-distribution/MerkleTree.sol	2022-12-20 10:49:47.891071377 +0100
+@@ -0,0 +1,103 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
-+contract MerkleTree {
++library MerkleTree {
 +    struct Node {
 +        bool created;
 +        address left;
@@ -34,19 +14,17 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +        bytes32 hashNode;
 +    }
 +
-+    mapping(address => Node) public nodes;
-+
-+    address public root;
-+
-+    bool public initialized;
-+
-+    constructor() {
-+        require(initialized == false);
-+        initialized = true;
++    struct Tree {
++        mapping(address => Node) nodes;
++        address root;
 +    }
 +
-+    function newAccount(address _user, uint256 _value) public {
-+        Node storage node = nodes[_user];
++    function newAccount(
++        Tree storage tree,
++        address _user,
++        uint256 _value
++    ) public {
++        Node storage node = tree.nodes[_user];
 +        require(_user != address(0));
 +        require(!node.created);
 +        require(_value != 0);
@@ -57,13 +35,14 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +    }
 +
 +    function newNode(
++        Tree storage tree,
 +        address parent,
 +        address left,
 +        address right
 +    ) public {
-+        Node storage parentNode = nodes[parent];
-+        Node storage leftNode = nodes[left];
-+        Node storage rightNode = nodes[right];
++        Node storage parentNode = tree.nodes[parent];
++        Node storage leftNode = tree.nodes[left];
++        Node storage rightNode = tree.nodes[right];
 +        require(parent != address(0));
 +        require(!parentNode.created);
 +        require(leftNode.created && rightNode.created);
@@ -75,13 +54,13 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +        parentNode.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
 +    }
 +
-+    function setRoot(address addr) public {
-+        require(nodes[addr].created);
-+        root = addr;
++    function setRoot(Tree storage tree, address addr) public {
++        require(tree.nodes[addr].created);
++        tree.root = addr;
 +    }
 +
-+    function isWellFormed(address addr) public view returns (bool) {
-+        Node storage node = nodes[addr];
++    function isWellFormed(Tree storage tree, address addr) public view returns (bool) {
++        Node storage node = tree.nodes[addr];
 +
 +        if (!node.created) return true;
 +
@@ -89,41 +68,110 @@ diff -ruN common/rewards-distribution/MerkleTree.sol common/rewards-distribution
 +            return
 +                node.value != 0 && node.hashNode == keccak256(abi.encodePacked(addr, node.value));
 +        else {
-+            // Well-formed nodes have exactly 0 or 2 children.
++            // Well-formed tree.nodes have exactly 0 or 2 children.
 +            if (node.left == address(0) || node.right == address(0)) return false;
-+            Node storage left = nodes[node.left];
-+            Node storage right = nodes[node.right];
++            Node storage left = tree.nodes[node.left];
++            Node storage right = tree.nodes[node.right];
 +            return
 +                left.created &&
 +                right.created &&
 +                node.value == 0 &&
-+                left.hashNode <= right.hashNode && // Well-formed nodes should be pair sorted.
++                left.hashNode <= right.hashNode && // Well-formed tree.nodes should be pair sorted.
 +                node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
 +        }
 +    }
 +
++    function getRoot(Tree storage tree) public view returns (address) {
++        return tree.root;
++    }
++
++    function getCreated(Tree storage tree, address addr) public view returns (bool) {
++        return tree.nodes[addr].created;
++    }
++
++    function getLeft(Tree storage tree, address addr) public view returns (address) {
++        return tree.nodes[addr].left;
++    }
++
++    function getRight(Tree storage tree, address addr) public view returns (address) {
++        return tree.nodes[addr].right;
++    }
++
++    function getValue(Tree storage tree, address addr) public view returns (uint256) {
++        return tree.nodes[addr].value;
++    }
++
++    function getHash(Tree storage tree, address addr) public view returns (bytes32) {
++        return tree.nodes[addr].hashNode;
++    }
++}
+diff -ruN common/rewards-distribution/MockMerkleTree.sol common/rewards-distribution/MockMerkleTree.sol
+--- common/rewards-distribution/MockMerkleTree.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/MockMerkleTree.sol	2022-12-20 10:50:13.244399135 +0100
+@@ -0,0 +1,61 @@
++// SPDX-License-Identifier: GNU AGPLv3
++pragma solidity ^0.8.0;
++
++import "./MerkleTree.sol";
++
++contract MockMerkleTree {
++    using MerkleTree for MerkleTree.Tree;
++
++    MerkleTree.Tree tree;
++
++    bool public initialized;
++
++    constructor() {
++        require(initialized == false);
++        initialized = true;
++    }
++
++    function newAccount(address _user, uint256 _value) public {
++        tree.newAccount(_user, _value);
++    }
++
++    function newNode(
++        address parent,
++        address left,
++        address right
++    ) public {
++        tree.newNode(parent, left, right);
++    }
++
++    function setRoot(address addr) public {
++        tree.setRoot(addr);
++    }
++
++    function isWellFormed(address addr) public view returns (bool) {
++        return tree.isWellFormed(addr);
++    }
++
++    function getRoot() public view returns (address) {
++        return tree.getRoot();
++    }
++
 +    function getCreated(address addr) public view returns (bool) {
-+        return nodes[addr].created;
++        return tree.getCreated(addr);
 +    }
 +
 +    function getLeft(address addr) public view returns (address) {
-+        return nodes[addr].left;
++        return tree.getLeft(addr);
 +    }
 +
 +    function getRight(address addr) public view returns (address) {
-+        return nodes[addr].right;
++        return tree.getRight(addr);
 +    }
 +
 +    function getValue(address addr) public view returns (uint256) {
-+        return nodes[addr].value;
++        return tree.getValue(addr);
 +    }
 +
 +    function getHash(address addr) public view returns (bytes32) {
-+        return nodes[addr].hashNode;
++        return tree.getHash(addr);
 +    }
 +}
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-12-20 10:23:47.541425986 +0100
++++ .gitignore	2022-12-20 10:48:24.354423021 +0100
 @@ -0,0 +1 @@
 +*

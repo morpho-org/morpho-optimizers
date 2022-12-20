@@ -1,10 +1,10 @@
 methods {
-    root() returns address envfree
     initialized() returns bool envfree
     newAccount(address, uint256) envfree
     newNode(address, address, address) envfree
     setRoot(address) envfree
 
+    getRoot() returns address envfree
     getCreated(address) returns bool envfree
     getLeft(address) returns address envfree
     getRight(address) returns address envfree
