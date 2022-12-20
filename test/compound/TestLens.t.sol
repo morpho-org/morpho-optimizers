@@ -1459,6 +1459,7 @@ contract TestLens is TestSetup {
 
         assertFalse(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));
 
+        morpho.setIsBorrowPaused(cUsdc, true);
         morpho.setIsDeprecated(cUsdc, true);
 
         assertTrue(lens.isLiquidatable(address(borrower1), cUsdc, new address[](0)));

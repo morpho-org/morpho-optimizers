@@ -14,6 +14,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+    using Math for uint256;
 
     /// EVENTS ///
 
@@ -558,10 +559,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _amount = Math.min(
             _amount,
             Math.min(
-                deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).safeSub(
+                deltas.p2pSupplyAmount.mul(p2pSupplyIndex[_poolToken]).zeroFloorSub(
                     deltas.p2pSupplyDelta.mul(poolSupplyIndex)
                 ),
-                deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).safeSub(
+                deltas.p2pBorrowAmount.mul(p2pBorrowIndex[_poolToken]).zeroFloorSub(
                     deltas.p2pBorrowDelta.mul(lastPoolIndexes.lastBorrowPoolIndex)
                 )
             )
@@ -648,7 +649,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage delta = deltas[_poolToken];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
 
-        supplierSupplyBalance.inP2P -= CompoundMath.min(
+        supplierSupplyBalance.inP2P -= Math.min(
             supplierSupplyBalance.inP2P,
             vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
         ); // In peer-to-peer supply unit.
@@ -776,7 +777,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (vars.maxToRepayOnPool > vars.remainingToRepay) {
                 vars.toRepay = vars.remainingToRepay;
 
-                borrowerBorrowBalance.onPool -= CompoundMath.min(
+                borrowerBorrowBalance.onPool -= Math.min(
                     vars.borrowedOnPool,
                     vars.toRepay.div(vars.poolBorrowIndex)
                 ); // In pool borrow unit.
@@ -807,7 +808,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolToken];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolToken];
 
-        borrowerBorrowBalance.inP2P -= CompoundMath.min(
+        borrowerBorrowBalance.inP2P -= Math.min(
             borrowerBorrowBalance.inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
         ); // In peer-to-peer borrow unit.
@@ -836,15 +837,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
             // No need to subtract p2pBorrowDelta as it is zero.
-            vars.feeToRepay = CompoundMath.safeSub(
+            vars.feeToRepay = Math.zeroFloorSub(
                 delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex),
-                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).safeSub(
+                delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex).zeroFloorSub(
                     delta.p2pSupplyDelta.mul(ICToken(_poolToken).exchangeRateStored())
                 )
             );
 
             if (vars.feeToRepay > 0) {
-                uint256 feeRepaid = CompoundMath.min(vars.feeToRepay, vars.remainingToRepay);
+                uint256 feeRepaid = Math.min(vars.feeToRepay, vars.remainingToRepay);
                 vars.remainingToRepay -= feeRepaid;
                 delta.p2pBorrowAmount -= feeRepaid.div(vars.p2pBorrowIndex);
                 emit P2PAmountsUpdated(_poolToken, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -937,7 +938,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _amount The amount of token (in underlying).
     function _withdrawFromPool(address _poolToken, uint256 _amount) internal {
         // Withdraw only what is possible. The remaining dust is taken from the contract balance.
-        _amount = CompoundMath.min(ICToken(_poolToken).balanceOfUnderlying(address(this)), _amount);
+        _amount = Math.min(ICToken(_poolToken).balanceOfUnderlying(address(this)), _amount);
 
         uint256 errorCode = ICToken(_poolToken).redeemUnderlying(_amount);
         if (errorCode != 0) revert RedeemOnCompoundFailed(errorCode);
