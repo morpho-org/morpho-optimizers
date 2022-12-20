@@ -1,6 +1,207 @@
+diff -ruN common/rewards-distribution/libraries/MerkleProof.sol common/rewards-distribution/libraries/MerkleProof.sol
+--- common/rewards-distribution/libraries/MerkleProof.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/libraries/MerkleProof.sol	2022-12-20 12:05:35.614085422 +0100
+@@ -0,0 +1,60 @@
++// SPDX-License-Identifier: MIT
++// OpenZeppelin Contracts (last updated v4.5.0) (utils/cryptography/MerkleProof.sol)
++
++pragma solidity ^0.8.0;
++
++/**
++ * @dev These functions deal with verification of Merkle Trees proofs.
++ *
++ * The proofs can be generated using the JavaScript library
++ * https://github.com/miguelmota/merkletreejs[merkletreejs].
++ * Note: the hashing algorithm should be keccak256 and pair sorting should be enabled.
++ *
++ * See `test/utils/cryptography/MerkleProof.test.js` for some examples.
++ */
++library MerkleProof {
++    /**
++     * @dev Returns true if a `leaf` can be proved to be a part of a Merkle tree
++     * defined by `root`. For this, a `proof` must be provided, containing
++     * sibling hashes on the branch from the leaf to the root of the tree. Each
++     * pair of leaves and each pair of pre-images are assumed to be sorted.
++     */
++    function verify(
++        bytes32[] memory proof,
++        bytes32 root,
++        bytes32 leaf
++    ) internal pure returns (bool) {
++        return processProof(proof, leaf) == root;
++    }
++
++    /**
++     * @dev Returns the rebuilt hash obtained by traversing a Merklee tree up
++     * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
++     * hash matches the root of the tree. When processing the proof, the pairs
++     * of leafs & pre-images are assumed to be sorted.
++     *
++     * _Available since v4.4._
++     */
++    function processProof(bytes32[] memory proof, bytes32 leaf) internal pure returns (bytes32) {
++        bytes32 computedHash = leaf;
++        for (uint256 i = 0; i < proof.length; i++) {
++            bytes32 proofElement = proof[i];
++            if (computedHash <= proofElement) {
++                // Hash(current computed hash + current element of the proof)
++                computedHash = _efficientHash(computedHash, proofElement);
++            } else {
++                // Hash(current element of the proof + current computed hash)
++                computedHash = _efficientHash(proofElement, computedHash);
++            }
++        }
++        return computedHash;
++    }
++
++    function _efficientHash(bytes32 a, bytes32 b) private pure returns (bytes32 value) {
++        assembly {
++            mstore(0x00, a)
++            mstore(0x20, b)
++            value := keccak256(0x00, 0x40)
++        }
++    }
++}
+diff -ruN common/rewards-distribution/libraries/SafeTransferLib.sol common/rewards-distribution/libraries/SafeTransferLib.sol
+--- common/rewards-distribution/libraries/SafeTransferLib.sol	1970-01-01 01:00:00.000000000 +0100
++++ common/rewards-distribution/libraries/SafeTransferLib.sol	2022-12-20 12:05:35.614085422 +0100
+@@ -0,0 +1,133 @@
++// SPDX-License-Identifier: AGPL-3.0-only
++pragma solidity >=0.8.0;
++
++import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
++
++/// @notice Safe ETH and ERC20 transfer library that gracefully handles missing return values.
++/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/SafeTransferLib.sol)
++/// @dev Use with caution! Some functions in this library knowingly create dirty bits at the destination of the free memory pointer.
++/// @dev Note that none of the functions in this library check that a token has code at all! That responsibility is delegated to the caller.
++library SafeTransferLib {
++    /*//////////////////////////////////////////////////////////////
++                             ETH OPERATIONS
++    //////////////////////////////////////////////////////////////*/
++
++    function safeTransferETH(address to, uint256 amount) internal {
++        bool success;
++
++        assembly {
++            // Transfer the ETH and store if it succeeded or not.
++            success := call(gas(), to, amount, 0, 0, 0, 0)
++        }
++
++        require(success, "ETH_TRANSFER_FAILED");
++    }
++
++    /*//////////////////////////////////////////////////////////////
++                            ERC20 OPERATIONS
++    //////////////////////////////////////////////////////////////*/
++
++    function safeTransferFrom(
++        ERC20 token,
++        address from,
++        address to,
++        uint256 amount
++    ) internal {
++        bool success;
++
++        assembly {
++            // Get a pointer to some free memory.
++            let freeMemoryPointer := mload(0x40)
++
++            // Write the abi-encoded calldata into memory, beginning with the function selector.
++            mstore(
++                freeMemoryPointer,
++                0x23b872dd00000000000000000000000000000000000000000000000000000000
++            )
++            mstore(add(freeMemoryPointer, 4), from) // Append the "from" argument.
++            mstore(add(freeMemoryPointer, 36), to) // Append the "to" argument.
++            mstore(add(freeMemoryPointer, 68), amount) // Append the "amount" argument.
++
++            success := and(
++                // Set success to whether the call reverted, if not we check it either
++                // returned exactly 1 (can't just be non-zero data), or had no return data.
++                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),
++                // We use 100 because the length of our calldata totals up like so: 4 + 32 * 3.
++                // We use 0 and 32 to copy up to 32 bytes of return data into the scratch space.
++                // Counterintuitively, this call must be positioned second to the or() call in the
++                // surrounding and() call or else returndatasize() will be zero during the computation.
++                call(gas(), token, 0, freeMemoryPointer, 100, 0, 32)
++            )
++        }
++
++        require(success, "TRANSFER_FROM_FAILED");
++    }
++
++    function safeTransfer(
++        ERC20 token,
++        address to,
++        uint256 amount
++    ) internal {
++        bool success;
++
++        assembly {
++            // Get a pointer to some free memory.
++            let freeMemoryPointer := mload(0x40)
++
++            // Write the abi-encoded calldata into memory, beginning with the function selector.
++            mstore(
++                freeMemoryPointer,
++                0xa9059cbb00000000000000000000000000000000000000000000000000000000
++            )
++            mstore(add(freeMemoryPointer, 4), to) // Append the "to" argument.
++            mstore(add(freeMemoryPointer, 36), amount) // Append the "amount" argument.
++
++            success := and(
++                // Set success to whether the call reverted, if not we check it either
++                // returned exactly 1 (can't just be non-zero data), or had no return data.
++                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),
++                // We use 68 because the length of our calldata totals up like so: 4 + 32 * 2.
++                // We use 0 and 32 to copy up to 32 bytes of return data into the scratch space.
++                // Counterintuitively, this call must be positioned second to the or() call in the
++                // surrounding and() call or else returndatasize() will be zero during the computation.
++                call(gas(), token, 0, freeMemoryPointer, 68, 0, 32)
++            )
++        }
++
++        require(success, "TRANSFER_FAILED");
++    }
++
++    function safeApprove(
++        ERC20 token,
++        address to,
++        uint256 amount
++    ) internal {
++        bool success;
++
++        assembly {
++            // Get a pointer to some free memory.
++            let freeMemoryPointer := mload(0x40)
++
++            // Write the abi-encoded calldata into memory, beginning with the function selector.
++            mstore(
++                freeMemoryPointer,
++                0x095ea7b300000000000000000000000000000000000000000000000000000000
++            )
++            mstore(add(freeMemoryPointer, 4), to) // Append the "to" argument.
++            mstore(add(freeMemoryPointer, 36), amount) // Append the "amount" argument.
++
++            success := and(
++                // Set success to whether the call reverted, if not we check it either
++                // returned exactly 1 (can't just be non-zero data), or had no return data.
++                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),
++                // We use 68 because the length of our calldata totals up like so: 4 + 32 * 2.
++                // We use 0 and 32 to copy up to 32 bytes of return data into the scratch space.
++                // Counterintuitively, this call must be positioned second to the or() call in the
++                // surrounding and() call or else returndatasize() will be zero during the computation.
++                call(gas(), token, 0, freeMemoryPointer, 68, 0, 32)
++            )
++        }
++
++        require(success, "APPROVE_FAILED");
++    }
++}
 diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
 --- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 11:35:45.280758761 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2022-12-20 12:05:35.614085422 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -10,7 +211,7 @@ diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distributio
 +contract MerkleTree1 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
 --- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 11:36:07.384088818 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2022-12-20 12:05:35.614085422 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -20,7 +221,7 @@ diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distributio
 +contract MerkleTree2 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribution/MerkleTreeLib.sol
 --- common/rewards-distribution/MerkleTreeLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeLib.sol	2022-12-20 11:28:15.444152578 +0100
++++ common/rewards-distribution/MerkleTreeLib.sol	2022-12-20 12:05:35.614085422 +0100
 @@ -0,0 +1,103 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -127,7 +328,7 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +}
 diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribution/MerkleTreeMock.sol
 --- common/rewards-distribution/MerkleTreeMock.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeMock.sol	2022-12-20 11:28:15.447485911 +0100
++++ common/rewards-distribution/MerkleTreeMock.sol	2022-12-20 12:05:35.617418755 +0100
 @@ -0,0 +1,61 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -190,8 +391,23 @@ diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribu
 +        return tree.getHash(addr);
 +    }
 +}
+diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-distribution/RewardsDistributor.sol
+--- common/rewards-distribution/RewardsDistributor.sol	2022-12-20 09:34:41.079559996 +0100
++++ common/rewards-distribution/RewardsDistributor.sol	2022-12-20 12:07:00.124080082 +0100
+@@ -1,9 +1,9 @@
+ // SPDX-License-Identifier: GNU AGPLv3
+ pragma solidity ^0.8.0;
+ 
+-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
++import "./libraries/SafeTransferLib.sol"; // HARNESS
++import "./libraries/MerkleProof.sol"; // HARNESS
+ 
+-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+ import "@openzeppelin/contracts/access/Ownable.sol";
+ 
+ /// @title Morpho Rewards Distributor.
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-12-20 11:28:15.447485911 +0100
++++ .gitignore	2022-12-20 12:05:35.617418755 +0100
 @@ -0,0 +1 @@
 +*
