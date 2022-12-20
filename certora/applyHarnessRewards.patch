@@ -340,7 +340,7 @@ diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribu
 +}
 diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-distribution/RewardsDistributor.sol
 --- common/rewards-distribution/RewardsDistributor.sol	2022-12-20 09:34:41.079559996 +0100
-+++ common/rewards-distribution/RewardsDistributor.sol	2022-12-20 14:36:31.481584652 +0100
++++ common/rewards-distribution/RewardsDistributor.sol	2022-12-20 14:54:18.788716116 +0100
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: GNU AGPLv3
  pragma solidity ^0.8.0;
@@ -353,6 +353,31 @@ diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-dist
  import "@openzeppelin/contracts/access/Ownable.sol";
  
  /// @title Morpho Rewards Distributor.
+@@ -17,7 +17,6 @@
+ 
+     ERC20 public immutable MORPHO;
+     bytes32 public currRoot; // The merkle tree's root of the current rewards distribution.
+-    bytes32 public prevRoot; // The merkle tree's root of the previous rewards distribution.
+     mapping(address => uint256) public claimed; // The rewards already claimed. account -> amount.
+ 
+     /// EVENTS ///
+@@ -57,7 +56,6 @@
+     /// @notice Updates the current merkle tree's root.
+     /// @param _newRoot The new merkle tree's root.
+     function updateRoot(bytes32 _newRoot) external onlyOwner {
+-        prevRoot = currRoot;
+         currRoot = _newRoot;
+         emit RootUpdated(_newRoot);
+     }
+@@ -85,7 +83,7 @@
+             _proof,
+             keccak256(abi.encodePacked(_account, _claimable))
+         );
+-        if (candidateRoot != currRoot && candidateRoot != prevRoot) revert ProofInvalidOrExpired();
++        if (candidateRoot != currRoot) revert ProofInvalidOrExpired();
+ 
+         uint256 alreadyClaimed = claimed[_account];
+         if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
 +++ .gitignore	2022-12-20 14:36:31.481584652 +0100

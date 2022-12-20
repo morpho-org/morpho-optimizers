@@ -6,7 +6,6 @@ using MorphoToken as MorphoToken
 methods {
     MORPHO() returns address envfree
     currRoot() returns bytes32 envfree
-    prevRoot() returns bytes32 envfree
     claimed(address) returns uint256 envfree
     claim(address, uint256, bytes32[]) envfree
 
@@ -54,20 +53,31 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
     env e;
     require T1.getHash(T1.getRoot()) == currRoot();
-    require T2.getHash(T2.getRoot()) == prevRoot();
-    require T1.isWellFormed(_account) && T2.isWellFormed(_account); // can also assume that other accounts are well-formed
-
-    uint256 balanceBefore = MorphoToken.balanceOf(_account);
-    uint256 claimedBefore = claimed(_account);
+    require T1.isWellFormed(_account); // can also assume that other accounts are well-formed
 
     claim(_account, _claimable, _proof);
 
-    uint256 balanceAfter = MorphoToken.balanceOf(_account);
-
-    assert balanceAfter - balanceBefore == _claimable - claimedBefore; 
-    assert (T1.getCreated(_account) && _claimable == T1.getValue(_account)) || 
-           (T2.getCreated(_account) && _claimable == T1.getValue(_account));
+    assert T1.getCreated(_account);
+    assert _claimable == T1.getValue(_account);
 }
+
+// rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
+//     env e;
+//     require T1.getHash(T1.getRoot()) == currRoot();
+//     require T2.getHash(T2.getRoot()) == prevRoot();
+//     require T1.isWellFormed(_account) && T2.isWellFormed(_account); // can also assume that other accounts are well-formed
+
+//     uint256 balanceBefore = MorphoToken.balanceOf(_account);
+//     uint256 claimedBefore = claimed(_account);
+
+//     claim(_account, _claimable, _proof);
+
+//     uint256 balanceAfter = MorphoToken.balanceOf(_account);
+
+//     assert balanceAfter - balanceBefore == _claimable - claimedBefore; 
+//     assert (T1.getCreated(_account) && _claimable == T1.getValue(_account)) || 
+//            (T2.getCreated(_account) && _claimable == T1.getValue(_account));
+// }
 
 // rule claimCompleteness(address _account, uint256 _claimable, bytes32[] _proof) {
 //     env e;
