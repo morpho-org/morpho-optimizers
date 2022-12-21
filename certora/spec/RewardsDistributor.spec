@@ -79,15 +79,13 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 //            (T2.getCreated(_account) && _claimable == T1.getValue(_account));
 // }
 
-// rule claimCompleteness(address _account, uint256 _claimable, bytes32[] _proof) {
-//     env e;
-//     require T1.getCreated(_account);
-//     require _claimable == T1.getValue(_account);
-//     require T1.isWellFormed(_account); // can also assume that other accounts are well-formed
+rule claimCompleteness(address _account) {
+    env e;
+    require T1.getCreated(_account);
+    uint256 _claimable = T1.getValue(_account);
+    require T1.isWellFormed(_account); // can also assume that other accounts are well-formed
 
-//     bytes32[] proof = T1.findProof(_account);
+    claim@withrevert(_account, _claimable, T1.findProof(_account));
 
-//     claim@withrevert(_account, _claimable, proof);
-
-//     assert !lastReverted;
-// }
+    assert !lastReverted;
+}
