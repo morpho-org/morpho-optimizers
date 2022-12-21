@@ -322,6 +322,14 @@ contract TestSupply is TestSetup {
         assertGt(gasUsed2, gasUsed1 + 5e4);
     }
 
+    function testShouldNotSupplyWhenMintGuardianPaused() public {
+        vm.prank(comptroller.admin());
+        comptroller._setMintPaused(ICToken(cDai), true);
+
+        vm.expectRevert(abi.encodeWithSignature("SupplyIsPaused()"));
+        supplier1.supply(cDai, 1 ether);
+    }
+
     /// @dev Helper for gas usage test
     function _getSupplyGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
         // 2 * NMAX borrowers borrow amount

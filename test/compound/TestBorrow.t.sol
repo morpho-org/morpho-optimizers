@@ -302,6 +302,14 @@ contract TestBorrow is TestSetup {
         assertGt(gasUsed2, gasUsed1 + 5e4);
     }
 
+    function testShouldNotBorrowWhenBorrowGuardianPaused() public {
+        vm.prank(comptroller.admin());
+        comptroller._setBorrowPaused(ICToken(cDai), true);
+
+        vm.expectRevert(abi.encodeWithSignature("BorrowIsPaused()"));
+        supplier1.borrow(cDai, 1 ether);
+    }
+
     /// @dev Helper for gas usage test
     function _getBorrowGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
         // 2 * NMAX suppliers supply amount
