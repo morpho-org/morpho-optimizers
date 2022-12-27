@@ -7,7 +7,7 @@
 [submodule "lib/morpho-data-structures"]
 	path = lib/morpho-data-structures
 	url = https://github.com/morpho-dao/morpho-data-structures
-	branch = morpho-v1
+	branch = upgrade-morpho-1
 [submodule "lib/morpho-utils"]
 	path = lib/morpho-utils
 	url = https://github.com/morpho-dao/morpho-utils
