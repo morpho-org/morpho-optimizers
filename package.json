@@ -2,6 +2,16 @@
   "name": "@morpho-dao/morpho-v1",
   "version": "2.0.0",
   "description": "Core contracts of the Morpho Protocol V1.",
+  "author": "Morpho Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morpho-dao/morpho-v1.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/morpho-dao/morpho-v1/issues"
+  },
+  "homepage": "https://github.com/morpho-dao/morpho-v1#readme",
   "scripts": {
     "test": "hardhat test test-ts/*.spec.ts",
     "test:upgrade:stEth": "BLOCK_NUMBER=15580517 hardhat test test-ts/upgrades/stEth.spec.ts",
@@ -13,15 +23,6 @@
     "format:sol": "prettier --write './**/*.sol'",
     "postinstall": "husky install"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/morpho-dao/morpho-v1.git"
-  },
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/morpho-dao/morpho-v1/issues"
-  },
-  "homepage": "https://github.com/morpho-dao/morpho-v1#readme",
   "devDependencies": {
     "@morpho-labs/ethers-multicall": "^1.3.1",
     "@morpho-labs/morpho-ethers-contract": "^1.1.1",
