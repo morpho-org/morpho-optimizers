@@ -2,12 +2,12 @@
   "name": "@morpho-dao/morpho-v1",
   "version": "2.0.0",
   "description": "Core contracts of the Morpho Protocol V1.",
-  "author": "Morpho Labs",
+  "author": "Morpho Labs <security@morpho.xyz>",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/morpho-dao/morpho-v1.git"
   },
-  "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/morpho-dao/morpho-v1/issues"
   },
