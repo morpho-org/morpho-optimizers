@@ -22,7 +22,7 @@ contract TestLiquidate is TestSetup {
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
     }
 

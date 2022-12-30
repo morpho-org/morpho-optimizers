@@ -24,7 +24,7 @@ contract TestRewards is TestSetup {
         supplier2.approve(dai, toSupply);
         supplier2.supply(cDai, toSupply);
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
         uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
 
         index = comptroller.compSupplyState(cDai).index;
@@ -43,7 +43,7 @@ contract TestRewards is TestSetup {
 
         morpho.setIsClaimRewardsPaused(true);
 
-        hevm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
+        vm.expectRevert(abi.encodeWithSignature("ClaimRewardsPaused()"));
         morpho.claimRewards(cDaiInArray, false);
     }
 
@@ -66,7 +66,7 @@ contract TestRewards is TestSetup {
         supplier2.approve(dai, toSupply);
         supplier2.supply(cDai, toSupply);
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
         unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
@@ -89,13 +89,13 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         uint256 unclaimedRewards = rewardsManager.claimRewards(cTokens, address(supplier1));
 
         testEquality(userIndex, index, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
         uint256 claimedAmount = supplier1.claimRewards(cTokens, false);
 
         index = comptroller.compBorrowState(cUsdc).index;
@@ -124,7 +124,7 @@ contract TestRewards is TestSetup {
         testEquality(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
 
         unclaimedRewards = lens.getUserUnclaimedRewards(cTokens, address(supplier1));
 
@@ -144,7 +144,7 @@ contract TestRewards is TestSetup {
         supplier1.borrow(cUsdc, toBorrow);
         uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
 
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
@@ -169,7 +169,7 @@ contract TestRewards is TestSetup {
         supplier2.approve(usdc, toSupply2);
         supplier2.supply(cUsdc, toSupply2);
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
 
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
@@ -189,7 +189,7 @@ contract TestRewards is TestSetup {
         supplier1.supply(cEth, toSupply);
         supplier1.borrow(cUsdc, toBorrow);
 
-        hevm.roll(block.number + 1_000_000);
+        vm.roll(block.number + 1_000_000);
 
         address[] memory daiInArray = new address[](1);
         daiInArray[0] = cDai;
@@ -211,7 +211,7 @@ contract TestRewards is TestSetup {
         );
         assertGt(allUnclaimedRewardsView, 0);
 
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         uint256 allUnclaimedRewards = rewardsManager.claimRewards(
             tokensInArray,
             address(supplier1)
@@ -221,7 +221,7 @@ contract TestRewards is TestSetup {
         allUnclaimedRewardsView = lens.getUserUnclaimedRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewardsView, 0, "unclaimed rewards not null");
 
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         allUnclaimedRewards = rewardsManager.claimRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewards, 0);
     }
@@ -235,7 +235,7 @@ contract TestRewards is TestSetup {
         balanceBefore[2] = ERC20(comp).balanceOf(address(supplier2));
         balanceBefore[3] = ERC20(comp).balanceOf(address(supplier3));
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
 
         address[] memory tokensInArray = new address[](2);
         tokensInArray[0] = cDai;
@@ -275,11 +275,11 @@ contract TestRewards is TestSetup {
         assertGt(balanceAfter[2], balanceBefore[2]);
         assertGt(balanceAfter[3], balanceBefore[3]);
 
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         uint256 unclaimedRewards1 = rewardsManager.claimRewards(tokensInArray, address(supplier1));
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         uint256 unclaimedRewards2 = rewardsManager.claimRewards(tokensInArray, address(supplier2));
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         uint256 unclaimedRewards3 = rewardsManager.claimRewards(tokensInArray, address(supplier3));
 
         assertEq(unclaimedRewards1, 0);
@@ -329,7 +329,7 @@ contract TestRewards is TestSetup {
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
         uint256 claimedAmount = supplier1.claimRewards(cTokens, true);
 
         uint256 index = comptroller.compSupplyState(cDai).index;
@@ -357,12 +357,12 @@ contract TestRewards is TestSetup {
         address[] memory markets = new address[](1);
         markets[0] = cUsdc;
 
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         rewardsManager.claimRewards(markets, address(supplier1));
 
         // supplier2 tries to game the system by supplying a huge amount of tokens and withdrawing right after accruing its rewards.
         supplier2.supply(cUsdc, to6Decimals(bigAmount));
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         rewardsManager.claimRewards(markets, address(supplier2));
         supplier2.withdraw(cUsdc, to6Decimals(bigAmount));
 
@@ -387,7 +387,7 @@ contract TestRewards is TestSetup {
         markets[0] = cUsdc;
 
         // User accrues its rewards.
-        hevm.prank(address(morpho));
+        vm.prank(address(morpho));
         rewardsManager.claimRewards(markets, address(supplier1));
 
         // User tries to claim its rewards on Morpho.
@@ -400,10 +400,10 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
         supplier1.approve(dai, cDai, type(uint256).max);
         supplier1.compoundSupply(cDai, amount);
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
 
         supplier1.borrow(cDai, amount / 2);
 
@@ -419,14 +419,14 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 1);
-        hevm.prank(comptroller.admin());
+        vm.roll(block.number + 1);
+        vm.prank(comptroller.admin());
         ICToken[] memory cTokens = new ICToken[](1);
         uint256[] memory supplySpeeds = new uint256[](1);
         uint256[] memory borrowSpeeds = new uint256[](1);
         cTokens[0] = ICToken(cDai);
         comptroller._setCompSpeeds(cTokens, supplySpeeds, borrowSpeeds);
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.borrow(cDai, amount / 2);
 
@@ -443,11 +443,11 @@ contract TestRewards is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
         borrower1.approve(dai, cDai, type(uint256).max);
         borrower1.compoundSupply(cDai, amount);
         borrower1.compoundBorrow(cDai, amount / 2);
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
 
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(cDai, amount / 2);
@@ -465,14 +465,14 @@ contract TestRewards is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 1);
-        hevm.prank(comptroller.admin());
+        vm.roll(block.number + 1);
+        vm.prank(comptroller.admin());
         ICToken[] memory cTokens = new ICToken[](1);
         uint256[] memory supplySpeeds = new uint256[](1);
         uint256[] memory borrowSpeeds = new uint256[](1);
         cTokens[0] = ICToken(cDai);
         comptroller._setCompSpeeds(cTokens, supplySpeeds, borrowSpeeds);
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(cDai, amount / 2);
@@ -489,10 +489,10 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
         supplier1.approve(dai, cDai, type(uint256).max);
         supplier1.compoundSupply(cDai, amount);
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
 
         uint256 updatedIndex = lens.getCurrentCompSupplyIndex(cDai);
 
@@ -509,11 +509,11 @@ contract TestRewards is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
         borrower1.approve(dai, cDai, type(uint256).max);
         borrower1.compoundSupply(cDai, amount);
         borrower1.compoundBorrow(cDai, amount / 2);
-        hevm.roll(block.number + 5_000);
+        vm.roll(block.number + 5_000);
 
         ICToken(cDai).accrueInterest();
         uint256 updatedIndex = lens.getCurrentCompBorrowIndex(cDai);
@@ -538,7 +538,7 @@ contract TestRewards is TestSetup {
         supplier3.approve(usdt, type(uint256).max);
         supplier3.supply(cUsdt, amount / 2);
 
-        hevm.roll(block.number + 100_000);
+        vm.roll(block.number + 100_000);
 
         supplier1.claimRewards(cUsdcArray, false);
         supplier3.claimRewards(cUsdtArray, false);
@@ -550,7 +550,7 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier1.supply(cDai, toSupply);
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
@@ -571,7 +571,7 @@ contract TestRewards is TestSetup {
         supplier1.supply(cDai, toSupply);
         supplier1.borrow(cUsdc, to6Decimals(50 ether));
 
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(cUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));

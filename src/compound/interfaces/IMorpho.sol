@@ -35,7 +35,7 @@ interface IMorpho {
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
     function positionsManager() external view returns (IPositionsManager);
-    function incentiveVault() external view returns (IIncentivesVault);
+    function incentivesVault() external view returns (IIncentivesVault);
     function treasuryVault() external view returns (address);
     function cEth() external view returns (address);
     function wEth() external view returns (address);
@@ -68,6 +68,7 @@ interface IMorpho {
     function setIsRepayPaused(address _poolToken, bool _isPaused) external;
     function setIsLiquidateCollateralPaused(address _poolToken, bool _isPaused) external;
     function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external;
+    function increaseP2PDeltas(address _poolToken, uint256 _amount) external;
     function claimToTreasury(address[] calldata _poolTokens, uint256[] calldata _amounts) external;
     function createMarket(address _poolToken, Types.MarketParameters calldata _params) external;
 

@@ -19,7 +19,7 @@ contract TestWithdraw is TestSetup {
 
         borrower1.borrow(aDai, amount);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         borrower1.withdraw(aUsdc, to6Decimals(collateral));
     }
 
@@ -604,7 +604,7 @@ contract TestWithdraw is TestSetup {
             "p2pBorrowAmount"
         );
 
-        hevm.warp(block.timestamp + (1 days));
+        vm.warp(block.timestamp + (1 days));
 
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(dai, type(uint64).max);
@@ -633,7 +633,7 @@ contract TestWithdraw is TestSetup {
 
         // supplier1 tries to withdraw more than allowed
         supplier1.borrow(aUsdc, to6Decimals(toBorrow));
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         supplier1.withdraw(aDai, toSupply);
     }
 
@@ -666,7 +666,7 @@ contract TestWithdraw is TestSetup {
     }
 
     function testShouldNotWithdrawZero() public {
-        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
+        vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.withdraw(aDai, 0);
     }
 

@@ -709,9 +709,9 @@ contract TestRepay is TestSetup {
 
         // Someone repays on behalf of the morpho.
         supplier2.approve(dai, cDai, amount);
-        hevm.prank(address(supplier2));
+        vm.prank(address(supplier2));
         ICToken(cDai).repayBorrowBehalf(address(morpho), amount);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // Borrower1 repays on pool. Not supposed to revert.
         borrower1.approve(dai, amount);
@@ -753,7 +753,7 @@ contract TestRepay is TestSetup {
         moveOneBlockForwardBorrowRepay();
 
         borrower2.approve(dai, amount);
-        hevm.prank(address(borrower2));
+        vm.prank(address(borrower2));
         morpho.repay(cDai, address(borrower1), amount);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
@@ -771,8 +771,8 @@ contract TestRepay is TestSetup {
         borrower1.borrow(cDai, amount);
 
         borrower1.approve(dai, amount);
-        hevm.prank(address(borrower1));
-        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        vm.prank(address(borrower1));
+        vm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
         morpho.repay(cDai, address(borrower1), amount);
     }
 
@@ -785,8 +785,8 @@ contract TestRepay is TestSetup {
         borrower1.borrow(cDai, amount);
 
         borrower2.approve(dai, amount);
-        hevm.prank(address(borrower2));
-        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        vm.prank(address(borrower2));
+        vm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
         morpho.repay(cDai, address(borrower1), amount);
     }
 
@@ -838,7 +838,7 @@ contract TestRepay is TestSetup {
             vars.usdtP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cUsdt);
             vars.usdtP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cUsdt);
 
-            hevm.roll(block.number + 1);
+            vm.roll(block.number + 1);
 
             supplier1.repay(cUsdt, to6Decimals(borrow));
 
@@ -879,7 +879,7 @@ contract TestRepay is TestSetup {
             vars.usdtPoolSupplyIndexBefore = ICToken(cUsdt).exchangeRateStored();
             vars.usdtPoolBorrowIndexBefore = ICToken(cUsdt).borrowIndex();
 
-            hevm.roll(block.number + 1);
+            vm.roll(block.number + 1);
 
             supplier1.compoundRepay(cUsdt, 1);
 
@@ -913,7 +913,7 @@ contract TestRepay is TestSetup {
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(cDai, borrowAmount); // Creates a 100% peer-to-peer borrow delta.
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.repay(cDai, type(uint256).max);
     }

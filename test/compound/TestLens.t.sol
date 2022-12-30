@@ -633,7 +633,7 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(dai, 0);
 
-        hevm.expectRevert(abi.encodeWithSignature("CompoundOracleFailed()"));
+        vm.expectRevert(abi.encodeWithSignature("CompoundOracleFailed()"));
         lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
     }
 
@@ -804,7 +804,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + (31 * 24 * 60 * 4));
         Types.Indexes memory indexes = lens.getIndexes(cDai, false);
 
         assertEq(
@@ -837,7 +837,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + (31 * 24 * 60 * 4));
         Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
@@ -866,7 +866,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PIndexesWithSupplyDelta() public {
         _createSupplyDelta();
-        hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
+        vm.roll(block.timestamp + (365 * 24 * 60 * 4));
         Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
@@ -876,7 +876,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PIndexesWithBorrowDelta() public {
         _createBorrowDelta();
-        hevm.roll(block.timestamp + (365 * 24 * 60 * 4));
+        vm.roll(block.timestamp + (365 * 24 * 60 * 4));
         Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
@@ -885,7 +885,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        vm.roll(block.number + (24 * 60 * 4));
         uint256 p2pSupplyIndex = lens.getCurrentP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -893,7 +893,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PBorrowIndex() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        vm.roll(block.number + (24 * 60 * 4));
         uint256 p2pBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -902,7 +902,7 @@ contract TestLens is TestSetup {
 
     function testGetUpdatedP2PBorrowIndexWithDelta() public {
         _createBorrowDelta();
-        hevm.roll(block.number + (365 * 24 * 60 * 4));
+        vm.roll(block.number + (365 * 24 * 60 * 4));
         uint256 p2pBorrowIndex = lens.getCurrentP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -910,12 +910,12 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedIndexesWithTransferToCTokenContract() public {
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + (31 * 24 * 60 * 4));
 
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         ERC20(dai).transfer(cDai, 100 ether);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         Types.Indexes memory indexes = lens.getIndexes(cDai, true);
 
@@ -1109,7 +1109,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 10_000);
+        vm.roll(block.number + 10_000);
 
         address[] memory updatedMarkets = new address[](1);
         uint256 healthFactorNotUpdated = lens.getUserHealthFactor(
@@ -1178,7 +1178,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
 
@@ -1277,7 +1277,7 @@ contract TestLens is TestSetup {
             "borrower is already liquidatable"
         );
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + (31 * 24 * 60 * 4));
 
         assertFalse(
             lens.isLiquidatable(address(borrower1), updatedMarkets),
@@ -1317,7 +1317,7 @@ contract TestLens is TestSetup {
             "borrower is already liquidatable"
         );
 
-        hevm.roll(block.number + (31 * 24 * 60 * 4));
+        vm.roll(block.number + (31 * 24 * 60 * 4));
 
         assertFalse(
             lens.isLiquidatable(address(borrower1), updatedMarkets),
@@ -1508,7 +1508,7 @@ contract TestLens is TestSetup {
         indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();
         indexes.daiP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cDai);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         borrower1.approve(dai, amount / 2);
         borrower1.repay(cDai, amount / 2);
@@ -1597,7 +1597,7 @@ contract TestLens is TestSetup {
         indexes.ethPoolSupplyIndexBefore = ICToken(cEth).exchangeRateCurrent();
         indexes.daiP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cDai);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.withdraw(cDai, amount / 2);
 

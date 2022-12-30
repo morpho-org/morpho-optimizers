@@ -17,7 +17,7 @@ contract TestWithdraw is TestSetup {
 
         borrower1.borrow(cDai, amount);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         borrower1.withdraw(cUsdc, to6Decimals(collateral));
     }
 
@@ -656,7 +656,7 @@ contract TestWithdraw is TestSetup {
 
         // supplier1 tries to withdraw more than allowed.
         supplier1.borrow(cUsdc, to6Decimals(toBorrow));
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         supplier1.withdraw(cDai, toSupply);
     }
 
@@ -689,7 +689,7 @@ contract TestWithdraw is TestSetup {
     }
 
     function testShouldNotWithdrawZero() public {
-        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
+        vm.expectRevert(PositionsManager.AmountIsZero.selector);
         morpho.withdraw(cDai, 0);
     }
 
@@ -699,7 +699,7 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(dai, 1 ether);
         supplier1.supply(cDai, 1 ether);
 
-        hevm.expectRevert(abi.encodeWithSignature("WithdrawTooSmall()"));
+        vm.expectRevert(abi.encodeWithSignature("WithdrawTooSmall()"));
         supplier1.withdraw(cDai, amountWithdrawn);
     }
 
@@ -736,9 +736,9 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(usdc, amount);
         supplier1.supply(cUsdc, amount);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         ERC20(usdc).transfer(cUsdc, 200e6);
 
         supplier1.withdraw(cUsdc, type(uint256).max);
@@ -754,7 +754,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount / 2);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         supplier1.withdraw(cDai, type(uint256).max);
     }

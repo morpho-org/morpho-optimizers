@@ -13,31 +13,45 @@ import "morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/aave-v2/libraries/Types.sol";
 
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
 import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
-import {IncentivesVault} from "src/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "src/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
 import {PositionsManagerUtils} from "src/aave-v2/PositionsManagerUtils.sol";
+import "src/aave-v2/lens/Lens.sol";
 import "src/aave-v2/Morpho.sol";
 
-import "../../common/helpers/MorphoToken.sol";
-import "../helpers/SimplePriceOracle.sol";
-import {DumbOracle} from "../helpers/DumbOracle.sol";
-import {FlashLoan} from "../helpers/FlashLoan.sol";
-import {User} from "../helpers/User.sol";
-import {Utils} from "./Utils.sol";
-import "../../../config/eth-mainnet/aave-v2/Config.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {MorphoToken} from "test/common/helpers/MorphoToken.sol";
+import {SimplePriceOracle} from "test/aave-v2/helpers/SimplePriceOracle.sol";
+import {DumbOracle} from "test/aave-v2/helpers/DumbOracle.sol";
+import {FlashLoan} from "test/aave-v2/helpers/FlashLoan.sol";
+import {User} from "test/aave-v2/helpers/User.sol";
+import "test/aave-v2/setup/Utils.sol";
+import {Config} from "config/aave-v2/Config.sol";
+import {console} from "forge-std/console.sol";
 
 contract TestSetup is Config, Utils {
     using WadRayMath for uint256;
     using SafeTransferLib for ERC20;
 
-    Vm public hevm = Vm(HEVM_ADDRESS);
-
     uint256 public constant INITIAL_BALANCE = 1_000_000;
+
+    ProxyAdmin internal proxyAdmin;
+
+    Morpho internal morpho;
+    Morpho internal morphoImplV1;
+    TransparentUpgradeableProxy internal morphoProxy;
+
+    IEntryPositionsManager internal entryPositionsManager;
+    IExitPositionsManager internal exitPositionsManager;
+    IInterestRatesManager internal interestRatesManager;
+
+    Lens internal lens;
+    Lens internal lensImplV1;
+    TransparentUpgradeableProxy internal lensProxy;
 
     DumbOracle internal dumbOracle;
     MorphoToken public morphoToken;
@@ -103,21 +117,12 @@ contract TestSetup is Config, Utils {
         createMarket(aUsdt);
         createMarket(aAave);
 
-        hevm.warp(block.timestamp + 100);
+        vm.warp(block.timestamp + 100);
 
         /// Create Morpho token, deploy Incentives Vault and activate rewards ///
 
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            IMorpho(address(morpho)),
-            morphoToken,
-            ERC20(rewardToken),
-            address(treasuryVault),
-            dumbOracle
-        );
-        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
-        morpho.setIncentivesVault(incentivesVault);
 
         lensImplV1 = new Lens(address(morpho));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
@@ -131,14 +136,14 @@ contract TestSetup is Config, Utils {
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_aToken);
 
-        hevm.label(_aToken, ERC20(_aToken).symbol());
-        hevm.label(underlying, ERC20(underlying).symbol());
+        vm.label(_aToken, ERC20(_aToken).symbol());
+        vm.label(underlying, ERC20(underlying).symbol());
     }
 
     function initUsers() internal {
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(morpho));
-            hevm.label(
+            vm.label(
                 address(suppliers[i]),
                 string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
             );
@@ -150,7 +155,7 @@ contract TestSetup is Config, Utils {
 
         for (uint256 i = 0; i < 3; i++) {
             borrowers.push(new User(morpho));
-            hevm.label(
+            vm.label(
                 address(borrowers[i]),
                 string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
             );
@@ -172,15 +177,14 @@ contract TestSetup is Config, Utils {
     }
 
     function setContractsLabels() internal {
-        hevm.label(address(morpho), "Morpho");
-        hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(address(aaveIncentivesController), "AaveIncentivesController");
-        hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
-        hevm.label(address(pool), "Pool");
-        hevm.label(address(oracle), "AaveOracle");
-        hevm.label(address(treasuryVault), "TreasuryVault");
-        hevm.label(address(interestRatesManager), "InterestRatesManager");
-        hevm.label(address(incentivesVault), "IncentivesVault");
+        vm.label(address(morpho), "Morpho");
+        vm.label(address(morphoToken), "MorphoToken");
+        vm.label(address(aaveIncentivesController), "AaveIncentivesController");
+        vm.label(address(poolAddressesProvider), "PoolAddressesProvider");
+        vm.label(address(pool), "Pool");
+        vm.label(address(oracle), "AaveOracle");
+        vm.label(address(treasuryVault), "TreasuryVault");
+        vm.label(address(interestRatesManager), "InterestRatesManager");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
@@ -195,7 +199,7 @@ contract TestSetup is Config, Utils {
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
-        hevm.store(
+        vm.store(
             address(poolAddressesProvider),
             keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
             bytes32(uint256(uint160(address(customOracle))))
@@ -299,7 +303,7 @@ contract TestSetup is Config, Utils {
 
     function move1YearForward(address _marketAddress) public {
         for (uint256 k; k < 365; k++) {
-            hevm.warp(block.timestamp + (1 days));
+            vm.warp(block.timestamp + (1 days));
             morpho.updateIndexes(_marketAddress);
         }
     }

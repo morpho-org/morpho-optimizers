@@ -21,7 +21,7 @@ contract TestUpgradeable is TestSetup {
     function testMorphoImplementationShouldBeInitialized() public {
         _testProxyImplementationShouldBeInitialized(address(morphoImplV1));
 
-        hevm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert("Initializable: contract is already initialized");
         morphoImplV1.initialize(
             positionsManager,
             interestRatesManager,
@@ -58,7 +58,7 @@ contract TestUpgradeable is TestSetup {
     function testRewardsManagerImplementationShouldBeInitialized() public {
         _testProxyImplementationShouldBeInitialized(address(rewardsManagerImplV1));
 
-        hevm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert("Initializable: contract is already initialized");
         rewardsManagerImplV1.initialize(address(morpho));
     }
 
@@ -79,14 +79,14 @@ contract TestUpgradeable is TestSetup {
     /// INTERNAL ///
 
     function _testUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl) internal {
-        hevm.record();
+        vm.record();
         proxyAdmin.upgrade(_proxy, _impl);
-        (, bytes32[] memory writes) = hevm.accesses(address(_proxy));
+        (, bytes32[] memory writes) = vm.accesses(address(_proxy));
 
         assertEq(writes.length, 1);
         assertEq(
             bytes32ToAddress(
-                hevm.load(
+                vm.load(
                     address(_proxy),
                     bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
                 )
@@ -98,8 +98,8 @@ contract TestUpgradeable is TestSetup {
     function _testOnlyProxyOwnerCanUpgradeProxy(TransparentUpgradeableProxy _proxy, address _impl)
         internal
     {
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(supplier1));
+        vm.expectRevert("Ownable: caller is not the owner");
         proxyAdmin.upgrade(_proxy, _impl);
 
         proxyAdmin.upgrade(_proxy, _impl);
@@ -109,12 +109,12 @@ contract TestUpgradeable is TestSetup {
         TransparentUpgradeableProxy _proxy,
         address _impl
     ) internal {
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(supplier1));
+        vm.expectRevert("Ownable: caller is not the owner");
         proxyAdmin.upgradeAndCall(_proxy, _impl, "");
     }
 
     function _testProxyImplementationShouldBeInitialized(address impl) public {
-        assertEq(uint256(hevm.load(impl, 0)), 1);
+        assertEq(uint256(vm.load(impl, 0)), 1);
     }
 }

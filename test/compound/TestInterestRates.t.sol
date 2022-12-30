@@ -5,8 +5,6 @@ import "src/compound/InterestRatesManager.sol";
 import "forge-std/Test.sol";
 
 contract TestInterestRates is InterestRatesManager, Test {
-    Vm public hevm = Vm(HEVM_ADDRESS);
-
     uint256 public p2pSupplyIndexTest = 1 * WAD;
     uint256 public p2pBorrowIndexTest = 1 * WAD;
     uint256 public poolSupplyIndexTest = 2 * WAD;

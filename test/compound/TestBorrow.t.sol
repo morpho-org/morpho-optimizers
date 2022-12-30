@@ -15,7 +15,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
 
-        hevm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
+        vm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(cDai, borrowable + 1e12);
     }
 
@@ -231,7 +231,7 @@ contract TestBorrow is TestSetup {
     }
 
     function testShouldNotBorrowZero() public {
-        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
+        vm.expectRevert(PositionsManager.AmountIsZero.selector);
         morpho.borrow(cDai, 0, type(uint256).max);
     }
 

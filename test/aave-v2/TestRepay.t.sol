@@ -581,7 +581,7 @@ contract TestRepay is TestSetup {
         );
         assertApproxEqAbs(p2pBorrowAmount, 0, 1, "p2pBorrowAmount");
 
-        hevm.warp(block.timestamp + (1 days));
+        vm.warp(block.timestamp + (1 days));
 
         for (uint256 i; i < 20; i++) {
             suppliers[i].withdraw(aDai, type(uint256).max);
@@ -608,7 +608,7 @@ contract TestRepay is TestSetup {
 
         // Someone repays on behalf of Morpho.
         supplier1.approve(dai, address(pool), amount);
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         pool.repay(dai, amount, 2, address(morpho));
 
         // Repay max. Not supposed to revert !
@@ -657,7 +657,7 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aDai, amount);
 
         borrower2.approve(dai, amount);
-        hevm.prank(address(borrower2));
+        vm.prank(address(borrower2));
         morpho.repay(aDai, address(borrower1), amount);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
@@ -676,7 +676,7 @@ contract TestRepay is TestSetup {
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         supplier1.withdraw(aDai, borrowAmount); // Creates a 100% peer-to-peer borrow delta.
 
-        hevm.warp(block.timestamp + 1000);
+        vm.warp(block.timestamp + 1000);
 
         supplier1.repay(aDai, type(uint256).max);
     }

@@ -45,7 +45,7 @@ interface IMorpho {
     function exitPositionsManager() external view returns (IExitPositionsManager);
     function aaveIncentivesController() external view returns (IAaveIncentivesController);
     function addressesProvider() external view returns (ILendingPoolAddressesProvider);
-    function incentivesVault() external view returns (IIncentivesVault);
+    function incentivesVault() external view returns (address);
     function pool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (bytes32);

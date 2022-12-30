@@ -1,27 +1,46 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "src/compound/interfaces/IMorpho.sol";
+import {IIncentivesVault} from "src/compound/interfaces/IIncentivesVault.sol";
+import {IPositionsManager} from "src/compound/interfaces/IPositionsManager.sol";
+import {IInterestRatesManager} from "src/compound/interfaces/IInterestRatesManager.sol";
+
 import {CompoundMath} from "src/compound/libraries/CompoundMath.sol";
 import {PercentageMath} from "morpho-utils/math/PercentageMath.sol";
 import {SafeTransferLib, ERC20} from "solmate/src/utils/SafeTransferLib.sol";
 import {Math} from "morpho-utils/math/Math.sol";
-import {Types} from "src/compound/libraries/Types.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {RewardsManager} from "src/compound/RewardsManager.sol";
+import {Lens} from "src/compound/lens/Lens.sol";
+import {Morpho} from "src/compound/Morpho.sol";
 import {PositionsManager} from "src/compound/PositionsManager.sol";
 import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 
-import {User} from "../../../compound/helpers/User.sol";
-import "../../../../config/eth-mainnet/compound/Config.sol";
-import "forge-std/console.sol";
+import {User} from "test/compound/helpers/User.sol";
+import {ConfigProd} from "config/prod/compound/ConfigProd.sol";
+import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract TestSetup is Config, Test {
+contract TestSetup is ConfigProd, Test {
     using CompoundMath for uint256;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
 
     uint256 MIN_USD_AMOUNT = 0.5 ether;
     uint256 MAX_USD_AMOUNT = 50_000_000_000 ether;
+
+    Morpho internal morphoImplV1;
+    TransparentUpgradeableProxy internal morphoProxy;
+
+    IPositionsManager internal positionsManager;
+    IInterestRatesManager internal interestRatesManager;
+
+    IRewardsManager internal rewardsManager;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
+
+    TransparentUpgradeableProxy internal lensProxy;
 
     User public user;
 
@@ -58,14 +77,22 @@ contract TestSetup is Config, Test {
     }
 
     function initContracts() internal {
-        lens = Lens(address(lensProxy));
-        morpho = Morpho(payable(morphoProxy));
-        rewardsManager = RewardsManager(address(morpho.rewardsManager()));
-        incentivesVault = morpho.incentivesVault();
+        rewardsManager = morpho.rewardsManager();
         positionsManager = morpho.positionsManager();
         interestRatesManager = morpho.interestRatesManager();
 
+        morphoProxy = TransparentUpgradeableProxy(payable(address(morpho)));
         rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
+        lensProxy = TransparentUpgradeableProxy(payable(address(lens)));
+
+        bytes32 morphoImplV1Bytes32 = vm.load(
+            address(morphoProxy),
+            keccak256("eip1967.proxy.implementation")
+        );
+
+        assembly {
+            sstore(morphoImplV1.slot, morphoImplV1Bytes32)
+        }
     }
 
     function initUsers() internal {
@@ -100,7 +127,6 @@ contract TestSetup is Config, Test {
         vm.label(address(rewardsManager), "RewardsManager");
         vm.label(address(comptroller), "Comptroller");
         vm.label(address(oracle), "Oracle");
-        vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 
         vm.label(address(aave), "AAVE");

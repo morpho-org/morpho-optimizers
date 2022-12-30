@@ -2,46 +2,70 @@
 pragma solidity ^0.8.0;
 
 import "src/compound/interfaces/IMorpho.sol";
+import {IIncentivesVault} from "src/compound/interfaces/IIncentivesVault.sol";
+import {IPositionsManager} from "src/compound/interfaces/IPositionsManager.sol";
+import {IInterestRatesManager} from "src/compound/interfaces/IInterestRatesManager.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/compound/libraries/CompoundMath.sol";
 import "solmate/src/utils/SafeTransferLib.sol";
 
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
+import {RewardsManager} from "src/compound/RewardsManager.sol";
+import {Lens} from "src/compound/lens/Lens.sol";
+import {Morpho} from "src/compound/Morpho.sol";
 import {IncentivesVault} from "src/compound/IncentivesVault.sol";
 import {PositionsManager} from "src/compound/PositionsManager.sol";
 import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
-import "../../common/helpers/MorphoToken.sol";
-import "../helpers/SimplePriceOracle.sol";
-import "../helpers/DumbOracle.sol";
-import {User} from "../helpers/User.sol";
-import {Utils} from "./Utils.sol";
-import "../../../config/eth-mainnet/compound/Config.sol";
-import "forge-std/console.sol";
-import "forge-std/console2.sol";
-import "forge-std/Vm.sol";
+
+import {MorphoToken} from "test/common/helpers/MorphoToken.sol";
+import {SimplePriceOracle} from "test/compound/helpers/SimplePriceOracle.sol";
+import {DumbOracle} from "test/compound/helpers/DumbOracle.sol";
+import {User} from "test/compound/helpers/User.sol";
+import {Utils} from "test/compound/setup/Utils.sol";
+import {Config} from "config/compound/Config.sol";
+import {console} from "forge-std/console.sol";
 
 contract TestSetup is Config, Utils {
-    Vm public hevm = Vm(HEVM_ADDRESS);
+    uint256 internal constant MAX_BASIS_POINTS = 100_00;
+    uint256 internal constant INITIAL_BALANCE = 1_000_000;
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
-    uint256 public constant INITIAL_BALANCE = 1_000_000;
+    ProxyAdmin internal proxyAdmin;
 
-    DumbOracle public dumbOracle;
-    MorphoToken public morphoToken;
+    Morpho internal morpho;
+    Morpho internal morphoImplV1;
+    TransparentUpgradeableProxy internal morphoProxy;
 
-    User public treasuryVault;
+    IPositionsManager internal positionsManager;
+    IIncentivesVault internal incentivesVault;
+    IInterestRatesManager internal interestRatesManager;
 
-    User public supplier1;
-    User public supplier2;
-    User public supplier3;
-    User[] public suppliers;
+    RewardsManager internal rewardsManager;
+    RewardsManager internal rewardsManagerImplV1;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
 
-    User public borrower1;
-    User public borrower2;
-    User public borrower3;
-    User[] public borrowers;
+    Lens internal lens;
+    Lens internal lensImplV1;
+    TransparentUpgradeableProxy internal lensProxy;
 
-    address[] public pools;
+    DumbOracle internal dumbOracle;
+    MorphoToken internal morphoToken;
+
+    User internal treasuryVault;
+
+    User internal supplier1;
+    User internal supplier2;
+    User internal supplier3;
+    User[] internal suppliers;
+
+    User internal borrower1;
+    User internal borrower2;
+    User internal borrower3;
+    User[] internal borrowers;
+
+    address[] internal pools;
 
     function setUp() public {
         initContracts();
@@ -51,7 +75,7 @@ contract TestSetup is Config, Utils {
         onSetUp();
     }
 
-    function onSetUp() public virtual {}
+    function onSetUp() internal virtual {}
 
     function initContracts() internal {
         interestRatesManager = new InterestRatesManager();
@@ -90,7 +114,7 @@ contract TestSetup is Config, Utils {
         createMarket(cBat);
         createMarket(cEth);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         ///  Create Morpho token, deploy Incentives Vault and activate COMP rewards ///
 
@@ -129,18 +153,18 @@ contract TestSetup is Config, Utils {
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_cToken);
 
-        hevm.label(_cToken, ERC20(_cToken).symbol());
-        if (_cToken == cEth) hevm.label(wEth, "WETH");
+        vm.label(_cToken, ERC20(_cToken).symbol());
+        if (_cToken == cEth) vm.label(wEth, "WETH");
         else {
             address underlying = ICToken(_cToken).underlying();
-            hevm.label(underlying, ERC20(underlying).symbol());
+            vm.label(underlying, ERC20(underlying).symbol());
         }
     }
 
     function initUsers() internal {
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(morpho));
-            hevm.label(
+            vm.label(
                 address(suppliers[i]),
                 string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
             );
@@ -152,7 +176,7 @@ contract TestSetup is Config, Utils {
 
         for (uint256 i = 0; i < 3; i++) {
             borrowers.push(new User(morpho));
-            hevm.label(
+            vm.label(
                 address(borrowers[i]),
                 string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
             );
@@ -173,18 +197,18 @@ contract TestSetup is Config, Utils {
     }
 
     function setContractsLabels() internal {
-        hevm.label(address(proxyAdmin), "ProxyAdmin");
-        hevm.label(address(morphoImplV1), "MorphoImplV1");
-        hevm.label(address(morpho), "Morpho");
-        hevm.label(address(interestRatesManager), "InterestRatesManager");
-        hevm.label(address(rewardsManager), "RewardsManager");
-        hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(address(comptroller), "Comptroller");
-        hevm.label(address(oracle), "CompoundOracle");
-        hevm.label(address(dumbOracle), "DumbOracle");
-        hevm.label(address(incentivesVault), "IncentivesVault");
-        hevm.label(address(treasuryVault), "TreasuryVault");
-        hevm.label(address(lens), "Lens");
+        vm.label(address(proxyAdmin), "ProxyAdmin");
+        vm.label(address(morphoImplV1), "MorphoImplV1");
+        vm.label(address(morpho), "Morpho");
+        vm.label(address(interestRatesManager), "InterestRatesManager");
+        vm.label(address(rewardsManager), "RewardsManager");
+        vm.label(address(morphoToken), "MorphoToken");
+        vm.label(address(comptroller), "Comptroller");
+        vm.label(address(oracle), "CompoundOracle");
+        vm.label(address(dumbOracle), "DumbOracle");
+        vm.label(address(incentivesVault), "IncentivesVault");
+        vm.label(address(treasuryVault), "TreasuryVault");
+        vm.label(address(lens), "Lens");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
@@ -196,11 +220,11 @@ contract TestSetup is Config, Utils {
         }
     }
 
-    function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
+    function createAndSetCustomPriceOracle() internal returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
         IComptroller adminComptroller = IComptroller(address(comptroller));
-        hevm.prank(adminComptroller.admin());
+        vm.prank(adminComptroller.admin());
         uint256 result = adminComptroller._setPriceOracle(address(customOracle));
         require(result == 0); // No error
 
@@ -215,7 +239,7 @@ contract TestSetup is Config, Utils {
         uint64 _borrow,
         uint64 _withdraw,
         uint64 _repay
-    ) public {
+    ) internal {
         Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({
             supply: _supply,
             borrow: _borrow,
@@ -225,14 +249,14 @@ contract TestSetup is Config, Utils {
         morpho.setDefaultMaxGasForMatching(newMaxGas);
     }
 
-    function moveOneBlockForwardBorrowRepay() public {
-        hevm.roll(block.number + 1);
+    function moveOneBlockForwardBorrowRepay() internal {
+        vm.roll(block.number + 1);
     }
 
-    function move1000BlocksForward(address _marketAddress) public {
+    function move1000BlocksForward(address _marketAddress) internal {
         for (uint256 k; k < 100; k++) {
-            hevm.roll(block.number + 10);
-            hevm.warp(block.timestamp + 1);
+            vm.roll(block.number + 10);
+            vm.warp(block.timestamp + 1);
             morpho.updateP2PIndexes(_marketAddress);
         }
     }
@@ -242,7 +266,7 @@ contract TestSetup is Config, Utils {
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in wad).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in wad).
     function getApproxP2PRates(address _poolToken)
-        public
+        internal
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {

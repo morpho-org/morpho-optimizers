@@ -207,7 +207,7 @@ contract TestSupply is TestSetup {
     }
 
     function testShouldNotSupplyZero() public {
-        hevm.expectRevert(PositionsManager.AmountIsZero.selector);
+        vm.expectRevert(PositionsManager.AmountIsZero.selector);
         morpho.supply(cDai, msg.sender, 0, type(uint256).max);
     }
 
@@ -219,9 +219,9 @@ contract TestSupply is TestSetup {
 
         // Someone repays on behalf of the morpho.
         supplier2.approve(dai, cDai, amount);
-        hevm.prank(address(supplier2));
+        vm.prank(address(supplier2));
         ICToken(cDai).repayBorrowBehalf(address(morpho), amount);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // Supplier supplies in peer-to-peer. Not supposed to revert.
         supplier1.approve(dai, amount);
@@ -244,7 +244,7 @@ contract TestSupply is TestSetup {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         morpho.supply(cDai, address(supplier2), amount);
 
         uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
@@ -272,7 +272,7 @@ contract TestSupply is TestSetup {
         uint256 usdcP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cUsdc);
         uint256 usdcP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cUsdc);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.supply(cDai, amount);
 
@@ -294,7 +294,7 @@ contract TestSupply is TestSetup {
         uint256 usdcPoolSupplyIndexBefore = ICToken(cUsdc).exchangeRateStored();
         uint256 usdcPoolBorrowIndexBefore = ICToken(cUsdc).borrowIndex();
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.compoundSupply(cDai, amount);
 

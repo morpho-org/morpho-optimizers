@@ -7,7 +7,7 @@ contract TestRatesLens is TestSetup {
     using CompoundMath for uint256;
 
     function testGetRatesPerBlock() public {
-        hevm.roll(block.number + 1_000);
+        vm.roll(block.number + 1_000);
         (
             uint256 p2pSupplyRate,
             uint256 p2pBorrowRate,
@@ -154,7 +154,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
@@ -176,7 +176,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         supplier1.withdraw(cDai, type(uint256).max);
 
@@ -219,7 +219,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         (
             uint256 supplyRatePerBlock,
@@ -256,7 +256,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         (
             uint256 borrowRatePerBlock,
@@ -350,7 +350,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         (
             uint256 supplyRatePerBlock,
@@ -384,7 +384,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         (
             uint256 borrowRatePerBlock,
@@ -499,7 +499,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         morpho.setIsP2PDisabled(cDai, true);
 
@@ -538,7 +538,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 1000);
+        vm.roll(block.number + 1000);
 
         morpho.setIsP2PDisabled(cDai, true);
 
@@ -642,7 +642,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         supplier1.withdraw(cDai, type(uint256).max);
 
@@ -682,7 +682,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
@@ -723,7 +723,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.withdraw(cDai, type(uint256).max);
 
@@ -780,7 +780,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
@@ -843,7 +843,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
@@ -855,7 +855,7 @@ contract TestRatesLens is TestSetup {
             uint256 poolBorrowRateBefore
         ) = lens.getRatesPerBlock(cDai);
 
-        hevm.roll(block.number + 1_000_000);
+        vm.roll(block.number + 1_000_000);
 
         (
             uint256 p2pSupplyRateAfter,
@@ -894,7 +894,7 @@ contract TestRatesLens is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.number + 1_000_000);
+        vm.roll(block.number + 1_000_000);
 
         (, , uint256 poolSupplyAmount) = lens.getAverageSupplyRatePerBlock(cDai);
 
@@ -911,7 +911,7 @@ contract TestRatesLens is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.number + 1_000_000);
+        vm.roll(block.number + 1_000_000);
 
         (, , uint256 poolBorrowAmount) = lens.getAverageBorrowRatePerBlock(cDai);
 
@@ -1022,7 +1022,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         borrower1.approve(usdc, type(uint256).max);
         borrower1.repay(cUsdc, type(uint256).max);
@@ -1045,7 +1045,7 @@ contract TestRatesLens is TestSetup {
 
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0, 0);
 
-        hevm.roll(block.number + 100);
+        vm.roll(block.number + 100);
 
         supplier1.withdraw(cDai, type(uint256).max);
 

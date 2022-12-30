@@ -11,17 +11,17 @@ contract TestFees is TestSetup {
     uint256[] public maxAmountArray = [type(uint256).max];
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
-        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        vm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
         morpho.setReserveFactor(cUsdc, 10_001);
     }
 
     function testShouldNotBePossibleToSetP2PIndexCursorHigherThan100Percent() public {
-        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        vm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
         morpho.setP2PIndexCursor(cUsdc, 10_001);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setTreasuryVault(address(borrower1));
     }
 
@@ -40,7 +40,7 @@ contract TestFees is TestSetup {
 
         _createFeeOnMorpho(1_000);
 
-        hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
         morpho.claimToTreasury(cDaiArray, amountArray);
     }
 
@@ -158,7 +158,7 @@ contract TestFees is TestSetup {
         morpho.setReserveFactor(cDai, _factor);
 
         // Increase blocks so that rates update.
-        hevm.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);

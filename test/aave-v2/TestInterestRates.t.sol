@@ -8,8 +8,6 @@ contract TestInterestRates is InterestRatesManager, Test {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
-    Vm public hevm = Vm(HEVM_ADDRESS);
-
     uint256 public constant RAY = 1e27;
 
     uint256 public p2pSupplyIndexTest = 1 * RAY;

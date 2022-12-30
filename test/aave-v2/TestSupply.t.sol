@@ -209,7 +209,7 @@ contract TestSupply is TestSetup {
     }
 
     function testShouldNotSupplyZero() public {
-        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
+        vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.supply(aDai, msg.sender, 0, type(uint256).max);
     }
 
@@ -222,9 +222,9 @@ contract TestSupply is TestSetup {
 
         // Someone repays on behalf of Morpho.
         supplier2.approve(dai, address(pool), amount);
-        hevm.prank(address(supplier2));
+        vm.prank(address(supplier2));
         pool.repay(dai, amount, 2, address(morpho));
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // Supplier 1 supply in peer-to-peer. Not supposed to revert.
         supplier1.approve(dai, amount);
@@ -235,7 +235,7 @@ contract TestSupply is TestSetup {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         morpho.supply(aDai, address(supplier2), amount);
 
         uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);

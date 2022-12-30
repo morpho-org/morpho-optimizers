@@ -16,7 +16,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        vm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 
@@ -206,7 +206,7 @@ contract TestBorrow is TestSetup {
     }
 
     function testShouldNotBorrowZero() public {
-        hevm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
+        vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
         morpho.borrow(aDai, 0, type(uint256).max);
     }
 
@@ -216,7 +216,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount);
 
-        hevm.expectRevert(EntryPositionsManager.BorrowingNotEnabled.selector);
+        vm.expectRevert(EntryPositionsManager.BorrowingNotEnabled.selector);
         borrower1.borrow(aAave, amount / 2);
     }
 
@@ -229,7 +229,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.supply(aDai, amount);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        vm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, (amount * ltv) / 10_000 + 1e9);
     }
 
@@ -243,7 +243,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdt, type(uint256).max);
         borrower1.supply(aUsdt, amount * 10);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        vm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, amount);
     }
 
@@ -260,7 +260,7 @@ contract TestBorrow is TestSetup {
 
         morpho.setAssetAsCollateral(aDai, false);
 
-        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
+        vm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aUsdc, to6Decimals(amount));
     }
 

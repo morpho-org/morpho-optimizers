@@ -5,8 +5,8 @@ import "./setup/TestSetup.sol";
 
 contract TestMorphoUtils is TestSetup {
     function testUserShouldNotUpdateP2PIndexesOfMarketNotCreated() public {
-        hevm.prank(address(2));
-        hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
+        vm.prank(address(2));
+        vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
         morpho.updateP2PIndexes(cAave);
     }
 }

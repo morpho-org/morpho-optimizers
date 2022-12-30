@@ -3,29 +3,32 @@ pragma solidity ^0.8.0;
 
 import "src/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "src/aave-v2/interfaces/aave/IVariableDebtToken.sol";
+import "src/aave-v2/interfaces/IRewardsManager.sol";
 import "src/aave-v2/interfaces/aave/IAToken.sol";
 import "src/aave-v2/interfaces/lido/ILido.sol";
+import "src/aave-v2/interfaces/IMorpho.sol";
 
 import {ReserveConfiguration} from "src/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "morpho-utils/math/WadRayMath.sol";
 import "morpho-utils/math/PercentageMath.sol";
 import "solmate/src/utils/SafeTransferLib.sol";
-import "morpho-utils/math/Math.sol";
+import {Math} from "morpho-utils/math/Math.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
-import {IncentivesVault} from "src/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "src/aave-v2/MatchingEngine.sol";
 import {PositionsManagerUtils} from "src/aave-v2/PositionsManagerUtils.sol";
 import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
+import "src/aave-v2/lens/Lens.sol";
 import "src/aave-v2/Morpho.sol";
 
-import {User} from "../../../aave-v2/helpers/User.sol";
-import "../../../../config/eth-mainnet/aave-v2/Config.sol";
-import "forge-std/console.sol";
+import {User} from "test/aave-v2/helpers/User.sol";
+import {ConfigProd} from "config/prod/aave-v2/ConfigProd.sol";
+import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract TestSetup is Config, Test {
+contract TestSetup is ConfigProd, Test {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
     using PercentageMath for uint256;
@@ -34,6 +37,16 @@ contract TestSetup is Config, Test {
 
     uint256 MIN_ETH_AMOUNT = 0.001 ether;
     uint256 MAX_ETH_AMOUNT = 50_000_000 ether;
+
+    Morpho internal morphoImplV1;
+    TransparentUpgradeableProxy internal morphoProxy;
+
+    IEntryPositionsManager internal entryPositionsManager;
+    IExitPositionsManager internal exitPositionsManager;
+    IInterestRatesManager internal interestRatesManager;
+    IRewardsManager internal rewardsManager;
+
+    TransparentUpgradeableProxy internal lensProxy;
 
     User public user;
 
@@ -71,12 +84,21 @@ contract TestSetup is Config, Test {
     }
 
     function initContracts() internal {
-        lens = Lens(address(lensProxy));
-        morpho = Morpho(payable(morphoProxy));
-        incentivesVault = morpho.incentivesVault();
         entryPositionsManager = morpho.entryPositionsManager();
         exitPositionsManager = morpho.exitPositionsManager();
         interestRatesManager = morpho.interestRatesManager();
+
+        morphoProxy = TransparentUpgradeableProxy(payable(address(morpho)));
+        lensProxy = TransparentUpgradeableProxy(payable(address(lens)));
+
+        bytes32 morphoImplV1Bytes32 = vm.load(
+            address(morphoProxy),
+            keccak256("eip1967.proxy.implementation")
+        );
+
+        assembly {
+            sstore(morphoImplV1.slot, morphoImplV1Bytes32)
+        }
     }
 
     function initUsers() internal {
@@ -119,7 +141,6 @@ contract TestSetup is Config, Test {
         vm.label(address(morpho), "Morpho");
         vm.label(address(interestRatesManager), "InterestRatesManager");
         vm.label(address(oracle), "Oracle");
-        vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 
         vm.label(address(aave), "AAVE");

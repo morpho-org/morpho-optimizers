@@ -70,7 +70,7 @@ contract TestRounding is TestSetup {
         ICToken(cDai).repayBorrow(1);
 
         // redeem 1 cDai, it DOES revert
-        hevm.expectRevert("redeemTokens zero");
+        vm.expectRevert("redeemTokens zero");
         ICToken(cDai).redeemUnderlying(1);
 
         // Previous test returns the following

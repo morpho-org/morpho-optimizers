@@ -21,7 +21,7 @@ contract TestLiquidate is TestSetup {
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
+        vm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
     }
 
@@ -304,7 +304,7 @@ contract TestLiquidate is TestSetup {
             vars.usdtP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cUsdt);
             vars.usdtP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cUsdt);
 
-            hevm.roll(block.number + 1);
+            vm.roll(block.number + 1);
 
             // Change Oracle.
             SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -360,7 +360,7 @@ contract TestLiquidate is TestSetup {
             vars.usdtPoolSupplyIndexBefore = ICToken(cUsdt).exchangeRateStored();
             vars.usdtPoolBorrowIndexBefore = ICToken(cUsdt).borrowIndex();
 
-            hevm.roll(block.number + 1);
+            vm.roll(block.number + 1);
 
             // Change Oracle.
             SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -369,9 +369,9 @@ contract TestLiquidate is TestSetup {
 
             // Liquidate.
             uint256 toRepay = (to6Decimals(borrow) * 1) / 100;
-            hevm.prank(address(borrower3));
+            vm.prank(address(borrower3));
             ERC20(usdt).safeApprove(cUsdt, type(uint256).max);
-            hevm.prank(address(borrower3));
+            vm.prank(address(borrower3));
             ICToken(cUsdt).liquidateBorrow(address(supplier1), toRepay, cDai);
 
             // Reset former price on oracle.
@@ -412,8 +412,8 @@ contract TestLiquidate is TestSetup {
         vm.roll(block.number + 1);
 
         borrower2.approve(dai, amount);
-        hevm.prank(address(borrower2));
-        hevm.expectRevert(abi.encodeWithSignature("AmountAboveWhatAllowedToRepay()"));
+        vm.prank(address(borrower2));
+        vm.expectRevert(abi.encodeWithSignature("AmountAboveWhatAllowedToRepay()"));
         morpho.liquidate(cDai, cUsdc, address(borrower1), (amount * 3) / 4);
     }
 
@@ -430,8 +430,8 @@ contract TestLiquidate is TestSetup {
         oracle.setUnderlyingPrice(cUsdc, oracle.getUnderlyingPrice(cUsdc) / 2);
 
         borrower2.approve(dai, amount);
-        hevm.prank(address(borrower2));
-        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        vm.prank(address(borrower2));
+        vm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
         morpho.liquidate(cDai, cUsdc, address(borrower1), amount / 3);
     }
 }

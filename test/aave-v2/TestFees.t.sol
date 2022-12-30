@@ -12,17 +12,17 @@ contract TestFees is TestSetup {
     uint256[] public maxAmountArray = [type(uint256).max];
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
-        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        vm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
         morpho.setReserveFactor(aUsdc, 10_001);
     }
 
     function testShouldNotBePossibleToSetP2PIndexCursorHigherThan100Percent() public {
-        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        vm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
         morpho.setP2PIndexCursor(aUsdc, 10_001);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Ownable: caller is not the owner");
         supplier1.setTreasuryVault(address(borrower1));
     }
 
@@ -41,7 +41,7 @@ contract TestFees is TestSetup {
 
         _createFeeOnMorpho(1_000);
 
-        hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
         morpho.claimToTreasury(aDaiArray, amountArray);
     }
 
@@ -58,7 +58,7 @@ contract TestFees is TestSetup {
         uint256 oldSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 oldBorrowIndex = morpho.p2pBorrowIndex(aDai);
 
-        hevm.warp(block.timestamp + 365 days);
+        vm.warp(block.timestamp + 365 days);
         Types.Indexes memory newIndexes = lens.getIndexes(aDai);
 
         uint256 expectedFees = toBorrow.rayMul(
@@ -93,7 +93,7 @@ contract TestFees is TestSetup {
         morpho.setReserveFactor(aDai, reserveFactor); // 10%
 
         // Increase time so that rates update.
-        hevm.warp(block.timestamp + 1);
+        vm.warp(block.timestamp + 1);
 
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, smallAmount);
@@ -103,7 +103,7 @@ contract TestFees is TestSetup {
         supplier2.supply(aDai, bigAmount);
         supplier2.borrow(aDai, bigAmount / 2);
 
-        hevm.warp(block.timestamp + (365 days));
+        vm.warp(block.timestamp + (365 days));
 
         supplier1.repay(aDai, type(uint256).max);
     }
@@ -115,7 +115,7 @@ contract TestFees is TestSetup {
         morpho.setReserveFactor(aDai, reserveFactor); // 10%
 
         // Increase time so that rates update.
-        hevm.warp(block.timestamp + 1);
+        vm.warp(block.timestamp + 1);
 
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, smallAmount);
@@ -125,7 +125,7 @@ contract TestFees is TestSetup {
         supplier2.supply(aDai, bigAmount);
         supplier2.borrow(aDai, bigAmount / 2);
 
-        hevm.warp(block.timestamp + (365 days));
+        vm.warp(block.timestamp + (365 days));
 
         supplier1.repay(aDai, type(uint256).max);
         supplier2.repay(aDai, type(uint256).max);
@@ -137,13 +137,13 @@ contract TestFees is TestSetup {
         morpho.setReserveFactor(aDai, _factor);
 
         // Increase time so that rates update.
-        hevm.warp(block.timestamp + 1);
+        vm.warp(block.timestamp + 1);
 
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
 
-        hevm.warp(block.timestamp + (365 days));
+        vm.warp(block.timestamp + (365 days));
 
         supplier1.repay(aDai, type(uint256).max);
     }

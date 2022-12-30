@@ -131,7 +131,7 @@ contract TestBitmask is TestSetup {
 
     function testBitmaskSupplyOnBehalf() public {
         supplier1.approve(dai, 10 ether);
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         morpho.supply(aDai, address(supplier2), 10 ether);
 
         assertFalse(isSupplying(address(supplier1), aDai));
@@ -144,7 +144,7 @@ contract TestBitmask is TestSetup {
         borrower1.borrow(aDai, 10 ether / 2);
 
         supplier1.approve(dai, type(uint256).max);
-        hevm.prank(address(supplier1));
+        vm.prank(address(supplier1));
         morpho.repay(aDai, address(borrower1), 10 ether / 4);
 
         assertTrue(isBorrowing(address(borrower1), aDai));

@@ -8,8 +8,6 @@ import "src/compound/libraries/DoubleLinkedList.sol";
 contract TestDoubleLinkedList is Test {
     using DoubleLinkedList for DoubleLinkedList.List;
 
-    Vm public hevm = Vm(HEVM_ADDRESS);
-
     uint256 public NDS = 50;
     address[] public accounts;
     address public ADDR_ZERO = address(0);
@@ -35,23 +33,23 @@ contract TestDoubleLinkedList is Test {
     }
 
     function testShouldNotInsertAccountWithZeroValue() public {
-        hevm.expectRevert(abi.encodeWithSignature("ValueIsZero()"));
+        vm.expectRevert(abi.encodeWithSignature("ValueIsZero()"));
         list.insertSorted(accounts[0], 0, NDS);
     }
 
     function testShouldNotInsertZeroAddress() public {
-        hevm.expectRevert(abi.encodeWithSignature("AddressIsZero()"));
+        vm.expectRevert(abi.encodeWithSignature("AddressIsZero()"));
         list.insertSorted(address(0), 10, NDS);
     }
 
     function testShouldNotRemoveAccountThatDoesNotExist() public {
-        hevm.expectRevert(abi.encodeWithSignature("AccountDoesNotExist()"));
+        vm.expectRevert(abi.encodeWithSignature("AccountDoesNotExist()"));
         list.remove(accounts[0]);
     }
 
     function testShouldInsertSeveralTimesTheSameAccount() public {
         list.insertSorted(accounts[0], 1, NDS);
-        hevm.expectRevert(abi.encodeWithSignature("AccountAlreadyInserted()"));
+        vm.expectRevert(abi.encodeWithSignature("AccountAlreadyInserted()"));
         list.insertSorted(accounts[0], 2, NDS);
     }
 
