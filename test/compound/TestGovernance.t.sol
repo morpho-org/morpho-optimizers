@@ -170,23 +170,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.interestRatesManager()), address(interestRatesV2));
     }
 
-    function testOnlyOwnerShouldSetIncentivesVault() public {
-        IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            comptroller,
-            IMorpho(address(morpho)),
-            morphoToken,
-            address(1),
-            dumbOracle
-        );
-
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setIncentivesVault(incentivesVaultV2);
-
-        morpho.setIncentivesVault(incentivesVaultV2);
-        assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
-    }
-
     function testOnlyOwnerShouldSetDustThreshold() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");

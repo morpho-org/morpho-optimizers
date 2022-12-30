@@ -61,7 +61,6 @@ contract TestSetup is Config, Test {
         lens = Lens(address(lensProxy));
         morpho = Morpho(payable(morphoProxy));
         rewardsManager = RewardsManager(address(morpho.rewardsManager()));
-        incentivesVault = morpho.incentivesVault();
         positionsManager = morpho.positionsManager();
         interestRatesManager = morpho.interestRatesManager();
 
@@ -100,7 +99,6 @@ contract TestSetup is Config, Test {
         vm.label(address(rewardsManager), "RewardsManager");
         vm.label(address(comptroller), "Comptroller");
         vm.label(address(oracle), "Oracle");
-        vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 
         vm.label(address(aave), "AAVE");

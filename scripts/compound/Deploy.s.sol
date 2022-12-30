@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "src/compound/interfaces/IRewardsManager.sol";
-import "src/compound/interfaces/IIncentivesVault.sol";
 import "src/compound/interfaces/IInterestRatesManager.sol";
 import "src/compound/interfaces/IPositionsManager.sol";
 import "src/compound/interfaces/compound/ICompound.sol";
@@ -10,7 +9,6 @@ import "src/compound/interfaces/compound/ICompound.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {IncentivesVault} from "src/compound/IncentivesVault.sol";
 import {RewardsManager} from "src/compound/RewardsManager.sol";
 import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 import {PositionsManager} from "src/compound/PositionsManager.sol";
@@ -27,7 +25,6 @@ contract Deploy is Script, Config {
     Morpho public morpho;
     IPositionsManager public positionsManager;
     IInterestRatesManager public interestRatesManager;
-    IIncentivesVault public incentivesVault;
     RewardsManager public rewardsManager;
 
     function run() external {
