@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./libraries/CompoundMath.sol";
-import "@morpho-dao/morpho-utils/DelegateCall.sol";
+import "morpho-utils/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
 

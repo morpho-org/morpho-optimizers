@@ -8,8 +8,8 @@ import "src/aave-v2/interfaces/IMorpho.sol";
 import "src/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "src/aave-v2/libraries/aave/ReserveConfiguration.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
+import "morpho-utils/math/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/aave-v2/libraries/Types.sol";
 
@@ -27,9 +27,9 @@ import {DumbOracle} from "../helpers/DumbOracle.sol";
 import {FlashLoan} from "../helpers/FlashLoan.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "@config/Config.sol";
-import "@forge-std/Test.sol";
-import "@forge-std/console.sol";
+import "../../../config/eth-mainnet/aave-v2/Config.sol";
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 contract TestSetup is Config, Utils {
     using WadRayMath for uint256;
@@ -112,7 +112,7 @@ contract TestSetup is Config, Utils {
         incentivesVault = new IncentivesVault(
             IMorpho(address(morpho)),
             morphoToken,
-            ERC20(REWARD_TOKEN),
+            ERC20(rewardToken),
             address(treasuryVault),
             dumbOracle
         );

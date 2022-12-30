@@ -74,10 +74,10 @@ contract TestIncentivesVault is TestSetup {
     function testOnlyMorphoShouldTriggerRewardTradeFunction() public {
         incentivesVault.setIncentivesTreasuryVault(address(1));
         uint256 amount = 100;
-        deal(REWARD_TOKEN, address(morphoProxy), amount);
+        deal(rewardToken, address(morphoProxy), amount);
 
         hevm.prank(address(morphoProxy));
-        ERC20(REWARD_TOKEN).safeApprove(address(incentivesVault), amount);
+        ERC20(rewardToken).safeApprove(address(incentivesVault), amount);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMorpho()"));
         incentivesVault.tradeRewardTokensForMorphoTokens(address(2), amount);
@@ -89,10 +89,10 @@ contract TestIncentivesVault is TestSetup {
     function testShouldGiveTheRightAmountOfRewards() public {
         incentivesVault.setIncentivesTreasuryVault(address(1));
         uint256 toApprove = 1_000 ether;
-        deal(REWARD_TOKEN, address(morphoProxy), toApprove);
+        deal(rewardToken, address(morphoProxy), toApprove);
 
         hevm.prank(address(morphoProxy));
-        ERC20(REWARD_TOKEN).safeApprove(address(incentivesVault), toApprove);
+        ERC20(rewardToken).safeApprove(address(incentivesVault), toApprove);
         uint256 amount = 100;
 
         // O% bonus.

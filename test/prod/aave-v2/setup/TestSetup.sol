@@ -7,10 +7,10 @@ import "src/aave-v2/interfaces/aave/IAToken.sol";
 import "src/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "src/aave-v2/libraries/aave/ReserveConfiguration.sol";
-import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-dao/morpho-utils/math/Math.sol";
+import "morpho-utils/math/WadRayMath.sol";
+import "morpho-utils/math/PercentageMath.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
+import "morpho-utils/math/Math.sol";
 
 import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "src/aave-v2/IncentivesVault.sol";
@@ -21,9 +21,9 @@ import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
 import "src/aave-v2/Morpho.sol";
 
 import {User} from "../../../aave-v2/helpers/User.sol";
-import "@config/Config.sol";
-import "@forge-std/console.sol";
-import "@forge-std/Test.sol";
+import "../../../../config/eth-mainnet/aave-v2/Config.sol";
+import "forge-std/console.sol";
+import "forge-std/Test.sol";
 
 contract TestSetup is Config, Test {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;

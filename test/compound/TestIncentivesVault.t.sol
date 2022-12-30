@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "morpho-utils/math/PercentageMath.sol";
 
 contract TestIncentivesVault is TestSetup {
     using SafeTransferLib for ERC20;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "src/aave-v2/interfaces/aave/ILendingPool.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
 
 contract FlashLoan {
     using SafeTransferLib for ERC20;

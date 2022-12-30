@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
+import "morpho-utils/math/WadRayMath.sol";
 
-import "@forge-std/Test.sol";
+import "forge-std/Test.sol";
 
 contract Utils is Test {
     using WadRayMath for uint256;

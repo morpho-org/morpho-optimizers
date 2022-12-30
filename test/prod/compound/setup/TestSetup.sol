@@ -2,18 +2,18 @@
 pragma solidity ^0.8.0;
 
 import {CompoundMath} from "src/compound/libraries/CompoundMath.sol";
-import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {PercentageMath} from "morpho-utils/math/PercentageMath.sol";
+import {SafeTransferLib, ERC20} from "solmate/src/utils/SafeTransferLib.sol";
+import {Math} from "morpho-utils/math/Math.sol";
 import {Types} from "src/compound/libraries/Types.sol";
 
 import {PositionsManager} from "src/compound/PositionsManager.sol";
 import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
-import "@config/Config.sol";
-import "@forge-std/console.sol";
-import "@forge-std/Test.sol";
+import "../../../../config/eth-mainnet/compound/Config.sol";
+import "forge-std/console.sol";
+import "forge-std/Test.sol";
 
 contract TestSetup is Config, Test {
     using CompoundMath for uint256;

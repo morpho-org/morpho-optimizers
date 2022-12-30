@@ -8,7 +8,7 @@ import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 
-import "@morpho-dao/morpho-data-structures/HeapOrdering.sol";
+import "morpho-data-structures/HeapOrdering.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";

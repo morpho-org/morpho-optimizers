@@ -1,4 +1,4 @@
-@forge-std/=lib/forge-std/src/
-@morpho-dao/morpho-utils/=lib/morpho-utils/src/
-@morpho-dao/morpho-data-structures/=lib/morpho-data-structures/contracts/
-@rari-capital/solmate/=lib/solmate/
+forge-std/=lib/forge-std/src/
+morpho-utils/=lib/morpho-utils/src/
+morpho-data-structures/=lib/morpho-data-structures/contracts/
+solmate/=lib/solmate/

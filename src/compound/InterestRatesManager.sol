@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IInterestRatesManager.sol";
 
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "morpho-utils/math/PercentageMath.sol";
 import "./libraries/CompoundMath.sol";
 
 import "./MorphoStorage.sol";

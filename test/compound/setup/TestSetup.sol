@@ -5,7 +5,7 @@ import "src/compound/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/compound/libraries/CompoundMath.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
 
 import {IncentivesVault} from "src/compound/IncentivesVault.sol";
 import {PositionsManager} from "src/compound/PositionsManager.sol";
@@ -15,10 +15,10 @@ import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "@config/Config.sol";
-import "@forge-std/console.sol";
-import "@forge-std/console2.sol";
-import "@forge-std/Vm.sol";
+import "../../../config/eth-mainnet/compound/Config.sol";
+import "forge-std/console.sol";
+import "forge-std/console2.sol";
+import "forge-std/Vm.sol";
 
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);

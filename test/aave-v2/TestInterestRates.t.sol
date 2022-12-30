@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "src/aave-v2/InterestRatesManager.sol";
-import "@forge-std/Test.sol";
+import "forge-std/Test.sol";
 
 contract TestInterestRates is InterestRatesManager, Test {
     using PercentageMath for uint256;

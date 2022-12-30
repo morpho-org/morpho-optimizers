@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "src/compound/libraries/CompoundMath.sol";
 
-import "@forge-std/Test.sol";
+import "forge-std/Test.sol";
 
 contract Utils is Test {
     using CompoundMath for uint256;

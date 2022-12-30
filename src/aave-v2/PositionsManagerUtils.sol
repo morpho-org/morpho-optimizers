@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
 
 import "./MatchingEngine.sol";
 

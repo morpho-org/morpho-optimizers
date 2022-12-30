@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import {ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {ERC20} from "solmate/src/utils/SafeTransferLib.sol";
 
 import "./IndexesLens.sol";
 

@@ -7,6 +7,7 @@ via_ir = false
 revert_strings = "default"
 names = true
 sizes = true
+libs = ["node_modules", "lib"]
 
 [profile.default.fuzz]
 runs = 1024

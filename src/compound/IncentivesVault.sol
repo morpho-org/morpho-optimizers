@@ -5,8 +5,8 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IMorpho.sol";
 
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "morpho-utils/math/PercentageMath.sol";
+import "solmate/src/utils/SafeTransferLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 

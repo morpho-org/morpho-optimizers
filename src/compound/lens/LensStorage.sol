@@ -5,13 +5,13 @@ import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMorpho.sol";
 import "./interfaces/ILens.sol";
 
-import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
+import "morpho-utils/math/CompoundMath.sol";
 import "../libraries/InterestRatesModel.sol";
-import "@morpho-dao/morpho-utils/math/Math.sol";
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
+import "morpho-utils/math/Math.sol";
+import "morpho-utils/math/PercentageMath.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import {ERC20} from "solmate/src/tokens/ERC20.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
