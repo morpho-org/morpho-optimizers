@@ -5,7 +5,6 @@ import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IEntryPositionsManager.sol";
 import "./interfaces/IExitPositionsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
-import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 
 import "morpho-data-structures/HeapOrdering.sol";
@@ -70,7 +69,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
     IInterestRatesManager public interestRatesManager;
-    IIncentivesVault public incentivesVault;
+    address public incentivesVault; // Deprecated.
     IRewardsManager public rewardsManager;
     address public treasuryVault;
 

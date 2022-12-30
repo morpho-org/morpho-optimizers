@@ -147,9 +147,8 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Claims rewards for the given assets.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    /// @param _tradeForMorphoToken Whether or not to trade reward tokens for MORPHO tokens.
     /// @return claimedAmount The amount of rewards claimed (in reward token).
-    function claimRewards(address[] calldata _assets, bool _tradeForMorphoToken)
+    function claimRewards(address[] calldata _assets, bool)
         external
         nonReentrant
         returns (uint256 claimedAmount)
@@ -158,16 +157,9 @@ contract Morpho is MorphoGovernance {
         claimedAmount = rewardsManager.claimRewards(aaveIncentivesController, _assets, msg.sender);
 
         if (claimedAmount > 0) {
-            if (_tradeForMorphoToken) {
-                aaveIncentivesController.claimRewards(
-                    _assets,
-                    claimedAmount,
-                    address(incentivesVault)
-                );
-                incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, claimedAmount);
-            } else aaveIncentivesController.claimRewards(_assets, claimedAmount, msg.sender);
+            aaveIncentivesController.claimRewards(_assets, claimedAmount, msg.sender);
 
-            emit RewardsClaimed(msg.sender, claimedAmount, _tradeForMorphoToken);
+            emit RewardsClaimed(msg.sender, claimedAmount, false);
         }
     }
 

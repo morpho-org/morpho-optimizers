@@ -30,10 +30,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted when the address of the `incentivesVault` is set.
-    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
-    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
-
     /// @notice Emitted when the `entryPositionsManager` is set.
     /// @param _entryPositionsManager The new address of the `entryPositionsManager`.
     event EntryPositionsManagerSet(address indexed _entryPositionsManager);
@@ -243,13 +239,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
-    }
-
-    /// @notice Sets the `incentivesVault`.
-    /// @param _incentivesVault The new `incentivesVault`.
-    function setIncentivesVault(IIncentivesVault _incentivesVault) external onlyOwner {
-        incentivesVault = _incentivesVault;
-        emit IncentivesVaultSet(address(_incentivesVault));
     }
 
     /// @notice Sets the `reserveFactor`.
