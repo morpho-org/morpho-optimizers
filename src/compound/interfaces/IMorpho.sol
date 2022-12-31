@@ -34,7 +34,7 @@ interface IMorpho {
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
     function positionsManager() external view returns (IPositionsManager);
-    function incentiveVault() external view returns (address);
+    function incentivesVault() external view returns (address);
     function treasuryVault() external view returns (address);
     function cEth() external view returns (address);
     function wEth() external view returns (address);
