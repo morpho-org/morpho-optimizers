@@ -145,6 +145,7 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Claims rewards for the given assets.
+    /// @dev The incentives vault will never be implemented. Thus the second parameter of this function becomes useless.
     /// @param _cTokenAddresses The cToken addresses to claim rewards from.
     /// @return amountOfRewards The amount of rewards claimed (in COMP).
     function claimRewards(address[] calldata _cTokenAddresses, bool)
