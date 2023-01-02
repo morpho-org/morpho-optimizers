@@ -63,9 +63,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
     /// @notice Thrown when someone tries to borrow but the borrow is paused.
     error BorrowIsPaused();
 
-    /// @notice Thrown when underlying pool is frozen.
-    error FrozenOnPool();
-
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -97,7 +94,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
         if (!market.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
-        if (pool.getConfiguration(address(underlyingToken)).getFrozen()) revert FrozenOnPool();
 
         _updateIndexes(_poolToken);
         _setSupplying(_onBehalf, borrowMask[_poolToken], true);
@@ -194,12 +190,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
-        DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(
-            address(underlyingToken)
-        );
-
-        if (!reserveConfig.getBorrowingEnabled()) revert BorrowingNotEnabled();
-        if (reserveConfig.getFrozen()) revert FrozenOnPool();
+        if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
+            revert BorrowingNotEnabled();
 
         _updateIndexes(_poolToken);
         _setBorrowing(msg.sender, borrowMask[_poolToken], true);

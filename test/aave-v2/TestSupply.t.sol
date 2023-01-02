@@ -265,22 +265,6 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
     }
 
-    function testCannotSupplyOnFrozenPool() public {
-        uint256 amount = 10_000 ether;
-
-        DataTypes.ReserveConfigurationMap memory reserveConfig = pool.getConfiguration(dai);
-        reserveConfig.setFrozen(true);
-
-        vm.prank(address(lendingPoolConfigurator));
-        pool.setConfiguration(dai, reserveConfig.data);
-
-        supplier1.approve(dai, amount);
-
-        hevm.expectRevert(EntryPositionsManager.FrozenOnPool.selector);
-
-        supplier1.supply(aDai, amount);
-    }
-
     function testShouldMatchSupplyWithCorrectAmountOfGas() public {
         uint256 amount = 100 ether;
         createSigners(30);
