@@ -472,7 +472,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
-
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
         if (toRepay == 0) revert UserNotMemberOfMarket();
 
