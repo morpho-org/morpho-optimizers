@@ -446,6 +446,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         _updateP2PIndexes(_poolToken);
         uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolToken, _supplier), _amount);
+        if (toWithdraw == 0) revert UserNotMemberOfMarket();
 
         if (_isLiquidatable(_supplier, _poolToken, toWithdraw, 0)) revert UnauthorisedWithdraw();
 
