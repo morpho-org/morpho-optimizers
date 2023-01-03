@@ -468,10 +468,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount == 0) revert AmountIsZero();
         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
-        if (!userMembership[_poolToken][_onBehalf]) revert UserNotMemberOfMarket();
+        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
+        if (!userMembership[_poolToken][_onBehalf] || toRepay == 0) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolToken);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
 
         _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
