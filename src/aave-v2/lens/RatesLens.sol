@@ -46,33 +46,35 @@ abstract contract RatesLens is UsersLens {
         ) = _getIndexes(_poolToken);
 
         Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(_poolToken, _user);
-        if (_amount > 0 && delta.p2pBorrowDelta > 0) {
-            uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex),
-                _amount
-            );
-
-            supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
-            _amount -= matchedDelta;
-        }
-
-        if (_amount > 0 && !market.isP2PDisabled) {
-            address firstPoolBorrower = morpho.getHead(
-                _poolToken,
-                Types.PositionType.BORROWERS_ON_POOL
-            );
-            uint256 firstPoolBorrowerBalance = morpho
-            .borrowBalanceInOf(_poolToken, firstPoolBorrower)
-            .onPool;
-
-            if (firstPoolBorrowerBalance > 0) {
-                uint256 matchedP2P = Math.min(
-                    firstPoolBorrowerBalance.rayMul(indexes.poolBorrowIndex),
+        if (!market.isP2PDisabled) {
+            if (_amount > 0 && delta.p2pBorrowDelta > 0) {
+                uint256 matchedDelta = Math.min(
+                    delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex),
                     _amount
                 );
 
-                supplyBalance.inP2P += matchedP2P.rayDiv(indexes.p2pSupplyIndex);
-                _amount -= matchedP2P;
+                supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
+                _amount -= matchedDelta;
+            }
+
+            if (_amount > 0 && !market.isP2PDisabled) {
+                address firstPoolBorrower = morpho.getHead(
+                    _poolToken,
+                    Types.PositionType.BORROWERS_ON_POOL
+                );
+                uint256 firstPoolBorrowerBalance = morpho
+                .borrowBalanceInOf(_poolToken, firstPoolBorrower)
+                .onPool;
+
+                if (firstPoolBorrowerBalance > 0) {
+                    uint256 matchedP2P = Math.min(
+                        firstPoolBorrowerBalance.rayMul(indexes.poolBorrowIndex),
+                        _amount
+                    );
+
+                    supplyBalance.inP2P += matchedP2P.rayDiv(indexes.p2pSupplyIndex);
+                    _amount -= matchedP2P;
+                }
             }
         }
 
@@ -119,33 +121,35 @@ abstract contract RatesLens is UsersLens {
         ) = _getIndexes(_poolToken);
 
         Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(_poolToken, _user);
-        if (_amount > 0 && delta.p2pSupplyDelta > 0) {
-            uint256 matchedDelta = Math.min(
-                delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex),
-                _amount
-            );
-
-            borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
-            _amount -= matchedDelta;
-        }
-
-        if (_amount > 0 && !market.isP2PDisabled) {
-            address firstPoolSupplier = morpho.getHead(
-                _poolToken,
-                Types.PositionType.SUPPLIERS_ON_POOL
-            );
-            uint256 firstPoolSupplierBalance = morpho
-            .supplyBalanceInOf(_poolToken, firstPoolSupplier)
-            .onPool;
-
-            if (firstPoolSupplierBalance > 0) {
-                uint256 matchedP2P = Math.min(
-                    firstPoolSupplierBalance.rayMul(indexes.poolSupplyIndex),
+        if (!market.isP2PDisabled) {
+            if (_amount > 0 && delta.p2pSupplyDelta > 0) {
+                uint256 matchedDelta = Math.min(
+                    delta.p2pSupplyDelta.rayMul(indexes.poolSupplyIndex),
                     _amount
                 );
 
-                borrowBalance.inP2P += matchedP2P.rayDiv(indexes.p2pBorrowIndex);
-                _amount -= matchedP2P;
+                borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
+                _amount -= matchedDelta;
+            }
+
+            if (_amount > 0) {
+                address firstPoolSupplier = morpho.getHead(
+                    _poolToken,
+                    Types.PositionType.SUPPLIERS_ON_POOL
+                );
+                uint256 firstPoolSupplierBalance = morpho
+                .supplyBalanceInOf(_poolToken, firstPoolSupplier)
+                .onPool;
+
+                if (firstPoolSupplierBalance > 0) {
+                    uint256 matchedP2P = Math.min(
+                        firstPoolSupplierBalance.rayMul(indexes.poolSupplyIndex),
+                        _amount
+                    );
+
+                    borrowBalance.inP2P += matchedP2P.rayDiv(indexes.p2pBorrowIndex);
+                    _amount -= matchedP2P;
+                }
             }
         }
 
