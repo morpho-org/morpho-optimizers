@@ -190,6 +190,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
 
         ERC20 underlyingToken = ERC20(market.underlyingToken);
+        if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
+            revert BorrowingNotEnabled();
 
         _updateIndexes(_poolToken);
         _setBorrowing(msg.sender, borrowMask[_poolToken], true);
