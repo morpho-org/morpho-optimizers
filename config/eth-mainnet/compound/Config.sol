@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0;
 
 import "src/compound/interfaces/compound/ICompound.sol";
-import {IIncentivesVault} from "src/compound/interfaces/IIncentivesVault.sol";
 import {IPositionsManager} from "src/compound/interfaces/IPositionsManager.sol";
 import {IInterestRatesManager} from "src/compound/interfaces/IInterestRatesManager.sol";
 import {IMorpho} from "src/compound/interfaces/IMorpho.sol";
@@ -53,7 +52,6 @@ contract Config is BaseConfig {
     Lens public lens;
     Morpho public morpho;
     RewardsManager public rewardsManager;
-    IIncentivesVault public incentivesVault;
     IPositionsManager public positionsManager;
     IInterestRatesManager public interestRatesManager;
 }

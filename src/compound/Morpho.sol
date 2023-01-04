@@ -145,10 +145,10 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Claims rewards for the given assets.
+    /// @dev The incentives vault will never be implemented. Thus the second parameter of this function becomes useless.
     /// @param _cTokenAddresses The cToken addresses to claim rewards from.
-    /// @param _tradeForMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
     /// @return amountOfRewards The amount of rewards claimed (in COMP).
-    function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken)
+    function claimRewards(address[] calldata _cTokenAddresses, bool)
         external
         nonReentrant
         returns (uint256 amountOfRewards)
@@ -157,16 +157,10 @@ contract Morpho is MorphoGovernance {
         amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
         if (amountOfRewards > 0) {
-            ERC20 comp = ERC20(comptroller.getCompAddress());
-
             comptroller.claimComp(address(this), _cTokenAddresses);
+            ERC20(comptroller.getCompAddress()).safeTransfer(msg.sender, amountOfRewards);
 
-            if (_tradeForMorphoToken) {
-                comp.safeApprove(address(incentivesVault), amountOfRewards);
-                incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
-            } else comp.safeTransfer(msg.sender, amountOfRewards);
-
-            emit RewardsClaimed(msg.sender, amountOfRewards, _tradeForMorphoToken);
+            emit RewardsClaimed(msg.sender, amountOfRewards, false);
         }
     }
 

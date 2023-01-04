@@ -25,10 +25,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted when the address of the `incentivesVault` is set.
-    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
-    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
-
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The new address of the `positionsManager`.
     event PositionsManagerSet(address indexed _positionsManager);
@@ -219,13 +215,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setTreasuryVault(address _treasuryVault) external onlyOwner {
         treasuryVault = _treasuryVault;
         emit TreasuryVaultSet(_treasuryVault);
-    }
-
-    /// @notice Sets the `incentivesVault`.
-    /// @param _incentivesVault The new `incentivesVault`.
-    function setIncentivesVault(IIncentivesVault _incentivesVault) external onlyOwner {
-        incentivesVault = _incentivesVault;
-        emit IncentivesVaultSet(address(_incentivesVault));
     }
 
     /// @dev Sets `dustThreshold`.

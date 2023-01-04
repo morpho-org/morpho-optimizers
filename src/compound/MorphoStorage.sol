@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManager.sol";
-import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
 
@@ -53,7 +52,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// CONTRACTS AND ADDRESSES ///
 
     IPositionsManager public positionsManager;
-    IIncentivesVault public incentivesVault;
+    address public incentivesVault; // Deprecated.
     IRewardsManager public rewardsManager;
     IInterestRatesManager public interestRatesManager;
     IComptroller public comptroller;

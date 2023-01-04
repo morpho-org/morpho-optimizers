@@ -32,7 +32,7 @@
 | marketStatus             | mapping(address => struct Types.MarketStatus)                      | 168  | 0      | 32    | src/compound/Morpho.sol:Morpho |
 | deltas                   | mapping(address => struct Types.Delta)                             | 169  | 0      | 32    | src/compound/Morpho.sol:Morpho |
 | positionsManager         | contract IPositionsManager                                         | 170  | 0      | 20    | src/compound/Morpho.sol:Morpho |
-| incentivesVault          | contract IIncentivesVault                                          | 171  | 0      | 20    | src/compound/Morpho.sol:Morpho |
+| incentivesVault          | address                                                            | 171  | 0      | 20    | src/compound/Morpho.sol:Morpho |
 | rewardsManager           | contract IRewardsManager                                           | 172  | 0      | 20    | src/compound/Morpho.sol:Morpho |
 | interestRatesManager     | contract IInterestRatesManager                                     | 173  | 0      | 20    | src/compound/Morpho.sol:Morpho |
 | comptroller              | contract IComptroller                                              | 174  | 0      | 20    | src/compound/Morpho.sol:Morpho |
