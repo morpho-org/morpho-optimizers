@@ -125,6 +125,13 @@ make test-testBorrow1 PROTOCOL=aave-v2
 
 For the other commands, check the [Makefile](./Makefile).
 
+If you want to call a custom forge command, and not have to edit the `Makefile`, you can _source_ the `export_env.sh` script by calling `. ./export_env.sh`.
+
+:warning: The `export_env.sh` script exports environment variables in the current shell, meaning that subsequent calls to `make` or `forge` will use those variables. Variables defined in the `.env.local` file will still override those if you run `make` later. If you don't want to change variables in the current shell, you can always create a new shell in one of the following ways:
+
+- use `( . ./export_env.sh && forge test )` if the command you want to run is `forge test`
+- use `bash` and then `. ./export_env.sh` followed by your commands and then `exit` to return to the parent shell and clear the environment variables.
+
 ---
 
 ## Testing with Hardhat

@@ -24,6 +24,7 @@ install:
 	git submodule update --init --recursive
 
 	chmod +x ./scripts/**/*.sh
+	chmod +x ./export_env.sh
 
 deploy:
 	@echo Deploying Morpho-${PROTOCOL}-${NETWORK}
