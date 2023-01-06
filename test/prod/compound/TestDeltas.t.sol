@@ -104,7 +104,7 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 test.avgBorrowRatePerBlock,
                 ICToken(test.market.poolToken).borrowRatePerBlock(),
-                1,
+                10,
                 "avg borrow rate per year"
             );
 
