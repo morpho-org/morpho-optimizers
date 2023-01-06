@@ -43,6 +43,37 @@ contract TestWithdraw is TestSetup {
         testEquality(onPool, expectedOnPool / 2);
     }
 
+    // The supplier withdraws twice, once almost all of his balance, and then the remaining assets.
+    function testWithdrawTwice() public {
+        supplier1.approve(dai, type(uint256).max);
+        uint256 supplyIndex = ICToken(cDai).exchangeRateCurrent();
+
+        uint256 rawAmount = 1e35;
+        uint256 amount = (rawAmount / supplyIndex) * supplyIndex;
+        uint256 expectedOnPool = amount.div(supplyIndex);
+
+        deal(dai, address(supplier1), 2 * amount);
+        uint256 balanceBefore = supplier1.balanceOf(dai);
+
+        supplier1.supply(cDai, amount);
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+
+        assertEq(inP2P, 0);
+        assertEq(onPool, expectedOnPool);
+
+        supplier1.withdraw(cDai, amount - supplyIndex - 1);
+        supplier1.withdraw(cDai, type(uint256).max);
+
+        uint256 balanceAfter = supplier1.balanceOf(dai);
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
+
+        assertEq(inP2P, 0);
+        assertEq(onPool, 0);
+
+        assertLe(balanceAfter, balanceBefore);
+    }
+
     // The supplier withdraws all its `onPool` balance.
     function testWithdrawAll() public {
         uint256 amount = 10_000 ether;
