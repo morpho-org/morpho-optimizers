@@ -154,7 +154,9 @@ contract TestDeltas is TestSetup {
             if (
                 p2pSupplyUnderlying > supplyDeltaUnderlyingBefore &&
                 p2pBorrowUnderlying > borrowDeltaUnderlyingBefore
-            ) continue;
+            ) {
+                continue;
+            }
 
             vm.prank(morphoDao);
             vm.expectRevert(PositionsManager.AmountIsZero.selector);
