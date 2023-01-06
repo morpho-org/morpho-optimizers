@@ -14,6 +14,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+    using WadRayMath for uint256;
     using Math for uint256;
 
     /// EVENTS ///
@@ -617,7 +618,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (maxToWithdrawOnPool > vars.remainingToWithdraw) {
                 vars.toWithdraw = vars.remainingToWithdraw;
                 vars.remainingToWithdraw = 0;
-                supplierSupplyBalance.onPool -= vars.toWithdraw.div(vars.poolSupplyIndex);
+                supplierSupplyBalance.onPool -= vars.toWithdraw.wadDivUp(vars.poolSupplyIndex);
             } else {
                 vars.toWithdraw = maxToWithdrawOnPool;
                 vars.remainingToWithdraw -= maxToWithdrawOnPool;
@@ -651,7 +652,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         supplierSupplyBalance.inP2P -= Math.min(
             supplierSupplyBalance.inP2P,
-            vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
+            vars.remainingToWithdraw.wadDivUp(vars.p2pSupplyIndex)
         ); // In peer-to-peer supply unit.
         _updateSupplierInDS(_poolToken, _supplier);
 

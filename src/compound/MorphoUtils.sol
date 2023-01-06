@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
+import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@morpho-dao/morpho-utils/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
