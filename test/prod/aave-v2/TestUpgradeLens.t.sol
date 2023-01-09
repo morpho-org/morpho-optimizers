@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeLens is TestSetup {
+    using WadRayMath for uint256;
+
     function testShouldPreserveIndexes() public {
         Types.Indexes[] memory expectedIndexes = new Types.Indexes[](markets.length);
 
@@ -40,6 +42,80 @@ contract TestUpgradeLens is TestSetup {
                 1,
                 string.concat(market.symbol, " pool borrow index")
             );
+        }
+    }
+
+    function testNextRateShouldMatchRateAfterInteraction(uint96 _amount) public {
+        _upgrade();
+
+        for (
+            uint256 supplyMarketIndex;
+            supplyMarketIndex < collateralMarkets.length;
+            ++supplyMarketIndex
+        ) {
+            for (
+                uint256 borrowMarketIndex;
+                borrowMarketIndex < borrowableMarkets.length;
+                ++borrowMarketIndex
+            ) {
+                _revert();
+
+                TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
+                TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
+
+                if (supplyMarket.status.isSupplyPaused) continue;
+
+                uint256 borrowedPrice = oracle.getAssetPrice(borrowMarket.underlying);
+                uint256 borrowAmount = _boundBorrowAmount(
+                    borrowMarket,
+                    _amount,
+                    borrowedPrice,
+                    60_00
+                );
+                uint256 supplyAmount = _getMinimumCollateralAmount(
+                    borrowAmount,
+                    borrowedPrice,
+                    borrowMarket.decimals,
+                    oracle.getAssetPrice(supplyMarket.underlying),
+                    supplyMarket.decimals,
+                    supplyMarket.ltv
+                ).wadMul(1.001 ether);
+
+                (uint256 expectedSupplyRate, , , ) = lens.getNextUserSupplyRatePerYear(
+                    supplyMarket.poolToken,
+                    address(user),
+                    supplyAmount
+                );
+
+                _tip(supplyMarket.underlying, address(user), supplyAmount);
+
+                user.approve(supplyMarket.underlying, supplyAmount);
+                user.supply(supplyMarket.poolToken, address(user), supplyAmount);
+
+                assertApproxEqAbs(
+                    lens.getCurrentUserSupplyRatePerYear(supplyMarket.poolToken, address(user)),
+                    expectedSupplyRate,
+                    1e24,
+                    string.concat(supplyMarket.symbol, " supply rate")
+                );
+
+                if (borrowMarket.status.isBorrowPaused) continue;
+
+                (uint256 expectedBorrowRate, , , ) = lens.getNextUserBorrowRatePerYear(
+                    borrowMarket.poolToken,
+                    address(user),
+                    borrowAmount
+                );
+
+                user.borrow(borrowMarket.poolToken, borrowAmount);
+
+                assertApproxEqAbs(
+                    lens.getCurrentUserBorrowRatePerYear(borrowMarket.poolToken, address(user)),
+                    expectedBorrowRate,
+                    1e24,
+                    string.concat(borrowMarket.symbol, " borrow rate")
+                );
+            }
         }
     }
 }
