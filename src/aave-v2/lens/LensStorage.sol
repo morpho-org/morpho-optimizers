@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "../interfaces/aave/IProtocolDataProvider.sol";
 import "../interfaces/aave/IPriceOracleGetter.sol";
 import "../interfaces/aave/ILendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../interfaces/IMorpho.sol";
 import "./interfaces/ILens.sol";
 
+import "../libraries/aave/DataTypes.sol";
+import "../libraries/InterestRatesModel.sol";
 import "../libraries/aave/ReserveConfiguration.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
-import "../libraries/aave/DataTypes.sol";
-import "../libraries/InterestRatesModel.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
@@ -21,6 +22,8 @@ import "../libraries/InterestRatesModel.sol";
 abstract contract LensStorage is ILens {
     /// CONSTANTS ///
 
+    bytes32 internal constant DATA_PROVIDER_ID =
+        0x0100000000000000000000000000000000000000000000000000000000000000;
     uint16 public constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 50_00; // 50% in basis points.
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
 
@@ -34,6 +37,7 @@ abstract contract LensStorage is ILens {
 
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
+    IProtocolDataProvider internal immutable dataProvider;
     ILendingPool public immutable pool;
 
     /// CONSTRUCTOR ///
@@ -44,6 +48,7 @@ abstract contract LensStorage is ILens {
         morpho = IMorpho(_morpho);
         pool = ILendingPool(morpho.pool());
         addressesProvider = ILendingPoolAddressesProvider(morpho.addressesProvider());
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         ST_ETH_BASE_REBASE_INDEX = morpho.ST_ETH_BASE_REBASE_INDEX();
     }
 }
