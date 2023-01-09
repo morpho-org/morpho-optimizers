@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "src/aave-v2/interfaces/aave/IReserveInterestRateStrategy.sol";
 import "src/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "src/aave-v2/interfaces/aave/IAToken.sol";
 import "src/aave-v2/interfaces/IMorpho.sol";
