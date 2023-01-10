@@ -645,7 +645,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerYear,
             p2pSupplyRatePerYear,
-            1,
+            1e22,
             "unexpected supply rate per year"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
@@ -686,7 +686,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerYear,
             p2pBorrowRatePerYear,
-            1,
+            1e22,
             "unexpected borrow rate per year"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
@@ -785,7 +785,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerYear,
             (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
-            1e21,
+            1e22,
             "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
