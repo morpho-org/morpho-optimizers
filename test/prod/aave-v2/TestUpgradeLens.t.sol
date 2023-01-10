@@ -66,12 +66,7 @@ contract TestUpgradeLens is TestSetup {
                 if (supplyMarket.status.isSupplyPaused) continue;
 
                 uint256 borrowedPrice = oracle.getAssetPrice(borrowMarket.underlying);
-                uint256 borrowAmount = _boundBorrowAmount(
-                    borrowMarket,
-                    _amount,
-                    borrowedPrice,
-                    60_00
-                );
+                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
                     borrowedPrice,
@@ -95,7 +90,7 @@ contract TestUpgradeLens is TestSetup {
                 assertApproxEqAbs(
                     lens.getCurrentUserSupplyRatePerYear(supplyMarket.poolToken, address(user)),
                     expectedSupplyRate,
-                    1e24,
+                    1e21,
                     string.concat(supplyMarket.symbol, " supply rate")
                 );
 
@@ -112,7 +107,7 @@ contract TestUpgradeLens is TestSetup {
                 assertApproxEqAbs(
                     lens.getCurrentUserBorrowRatePerYear(borrowMarket.poolToken, address(user)),
                     expectedBorrowRate,
-                    1e24,
+                    1e21,
                     string.concat(borrowMarket.symbol, " borrow rate")
                 );
             }

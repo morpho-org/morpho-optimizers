@@ -323,12 +323,7 @@ contract TestLifecycle is TestSetup {
                 if (supplyMarket.status.isSupplyPaused) continue;
 
                 uint256 borrowedPrice = oracle.getAssetPrice(borrowMarket.underlying);
-                uint256 borrowAmount = _boundBorrowAmount(
-                    borrowMarket,
-                    _amount,
-                    borrowedPrice,
-                    PercentageMath.PERCENTAGE_FACTOR
-                );
+                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
                     borrowedPrice,
@@ -379,12 +374,7 @@ contract TestLifecycle is TestSetup {
                     continue;
 
                 uint256 borrowedPrice = oracle.getAssetPrice(borrowMarket.underlying);
-                uint256 borrowAmount = _boundBorrowAmount(
-                    borrowMarket,
-                    _amount,
-                    borrowedPrice,
-                    PercentageMath.PERCENTAGE_FACTOR
-                );
+                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
                     borrowedPrice,

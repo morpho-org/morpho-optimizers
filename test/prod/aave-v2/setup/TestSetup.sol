@@ -227,8 +227,7 @@ contract TestSetup is Config, Test {
     function _boundBorrowAmount(
         TestMarket memory _market,
         uint96 _amount,
-        uint256 _price,
-        uint256 _maxUtilizationBps
+        uint256 _price
     ) internal view returns (uint256) {
         return
             bound(
@@ -236,9 +235,7 @@ contract TestSetup is Config, Test {
                 (MIN_ETH_AMOUNT * 10**_market.decimals) / _price,
                 Math.min(
                     Math.min(
-                        ERC20(_market.underlying).balanceOf(_market.poolToken).percentMul(
-                            _maxUtilizationBps
-                        ),
+                        ERC20(_market.underlying).balanceOf(_market.poolToken),
                         (MAX_ETH_AMOUNT * 10**_market.decimals) / _price
                     ),
                     type(uint96).max / 2 // so that collateral amount < type(uint96).max

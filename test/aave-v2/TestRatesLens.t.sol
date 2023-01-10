@@ -1046,40 +1046,53 @@ contract TestRatesLens is TestSetup {
     function testRatesWithInvertedSpreadAndHalfSupplyDelta() public {
         // Full p2p on the DAI market, with a 50% supply delta.
         uint256 supplyAmount = 1 ether;
-        uint256 repayAmount = 0.5 ether;
+        uint256 repayAmount = supplyAmount / 2;
+
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(aDai, supplyAmount);
+
         borrower1.approve(aave, supplyAmount);
         borrower1.supply(aAave, supplyAmount);
         borrower1.borrow(aDai, supplyAmount);
+
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         borrower1.approve(dai, repayAmount);
         borrower1.repay(aDai, repayAmount);
-        (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
-        assertEq(p2pSupplyDelta, repayAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
 
-        // TODO: mock the call to reserve strategy to return inverted spread
-        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertPoolSpreadWithStorageManipulation(
-            dai
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+        reserve.currentLiquidityRate = 0.03e27;
+        reserve.currentVariableBorrowRate = 0.02e27;
+        reserve.currentStableBorrowRate = 0.04e27;
+        vm.mockCall(
+            reserve.interestRateStrategyAddress,
+            abi.encodeWithSelector(IReserveInterestRateStrategy.calculateInterestRates.selector),
+            abi.encode(
+                reserve.currentLiquidityRate,
+                reserve.currentStableBorrowRate,
+                reserve.currentVariableBorrowRate
+            )
+        );
+        vm.mockCall(
+            address(pool),
+            abi.encodeWithSelector(ILendingPool.getReserveData.selector),
+            abi.encode(reserve)
         );
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(
+        assertEq(
             avgSupplyRate,
-            (poolBorrowRate + poolSupplyRate) / 2,
-            1e7,
+            (reserve.currentVariableBorrowRate + reserve.currentLiquidityRate) / 2,
             "avg supply rate"
         );
-        assertEq(avgBorrowRate, poolBorrowRate, "avg borrow rate");
-        assertApproxEqAbs(
+        assertEq(avgBorrowRate, reserve.currentVariableBorrowRate, "avg borrow rate");
+        assertEq(
             p2pSupplyRate,
-            (poolBorrowRate + poolSupplyRate) / 2,
-            1e7,
+            (reserve.currentVariableBorrowRate + reserve.currentLiquidityRate) / 2,
             "p2p supply rate"
         );
-        assertEq(p2pBorrowRate, poolBorrowRate, "p2p borrow rate");
+        assertEq(p2pBorrowRate, reserve.currentVariableBorrowRate, "p2p borrow rate");
     }
 }
