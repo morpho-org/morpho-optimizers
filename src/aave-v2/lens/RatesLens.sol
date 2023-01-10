@@ -51,17 +51,18 @@ abstract contract RatesLens is UsersLens {
 
         uint256 repaidToPool;
         if (!market.isP2PDisabled) {
-            if (_amount > 0 && delta.p2pBorrowDelta > 0) {
+            if (delta.p2pBorrowDelta > 0) {
                 uint256 matchedDelta = Math.min(
                     delta.p2pBorrowDelta.rayMul(indexes.poolBorrowIndex),
                     _amount
                 );
 
                 supplyBalance.inP2P += matchedDelta.rayDiv(indexes.p2pSupplyIndex);
+                repaidToPool += matchedDelta;
                 _amount -= matchedDelta;
             }
 
-            if (_amount > 0 && !market.isP2PDisabled) {
+            if (_amount > 0) {
                 address firstPoolBorrower = morpho.getHead(
                     _poolToken,
                     Types.PositionType.BORROWERS_ON_POOL
@@ -138,6 +139,7 @@ abstract contract RatesLens is UsersLens {
                 );
 
                 borrowBalance.inP2P += matchedDelta.rayDiv(indexes.p2pBorrowIndex);
+                withdrawnFromPool += matchedDelta;
                 _amount -= matchedDelta;
             }
 
@@ -151,13 +153,14 @@ abstract contract RatesLens is UsersLens {
                 .onPool;
 
                 if (firstPoolSupplierBalance > 0) {
-                    withdrawnFromPool = Math.min(
+                    uint256 matchedP2P = Math.min(
                         firstPoolSupplierBalance.rayMul(indexes.poolSupplyIndex),
                         _amount
                     );
 
-                    borrowBalance.inP2P += withdrawnFromPool.rayDiv(indexes.p2pBorrowIndex);
-                    _amount -= withdrawnFromPool;
+                    borrowBalance.inP2P += matchedP2P.rayDiv(indexes.p2pBorrowIndex);
+                    withdrawnFromPool += matchedP2P;
+                    _amount -= matchedP2P;
                 }
             }
         }
@@ -394,8 +397,8 @@ abstract contract RatesLens is UsersLens {
             market.underlyingToken,
             _suppliedOnPool,
             _borrowedFromPool,
-            _repaidOnPool,
-            _withdrawnFromPool
+            _withdrawnFromPool,
+            _repaidOnPool
         );
 
         p2pSupplyRate = InterestRatesModel.computeP2PSupplyRatePerYear(
@@ -437,8 +440,8 @@ abstract contract RatesLens is UsersLens {
         address _underlying,
         uint256 _supplied,
         uint256 _borrowed,
-        uint256 _repaid,
-        uint256 _withdrawn
+        uint256 _withdrawn,
+        uint256 _repaid
     ) internal view returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
         DataTypes.ReserveData memory reserve = pool.getReserveData(_underlying);
 
