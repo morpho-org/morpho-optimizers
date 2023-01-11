@@ -388,7 +388,7 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle _oracle,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) public view returns (Types.AssetLiquidityData memory assetData) {
+    ) internal view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
 

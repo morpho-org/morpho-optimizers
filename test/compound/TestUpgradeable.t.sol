@@ -65,15 +65,18 @@ contract TestUpgradeable is TestSetup {
     /// Lens ///
 
     function testUpgradeLens() public {
-        _testUpgradeProxy(lensProxy, address(new Lens(address(morpho))));
+        _testUpgradeProxy(lensProxy, address(new Lens(address(rewardsLensLogic))));
     }
 
     function testOnlyProxyOwnerCanUpgradeLens() public {
-        _testOnlyProxyOwnerCanUpgradeProxy(lensProxy, address(new Lens(address(morpho))));
+        _testOnlyProxyOwnerCanUpgradeProxy(lensProxy, address(new Lens(address(rewardsLensLogic))));
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallLens() public {
-        _testOnlyProxyOwnerCanUpgradeAndCallProxy(lensProxy, address(new Lens(address(morpho))));
+        _testOnlyProxyOwnerCanUpgradeAndCallProxy(
+            lensProxy,
+            address(new Lens(address(rewardsLensLogic)))
+        );
     }
 
     /// INTERNAL ///

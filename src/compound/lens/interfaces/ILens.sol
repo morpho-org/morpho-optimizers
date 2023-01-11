@@ -40,7 +40,6 @@ interface ILens {
 
     /// MARKETS ///
 
-    /// @dev Deprecated.
     function isMarketCreated(address _poolToken) external view returns (bool);
 
     /// @dev Deprecated.

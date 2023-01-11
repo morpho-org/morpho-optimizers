@@ -63,6 +63,7 @@ contract TestSetup is Config, Test {
         rewardsManager = RewardsManager(address(morpho.rewardsManager()));
         positionsManager = morpho.positionsManager();
         interestRatesManager = morpho.interestRatesManager();
+        rewardsLensLogic = RewardsLensLogic(address(lens.rewardsLensLogic()));
 
         rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
     }

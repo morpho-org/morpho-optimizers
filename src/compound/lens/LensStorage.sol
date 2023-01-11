@@ -12,6 +12,7 @@ import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import {RewardsLensLogic} from "./RewardsLensLogic.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
@@ -28,6 +29,7 @@ abstract contract LensStorage is ILens, Initializable {
     IMorpho public immutable morpho;
     IComptroller public immutable comptroller;
     IRewardsManager public immutable rewardsManager;
+    RewardsLensLogic public immutable rewardsLensLogic;
 
     /// STORAGE ///
 
@@ -38,9 +40,10 @@ abstract contract LensStorage is ILens, Initializable {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
-    /// @param _morpho The address of the main Morpho contract.
-    constructor(address _morpho) {
-        morpho = IMorpho(_morpho);
+    /// @param _rewardsLensLogic The address of the rewards lens logic.
+    constructor(address _rewardsLensLogic) {
+        rewardsLensLogic = RewardsLensLogic(_rewardsLensLogic);
+        morpho = IMorpho(rewardsLensLogic.morpho());
         comptroller = IComptroller(morpho.comptroller());
         rewardsManager = IRewardsManager(morpho.rewardsManager());
     }
