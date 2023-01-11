@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeLens is TestSetup {
+    using CompoundMath for uint256;
+
     function testShouldPreserveOutdatedIndexes() public {
         Types.Indexes[] memory expectedIndexes = new Types.Indexes[](markets.length);
 
@@ -75,6 +77,73 @@ contract TestUpgradeLens is TestSetup {
                 1,
                 string.concat(market.symbol, " pool borrow index")
             );
+        }
+    }
+
+    function testNextRateShouldMatchRateAfterInteraction(uint96 _amount) public {
+        _upgrade();
+
+        for (
+            uint256 supplyMarketIndex;
+            supplyMarketIndex < collateralMarkets.length;
+            ++supplyMarketIndex
+        ) {
+            for (
+                uint256 borrowMarketIndex;
+                borrowMarketIndex < borrowableMarkets.length;
+                ++borrowMarketIndex
+            ) {
+                _revert();
+
+                TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
+                TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
+
+                if (supplyMarket.status.isSupplyPaused) continue;
+
+                uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
+                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
+                uint256 supplyAmount = _getMinimumCollateralAmount(
+                    borrowAmount,
+                    borrowedPrice,
+                    oracle.getUnderlyingPrice(supplyMarket.poolToken),
+                    supplyMarket.collateralFactor
+                ).mul(1.001 ether);
+
+                (uint256 expectedSupplyRate, , , ) = lens.getNextUserSupplyRatePerBlock(
+                    supplyMarket.poolToken,
+                    address(user),
+                    supplyAmount
+                );
+
+                _tip(supplyMarket.underlying, address(user), supplyAmount);
+
+                user.approve(supplyMarket.underlying, supplyAmount);
+                user.supply(supplyMarket.poolToken, address(user), supplyAmount);
+
+                assertApproxEqAbs(
+                    lens.getCurrentUserSupplyRatePerBlock(supplyMarket.poolToken, address(user)),
+                    expectedSupplyRate,
+                    1e21,
+                    string.concat(supplyMarket.symbol, " supply rate")
+                );
+
+                if (borrowMarket.status.isBorrowPaused) continue;
+
+                (uint256 expectedBorrowRate, , , ) = lens.getNextUserBorrowRatePerBlock(
+                    borrowMarket.poolToken,
+                    address(user),
+                    borrowAmount
+                );
+
+                user.borrow(borrowMarket.poolToken, borrowAmount);
+
+                assertApproxEqAbs(
+                    lens.getCurrentUserBorrowRatePerBlock(borrowMarket.poolToken, address(user)),
+                    expectedBorrowRate,
+                    1e21,
+                    string.concat(borrowMarket.symbol, " borrow rate")
+                );
+            }
         }
     }
 }

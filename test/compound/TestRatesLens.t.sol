@@ -7,6 +7,8 @@ contract TestRatesLens is TestSetup {
     using CompoundMath for uint256;
 
     function testGetRatesPerBlock() public {
+        supplier1.compoundSupply(cDai, 1 ether); // Update pool rates.
+
         hevm.roll(block.number + 1_000);
         (
             uint256 p2pSupplyRate,

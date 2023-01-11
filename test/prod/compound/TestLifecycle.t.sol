@@ -393,14 +393,11 @@ contract TestLifecycle is TestSetup {
 
                 if (supplyMarket.status.isSupplyPaused) continue;
 
-                uint256 borrowAmount = _boundBorrowAmount(
-                    borrowMarket,
-                    _amount,
-                    oracle.getUnderlyingPrice(borrowMarket.poolToken)
-                );
+                uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
+                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
-                    oracle.getUnderlyingPrice(borrowMarket.poolToken),
+                    borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
                 ).mul(1.001 ether);

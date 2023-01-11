@@ -11,6 +11,10 @@ abstract contract RatesLens is UsersLens {
     using CompoundMath for uint256;
     using Math for uint256;
 
+    /// ERRORS ///
+
+    error BorrowRateFailed();
+
     /// EXTERNAL ///
 
     /// @notice Returns the supply rate per block experienced on a market after having supplied the given amount on behalf of the given user.
@@ -395,17 +399,23 @@ abstract contract RatesLens is UsersLens {
         interestsVars.totalBorrows = interestsVars.totalBorrows + _borrowedFromPool - _repaidOnPool;
 
         IInterestRateModel interestRateModel = ICToken(_poolToken).interestRateModel();
-        poolSupplyRate = interestRateModel.getSupplyRate(
+        poolSupplyRate = IInterestRateModel(interestRateModel).getSupplyRate(
             interestsVars.cash,
             interestsVars.totalBorrows,
             interestsVars.totalReserves,
             interestsVars.reserveFactorMantissa
         );
-        poolBorrowRate = interestRateModel.getBorrowRate(
-            interestsVars.cash,
-            interestsVars.totalBorrows,
-            interestsVars.totalReserves
+        (bool success, bytes memory result) = address(interestRateModel).staticcall(
+            abi.encodeWithSelector(
+                IInterestRateModel.getBorrowRate.selector,
+                interestsVars.cash,
+                interestsVars.totalBorrows,
+                interestsVars.totalReserves
+            )
         );
+        if (!success) revert BorrowRateFailed();
+        if (result.length > 32) (, poolBorrowRate) = abi.decode(result, (uint256, uint256));
+        else poolBorrowRate = abi.decode(result, (uint256));
 
         (
             ratesVars.indexes.p2pSupplyIndex,
