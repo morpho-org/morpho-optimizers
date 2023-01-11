@@ -394,7 +394,7 @@ abstract contract UsersLens is IndexesLens {
 
         (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
 
-        Types.Indexes memory indexes = getIndexes(_poolToken, _getUpdatedIndexes);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, _getUpdatedIndexes);
 
         assetData.collateralUsd = _getUserSupplyBalanceInOf(
             _poolToken,

@@ -71,16 +71,14 @@ abstract contract RatesLens is UsersLens {
                 .borrowBalanceInOf(_poolToken, firstPoolBorrower)
                 .onPool;
 
-                if (firstPoolBorrowerBalance > 0) {
-                    uint256 matchedP2P = Math.min(
-                        firstPoolBorrowerBalance.rayMul(indexes.poolBorrowIndex),
-                        _amount
-                    );
+                uint256 matchedP2P = Math.min(
+                    firstPoolBorrowerBalance.rayMul(indexes.poolBorrowIndex),
+                    _amount
+                );
 
-                    supplyBalance.inP2P += matchedP2P.rayDiv(indexes.p2pSupplyIndex);
-                    repaidToPool += matchedP2P;
-                    _amount -= matchedP2P;
-                }
+                supplyBalance.inP2P += matchedP2P.rayDiv(indexes.p2pSupplyIndex);
+                repaidToPool += matchedP2P;
+                _amount -= matchedP2P;
             }
         }
 
@@ -152,16 +150,14 @@ abstract contract RatesLens is UsersLens {
                 .supplyBalanceInOf(_poolToken, firstPoolSupplier)
                 .onPool;
 
-                if (firstPoolSupplierBalance > 0) {
-                    uint256 matchedP2P = Math.min(
-                        firstPoolSupplierBalance.rayMul(indexes.poolSupplyIndex),
-                        _amount
-                    );
+                uint256 matchedP2P = Math.min(
+                    firstPoolSupplierBalance.rayMul(indexes.poolSupplyIndex),
+                    _amount
+                );
 
-                    borrowBalance.inP2P += matchedP2P.rayDiv(indexes.p2pBorrowIndex);
-                    withdrawnFromPool += matchedP2P;
-                    _amount -= matchedP2P;
-                }
+                borrowBalance.inP2P += matchedP2P.rayDiv(indexes.p2pBorrowIndex);
+                withdrawnFromPool += matchedP2P;
+                _amount -= matchedP2P;
             }
         }
 
@@ -361,12 +357,12 @@ abstract contract RatesLens is UsersLens {
         uint256 reserveFactor;
     }
 
-    /// @notice Computes and returns peer-to-peer and pool rates for a specific market.
+    /// @dev Computes and returns peer-to-peer and pool rates for a specific market.
     /// @param _poolToken The market address.
-    /// @param _suppliedOnPool The amount hypothetically supplied to the underlying's pool.
-    /// @param _borrowedFromPool The amount hypothetically borrowed from the underlying's pool.
-    /// @param _repaidOnPool The amount hypothetically repaid to the underlying's pool.
-    /// @param _withdrawnFromPool The amount hypothetically withdrawn from the underlying's pool.
+    /// @param _suppliedOnPool The amount hypothetically supplied to the underlying's pool (in underlying).
+    /// @param _borrowedFromPool The amount hypothetically borrowed from the underlying's pool (in underlying).
+    /// @param _repaidOnPool The amount hypothetically repaid to the underlying's pool (in underlying).
+    /// @param _withdrawnFromPool The amount hypothetically withdrawn from the underlying's pool (in underlying).
     /// @return p2pSupplyRate The market's peer-to-peer supply rate per year (in ray).
     /// @return p2pBorrowRate The market's peer-to-peer borrow rate per year (in ray).
     /// @return poolSupplyRate The market's pool supply rate per year (in ray).
@@ -378,7 +374,7 @@ abstract contract RatesLens is UsersLens {
         uint256 _repaidOnPool,
         uint256 _withdrawnFromPool
     )
-        public
+        internal
         view
         returns (
             uint256 p2pSupplyRate,
@@ -428,12 +424,12 @@ abstract contract RatesLens is UsersLens {
         );
     }
 
-    /// @notice Computes and returns the underlying pool rates for a specific market.
+    /// @dev Computes and returns the underlying pool rates for a specific market.
     /// @param _underlying The underlying pool market address.
-    /// @param _supplied The amount hypothetically supplied.
-    /// @param _borrowed The amount hypothetically borrowed.
-    /// @param _repaid The amount hypothetically repaid.
-    /// @param _withdrawn The amount hypothetically withdrawn.
+    /// @param _supplied The amount hypothetically supplied (in underlying).
+    /// @param _borrowed The amount hypothetically borrowed (in underlying).
+    /// @param _repaid The amount hypothetically repaid (in underlying).
+    /// @param _withdrawn The amount hypothetically withdrawn (in underlying).
     /// @return poolSupplyRate The market's pool supply rate per year (in ray).
     /// @return poolBorrowRate The market's pool borrow rate per year (in ray).
     function _getPoolRatesPerYear(
@@ -472,7 +468,7 @@ abstract contract RatesLens is UsersLens {
         );
     }
 
-    /// @notice Computes and returns the total distribution of supply for a given market, using virtually updated indexes.
+    /// @dev Computes and returns the total distribution of supply for a given market, using virtually updated indexes.
     /// @param _poolToken The address of the market to check.
     /// @param _p2pSupplyIndex The given market's peer-to-peer supply index.
     /// @param _poolSupplyIndex The given market's pool supply index.
@@ -491,7 +487,7 @@ abstract contract RatesLens is UsersLens {
         poolSupplyAmount = IAToken(_poolToken).balanceOf(address(morpho));
     }
 
-    /// @notice Computes and returns the total distribution of borrows for a given market, using virtually updated indexes.
+    /// @dev Computes and returns the total distribution of borrows for a given market, using virtually updated indexes.
     /// @param reserve The reserve data of the underlying pool.
     /// @param _p2pBorrowIndex The given market's peer-to-peer borrow index.
     /// @param _poolBorrowIndex The given market's pool borrow index.
@@ -513,9 +509,12 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// @dev Returns the supply rate per year experienced on a market based on a given position distribution.
+    ///      The calculation takes into account the change in pool rates implied by an hypothetical supply and/or repay.
     /// @param _poolToken The address of the market.
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool`).
+    /// @param _suppliedOnPool The amount hypothetically supplied on pool (in underlying).
+    /// @param _repaidToPool The amount hypothetically repaid to the pool (in underlying).
     /// @return The supply rate per year experienced by the given position (in ray).
     /// @return The sum of peer-to-peer & pool balances.
     function _getUserSupplyRatePerYear(
@@ -543,9 +542,12 @@ abstract contract RatesLens is UsersLens {
     }
 
     /// @dev Returns the borrow rate per year experienced on a market based on a given position distribution.
+    ///      The calculation takes into account the change in pool rates implied by an hypothetical borrow and/or withdraw.
     /// @param _poolToken The address of the market.
     /// @param _balanceOnPool The amount of balance supplied on pool (in a unit common to `_balanceInP2P`).
     /// @param _balanceInP2P The amount of balance matched peer-to-peer (in a unit common to `_balanceOnPool`).
+    /// @param _borrowedFromPool The amount hypothetically borrowed from the pool (in underlying).
+    /// @param _withdrawnFromPool The amount hypothetically withdrawn from the pool (in underlying).
     /// @return The borrow rate per year experienced by the given position (in ray).
     /// @return The sum of peer-to-peer & pool balances.
     function _getUserBorrowRatePerYear(
