@@ -119,15 +119,15 @@ library InterestRatesModel {
         if (_params.poolSupplyRatePerYear > _params.poolBorrowRatePerYear) {
             p2pSupplyRate = _params.poolBorrowRatePerYear; // The p2pSupplyRate is set to the poolBorrowRatePerYear because there is no rate spread.
         } else {
-            uint256 p2pRate = PercentageMath.weightedAvg(
+            p2pSupplyRate = PercentageMath.weightedAvg(
                 _params.poolSupplyRatePerYear,
                 _params.poolBorrowRatePerYear,
                 _params.p2pIndexCursor
             );
 
             p2pSupplyRate =
-                p2pRate -
-                (p2pRate - _params.poolSupplyRatePerYear).percentMul(_params.reserveFactor);
+                p2pSupplyRate -
+                (p2pSupplyRate - _params.poolSupplyRatePerYear).percentMul(_params.reserveFactor);
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
@@ -155,15 +155,15 @@ library InterestRatesModel {
         if (_params.poolSupplyRatePerYear > _params.poolBorrowRatePerYear) {
             p2pBorrowRate = _params.poolBorrowRatePerYear; // The p2pBorrowRate is set to the poolBorrowRatePerYear because there is no rate spread.
         } else {
-            uint256 p2pRate = PercentageMath.weightedAvg(
+            p2pBorrowRate = PercentageMath.weightedAvg(
                 _params.poolSupplyRatePerYear,
                 _params.poolBorrowRatePerYear,
                 _params.p2pIndexCursor
             );
 
             p2pBorrowRate =
-                p2pRate +
-                (_params.poolBorrowRatePerYear - p2pRate).percentMul(_params.reserveFactor);
+                p2pBorrowRate +
+                (_params.poolBorrowRatePerYear - p2pBorrowRate).percentMul(_params.reserveFactor);
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
