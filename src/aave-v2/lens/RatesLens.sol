@@ -371,8 +371,8 @@ abstract contract RatesLens is UsersLens {
         address _poolToken,
         uint256 _suppliedOnPool,
         uint256 _borrowedFromPool,
-        uint256 _repaidOnPool,
-        uint256 _withdrawnFromPool
+        uint256 _withdrawnFromPool,
+        uint256 _repaidOnPool
     )
         internal
         view
@@ -528,8 +528,8 @@ abstract contract RatesLens is UsersLens {
             _poolToken,
             _suppliedOnPool,
             0,
-            _repaidToPool,
-            0
+            0,
+            _repaidToPool
         );
 
         return
@@ -561,8 +561,8 @@ abstract contract RatesLens is UsersLens {
             _poolToken,
             0,
             _borrowedFromPool,
-            0,
-            _withdrawnFromPool
+            _withdrawnFromPool,
+            0
         );
 
         return
