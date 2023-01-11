@@ -379,43 +379,61 @@ abstract contract RatesLens is UsersLens {
         )
     {
         PoolRatesVars memory ratesVars;
-        PoolInterestsVars memory interestsVars;
 
         ratesVars.delta = morpho.deltas(_poolToken);
         ratesVars.lastPoolIndexes = morpho.lastPoolIndexes(_poolToken);
 
-        (
-            ratesVars.indexes.poolSupplyIndex,
-            ratesVars.indexes.poolBorrowIndex,
-            interestsVars
-        ) = _accruePoolInterests(ICToken(_poolToken));
+        bool updated = _suppliedOnPool > 0 ||
+            _borrowedFromPool > 0 ||
+            _repaidOnPool > 0 ||
+            _withdrawnFromPool > 0;
+        if (updated) {
+            PoolInterestsVars memory interestsVars;
+            (
+                ratesVars.indexes.poolSupplyIndex,
+                ratesVars.indexes.poolBorrowIndex,
+                interestsVars
+            ) = _accruePoolInterests(ICToken(_poolToken));
 
-        interestsVars.cash =
-            interestsVars.cash +
-            _suppliedOnPool +
-            _repaidOnPool -
-            _borrowedFromPool -
-            _withdrawnFromPool;
-        interestsVars.totalBorrows = interestsVars.totalBorrows + _borrowedFromPool - _repaidOnPool;
+            interestsVars.cash =
+                interestsVars.cash +
+                _suppliedOnPool +
+                _repaidOnPool -
+                _borrowedFromPool -
+                _withdrawnFromPool;
+            interestsVars.totalBorrows =
+                interestsVars.totalBorrows +
+                _borrowedFromPool -
+                _repaidOnPool;
 
-        IInterestRateModel interestRateModel = ICToken(_poolToken).interestRateModel();
-        poolSupplyRate = IInterestRateModel(interestRateModel).getSupplyRate(
-            interestsVars.cash,
-            interestsVars.totalBorrows,
-            interestsVars.totalReserves,
-            interestsVars.reserveFactorMantissa
-        );
-        (bool success, bytes memory result) = address(interestRateModel).staticcall(
-            abi.encodeWithSelector(
-                IInterestRateModel.getBorrowRate.selector,
+            IInterestRateModel interestRateModel = ICToken(_poolToken).interestRateModel();
+
+            poolSupplyRate = IInterestRateModel(interestRateModel).getSupplyRate(
                 interestsVars.cash,
                 interestsVars.totalBorrows,
-                interestsVars.totalReserves
-            )
-        );
-        if (!success) revert BorrowRateFailed();
-        if (result.length > 32) (, poolBorrowRate) = abi.decode(result, (uint256, uint256));
-        else poolBorrowRate = abi.decode(result, (uint256));
+                interestsVars.totalReserves,
+                interestsVars.reserveFactorMantissa
+            );
+
+            (bool success, bytes memory result) = address(interestRateModel).staticcall(
+                abi.encodeWithSelector(
+                    IInterestRateModel.getBorrowRate.selector,
+                    interestsVars.cash,
+                    interestsVars.totalBorrows,
+                    interestsVars.totalReserves
+                )
+            );
+            if (!success) revert BorrowRateFailed();
+
+            if (result.length > 32) (, poolBorrowRate) = abi.decode(result, (uint256, uint256));
+            else poolBorrowRate = abi.decode(result, (uint256));
+        } else {
+            ratesVars.indexes.poolSupplyIndex = ICToken(_poolToken).exchangeRateStored();
+            ratesVars.indexes.poolBorrowIndex = ICToken(_poolToken).borrowIndex();
+
+            poolSupplyRate = ICToken(_poolToken).supplyRatePerBlock();
+            poolBorrowRate = ICToken(_poolToken).borrowRatePerBlock();
+        }
 
         (
             ratesVars.indexes.p2pSupplyIndex,
@@ -423,7 +441,7 @@ abstract contract RatesLens is UsersLens {
             ratesVars.params
         ) = _computeP2PIndexes(
             _poolToken,
-            true,
+            updated,
             ratesVars.indexes.poolSupplyIndex,
             ratesVars.indexes.poolBorrowIndex,
             ratesVars.delta,

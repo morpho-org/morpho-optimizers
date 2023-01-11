@@ -305,7 +305,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerBlock,
             expectedSupplyRatePerBlock,
-            1,
+            1e6,
             "unexpected supply rate per block"
         );
         assertEq(
@@ -337,7 +337,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerBlock,
             expectedBorrowRatePerBlock,
-            1,
+            1e6,
             "unexpected borrow rate per block"
         );
         assertApproxEqAbs(balanceOnPool, amount, 1, "unexpected pool balance");
@@ -372,7 +372,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerBlock,
             p2pSupplyRatePerBlock,
-            1,
+            1e6,
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
@@ -406,7 +406,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerBlock,
             p2pBorrowRatePerBlock,
-            1,
+            1e6,
             "unexpected borrow rate per block"
         );
         assertApproxEqAbs(balanceOnPool, 0, 1e6, "unexpected pool balance"); // compound rounding error at supply
@@ -442,7 +442,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerBlock,
             (p2pSupplyRatePerBlock + poolSupplyRatePerBlock) / 2,
-            1,
+            1e6,
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
@@ -518,7 +518,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerBlock,
             expectedSupplyRatePerBlock,
-            1,
+            1e6,
             "unexpected supply rate per block"
         );
         assertEq(
@@ -556,7 +556,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerBlock,
             expectedBorrowRatePerBlock,
-            1,
+            1e6,
             "unexpected borrow rate per block"
         );
         assertApproxEqAbs(balanceOnPool, amount, 1, "unexpected pool balance");
@@ -590,7 +590,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerBlock,
             p2pSupplyRatePerBlock,
-            1,
+            1e6,
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
@@ -624,7 +624,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerBlock,
             p2pBorrowRatePerBlock,
-            1,
+            1e6,
             "unexpected borrow rate per block"
         );
         assertApproxEqAbs(balanceOnPool, 0, 1e9, "unexpected pool balance"); // compound rounding errors
@@ -664,7 +664,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerBlock,
             p2pSupplyRatePerBlock,
-            1,
+            1e6,
             "unexpected supply rate per block"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
@@ -705,7 +705,7 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerBlock,
             p2pBorrowRatePerBlock,
-            1,
+            1e6,
             "unexpected borrow rate per block"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
