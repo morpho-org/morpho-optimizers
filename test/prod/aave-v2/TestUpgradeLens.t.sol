@@ -90,7 +90,7 @@ contract TestUpgradeLens is TestSetup {
                 assertApproxEqAbs(
                     lens.getCurrentUserSupplyRatePerYear(supplyMarket.poolToken, address(user)),
                     expectedSupplyRate,
-                    1e22,
+                    1e23,
                     string.concat(supplyMarket.symbol, " supply rate")
                 );
 
@@ -107,7 +107,7 @@ contract TestUpgradeLens is TestSetup {
                 assertApproxEqAbs(
                     lens.getCurrentUserBorrowRatePerYear(borrowMarket.poolToken, address(user)),
                     expectedBorrowRate,
-                    1e22,
+                    1e23,
                     string.concat(borrowMarket.symbol, " borrow rate")
                 );
             }

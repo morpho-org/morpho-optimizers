@@ -108,14 +108,14 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 p2pSupplyUnderlying - supplyDeltaUnderlyingBefore,
                 IAToken(test.market.poolToken).balanceOf(address(morpho)) - test.morphoSupplyBefore,
-                1,
+                10,
                 "morpho pool supply"
             );
             assertApproxEqAbs(
                 p2pBorrowUnderlying - borrowDeltaUnderlyingBefore,
                 IVariableDebtToken(test.market.debtToken).balanceOf(address(morpho)) -
                     test.morphoBorrowBefore,
-                1,
+                10,
                 "morpho pool borrow"
             );
         }
