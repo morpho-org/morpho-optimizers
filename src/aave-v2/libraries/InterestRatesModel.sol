@@ -125,9 +125,9 @@ library InterestRatesModel {
                 _params.p2pIndexCursor
             );
 
-            p2pSupplyRate =
-                p2pSupplyRate -
-                (p2pSupplyRate - _params.poolSupplyRatePerYear).percentMul(_params.reserveFactor);
+            p2pSupplyRate -= (p2pSupplyRate - _params.poolSupplyRatePerYear).percentMul(
+                _params.reserveFactor
+            );
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
@@ -161,9 +161,9 @@ library InterestRatesModel {
                 _params.p2pIndexCursor
             );
 
-            p2pBorrowRate =
-                p2pBorrowRate +
-                (_params.poolBorrowRatePerYear - p2pBorrowRate).percentMul(_params.reserveFactor);
+            p2pBorrowRate += (_params.poolBorrowRatePerYear - p2pBorrowRate).percentMul(
+                _params.reserveFactor
+            );
         }
 
         if (_params.p2pDelta > 0 && _params.p2pAmount > 0) {
