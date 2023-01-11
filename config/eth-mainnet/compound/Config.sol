@@ -9,7 +9,6 @@ import {IMorpho} from "src/compound/interfaces/IMorpho.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {RewardsLensLogic} from "src/compound/lens/RewardsLensLogic.sol";
 import {RewardsManager} from "src/compound/RewardsManager.sol";
 import {Lens} from "src/compound/lens/Lens.sol";
 import {Morpho} from "src/compound/Morpho.sol";
@@ -55,5 +54,4 @@ contract Config is BaseConfig {
     RewardsManager public rewardsManager;
     IPositionsManager public positionsManager;
     IInterestRatesManager public interestRatesManager;
-    RewardsLensLogic public rewardsLensLogic;
 }

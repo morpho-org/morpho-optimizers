@@ -13,8 +13,8 @@ contract Lens is RewardsLens {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
-    /// @param _rewardsLensLogic The address of the rewards lens logic.
-    constructor(address _rewardsLensLogic) LensStorage(_rewardsLensLogic) {}
+    /// @param _morpho The address of the main Morpho contract.
+    constructor(address _morpho) LensStorage(_morpho) {}
 
     /// EXTERNAL ///
 
