@@ -3,7 +3,6 @@ pragma solidity >=0.8.0;
 
 import {ILendingPool} from "src/aave-v2/interfaces/aave/ILendingPool.sol";
 import {IPriceOracleGetter} from "src/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
-import {IProtocolDataProvider} from "src/aave-v2/interfaces/aave/IProtocolDataProvider.sol";
 import {ILendingPoolAddressesProvider} from "src/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
 import {IEntryPositionsManager} from "src/aave-v2/interfaces/IEntryPositionsManager.sol";
 import {IExitPositionsManager} from "src/aave-v2/interfaces/IExitPositionsManager.sol";
@@ -43,12 +42,6 @@ contract Config is BaseConfig {
         ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
     ILendingPoolConfigurator public lendingPoolConfigurator =
         ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
-    IProtocolDataProvider public dataProvider =
-        IProtocolDataProvider(
-            poolAddressesProvider.getAddress(
-                0x0100000000000000000000000000000000000000000000000000000000000000
-            )
-        );
     IPriceOracleGetter public oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
     ILendingPool public pool = ILendingPool(poolAddressesProvider.getLendingPool());
 

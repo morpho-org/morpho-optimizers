@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "../interfaces/aave/IStableDebtToken.sol";
 import "../interfaces/aave/IVariableDebtToken.sol";
 import "../interfaces/aave/IReserveInterestRateStrategy.sol";
 
@@ -349,14 +350,6 @@ abstract contract RatesLens is UsersLens {
 
     /// INTERNAL ///
 
-    struct PoolRatesVars {
-        uint256 availableLiquidity;
-        uint256 totalStableDebt;
-        uint256 totalVariableDebt;
-        uint256 avgStableRate;
-        uint256 reserveFactor;
-    }
-
     /// @dev Computes and returns peer-to-peer and pool rates for a specific market.
     /// @param _poolToken The market address.
     /// @param _suppliedOnPool The amount hypothetically supplied to the underlying's pool (in underlying).
@@ -440,31 +433,21 @@ abstract contract RatesLens is UsersLens {
         uint256 _repaid
     ) internal view returns (uint256 poolSupplyRate, uint256 poolBorrowRate) {
         DataTypes.ReserveData memory reserve = pool.getReserveData(_underlying);
-
-        PoolRatesVars memory vars;
-        (
-            vars.availableLiquidity,
-            vars.totalStableDebt,
-            vars.totalVariableDebt,
-            ,
-            ,
-            ,
-            vars.avgStableRate,
-            ,
-            ,
-
-        ) = dataProvider.getReserveData(_underlying);
-        (, , , , vars.reserveFactor) = reserve.configuration.getParamsMemory();
+        (, , , , uint256 reserveFactor) = reserve.configuration.getParamsMemory();
 
         (poolSupplyRate, , poolBorrowRate) = IReserveInterestRateStrategy(
             reserve.interestRateStrategyAddress
         ).calculateInterestRates(
             _underlying,
-            vars.availableLiquidity + _supplied + _repaid - _borrowed - _withdrawn,
-            vars.totalStableDebt,
-            vars.totalVariableDebt + _borrowed - _repaid,
-            vars.avgStableRate,
-            vars.reserveFactor
+            ERC20(_underlying).balanceOf(reserve.aTokenAddress) +
+                _supplied +
+                _repaid -
+                _borrowed -
+                _withdrawn,
+            ERC20(reserve.stableDebtTokenAddress).totalSupply(),
+            ERC20(reserve.variableDebtTokenAddress).totalSupply() + _borrowed - _repaid,
+            IStableDebtToken(reserve.stableDebtTokenAddress).getAverageStableRate(),
+            reserveFactor
         );
     }
 

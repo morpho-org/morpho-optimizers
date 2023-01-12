@@ -86,12 +86,12 @@ contract TestUpgradeLens is TestSetup {
                 _tip(supplyMarket.underlying, address(user), supplyAmount);
 
                 user.approve(supplyMarket.underlying, supplyAmount);
-                user.supply(supplyMarket.poolToken, address(user), supplyAmount);
+                user.supply(supplyMarket.poolToken, address(user), supplyAmount, 1_000); // Only perform 1 matching loop, as simulated in getNextUserSupplyRatePerYear.
 
                 assertApproxEqAbs(
                     lens.getCurrentUserSupplyRatePerYear(supplyMarket.poolToken, address(user)),
                     expectedSupplyRate,
-                    1e24,
+                    1e15,
                     string.concat(supplyMarket.symbol, " supply rate")
                 );
 
@@ -103,12 +103,12 @@ contract TestUpgradeLens is TestSetup {
                     borrowAmount
                 );
 
-                user.borrow(borrowMarket.poolToken, borrowAmount);
+                user.borrow(borrowMarket.poolToken, borrowAmount, 1_000); // Only perform 1 matching loop, as simulated in getNextUserBorrowRatePerYear.
 
                 assertApproxEqAbs(
                     lens.getCurrentUserBorrowRatePerYear(borrowMarket.poolToken, address(user)),
                     expectedBorrowRate,
-                    1e24,
+                    1e15,
                     string.concat(borrowMarket.symbol, " borrow rate")
                 );
             }
