@@ -88,6 +88,10 @@ contract TestUpgradeLens is TestSetup {
             supplyMarketIndex < collateralMarkets.length;
             ++supplyMarketIndex
         ) {
+            TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
+
+            if (supplyMarket.status.isSupplyPaused) continue;
+
             for (
                 uint256 borrowMarketIndex;
                 borrowMarketIndex < borrowableMarkets.length;
@@ -95,10 +99,7 @@ contract TestUpgradeLens is TestSetup {
             ) {
                 _revert();
 
-                TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
-
-                if (supplyMarket.status.isSupplyPaused) continue;
 
                 uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
                 uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
