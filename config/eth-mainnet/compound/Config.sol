@@ -10,6 +10,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {RewardsManager} from "src/compound/RewardsManager.sol";
+import {LensExtension} from "src/compound/lens/LensExtension.sol";
 import {Lens} from "src/compound/lens/Lens.sol";
 import {Morpho} from "src/compound/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";
@@ -50,6 +51,8 @@ contract Config is BaseConfig {
     RewardsManager public rewardsManagerImplV1;
 
     Lens public lens;
+    LensExtension public lensExtension;
+
     Morpho public morpho;
     RewardsManager public rewardsManager;
     IPositionsManager public positionsManager;
