@@ -11,28 +11,32 @@ contract TestSupply is TestSetup {
         IMorpho m = IMorpho(0x8888882f8f843896699869179fB6E4f7e3B58888);
         address ox32a = 0x32a59b87352e980dD6aB1bAF462696D28e63525D;
 
+        // 0x2d5 transaction
+        // vm.prank(ox32a);
+        // m.withdraw({_poolToken: cComp, _amount: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff});
+
+        // console.log("first transaction went through");
+
+        // 0x989 transaction
         // vm.prank(ox32a);
         // m.withdraw({
-        //     _poolToken: 0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4,
+        //     _poolToken: cUni,
         //     _amount: 57896044618658097711785492504343953926634992332820282019728792003956564819967
         // });
 
         address[] memory markets = m.getEnteredMarkets(ox32a);
-        bool enteredUsdt;
+        console.log("entered markets length", markets.length);
         for (uint256 i = 0; i < markets.length; i++) {
-            if (markets[i] == cUsdt) {
-                enteredUsdt = true;
-                break;
-            }
+            address cToken = markets[i];
+            console.log(ICToken(cToken).symbol());
+            Types.SupplyBalance memory supplyBalance = m.supplyBalanceInOf(cToken, ox32a);
+            console.log("0x32a supply on pool", supplyBalance.onPool);
+            console.log("0x32a supply in p2p ", supplyBalance.inP2P);
+            Types.BorrowBalance memory borrowBalance = m.borrowBalanceInOf(cToken, ox32a);
+            console.log("0x32a borrow on pool", borrowBalance.onPool);
+            console.log("0x32a borrow in p2p ", borrowBalance.inP2P);
+            console.log();
         }
-        console.log("0x32a has Usdt in array", enteredUsdt);
-
-        Types.SupplyBalance memory supplyBalance = m.supplyBalanceInOf(cUsdt, ox32a);
-        console.log("0x32a supply on pool", supplyBalance.onPool);
-        console.log("0x32a supply in p2p ", supplyBalance.inP2P);
-        Types.BorrowBalance memory borrowBalance = m.borrowBalanceInOf(cUsdt, ox32a);
-        console.log("0x32a borrow on pool", borrowBalance.onPool);
-        console.log("0x32a borrow in p2p ", borrowBalance.inP2P);
     }
 
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.

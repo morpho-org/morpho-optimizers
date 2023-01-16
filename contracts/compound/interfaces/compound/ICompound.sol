@@ -176,7 +176,9 @@ interface IComptroller {
         uint256 transferTokens
     ) external;
 
-    /*** Liquidity/Liquidation Calculations ***/
+    /**
+     * Liquidity/Liquidation Calculations **
+     */
 
     function liquidateCalculateSeizeTokens(
         address cTokenBorrowed,
@@ -257,6 +259,8 @@ interface IInterestRateModel {
 }
 
 interface ICToken {
+    function symbol() external view returns (string memory);
+
     function isCToken() external returns (bool);
 
     function transfer(address dst, uint256 amount) external returns (bool);
@@ -345,7 +349,9 @@ interface ICToken {
 
     function initialExchangeRateMantissa() external view returns (uint256);
 
-    /*** Admin Functions ***/
+    /**
+     * Admin Functions **
+     */
 
     function _setPendingAdmin(address payable newPendingAdmin) external returns (uint256);
 
