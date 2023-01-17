@@ -13,7 +13,7 @@ certoraRun \
     --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
-    --settings -t=60\
+    --settings -t=60,-enableEqualitySaturation=false,-simplificationDepth=10,-s=z3\
     --staging \
     --msg "Rewards Distributor" \
     --send_only \

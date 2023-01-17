@@ -45,6 +45,13 @@ ghost _keccak(bytes32, bytes32) returns bytes32 {
         _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
 }
 
+rule sanityProcess(bytes32[] _proof, bytes32 _leaf) {
+    env e;
+    bytes32 root = processProof(e, _proof, _leaf);
+
+    assert false;
+}
+
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     env e;  uint256 claimed;
 
