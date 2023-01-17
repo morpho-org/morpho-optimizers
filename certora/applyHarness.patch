@@ -1,6 +1,6 @@
 diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
---- compound/MorphoGovernance.sol	2022-09-27 19:01:55.593922693 +0200
-+++ compound/MorphoGovernance.sol	2022-09-29 16:46:39.010015950 +0200
+--- compound/MorphoGovernance.sol	2023-01-17 11:30:39.575614966 +0100
++++ compound/MorphoGovernance.sol	2023-01-17 11:45:43.962869912 +0100
 @@ -147,7 +147,7 @@
          uint256 _maxSortedUsers,
          address _cEth,
@@ -11,8 +11,8 @@ diff -ruN compound/MorphoGovernance.sol compound/MorphoGovernance.sol
          __Ownable_init();
  
 diff -ruN compound/MorphoUtils.sol compound/MorphoUtils.sol
---- compound/MorphoUtils.sol	2022-09-27 19:01:55.593922693 +0200
-+++ compound/MorphoUtils.sol	2022-09-29 16:46:39.010015950 +0200
+--- compound/MorphoUtils.sol	2023-01-17 11:30:39.575614966 +0100
++++ compound/MorphoUtils.sol	2023-01-17 11:45:43.962869912 +0100
 @@ -4,7 +4,7 @@
  import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
  import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -23,9 +23,9 @@ diff -ruN compound/MorphoUtils.sol compound/MorphoUtils.sol
  import "./MorphoStorage.sol";
  
 diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
---- compound/PositionsManager.sol	2022-09-27 19:01:55.593922693 +0200
-+++ compound/PositionsManager.sol	2022-09-29 16:56:16.283725161 +0200
-@@ -235,7 +235,8 @@
+--- compound/PositionsManager.sol	2023-01-17 11:30:39.575614966 +0100
++++ compound/PositionsManager.sol	2023-01-17 12:04:57.228634549 +0100
+@@ -236,7 +236,8 @@
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -34,8 +34,8 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 +        //HARNESS : get a compiler error without this
          if (_onBehalf == address(0)) revert AddressIsZero();
          if (_amount == 0) revert AmountIsZero();
-         Types.MarketStatus memory market = marketStatus[_poolToken];
-@@ -332,7 +333,8 @@
+         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+@@ -333,7 +334,8 @@
          address _poolToken,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -43,9 +43,9 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 +    ) external override {
 +        // HARNESS
          if (_amount == 0) revert AmountIsZero();
-         Types.MarketStatus memory market = marketStatus[_poolToken];
-         if (!market.isCreated) revert MarketNotCreated();
-@@ -435,7 +437,8 @@
+         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+         if (marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowIsPaused();
+@@ -436,7 +438,8 @@
          address _supplier,
          address _receiver,
          uint256 _maxGasForMatching
@@ -53,18 +53,18 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 +    ) external override {
 +        // HARNESS
          if (_amount == 0) revert AmountIsZero();
-         Types.MarketStatus memory market = marketStatus[_poolToken];
-         if (!market.isCreated) revert MarketNotCreated();
-@@ -447,7 +450,7 @@
+         if (_receiver == address(0)) revert AddressIsZero();
+         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+@@ -448,7 +451,7 @@
  
          if (_isLiquidatable(_supplier, _poolToken, toWithdraw, 0)) revert UnauthorisedWithdraw();
  
--        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
-+        _safeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching, true);
+-        _unsafeWithdrawLogic(_poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching);
++        _unsafeWithdrawLogic( _poolToken, toWithdraw, _supplier, _receiver, _maxGasForMatching, true); // prettier-ignore
      }
  
      /// @dev Implements repay logic with security checks.
-@@ -462,7 +465,8 @@
+@@ -463,7 +466,8 @@
          address _onBehalf,
          uint256 _amount,
          uint256 _maxGasForMatching
@@ -72,14 +72,14 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 +    ) external override {
 +        // HARNESS
          if (_amount == 0) revert AmountIsZero();
-         Types.MarketStatus memory market = marketStatus[_poolToken];
-         if (!market.isCreated) revert MarketNotCreated();
+         if (!marketStatus[_poolToken].isCreated) revert MarketNotCreated();
+         if (marketPauseStatus[_poolToken].isRepayPaused) revert RepayIsPaused();
 @@ -472,7 +476,7 @@
          _updateP2PIndexes(_poolToken);
          uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolToken, _onBehalf), _amount);
  
--        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
-+        _safeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching, true);
+-        _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching);
++        _unsafeRepayLogic(_poolToken, _repayer, _onBehalf, toRepay, _maxGasForMatching, true);
      }
  
      /// @notice Liquidates a position.
@@ -89,28 +89,28 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
          uint256 _amount
 -    ) external {
 +    ) external virtual override {
-         Types.MarketStatus memory collateralMarket = marketStatus[_poolTokenCollateral];
-         if (!collateralMarket.isCreated) revert MarketNotCreated();
-         if (collateralMarket.isLiquidateCollateralPaused) revert LiquidateCollateralPaused();
-@@ -514,7 +518,7 @@
+         if (!marketStatus[_poolTokenCollateral].isCreated) revert MarketNotCreated();
+         if (marketPauseStatus[_poolTokenCollateral].isLiquidateCollateralPaused)
+             revert LiquidateCollateralIsPaused();
+@@ -512,7 +516,7 @@
          if (_amount > vars.borrowBalance.mul(vars.closeFactor))
              revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
  
--        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
-+        _safeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0, false);
+-        _unsafeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0);
++        _unsafeRepayLogic(_poolTokenBorrowed, msg.sender, _borrower, _amount, 0, false);
  
          ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
          vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateral);
-@@ -529,7 +533,7 @@
+@@ -527,7 +531,7 @@
              _getUserSupplyBalanceInOf(_poolTokenCollateral, _borrower)
          );
  
--        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
-+        _safeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0, false); // prettier-ignore
+-        _unsafeWithdrawLogic(_poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0);
++        _unsafeWithdrawLogic( _poolTokenCollateral, vars.amountToSeize, _borrower, msg.sender, 0, false); // prettier-ignore
  
          emit Liquidated(
              msg.sender,
-@@ -593,7 +597,8 @@
+@@ -591,7 +595,8 @@
          uint256 _amount,
          address _supplier,
          address _receiver,
@@ -118,19 +118,19 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
 +        uint256 _maxGasForMatching,
 +        bool matchingEnabled
      ) internal {
-         if (_amount == 0) revert AmountIsZero();
- 
-@@ -658,7 +663,8 @@
+         WithdrawVars memory vars;
+         vars.underlyingToken = _getUnderlying(_poolToken);
+@@ -654,7 +659,8 @@
          _updateSupplierInDS(_poolToken, _supplier);
  
-         // Reduce peer-to-peer supply delta.
+         // Reduce the peer-to-peer supply delta.
 -        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
 +        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0 && delta.p2pBorrowDelta == 0) {
 +            // HARNESS: should be equivalent since there can be only one positive delta
              uint256 deltaInUnderlying = delta.p2pSupplyDelta.mul(vars.poolSupplyIndex);
  
              if (deltaInUnderlying > vars.remainingToWithdraw) {
-@@ -681,6 +687,7 @@
+@@ -677,6 +683,7 @@
  
          // Promote pool suppliers.
          if (
@@ -138,7 +138,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
              vars.remainingToWithdraw > 0 &&
              !p2pDisabled[_poolToken] &&
              suppliersOnPool[_poolToken].getHead() != address(0)
-@@ -708,11 +715,14 @@
+@@ -704,11 +711,14 @@
  
          // Demote peer-to-peer borrowers.
          if (vars.remainingToWithdraw > 0) {
@@ -158,7 +158,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
  
              // Increase the peer-to-peer borrow delta.
              if (unmatched < vars.remainingToWithdraw) {
-@@ -753,7 +763,8 @@
+@@ -749,7 +759,8 @@
          address _repayer,
          address _onBehalf,
          uint256 _amount,
@@ -168,7 +168,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
      ) internal {
          if (lastBorrowBlock[_onBehalf] == block.number) revert SameBlockBorrowRepay();
  
-@@ -858,6 +869,7 @@
+@@ -854,6 +865,7 @@
  
          // Promote pool borrowers.
          if (
@@ -176,9 +176,9 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
              vars.remainingToRepay > 0 &&
              !p2pDisabled[_poolToken] &&
              borrowersOnPool[_poolToken].getHead() != address(0)
-@@ -883,11 +895,14 @@
+@@ -879,11 +891,14 @@
  
-         // Demote peer-to-peer suppliers.
+         // Unmote peer-to-peer suppliers.
          if (vars.remainingToRepay > 0) {
 -            uint256 unmatched = _unmatchSuppliers(
 -                _poolToken,
@@ -198,7 +198,7 @@ diff -ruN compound/PositionsManager.sol compound/PositionsManager.sol
              if (unmatched < vars.remainingToRepay) {
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-09-29 16:46:39.010015950 +0200
++++ .gitignore	2023-01-17 11:45:43.962869912 +0100
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
