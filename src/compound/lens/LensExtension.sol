@@ -10,7 +10,7 @@ import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 /// @title LensExtension.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice This contract is an extension of the Lens.
+/// @notice This contract is an extension of the Lens. It should be deployed before the Lens, as the Lens depends on its address to extends its functionalities.
 contract LensExtension is ILensExtension {
     using CompoundMath for uint256;
 

@@ -131,22 +131,24 @@ abstract contract IndexesLens is LensStorage {
         uint256 accrualBlockNumberPrior = _poolToken.accrualBlockNumber();
         if (block.number == accrualBlockNumberPrior) {
             poolSupplyIndex = _poolToken.exchangeRateStored();
-        } else {
-            uint256 borrowRateMantissa = _poolToken.borrowRatePerBlock();
-            require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
 
-            uint256 simpleInterestFactor = borrowRateMantissa *
-                (block.number - accrualBlockNumberPrior);
-            uint256 interestAccumulated = simpleInterestFactor.mul(vars.totalBorrows);
-
-            vars.totalBorrows += interestAccumulated;
-            vars.totalReserves += vars.reserveFactorMantissa.mul(interestAccumulated);
-
-            poolSupplyIndex = (vars.cash + vars.totalBorrows - vars.totalReserves).div(
-                _poolToken.totalSupply()
-            );
-            poolBorrowIndex += simpleInterestFactor.mul(poolBorrowIndex);
+            return (poolSupplyIndex, poolBorrowIndex, vars);
         }
+
+        uint256 borrowRateMantissa = _poolToken.borrowRatePerBlock();
+        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
+
+        uint256 simpleInterestFactor = borrowRateMantissa *
+            (block.number - accrualBlockNumberPrior);
+        uint256 interestAccumulated = simpleInterestFactor.mul(vars.totalBorrows);
+
+        vars.totalBorrows += interestAccumulated;
+        vars.totalReserves += vars.reserveFactorMantissa.mul(interestAccumulated);
+
+        poolSupplyIndex = (vars.cash + vars.totalBorrows - vars.totalReserves).div(
+            _poolToken.totalSupply()
+        );
+        poolBorrowIndex += simpleInterestFactor.mul(poolBorrowIndex);
     }
 
     /// @notice Returns the most up-to-date or virtually updated peer-to-peer  indexes.
@@ -172,13 +174,17 @@ abstract contract IndexesLens is LensStorage {
         returns (
             uint256 _p2pSupplyIndex,
             uint256 _p2pBorrowIndex,
-            Types.MarketParameters memory params
+            Types.MarketParameters memory marketParameters
         )
     {
-        params = morpho.marketParameters(_poolToken);
+        marketParameters = morpho.marketParameters(_poolToken);
 
         if (!_updated || block.number == _lastPoolIndexes.lastUpdateBlockNumber) {
-            return (morpho.p2pSupplyIndex(_poolToken), morpho.p2pBorrowIndex(_poolToken), params);
+            return (
+                morpho.p2pSupplyIndex(_poolToken),
+                morpho.p2pBorrowIndex(_poolToken),
+                marketParameters
+            );
         }
 
         InterestRatesModel.GrowthFactors memory growthFactors = InterestRatesModel
@@ -186,8 +192,8 @@ abstract contract IndexesLens is LensStorage {
             _poolSupplyIndex,
             _poolBorrowIndex,
             _lastPoolIndexes,
-            params.p2pIndexCursor,
-            params.reserveFactor
+            marketParameters.p2pIndexCursor,
+            marketParameters.reserveFactor
         );
 
         _p2pSupplyIndex = InterestRatesModel.computeP2PIndex(
