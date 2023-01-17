@@ -1,6 +1,6 @@
 // This is a version of delegateCall with the functionality removed to avoid analysis issues within the tool
 
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
 library DelegateCall {

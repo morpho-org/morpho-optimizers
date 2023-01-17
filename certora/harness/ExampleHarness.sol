@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
 // This is the contract that is actually verified; it may contain some helper
