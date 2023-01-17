@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import "@contracts/aave-v2/libraries/Types.sol";
+import "src/aave-v2/libraries/Types.sol";
 
 contract Config {
     address constant lendingPool = 0x9198F13B08E299d85E096929fA9781A1E3d5d827;

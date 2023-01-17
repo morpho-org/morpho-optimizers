@@ -1,21 +1,18 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import "@contracts/compound/interfaces/compound/ICompound.sol";
-import {IIncentivesVault} from "@contracts/compound/interfaces/IIncentivesVault.sol";
-import {IPositionsManager} from "@contracts/compound/interfaces/IPositionsManager.sol";
-import {IInterestRatesManager} from "@contracts/compound/interfaces/IInterestRatesManager.sol";
+import "src/compound/interfaces/compound/ICompound.sol";
+import {IIncentivesVault} from "src/compound/interfaces/IIncentivesVault.sol";
+import {IPositionsManager} from "src/compound/interfaces/IPositionsManager.sol";
+import {IInterestRatesManager} from "src/compound/interfaces/IInterestRatesManager.sol";
+import {IMorpho} from "src/compound/interfaces/IMorpho.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
-import {RewardsManager} from "@contracts/compound/RewardsManager.sol";
-import {PositionsManager} from "@contracts/compound/PositionsManager.sol";
-import {InterestRatesManager} from "@contracts/compound/InterestRatesManager.sol";
-import {IncentivesVault} from "@contracts/compound/IncentivesVault.sol";
-import {Lens} from "@contracts/compound/lens/Lens.sol";
-import {Morpho} from "@contracts/compound/Morpho.sol";
+import {RewardsManager} from "src/compound/RewardsManager.sol";
+import {Lens} from "src/compound/lens/Lens.sol";
+import {Morpho} from "src/compound/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";
 
 contract Config is BaseConfig {

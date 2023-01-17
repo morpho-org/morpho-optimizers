@@ -1,0 +1,34 @@
+name: Foundry upgrade tests (Morpho-Compound)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "lib/**"
+      - "config/**/compound/**"
+      - "src/common/**"
+      - "src/compound/**"
+      - "test/prod/compound/**"
+      - "*.lock"
+      - "Makefile"
+      - "foundry.toml"
+      - "remappings.txt"
+      - ".github/actions/ci-foundry-upgrade/*"
+      - ".github/workflows/ci-foundry-compound-upgrade.yml"
+
+jobs:
+  morpho-compound-eth-mainnet-upgrade:
+    name: eth-mainnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/ci-foundry-upgrade
+        with:
+          protocol: compound
+          network: eth-mainnet
+          alchemyKey: ${{ secrets.ALCHEMY_KEY }}

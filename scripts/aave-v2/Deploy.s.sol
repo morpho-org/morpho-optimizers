@@ -1,22 +1,20 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
-import "@contracts/aave-v2/interfaces/IIncentivesVault.sol";
-import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave-v2/interfaces/IExitPositionsManager.sol";
-import "@contracts/aave-v2/interfaces/IEntryPositionsManager.sol";
-import "@contracts/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "src/aave-v2/interfaces/IIncentivesVault.sol";
+import "src/aave-v2/interfaces/IInterestRatesManager.sol";
+import "src/aave-v2/interfaces/IExitPositionsManager.sol";
+import "src/aave-v2/interfaces/IEntryPositionsManager.sol";
+import "src/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
-import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
-import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
-import {Morpho} from "@contracts/aave-v2/Morpho.sol";
-import {Lens} from "@contracts/aave-v2/Lens.sol";
+import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
+import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
+import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
+import {Morpho} from "src/aave-v2/Morpho.sol";
+import {Lens} from "src/aave-v2/Lens.sol";
 
 import "@config/Config.sol";
 import "forge-std/Script.sol";
@@ -30,7 +28,6 @@ contract Deploy is Script, Config {
     IExitPositionsManager public exitPositionsManager;
     IInterestRatesManager public interestRatesManager;
     IIncentivesVault public incentivesVault;
-    RewardsManagerOnPolygon public rewardsManager;
 
     function run() external {
         vm.startBroadcast();
@@ -58,16 +55,6 @@ contract Deploy is Script, Config {
             )
         );
         morpho = Morpho(address(morphoProxy));
-
-        // Deploy RewardsManager
-        IRewardsManager rewardsManagerImpl = new RewardsManagerOnPolygon();
-
-        TransparentUpgradeableProxy rewardsManagerProxy = new TransparentUpgradeableProxy(
-            address(rewardsManagerImpl),
-            address(proxyAdmin),
-            abi.encodeWithSelector(rewardsManagerImpl.initialize.selector, address(morphoProxy))
-        );
-        morpho.setRewardsManager(IRewardsManager(address(rewardsManagerProxy)));
 
         // Deploy Lens
         lens = new Lens(

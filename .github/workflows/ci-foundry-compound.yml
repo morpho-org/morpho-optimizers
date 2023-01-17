@@ -9,10 +9,10 @@ on:
     paths:
       - "lib/**"
       - "config/**/compound/**"
-      - "contracts/common/**"
-      - "contracts/compound/**"
-      - "test-foundry/common/**"
-      - "test-foundry/compound/**"
+      - "src/common/**"
+      - "src/compound/**"
+      - "test/common/**"
+      - "test/compound/**"
       - "*.lock"
       - "Makefile"
       - "foundry.toml"
@@ -31,6 +31,7 @@ jobs:
 
       - uses: ./.github/actions/ci-foundry
         with:
-          alchemyKey: ${{ secrets.ALCHEMY_KEY }}
           protocol: compound
           network: eth-mainnet
+          alchemyKey: ${{ secrets.ALCHEMY_KEY }}
+          codecovToken: ${{ secrets.CODECOV_TOKEN }}

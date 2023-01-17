@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import "@contracts/compound/libraries/Types.sol";
+import "src/compound/libraries/Types.sol";
 
 contract Config {
     address constant wEth = address(0);

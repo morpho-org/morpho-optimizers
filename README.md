@@ -1,6 +1,7 @@
 # Morpho Core Protocol V1
 
-[![Test](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry.yml)
+[![Morpho-Compound](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
+[![Morpho-AaveV2](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
@@ -63,27 +64,50 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 ### Morpho-Compound Ethereum
 
 - Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
-- Morpho Implementation: [0xf29cc0319679b54bd25a8666fc0830b023c6a272](https://etherscan.io/address/0xf29cc0319679b54bd25a8666fc0830b023c6a272)
-- PositionsManager: [0x082bf6702e718483c85423bd279088c215a21302](https://etherscan.io/address/0x082bf6702e718483c85423bd279088c215a21302)
-- InterestRatesManager: [0x2f2d51f4d68a96859d4f69672cbeefd854bd8289](https://etherscan.io/address/0x2f2d51f4d68a96859d4f69672cbeefd854bd8289)
+- Morpho Implementation: [0xbbb011b923f382543a94e67e1d0c88d9763356e5](https://etherscan.io/address/0xbbb011b923f382543a94e67e1d0c88d9763356e5)
+- PositionsManager: [0x309a4505d79fcc59affaba205fdcb880d400ef39](https://etherscan.io/address/0x309a4505d79fcc59affaba205fdcb880d400ef39)
+- InterestRatesManager: [0x3e483225666871d192b686c42e6834e217a9871c](https://etherscan.io/address/0x3e483225666871d192b686c42e6834e217a9871c)
 - RewardsManager Proxy: [0x78681e63b6f3ad81ecd64aecc404d765b529c80d](https://etherscan.io/address/0x78681e63b6f3ad81ecd64aecc404d765b529c80d)
-- RewardsManager Implementation: [0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7](https://etherscan.io/address/0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7)
-- Lens: [0xe8cfa2edbdc110689120724c4828232e473be1b2](https://etherscan.io/address/0xe8cfa2edbdc110689120724c4828232e473be1b2)
+- RewardsManager Implementation: [0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7](https://etherscan.io/address/0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7)
+- Lens Proxy: [0x930f1b46e1d081ec1524efd95752be3ece51ef67](https://etherscan.io/address/0x930f1b46e1d081ec1524efd95752be3ece51ef67)
+- Lens Implementation: [0xe54dde06d245fadcba50dd786f717d44c341f81b](https://etherscan.io/address/0xe54dde06d245fadcba50dd786f717d44c341f81b)
 - CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
 
 ### Morpho-Aave-V2 Ethereum
 
-- Morpho Proxy: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
-- Morpho Implementation: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
-- EntryPositionsManager: [0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4](https://etherscan.io/address/0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4)
-- ExitPositionsManager: [0xf6998f72b92b81c8f683d30ed8678d348fe9754b](https://etherscan.io/address/0xf6998f72b92b81c8f683d30ed8678d348fe9754b)
-- InterestRatesManager: [0x91b23044d4a8089670309852c7f0a93e5ca8efb7](https://etherscan.io/address/0x91b23044d4a8089670309852c7f0a93e5ca8efb7)
+- Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
+- Morpho Implementation: [0x206a1609a484db5129ca118f138e5a8abb9c61e0](https://etherscan.io/address/0x206a1609a484db5129ca118f138e5a8abb9c61e0)
+- EntryPositionsManager: [0x2a46cad23484c15f60663ece368395b3a249632a](https://etherscan.io/address/0x2a46cad23484c15f60663ece368395b3a249632a)
+- ExitPositionsManager: [0xfa652aa169c23277a941cf2d23d2d707fda60ed9](https://etherscan.io/address/0xfa652aa169c23277a941cf2d23d2d707fda60ed9)
+- InterestRatesManager: [0x4f54235e17eb8dcdfc941a77e7734a537f7bed86](https://etherscan.io/address/0x4f54235e17eb8dcdfc941a77e7734a537f7bed86)
 - Lens Proxy: [0x507fa343d0a90786d86c7cd885f5c49263a91ff4](https://etherscan.io/address/0x507fa343d0a90786d86c7cd885f5c49263a91ff4)
-- Lens: [0x8706256509684e9cd93b7f19254775ce9324c226](https://etherscan.io/address/0x8706256509684e9cd93b7f19254775ce9324c226)
+- Lens Implementation: [0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb](https://etherscan.io/address/0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb)
 
 ### Common Ethereum
 
 - ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
+
+---
+
+## Importing package
+
+Using npm:
+
+```bash
+npm install @morpho-dao/morpho-v1
+```
+
+Using forge:
+
+```bash
+forge install @morpho-dao/morpho-v1@v2.0.0
+```
+
+Using git submodules:
+
+```bash
+git submodule add @morpho-dao/morpho-v1@v2.0.0 lib/morpho-v1
+```
 
 ---
 
@@ -115,25 +139,64 @@ or to run only a specific set of tests of a specific protocol (e.g. for Morpho-A
 make c-TestBorrow PROTOCOL=aave-v2
 ```
 
-or to run an individual test of a specific protocol (e.g. for Morpho-Aave V3):
+or to run an individual test of a specific protocol (e.g. for Morpho-Aave V2):
 
 ```bash
-make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
+make test-testBorrow1 PROTOCOL=aave-v2
 ```
 
 For the other commands, check the [Makefile](./Makefile).
+
+If you want to call a custom forge command, and not have to edit the `Makefile`, you can _source_ the `export_env.sh` script by calling `. ./export_env.sh`.
+
+:warning: The `export_env.sh` script exports environment variables in the current shell, meaning that subsequent calls to `make` or `forge` will use those variables. Variables defined in the `.env.local` file will still override those if you run `make` later. If you don't want to change variables in the current shell, you can always create a new shell in one of the following ways:
+
+- use `( . ./export_env.sh && forge test )` if the command you want to run is `forge test`
+- use `bash` and then `. ./export_env.sh` followed by your commands and then `exit` to return to the parent shell and clear the environment variables.
 
 ---
 
 ## Testing with Hardhat
 
-Only tests for the [RewardsDistributor](./contracts/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
+Only tests for the [RewardsDistributor](./src/common/rewards-distribution/RewardsDistributor.sol) are run with Hardhat.
 
 Just run:
 
 ```bash
 yarn test
 ```
+
+---
+
+## Test coverage
+
+Test coverage is reported using [foundry](https://github.com/foundry-rs/foundry) coverage with [lcov](https://github.com/linux-test-project/lcov) report formatting (and optionally, [genhtml](https://manpages.ubuntu.com/manpages/xenial/man1/genhtml.1.html) transformer).
+
+To generate the `lcov` report, run:
+
+```bash
+make coverage
+```
+
+The report is then usable either:
+
+- via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
+- via html, using `make lcov-html` to transform the report and opening `coverage/index.html`
+
+:warning: Test coverage is not available on Morpho-AaveV2 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+
+---
+
+## Storage seatbelt
+
+2 CI pipelines are currently running on every PR to check that the changes introduced are not modifying the storage layout of proxied smart contracts in an unsafe way:
+
+- [storage-layout.sh](./scripts/storage-layout.sh) checks that the latest foundry storage layout snapshot is identical to the committed storage layout snapshot
+- [foundry-storage-check](https://github.com/Rubilmax/foundry-storage-diff) is in test phase and will progressively replace the snapshot check
+
+In the case the storage layout snapshots checked by `storage-layout.sh` are not identical, the developer must commit the updated storage layout snapshot stored under [snapshots/](./snapshots/) by running:
+
+- `make storage-layout-generate` with the appropriate protocol parameters
 
 ---
 
