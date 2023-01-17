@@ -36,6 +36,13 @@ methods {
     T2.getHash(address) returns bytes32 envfree
 
     MorphoToken.balanceOf(address) returns uint256 envfree
+
+    keccak(bytes32 a, bytes32 b) => _keccak(a, b)
+}
+
+ghost _keccak(bytes32, bytes32) returns bytes32 {
+    axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
+        _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
 }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
@@ -57,6 +64,7 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
     claim(_account, _claimable, _proof);
 
+    assert T1.getCreated(T1.getRoot());
     assert T1.getCreated(_account);
     assert _claimable == T1.getValue(_account);
 }
