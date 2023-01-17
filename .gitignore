@@ -43,3 +43,4 @@ last_conf*
 .zip-output-url.txt
 package-lock.json
 resource_errors.json
+certora/munged
