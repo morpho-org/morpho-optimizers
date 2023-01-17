@@ -16,8 +16,9 @@ certoraRun \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
     certora/helpers/DummyWeth.sol \
-    --packages @morpho-labs/morpho-utils/=lib/morpho-utils/src/ \
-               @rari-capital/solmate/=lib/solmate/ \
+    --packages @morpho-dao/morpho-utils=lib/morpho-utils/src \
+               @morpho-dao/morpho-data-structures=lib/data-structures/contracts \
+               @rari-capital/solmate=lib/solmate \
                @openzeppelin=node_modules/@openzeppelin \
     --link PositionsManagerHarness:comptroller=SymbolicComptroller \
     --link PositionsManagerHarness:interestRatesManager=InterestRatesManager \
