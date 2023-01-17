@@ -107,7 +107,8 @@ contract TestSetup is Config, Utils {
 
         morpho.setRewardsManager(rewardsManager);
 
-        lensImplV1 = new Lens(address(morpho));
+        lensExtension = new LensExtension(address(morpho));
+        lensImplV1 = new Lens(address(lensExtension));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
         lens = Lens(address(lensProxy));
     }

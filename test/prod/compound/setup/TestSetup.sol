@@ -124,7 +124,7 @@ contract TestSetup is Config, Test {
         vm.label(address(cUsdc), "cUSDC");
         vm.label(address(cUsdt), "cUSDT");
         vm.label(address(cWbtc2), "cWBTC");
-        vm.label(address(cEth), "cWETH");
+        vm.label(address(cEth), "cETH");
         vm.label(address(cComp), "cCOMP");
         vm.label(address(cBat), "cBAT");
         vm.label(address(cTusd), "cTUSD");
@@ -261,7 +261,9 @@ contract TestSetup is Config, Test {
         proxyAdmin.upgrade(morphoProxy, morphoImplV2);
         vm.label(morphoImplV2, "MorphoImplV2");
 
-        address lensImplV2 = address(new Lens(address(morpho)));
+        lensExtension = new LensExtension(address(morpho));
+
+        address lensImplV2 = address(new Lens(address(lensExtension)));
         proxyAdmin.upgrade(lensProxy, lensImplV2);
         vm.label(lensImplV2, "LensImplV2");
 

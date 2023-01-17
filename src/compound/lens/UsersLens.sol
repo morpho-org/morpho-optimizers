@@ -388,13 +388,13 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle _oracle,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) public view returns (Types.AssetLiquidityData memory assetData) {
+    ) internal view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
 
         (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
 
-        Types.Indexes memory indexes = getIndexes(_poolToken, _getUpdatedIndexes);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, _getUpdatedIndexes);
 
         assetData.collateralUsd = _getUserSupplyBalanceInOf(
             _poolToken,
