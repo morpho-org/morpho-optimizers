@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
 interface ICEth {
@@ -58,6 +58,8 @@ interface IComptroller {
     function closeFactorMantissa() external view returns (uint256);
 
     function admin() external view returns (address);
+
+    function allMarkets(uint256) external view returns (ICToken);
 
     function oracle() external view returns (address);
 

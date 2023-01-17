@@ -75,7 +75,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 
 ### Morpho-Aave-V2 Ethereum
 
-- Morpho Proxy: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
+- Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
 - Morpho Implementation: [0x206a1609a484db5129ca118f138e5a8abb9c61e0](https://etherscan.io/address/0x206a1609a484db5129ca118f138e5a8abb9c61e0)
 - EntryPositionsManager: [0x2a46cad23484c15f60663ece368395b3a249632a](https://etherscan.io/address/0x2a46cad23484c15f60663ece368395b3a249632a)
 - ExitPositionsManager: [0xfa652aa169c23277a941cf2d23d2d707fda60ed9](https://etherscan.io/address/0xfa652aa169c23277a941cf2d23d2d707fda60ed9)
@@ -86,6 +86,28 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 ### Common Ethereum
 
 - ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
+
+---
+
+## Importing package
+
+Using npm:
+
+```bash
+npm install @morpho-dao/morpho-v1
+```
+
+Using forge:
+
+```bash
+forge install @morpho-dao/morpho-v1@v2.0.0
+```
+
+Using git submodules:
+
+```bash
+git submodule add @morpho-dao/morpho-v1@v2.0.0 lib/morpho-v1
+```
 
 ---
 
@@ -124,6 +146,13 @@ make test-testBorrow1 PROTOCOL=aave-v2
 ```
 
 For the other commands, check the [Makefile](./Makefile).
+
+If you want to call a custom forge command, and not have to edit the `Makefile`, you can _source_ the `export_env.sh` script by calling `. ./export_env.sh`.
+
+:warning: The `export_env.sh` script exports environment variables in the current shell, meaning that subsequent calls to `make` or `forge` will use those variables. Variables defined in the `.env.local` file will still override those if you run `make` later. If you don't want to change variables in the current shell, you can always create a new shell in one of the following ways:
+
+- use `( . ./export_env.sh && forge test )` if the command you want to run is `forge test`
+- use `bash` and then `. ./export_env.sh` followed by your commands and then `exit` to return to the parent shell and clear the environment variables.
 
 ---
 

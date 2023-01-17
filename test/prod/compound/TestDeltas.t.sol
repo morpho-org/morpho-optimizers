@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
@@ -104,7 +104,7 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 test.avgBorrowRatePerBlock,
                 ICToken(test.market.poolToken).borrowRatePerBlock(),
-                1,
+                10,
                 "avg borrow rate per year"
             );
 

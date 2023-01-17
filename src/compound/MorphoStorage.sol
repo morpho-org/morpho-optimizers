@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
 import "./interfaces/compound/ICompound.sol";
@@ -7,7 +7,7 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
 
-import "./libraries/DoubleLinkedList.sol";
+import "@morpho-dao/morpho-data-structures/DoubleLinkedList.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
