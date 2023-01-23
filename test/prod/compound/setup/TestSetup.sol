@@ -11,7 +11,7 @@ import {PositionsManager} from "src/compound/PositionsManager.sol";
 import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
-import "@config/Config.sol";
+import "config/compound/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
 
