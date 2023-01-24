@@ -17,7 +17,7 @@ import {PositionsManager} from "src/compound/PositionsManager.sol";
 import {Morpho} from "src/compound/Morpho.sol";
 import {Lens} from "src/compound/lens/Lens.sol";
 
-import "@config/Config.sol";
+import "config/compound/Config.sol";
 import "forge-std/Script.sol";
 
 contract Deploy is Script, Config {
