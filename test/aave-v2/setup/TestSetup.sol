@@ -26,7 +26,7 @@ import {DumbOracle} from "../helpers/DumbOracle.sol";
 import {FlashLoan} from "../helpers/FlashLoan.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "@config/Config.sol";
+import "config/aave-v2/Config.sol";
 import "@forge-std/Test.sol";
 import "@forge-std/console.sol";
 
