@@ -15,7 +15,7 @@ import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
 import {Morpho} from "src/aave-v2/Morpho.sol";
 import {Lens} from "src/aave-v2/Lens.sol";
 
-import "@config/Config.sol";
+import "config/aave-v2/Config.sol";
 import "forge-std/Script.sol";
 
 contract Deploy is Script, Config {
