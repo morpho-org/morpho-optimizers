@@ -21,6 +21,7 @@ methods {
     T1.getRight(address) returns address envfree
     T1.getValue(address) returns uint256 envfree
     T1.getHash(address) returns bytes32 envfree
+    T1.findAndClaimAt(address, address) envfree
 
     T2.initialized() returns bool envfree
     T2.newAccount(address, uint256) envfree
@@ -34,24 +35,17 @@ methods {
     T2.getRight(address) returns address envfree
     T2.getValue(address) returns uint256 envfree
     T2.getHash(address) returns bytes32 envfree
+    T2.findAndClaimAt(address, address) envfree
+
 
     MorphoToken.balanceOf(address) returns uint256 envfree
 
-    // MerkleProof.processProof(bytes32[], bytes32) returns bytes32 envfree
-    add(uint256, uint256) returns uint256 envfree
     keccak(bytes32 a, bytes32 b) => _keccak(a, b)
 }
 
 ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
         _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
-}
-
-rule sanityProcess(bytes32[] _proof, bytes32 _leaf) {
-    // bytes32 root = processProof(_proof, _leaf);
-    assert (add(2, 3) == 5);
-
-    // assert false;
 }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
@@ -98,11 +92,11 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
 rule claimCompleteness(address _account) {
     env e;
+    require T1.getHash(T1.getRoot()) == currRoot();
     require T1.getCreated(_account);
-    uint256 _claimable = T1.getValue(_account);
     require T1.isWellFormed(_account); // can also assume that other accounts are well-formed
 
-    claim@withrevert(_account, _claimable, T1.findProof(_account));
+    T1.findAndClaimAt(currentContract, _account);
 
     assert !lastReverted;
 }

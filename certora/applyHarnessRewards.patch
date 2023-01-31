@@ -1,6 +1,6 @@
 diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distribution/dependencies/Hash.sol
 --- common/rewards-distribution/dependencies/Hash.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/Hash.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/dependencies/Hash.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1,9 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -13,8 +13,8 @@ diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distr
 +}
 diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/rewards-distribution/dependencies/MerkleProof.sol
 --- common/rewards-distribution/dependencies/MerkleProof.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-01-31 11:03:25.910580868 +0100
-@@ -0,0 +1,34 @@
++++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-01-31 15:57:36.298192879 +0100
+@@ -0,0 +1,22 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
@@ -22,14 +22,6 @@ diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/reward
 +
 +/// @notice Harnessed MerkleProof library.
 +library MerkleProof {
-+    function verify(
-+        bytes32[] memory proof,
-+        bytes32 root,
-+        bytes32 leaf
-+    ) internal pure returns (bool) {
-+        return processProof(proof, leaf) == root;
-+    }
-+
 +    function processProof(bytes32[] memory proof, bytes32 leaf) internal pure returns (bytes32) {
 +        bytes32 computedHash = leaf;
 +        for (uint256 i = 0; i < proof.length; i++) {
@@ -44,14 +36,10 @@ diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/reward
 +        }
 +        return computedHash;
 +    }
-+
-+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-+        return a + b;
-+    }
 +}
 diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/rewards-distribution/dependencies/MorphoToken.sol
 --- common/rewards-distribution/dependencies/MorphoToken.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MorphoToken.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/dependencies/MorphoToken.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1,8 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -63,7 +51,7 @@ diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/reward
 +}
 diff -ruN common/rewards-distribution/dependencies/SafeTransferLib.sol common/rewards-distribution/dependencies/SafeTransferLib.sol
 --- common/rewards-distribution/dependencies/SafeTransferLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/SafeTransferLib.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/dependencies/SafeTransferLib.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1,17 @@
 +// SPDX-License-Identifier: AGPL-3.0-only
 +pragma solidity ^0.8.0;
@@ -84,7 +72,7 @@ diff -ruN common/rewards-distribution/dependencies/SafeTransferLib.sol common/re
 +}
 diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
 --- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -94,7 +82,7 @@ diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distributio
 +contract MerkleTree1 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
 --- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -104,7 +92,7 @@ diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distributio
 +contract MerkleTree2 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribution/MerkleTreeLib.sol
 --- common/rewards-distribution/MerkleTreeLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeLib.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/MerkleTreeLib.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1,110 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -218,12 +206,13 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +}
 diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribution/MerkleTreeMock.sol
 --- common/rewards-distribution/MerkleTreeMock.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeMock.sol	2023-01-31 11:03:25.910580868 +0100
-@@ -0,0 +1,65 @@
++++ common/rewards-distribution/MerkleTreeMock.sol	2023-01-31 15:58:14.318965950 +0100
+@@ -0,0 +1,68 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
 +import "./MerkleTreeLib.sol";
++import "./RewardsDistributor.sol";
 +
 +contract MerkleTreeMock {
 +    using MerkleTreeLib for MerkleTreeLib.Tree;
@@ -257,10 +246,6 @@ diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribu
 +        return tree.isWellFormed(addr);
 +    }
 +
-+    function findProof(address addr) public view returns (bytes32[] memory) {
-+        return tree.findProof(addr);
-+    }
-+
 +    function getRoot() public view returns (address) {
 +        return tree.getRoot();
 +    }
@@ -284,10 +269,16 @@ diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribu
 +    function getHash(address addr) public view returns (bytes32) {
 +        return tree.getHash(addr);
 +    }
++
++    function findAndClaimAt(address rewardsDistributor, address addr) public {
++        uint256 claimable = tree.getValue(addr);
++        bytes32[] memory proof = tree.findProof(addr);
++        RewardsDistributor(rewardsDistributor).claim(addr, claimable, proof);
++    }
 +}
 diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-distribution/RewardsDistributor.sol
 --- common/rewards-distribution/RewardsDistributor.sol	2023-01-17 15:49:22.351042790 +0100
-+++ common/rewards-distribution/RewardsDistributor.sol	2023-01-31 11:03:25.910580868 +0100
++++ common/rewards-distribution/RewardsDistributor.sol	2023-01-31 15:57:36.298192879 +0100
 @@ -1,9 +1,10 @@
  // SPDX-License-Identifier: AGPL-3.0-only
  pragma solidity ^0.8.0;
@@ -331,6 +322,6 @@ diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-dist
          if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2023-01-31 11:03:25.910580868 +0100
++++ .gitignore	2023-01-31 15:57:36.298192879 +0100
 @@ -0,0 +1 @@
 +*
