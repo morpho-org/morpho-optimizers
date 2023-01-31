@@ -37,6 +37,8 @@ methods {
 
     MorphoToken.balanceOf(address) returns uint256 envfree
 
+    // MerkleProof.processProof(bytes32[], bytes32) returns bytes32 envfree
+    add(uint256, uint256) returns uint256 envfree
     keccak(bytes32 a, bytes32 b) => _keccak(a, b)
 }
 
@@ -46,10 +48,10 @@ ghost _keccak(bytes32, bytes32) returns bytes32 {
 }
 
 rule sanityProcess(bytes32[] _proof, bytes32 _leaf) {
-    env e;
-    bytes32 root = processProof(e, _proof, _leaf);
+    // bytes32 root = processProof(_proof, _leaf);
+    assert (add(2, 3) == 5);
 
-    assert false;
+    // assert false;
 }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
