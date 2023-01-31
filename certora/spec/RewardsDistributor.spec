@@ -96,7 +96,7 @@ rule claimCompleteness(address _account) {
     require T1.getCreated(_account);
     require T1.isWellFormed(_account); // can also assume that other accounts are well-formed
 
-    T1.findAndClaimAt(currentContract, _account);
+    T1.findAndClaimAt@withrevert(currentContract, _account);
 
     assert !lastReverted;
 }
