@@ -77,19 +77,15 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
     assert _claimable == T1.getValue(_account);
 }
 
-rule claimCorrectOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
+rule claimCorrectOneAlt(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 right_hash, bytes32 currRoot) {
     env e;
-    address root;
-    require root == T1.getRoot();
-    require _account != 0;
-    require T1.getHash(root) == currRoot();
-    require T1.getRight(root) == _account;
-    require T1.isWellFormed(root);
-    require T1.isWellFormed(_account);
+    bytes32 left_hash; bytes32 left_alt_hash;
+    require left_hash == _keccak(left, claimable);
+    require left_alt_hash == _keccak(left_alt, claimable);
+    require _keccak(left_hash, right_hash) == currRoot;
+    require _keccak(left_alt_hash, right_hash) == currRoot;
 
-    claimOne(_account, _claimable, _proof);
-
-    assert T1.getHash(T1.getLeft(root)) == _proof;
+    assert left_alt == left;
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
