@@ -10,11 +10,9 @@ methods {
     getRight(address) returns address envfree
     getValue(address) returns uint256 envfree
     getHash(address) returns bytes32 envfree
-    findAndClaimAt(address, address) envfree
+    findAndClaimAt(address, address) envfree => HAVOC_ALL
 
     isWellFormed(address) returns bool envfree
-
-    claim(address, uint256, bytes32[]) envfree => DISPATCHER(true)
 }
 
 definition isEmpty(address addr) returns bool =
