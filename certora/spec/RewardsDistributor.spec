@@ -77,7 +77,7 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
     assert _claimable == T1.getValue(_account);
 }
 
-rule claimCorrectOneAlt(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 right_hash, bytes32 currRoot) {
+rule embeddedHash(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 right_hash, bytes32 currRoot) {
     env e;
     bytes32 left_hash; bytes32 left_alt_hash;
     require left_hash == _keccak(left, claimable);
@@ -86,6 +86,34 @@ rule claimCorrectOneAlt(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes
     require _keccak(left_alt_hash, right_hash) == currRoot;
 
     assert left_alt == left;
+}
+
+definition isEmpty(address addr) returns bool =
+    T1.getLeft(addr) == 0 &&
+    T1.getRight(addr) == 0 &&
+    T1.getValue(addr) == 0 &&
+    T1.getHash(addr) == 0;
+
+invariant notCreatedIsEmpty(address addr)
+    ! T1.getCreated(addr) => T1.isEmpty(addr)
+
+invariant zeroNotCreated(address addr)
+    ! T1.getCreated(0)
+
+invariant wellFormed(address addr)
+    T1.isWellFormed(addr)
+
+rule claimOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
+    env e;
+    address root;
+    require root == T1.getRoot();
+    require T1.getCreated(root);
+    require _account != 0;
+    require T1.getHash(root) == currRoot();
+    require T1.getRight(root) == _account;
+    requireInvariant wellFormed(root);
+
+    assert T1.getLeft(root) != 0;
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
