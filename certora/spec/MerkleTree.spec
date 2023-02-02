@@ -26,6 +26,9 @@ invariant notCreatedIsEmpty(address addr)
 invariant zeroNotCreated(address addr)
     ! getCreated(0)
 
+invariant rootZeroOrCreated()
+    getRoot() == 0 || getCreated(getRoot())
+
 invariant wellFormed(address addr)
     isWellFormed(addr)
     { preserved {
