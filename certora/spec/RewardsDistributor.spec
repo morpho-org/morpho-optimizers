@@ -40,7 +40,7 @@ methods {
     T2.findAndClaimAt(address, address) envfree
 
     keccak(address, uint256) envfree
-    checkHash(address, uint256, bytes32) envfree
+    checkHash(bytes32, bytes32, bytes32) envfree
 
     MorphoToken.balanceOf(address) returns uint256 envfree
 }
@@ -57,8 +57,8 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     assert lastReverted;
 }
 
-rule checkOneHash(address _account, uint256 _claimable, bytes32 _proof) {
+rule checkOneHash(bytes32 _account, bytes32 _claimable, bytes32 _proof) {
     checkHash(_account, _claimable, _proof);
 
-    assert keccak(to_bytes32(to_bytes20(_account)), to_bytes32(_claimable)) == _proof;
+    assert keccak(_account, _claimable) == _proof;
 }
