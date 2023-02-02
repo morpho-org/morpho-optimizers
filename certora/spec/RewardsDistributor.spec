@@ -8,6 +8,7 @@ methods {
     currRoot() returns bytes32 envfree
     claimed(address) returns uint256 envfree
     claim(address, uint256, bytes32[]) envfree => DISPATCHER(true)
+    claimOne(address, uint256, bytes32) envfree
     transfer(address, uint256) => DISPATCHER(true)
 
     T1.initialized() returns bool envfree
@@ -61,19 +62,34 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     assert lastReverted;
 }
 
-rule claimCorrectOne(address _account, uint256 _claimable, bytes32[] _proof) {
+rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
     env e;
     address root;
     require root == T1.getRoot();
+    require _account != 0;
     require T1.getHash(root) == currRoot();
     require T1.getRight(root) == _account;
     require T1.isWellFormed(root);
     require T1.isWellFormed(_account);
-    require _proof.length == 1;
 
-    claim(_account, _claimable, _proof);
+    claimOne(_account, _claimable, _proof);
 
     assert _claimable == T1.getValue(_account);
+}
+
+rule claimCorrectOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
+    env e;
+    address root;
+    require root == T1.getRoot();
+    require _account != 0;
+    require T1.getHash(root) == currRoot();
+    require T1.getRight(root) == _account;
+    require T1.isWellFormed(root);
+    require T1.isWellFormed(_account);
+
+    claimOne(_account, _claimable, _proof);
+
+    assert T1.getHash(T1.getLeft(root)) == _proof;
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {

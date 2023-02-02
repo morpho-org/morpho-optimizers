@@ -1,6 +1,6 @@
 diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distribution/dependencies/Hash.sol
 --- common/rewards-distribution/dependencies/Hash.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/Hash.sol	2023-01-31 15:57:36.298192879 +0100
++++ common/rewards-distribution/dependencies/Hash.sol	2023-02-02 11:04:04.307236613 +0100
 @@ -0,0 +1,9 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -13,8 +13,8 @@ diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distr
 +}
 diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/rewards-distribution/dependencies/MerkleProof.sol
 --- common/rewards-distribution/dependencies/MerkleProof.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-01-31 15:57:36.298192879 +0100
-@@ -0,0 +1,22 @@
++++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-02-02 11:04:04.307236613 +0100
+@@ -0,0 +1,27 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
@@ -36,10 +36,15 @@ diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/reward
 +        }
 +        return computedHash;
 +    }
++
++    function processOne(bytes32 proof, bytes32 leaf) internal pure returns (bytes32 computedHash) {
++        if (leaf <= proof) computedHash = Hash.keccak(leaf, proof);
++        else computedHash = Hash.keccak(proof, leaf);
++    }
 +}
 diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/rewards-distribution/dependencies/MorphoToken.sol
 --- common/rewards-distribution/dependencies/MorphoToken.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MorphoToken.sol	2023-01-31 15:57:36.298192879 +0100
++++ common/rewards-distribution/dependencies/MorphoToken.sol	2023-02-02 11:04:04.307236613 +0100
 @@ -0,0 +1,8 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -51,7 +56,7 @@ diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/reward
 +}
 diff -ruN common/rewards-distribution/dependencies/SafeTransferLib.sol common/rewards-distribution/dependencies/SafeTransferLib.sol
 --- common/rewards-distribution/dependencies/SafeTransferLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/SafeTransferLib.sol	2023-01-31 15:57:36.298192879 +0100
++++ common/rewards-distribution/dependencies/SafeTransferLib.sol	2023-02-02 11:04:04.310569948 +0100
 @@ -0,0 +1,17 @@
 +// SPDX-License-Identifier: AGPL-3.0-only
 +pragma solidity ^0.8.0;
@@ -72,7 +77,7 @@ diff -ruN common/rewards-distribution/dependencies/SafeTransferLib.sol common/re
 +}
 diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distribution/MerkleTree1.sol
 --- common/rewards-distribution/MerkleTree1.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree1.sol	2023-01-31 15:57:36.298192879 +0100
++++ common/rewards-distribution/MerkleTree1.sol	2023-02-02 11:04:04.310569948 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -82,7 +87,7 @@ diff -ruN common/rewards-distribution/MerkleTree1.sol common/rewards-distributio
 +contract MerkleTree1 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distribution/MerkleTree2.sol
 --- common/rewards-distribution/MerkleTree2.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTree2.sol	2023-01-31 15:57:36.298192879 +0100
++++ common/rewards-distribution/MerkleTree2.sol	2023-02-02 11:04:04.310569948 +0100
 @@ -0,0 +1,6 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -92,7 +97,7 @@ diff -ruN common/rewards-distribution/MerkleTree2.sol common/rewards-distributio
 +contract MerkleTree2 is MerkleTreeMock {}
 diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribution/MerkleTreeLib.sol
 --- common/rewards-distribution/MerkleTreeLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeLib.sol	2023-01-31 15:57:36.298192879 +0100
++++ common/rewards-distribution/MerkleTreeLib.sol	2023-02-02 11:04:04.310569948 +0100
 @@ -0,0 +1,110 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -206,7 +211,7 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +}
 diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribution/MerkleTreeMock.sol
 --- common/rewards-distribution/MerkleTreeMock.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeMock.sol	2023-01-31 15:58:14.318965950 +0100
++++ common/rewards-distribution/MerkleTreeMock.sol	2023-02-02 11:04:04.310569948 +0100
 @@ -0,0 +1,68 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -277,8 +282,8 @@ diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribu
 +    }
 +}
 diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-distribution/RewardsDistributor.sol
---- common/rewards-distribution/RewardsDistributor.sol	2023-01-17 15:49:22.351042790 +0100
-+++ common/rewards-distribution/RewardsDistributor.sol	2023-01-31 15:57:36.298192879 +0100
+--- common/rewards-distribution/RewardsDistributor.sol	2023-01-19 00:05:36.122272215 +0100
++++ common/rewards-distribution/RewardsDistributor.sol	2023-02-02 11:04:04.310569948 +0100
 @@ -1,9 +1,10 @@
  // SPDX-License-Identifier: AGPL-3.0-only
  pragma solidity ^0.8.0;
@@ -320,8 +325,25 @@ diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-dist
  
          uint256 alreadyClaimed = claimed[_account];
          if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
+@@ -100,4 +99,16 @@
+         MORPHO.safeTransfer(_account, amount);
+         emit RewardsClaimed(_account, amount);
+     }
++
++    function claimOne(
++        address _account,
++        uint256 _claimable,
++        bytes32 _proof
++    ) external view {
++        bytes32 candidateRoot = MerkleProof.processOne(
++            _proof,
++            Hash.keccak(bytes32(bytes20(_account)), bytes32(_claimable))
++        );
++        if (candidateRoot != currRoot) revert ProofInvalidOrExpired();
++    }
+ }
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2023-01-31 15:57:36.298192879 +0100
++++ .gitignore	2023-02-02 11:04:04.310569948 +0100
 @@ -0,0 +1 @@
 +*
