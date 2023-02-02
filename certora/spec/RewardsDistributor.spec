@@ -7,7 +7,8 @@ methods {
     MORPHO() returns address envfree
     currRoot() returns bytes32 envfree
     claimed(address) returns uint256 envfree
-    claim(address, uint256, bytes32[]) envfree
+    claim(address, uint256, bytes32[]) envfree => DISPATCHER(true)
+    transfer(address, uint256) => DISPATCHER(true)
 
     T1.initialized() returns bool envfree
     T1.newAccount(address, uint256) envfree
@@ -58,6 +59,21 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     claim@withrevert(_account, claimed, _proof);
 
     assert lastReverted;
+}
+
+rule claimCorrectOne(address _account, uint256 _claimable, bytes32[] _proof) {
+    env e;
+    address root;
+    require root == T1.getRoot();
+    require T1.getHash(root) == currRoot();
+    require T1.getRight(root) == _account;
+    require T1.isWellFormed(root);
+    require T1.isWellFormed(_account);
+    require _proof.length == 1;
+
+    claim(_account, _claimable, _proof);
+
+    assert _claimable == T1.getValue(_account);
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
