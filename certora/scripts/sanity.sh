@@ -20,6 +20,5 @@ certoraRun \
     --cache morpho \
     --rule "sanity" \
     --msg "PMFC Sanity $1" \
-    --staging \
     --send_only \
     # --debug \

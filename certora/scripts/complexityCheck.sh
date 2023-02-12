@@ -4,7 +4,6 @@ certoraRun \
     certora/helpers/DummyERC20B.sol \
     --verify PositionsManager:certora/helpers/complexity.spec \
     --solc solc8.13 \
-    --staging \
     --optimistic_loop \
     --send_only \
     --msg "PositionsManager complexity check"

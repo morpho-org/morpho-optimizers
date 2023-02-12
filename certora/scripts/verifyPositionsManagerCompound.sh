@@ -28,7 +28,6 @@ certoraRun \
     --optimistic_loop \
     --settings -t=60\
     --cache morpho \
-    --staging \
     --msg "PositionsManager For Compound" \
     --send_only \
     $@
