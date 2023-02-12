@@ -11,7 +11,6 @@ certoraRun \
     --loop_iter 2 \
     --optimistic_loop \
     --settings -t=60\
-    --staging \
     --msg "Merkle Tree" \
     --send_only \
     $@
