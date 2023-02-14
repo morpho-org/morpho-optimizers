@@ -12,6 +12,8 @@ methods {
     claim(address, uint256, bytes32[]) envfree => DISPATCHER(true)
     claimOne(address, uint256, bytes32) envfree
     transfer(address, uint256) => DISPATCHER(true)
+    address_to_bytes32(address) returns bytes32 envfree
+    uint256_to_bytes32(uint256) returns bytes32 envfree
 
     T1.initialized() returns bool envfree
     T1.newAccount(address, uint256) envfree
@@ -64,19 +66,61 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     assert lastReverted;
 }
 
-rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
+rule claimCorrectOne1(address _account, uint256 _claimable, bytes32 _proof) {
     env e;
     address root;
+    address left;
     require root == T1.getRoot();
     require _account != 0;
     require T1.getHash(root) == currRoot();
     require T1.getRight(root) == _account;
+    require T1.getLeft(root) == left;
     require T1.isWellFormed(root);
     require T1.isWellFormed(_account);
+    require T1.isWellFormed(left);
+    require T1.getLeft(_account) == 0;
+
+    claimOne(_account, _claimable, _proof);
+
+    assert _keccak(address_to_bytes32(_account), uint256_to_bytes32(_claimable)) == T1.getHash(left);
+}
+
+rule claimCorrectOne2(address _account, uint256 _claimable, bytes32 _proof) {
+    env e;
+    address root;
+    address left;
+    require root == T1.getRoot();
+    require _account != 0;
+    require T1.getHash(root) == currRoot();
+    require T1.getRight(root) == _account;
+    require T1.getLeft(root) == left;
+    require T1.isWellFormed(root);
+    require T1.isWellFormed(_account);
+    require T1.isWellFormed(left);
+    require T1.getLeft(_account) == 0;
 
     claimOne(_account, _claimable, _proof);
 
     assert _claimable == T1.getValue(_account);
+}
+
+rule claimCorrectOne3(address _account, uint256 _claimable, bytes32 _proof) {
+    env e;
+    address root;
+    address left;
+    require root == T1.getRoot();
+    require _account != 0;
+    require T1.getHash(root) == currRoot();
+    require T1.getRight(root) == _account;
+    require T1.getLeft(root) == left;
+    require T1.isWellFormed(root);
+    require T1.isWellFormed(_account);
+    require T1.isWellFormed(left);
+    require T1.getLeft(_account) == 0;
+
+    claimOne(_account, _claimable, _proof);
+
+    assert false;
 }
 
 rule embeddedHash(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 right_hash, bytes32 currRoot) {
