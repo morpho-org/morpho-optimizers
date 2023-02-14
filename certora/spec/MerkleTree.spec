@@ -10,7 +10,7 @@ methods {
     getRight(address) returns address envfree
     getValue(address) returns uint256 envfree
     getHash(address) returns bytes32 envfree
-    findAndClaimAt(address, address) envfree => HAVOC_ALL
+    findAndClaimAt(address, address) envfree
 
     isWellFormed(address) returns bool envfree
 }

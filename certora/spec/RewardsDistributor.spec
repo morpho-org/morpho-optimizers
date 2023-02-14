@@ -1,3 +1,5 @@
+import "./MerkleTree.spec"
+
 using MerkleTree1 as T1
 using MerkleTree2 as T2
 
@@ -42,7 +44,7 @@ methods {
 
     MorphoToken.balanceOf(address) returns uint256 envfree
 
-    keccak(bytes32 a, bytes32 b) => _keccak(a, b)
+    keccak(bytes32 a, bytes32 b) returns bytes32 envfree => _keccak(a, b)
 }
 
 ghost _keccak(bytes32, bytes32) returns bytes32 {
@@ -87,15 +89,6 @@ rule embeddedHash(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 rig
 
     assert left_alt == left;
 }
-
-definition isEmpty(address addr) returns bool =
-    T1.getLeft(addr) == 0 &&
-    T1.getRight(addr) == 0 &&
-    T1.getValue(addr) == 0 &&
-    T1.getHash(addr) == 0;
-
-invariant notCreatedIsEmpty(address addr)
-    ! T1.getCreated(addr) => T1.isEmpty(addr)
 
 invariant zeroNotCreated(address addr)
     ! T1.getCreated(0)
