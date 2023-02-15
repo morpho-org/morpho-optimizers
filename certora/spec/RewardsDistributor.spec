@@ -2,7 +2,6 @@ import "./MerkleTree.spec"
 
 using MerkleTree1 as T1
 using MerkleTree2 as T2
-
 using MorphoToken as MorphoToken
 
 methods {
@@ -43,11 +42,15 @@ methods {
     T2.getHash(address) returns bytes32 envfree
     T2.findAndClaimAt(address, address) envfree
 
-
     MorphoToken.balanceOf(address) returns uint256 envfree
 
     keccak(bytes32 a, bytes32 b) returns bytes32 envfree => _keccak(a, b)
 }
+
+use invariant wellFormed
+use invariant notCreatedIsEmpty
+use invariant zeroNotCreated
+use invariant rootZeroOrCreated
 
 ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
@@ -133,12 +136,6 @@ rule embeddedHash(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 rig
 
     assert left_alt == left;
 }
-
-invariant zeroNotCreated(address addr)
-    ! T1.getCreated(0)
-
-invariant wellFormed(address addr)
-    T1.isWellFormed(addr)
 
 rule claimOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
     env e;
