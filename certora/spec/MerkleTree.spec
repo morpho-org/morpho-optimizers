@@ -15,6 +15,10 @@ methods {
     isWellFormed(address) returns bool envfree
 }
 
+hook Sstore harnessAccess bool _ STORAGE {
+    require false;
+}
+
 definition isEmpty(address addr) returns bool =
     getLeft(addr) == 0 &&
     getRight(addr) == 0 &&
