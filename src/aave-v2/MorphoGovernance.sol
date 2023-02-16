@@ -126,6 +126,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when market borrow is not paused.
     error BorrowNotPaused();
 
+    /// @notice Thrown when deprecating a market while liquidating the borrow is paused.
+    error LiquidateBorrowIsPaused();
+
     /// @notice Thrown when market is deprecated.
     error MarketIsDeprecated();
 
@@ -360,8 +363,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
-        if (!marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowNotPaused();
-        marketPauseStatus[_poolToken].isDeprecated = _isDeprecated;
+        Types.MarketPauseStatus storage status = marketPauseStatus[_poolToken];
+        if (!status.isBorrowPaused) revert BorrowNotPaused();
+        if (_isDeprecated && status.isLiquidateBorrowPaused) revert LiquidateBorrowIsPaused();
+        status.isDeprecated = _isDeprecated;
         emit IsDeprecatedSet(_poolToken, _isDeprecated);
     }
 
