@@ -102,6 +102,19 @@ contract TestPausableMarket is TestSetup {
         }
     }
 
+    function testBorrowPauseCheckSkipped() public {
+        // Deprecate a market.
+        morpho.setIsBorrowPaused(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
+        _checkPauseEquality(aDai, true, true);
+
+        morpho.setIsPausedForAllMarkets(false);
+        _checkPauseEquality(aDai, true, true);
+
+        morpho.setIsPausedForAllMarkets(true);
+        _checkPauseEquality(aDai, true, true);
+    }
+
     function testPauseSupply() public {
         uint256 amount = 10_000 ether;
         morpho.setIsSupplyPaused(aDai, true);
@@ -183,5 +196,16 @@ contract TestPausableMarket is TestSetup {
     function testShouldNotDeprecatedMarketWhenNotCreated() public {
         vm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
         morpho.setIsDeprecated(address(1), true);
+    }
+
+    function _checkPauseEquality(
+        address poolToken,
+        bool shouldBePaused,
+        bool shouldBeDeprecated
+    ) public {
+        (, bool isBorrowPaused, , , , , bool isDeprecated) = morpho.marketPauseStatus(poolToken);
+
+        assertEq(isBorrowPaused, shouldBePaused);
+        assertEq(isDeprecated, shouldBeDeprecated);
     }
 }
