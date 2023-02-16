@@ -34,7 +34,6 @@ contract Config is BaseConfig {
     address constant cUsdp = 0x041171993284df560249B57358F931D9eB7b925D;
     address constant cSushi = 0x4B0181102A0112A2ef11AbEE5563bb4a3176c9d7;
 
-    address public morphoDao = 0xcBa28b38103307Ec8dA98377ffF9816C164f9AFa;
     IComptroller public comptroller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
     ICompoundOracle public oracle = ICompoundOracle(comptroller.oracle());
 

@@ -59,7 +59,7 @@ contract TestDeltas is TestSetup {
                 address(morpho)
             );
 
-            vm.prank(morphoDao);
+            vm.prank(morpho.owner());
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
 
             (
@@ -150,7 +150,7 @@ contract TestDeltas is TestSetup {
                 p2pBorrowUnderlying > borrowDeltaUnderlyingBefore
             ) continue;
 
-            vm.prank(morphoDao);
+            vm.prank(morpho.owner());
             vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
         }
