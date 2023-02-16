@@ -19,7 +19,7 @@ import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
 import "src/aave-v2/Morpho.sol";
 
 import {User} from "../../../aave-v2/helpers/User.sol";
-import "@config/Config.sol";
+import "config/aave-v2/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
 

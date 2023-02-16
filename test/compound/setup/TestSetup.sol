@@ -14,7 +14,7 @@ import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "@config/Config.sol";
+import "config/compound/Config.sol";
 import "@forge-std/console.sol";
 import "@forge-std/console2.sol";
 import "@forge-std/Vm.sol";
