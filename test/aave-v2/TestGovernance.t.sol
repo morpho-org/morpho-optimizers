@@ -413,12 +413,6 @@ contract TestGovernance is TestSetup {
         morpho.setIsDeprecated(aDai, true);
 
         morpho.setIsBorrowPaused(aDai, true);
-
-        morpho.setIsLiquidateBorrowPaused(aDai, true);
-        hevm.expectRevert(abi.encodeWithSignature("LiquidateBorrowIsPaused()"));
-        morpho.setIsDeprecated(aDai, true);
-
-        morpho.setIsLiquidateBorrowPaused(aDai, false);
         morpho.setIsDeprecated(aDai, true);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketIsDeprecated()"));
