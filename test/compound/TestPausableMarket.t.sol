@@ -78,13 +78,22 @@ contract TestPausableMarket is TestSetup {
         // Deprecate a market.
         morpho.setIsBorrowPaused(cDai, true);
         morpho.setIsDeprecated(cDai, true);
-        _checkPauseEquality(cDai, true, true);
+        (, bool isBorrowPaused, , , , , bool isDeprecated) = morpho.marketPauseStatus(cDai);
+
+        assertTrue(isBorrowPaused);
+        assertTrue(isDeprecated);
 
         morpho.setIsPausedForAllMarkets(false);
-        _checkPauseEquality(cDai, true, true);
+        (, isBorrowPaused, , , , , isDeprecated) = morpho.marketPauseStatus(cDai);
+
+        assertTrue(isBorrowPaused);
+        assertTrue(isDeprecated);
 
         morpho.setIsPausedForAllMarkets(true);
-        _checkPauseEquality(cDai, true, true);
+        (, isBorrowPaused, , , , , isDeprecated) = morpho.marketPauseStatus(cDai);
+
+        assertTrue(isBorrowPaused);
+        assertTrue(isDeprecated);
     }
 
     function testOnlyOwnerShouldDisableSupply() public {
@@ -157,16 +166,5 @@ contract TestPausableMarket is TestSetup {
 
         vm.expectRevert(abi.encodeWithSignature("LiquidateBorrowIsPaused()"));
         supplier1.liquidate(cDai, cUsdc, address(supplier2), amount);
-    }
-
-    function _checkPauseEquality(
-        address poolToken,
-        bool shouldBePaused,
-        bool shouldBeDeprecated
-    ) public {
-        (, bool isBorrowPaused, , , , , bool isDeprecated) = morpho.marketPauseStatus(poolToken);
-
-        assertEq(isBorrowPaused, shouldBePaused);
-        assertEq(isDeprecated, shouldBeDeprecated);
     }
 }
