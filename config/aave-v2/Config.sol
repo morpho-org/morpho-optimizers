@@ -10,7 +10,7 @@ import {IIncentivesVault} from "src/aave-v2/interfaces/IIncentivesVault.sol";
 import {IEntryPositionsManager} from "src/aave-v2/interfaces/IEntryPositionsManager.sol";
 import {IExitPositionsManager} from "src/aave-v2/interfaces/IExitPositionsManager.sol";
 import {IInterestRatesManager} from "src/aave-v2/interfaces/IInterestRatesManager.sol";
-import {ILendingPoolConfigurator} from "../../../test/aave-v2/helpers/ILendingPoolConfigurator.sol";
+import {ILendingPoolConfigurator} from "test/aave-v2/helpers/ILendingPoolConfigurator.sol";
 import {IMorpho} from "src/aave-v2/interfaces/IMorpho.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
