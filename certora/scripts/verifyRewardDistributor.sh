@@ -14,6 +14,7 @@ certoraRun \
     --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
+    --cloud yoav/grounding \
     --settings -t=60,-enableEqualitySaturation=false,-simplificationDepth=10,-s=z3\
     --msg "Rewards Distributor" \
     --send_only \
