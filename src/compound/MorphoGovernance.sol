@@ -467,17 +467,24 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MarketPauseStatus storage pause = marketPauseStatus[_poolToken];
 
         pause.isSupplyPaused = _isPaused;
-        pause.isBorrowPaused = _isPaused;
-        pause.isWithdrawPaused = _isPaused;
-        pause.isRepayPaused = _isPaused;
-        pause.isLiquidateCollateralPaused = _isPaused;
-        pause.isLiquidateBorrowPaused = _isPaused;
-
         emit IsSupplyPausedSet(_poolToken, _isPaused);
-        emit IsBorrowPausedSet(_poolToken, _isPaused);
+
+        // Note that pause.isDeprecated implies pause.isBorrowPaused.
+        if (!pause.isDeprecated) {
+            pause.isBorrowPaused = _isPaused;
+            emit IsBorrowPausedSet(_poolToken, _isPaused);
+        }
+
+        pause.isWithdrawPaused = _isPaused;
         emit IsWithdrawPausedSet(_poolToken, _isPaused);
+
+        pause.isRepayPaused = _isPaused;
         emit IsRepayPausedSet(_poolToken, _isPaused);
+
+        pause.isLiquidateCollateralPaused = _isPaused;
         emit IsLiquidateCollateralPausedSet(_poolToken, _isPaused);
+
+        pause.isLiquidateBorrowPaused = _isPaused;
         emit IsLiquidateBorrowPausedSet(_poolToken, _isPaused);
     }
 }

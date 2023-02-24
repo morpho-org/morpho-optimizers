@@ -286,7 +286,7 @@ contract TestSetup is Config, Test {
 
     /// @dev Upgrades all the protocol contracts.
     function _upgrade() internal {
-        vm.startPrank(morphoDao);
+        vm.startPrank(proxyAdmin.owner());
         address morphoImplV2 = address(new Morpho());
         proxyAdmin.upgrade(morphoProxy, morphoImplV2);
         vm.label(morphoImplV2, "MorphoImplV2");
