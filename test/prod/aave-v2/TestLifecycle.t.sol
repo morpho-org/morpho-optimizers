@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestLifecycle is TestSetup {
     using WadRayMath for uint256;
+    using SafeTransferLib for ERC20;
 
     function _beforeSupply(MarketSideTest memory supply) internal virtual {}
 
@@ -540,5 +541,32 @@ contract TestLifecycle is TestSetup {
             vm.expectRevert(ExitPositionsManager.WithdrawIsPaused.selector);
             user.withdraw(market.poolToken, type(uint256).max);
         }
+    }
+
+    function testWithdrawMaxCapacitiesWeth() public {
+        uint256 amount = 100 ether;
+
+        address user = 0x1Be31A94361a391bBaFB2a4CCd704F57dc04d4bb;
+        deal(wEth, user, amount);
+
+        vm.startPrank(user);
+        ERC20(wEth).safeApprove(address(morpho), amount);
+        morpho.supply(aWeth, amount);
+
+        vm.roll(block.number + 2);
+        vm.warp(block.timestamp + 116);
+
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(user, aUsdc);
+
+        morpho.borrow(aUsdc, borrowable);
+
+        (, borrowable) = lens.getUserMaxCapacitiesForAsset(user, aWeth);
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 43);
+
+        morpho.borrow(aWeth, borrowable);
+
+        vm.stopPrank();
     }
 }

@@ -314,25 +314,6 @@ contract TestLens is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
-    function testWithdrawMaxCapacitiesStEth() public {
-        createMarket(aWeth);
-        createMarket(aStEth);
-
-        uint256 amount = 1_000 ether;
-
-        stdstore.target(stEth).sig("sharesOf(address)").with_key(address(borrower1)).checked_write(
-            amount
-        );
-        borrower1.approve(stEth, amount);
-        borrower1.supply(aStEth, amount);
-
-        borrower1.borrow(aWeth, amount / 2);
-
-        (uint256 withdrawable, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aStEth);
-
-        borrower1.withdraw(aStEth, withdrawable);
-    }
-
     function testMaxCapacitiesWithSupplyAndBorrow() public {
         uint256 amount = 100 ether;
 
