@@ -493,7 +493,7 @@ contract TestRepay is TestSetup {
             // There should be a delta.
             // The amount unmatched during the repay.
             uint256 unmatched = 10 * expectedSupplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cDai));
-            // The difference between the previous matched amount and the amout unmatched creates a delta.
+            // The difference between the previous matched amount and the amount unmatched creates a delta.
             uint256 expectedp2pSupplyDeltaInUnderlying = (matched.mul(morpho.p2pSupplyIndex(cDai)) -
                 unmatched);
             uint256 expectedp2pSupplyDelta = (matched.mul(morpho.p2pSupplyIndex(cDai)) - unmatched)
