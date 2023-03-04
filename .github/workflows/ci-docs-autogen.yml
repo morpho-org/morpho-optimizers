@@ -23,6 +23,16 @@ jobs:
         with:
           version: nightly
 
+      - name: Node dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: "node_modules"
+          key: yarn-${{ hashFiles('yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        shell: bash
+
       - name: Generate docs
         run: make docs
         shell: bash
