@@ -64,7 +64,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Upload docs to S3
-        run: aws s3 sync ./docs s3://$BUCKET --delete
+        run: aws s3 sync ./docs s3://$BUCKET --delete --acl public-read
         env:
           BUCKET: ${{ secrets.AWS_S3_BUCKET }}
 
