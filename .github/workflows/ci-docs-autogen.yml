@@ -1,0 +1,77 @@
+
+on:
+  push:
+    - main
+
+jobs:
+  autogen-docs:
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install all dependencies
+        run: make install
+        shell: bash
+
+      - name: Generate docs
+        run: make docs
+        shell: bash
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs-foundry
+          path: docs
+
+  upload-to-ipfs:
+    needs: autogen-docs
+    steps:
+      - name: Download docs
+        uses: actions/download-artifact@v2
+        with:
+          name: docs-foundry
+          path: docs
+
+      - name: Upload docs to IPFS
+        uses: aquiladev/ipfs-action@12cc5d253735dc2894fe19828bd042c8532acc5d # v0.3.1
+        with:
+          path: ./docs
+          service: pinata
+          pinataKey: ${{ secrets.PINATA_KEY }}
+          pinataSecret: ${{ secrets.PINATA_SECRET }}
+
+  upload-to-s3:
+    needs: autogen-docs
+    environment:
+      name: docs
+      url: https://developers.morpho.xyz
+    steps:
+      - name: Download docs
+        uses: actions/download-artifact@v2
+        with:
+          name: docs-foundry
+          path: docs
+
+      - name: Setup AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload docs to S3
+        run: aws s3 sync ./docs s3://$BUCKET --delete
+        env:
+          BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id $DISTRIBUTION --paths "/*"
+        env:
+          DISTRIBUTION: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}

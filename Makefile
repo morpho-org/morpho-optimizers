@@ -112,6 +112,7 @@ storage-layout-check-no-rewards:
 
 config:
 	@forge config
-
+docs:
+	@forge doc --build
 
 .PHONY: test config test-common foundry coverage contracts
