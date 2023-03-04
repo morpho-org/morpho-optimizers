@@ -42,7 +42,7 @@ It also interacts with `RewardsManager`, which manages the underlying pool's rew
 
 - [White Paper](https://whitepaper.morpho.xyz)
 - [Morpho Documentation](https://docs.morpho.xyz)
-- Yellow Paper (coming soon)
+- [Yellow Paper](https://yellowpaper.morpho.xyz/)
 
 ---
 
