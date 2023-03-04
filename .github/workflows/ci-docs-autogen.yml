@@ -34,7 +34,7 @@ jobs:
         shell: bash
 
       - name: Generate docs
-        run: make docs
+        run: forge doc --build
         shell: bash
 
       - name: Upload docs
