@@ -36,3 +36,6 @@ yarn-error.log*
 *.ansi
 *.html
 lcov.*
+
+# docs
+/docs
