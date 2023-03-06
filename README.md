@@ -41,8 +41,9 @@ It also interacts with `RewardsManager`, which manages the underlying pool's rew
 ## Documentation
 
 - [White Paper](https://whitepaper.morpho.xyz)
+- [Yellow Paper](https://yellowpaper.morpho.xyz/)
 - [Morpho Documentation](https://docs.morpho.xyz)
-- Yellow Paper (coming soon)
+- [Morpho Developers Documentation](https://developers.morpho.xyz)
 
 ---
 
