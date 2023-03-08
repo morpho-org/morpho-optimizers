@@ -40,7 +40,6 @@ contract Config is BaseConfig {
 
     address constant swapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
-    address public morphoDao = 0xcBa28b38103307Ec8dA98377ffF9816C164f9AFa;
     ILendingPoolAddressesProvider public poolAddressesProvider =
         ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
     ILendingPoolConfigurator public lendingPoolConfigurator =

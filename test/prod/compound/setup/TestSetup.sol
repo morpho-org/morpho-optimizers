@@ -254,7 +254,7 @@ contract TestSetup is Config, Test {
 
     /// @dev Upgrades all the protocol contracts.
     function _upgrade() internal {
-        vm.startPrank(morphoDao);
+        vm.startPrank(proxyAdmin.owner());
         address rewardsManagerImplV2 = address(new RewardsManager());
         proxyAdmin.upgrade(rewardsManagerProxy, rewardsManagerImplV2);
         vm.label(rewardsManagerImplV2, "RewardsManagerImplV2");

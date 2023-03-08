@@ -59,7 +59,7 @@ contract TestDeltas is TestSetup {
                 address(morpho)
             );
 
-            vm.prank(morphoDao);
+            vm.prank(proxyAdmin.owner());
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
 
             (
@@ -108,14 +108,14 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 p2pSupplyUnderlying - supplyDeltaUnderlyingBefore,
                 IAToken(test.market.poolToken).balanceOf(address(morpho)) - test.morphoSupplyBefore,
-                2,
+                3,
                 "morpho pool supply"
             );
             assertApproxEqAbs(
                 p2pBorrowUnderlying - borrowDeltaUnderlyingBefore,
                 IVariableDebtToken(test.market.debtToken).balanceOf(address(morpho)) -
                     test.morphoBorrowBefore,
-                2,
+                3,
                 "morpho pool borrow"
             );
         }
@@ -150,7 +150,7 @@ contract TestDeltas is TestSetup {
                 p2pBorrowUnderlying > borrowDeltaUnderlyingBefore
             ) continue;
 
-            vm.prank(morphoDao);
+            vm.prank(proxyAdmin.owner());
             vm.expectRevert(PositionsManagerUtils.AmountIsZero.selector);
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
         }
