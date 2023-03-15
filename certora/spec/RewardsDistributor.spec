@@ -78,14 +78,23 @@ rule claimCorrectOne1(address _account, uint256 _claimable, bytes32 _proof) {
     require T1.getHash(root) == currRoot();
     require T1.getRight(root) == _account;
     require T1.getLeft(root) == left;
+    require ! T1.getCreated(root) => T1.getLeft(root) == 0 && T1.getRight(root) == 0 && T1.getValue(root) == 0 && T1.getHash(root) == 0;
     require T1.isWellFormed(root);
+    require ! T1.getCreated(_account) => T1.getLeft(_account) == 0 && T1.getRight(_account) == 0 && T1.getValue(_account) == 0 && T1.getHash(_account) == 0;
     require T1.isWellFormed(_account);
+    require ! T1.getCreated(left) => T1.getLeft(left) == 0 && T1.getRight(left) == 0 && T1.getValue(left) == 0 && T1.getHash(left) == 0;
     require T1.isWellFormed(left);
     require T1.getLeft(_account) == 0;
+    require T1.getHash(left) != T1.getHash(_account);
+
+    bytes32 reconstructedLeaf;
+    bytes32 reconstructedRoot;
+    require reconstructedLeaf == _keccak(address_to_bytes32(_account), uint256_to_bytes32(_claimable));
+    require reconstructedRoot == _keccak(_proof, reconstructedLeaf);
 
     claimOne(_account, _claimable, _proof);
 
-    assert _keccak(address_to_bytes32(_account), uint256_to_bytes32(_claimable)) == T1.getHash(left);
+    assert _proof == T1.getHash(left);
 }
 
 rule claimCorrectOne2(address _account, uint256 _claimable, bytes32 _proof) {
