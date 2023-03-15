@@ -47,9 +47,10 @@ methods {
     keccak(bytes32 a, bytes32 b) returns bytes32 envfree => _keccak(a, b)
 }
 
-invariant notCreatedIsEmpty(address addr)
-    T1.notCreatedIsEmpty(addr)
-    filtered { f -> false }
+use invariant wellFormed
+use invariant notCreatedIsEmpty
+use invariant zeroNotCreated
+use invariant rootZeroOrCreated
 
 ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
@@ -144,7 +145,7 @@ rule claimOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
     require _account != 0;
     require T1.getHash(root) == currRoot();
     require T1.getRight(root) == _account;
-    require T1.isWellFormed(root);
+    requireInvariant wellFormed(root);
 
     assert T1.getLeft(root) != 0;
 }
