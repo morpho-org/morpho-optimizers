@@ -21,8 +21,11 @@ definition isEmpty(address addr) returns bool =
     getValue(addr) == 0 &&
     getHash(addr) == 0;
 
+definition notCreatedIsEmpty(address addr) returns bool =
+    ! getCreated(addr) => isEmpty(addr);
+
 invariant notCreatedIsEmpty(address addr)
-    ! getCreated(addr) => isEmpty(addr)
+    notCreatedIsEmpty(addr)
 
 invariant zeroNotCreated(address addr)
     ! getCreated(0)
