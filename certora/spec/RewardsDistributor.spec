@@ -69,133 +69,87 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     assert lastReverted;
 }
 
-rule claimCorrectOne1(address tree, address _account, uint256 _claimable, bytes32 _proof) {
-    env e;
-    address root;
-    address left;
+rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
+    env e; address tree; address root; address left;
     require root == T.getRoot(tree);
+
     require _account != 0;
     require T.getHash(tree, root) == currRoot();
     require T.getRight(tree, root) == _account;
     require T.getLeft(tree, root) == left;
+    require T.getLeft(tree, _account) == 0;
+    require T.getHash(tree, left) != T.getHash(tree, _account);
+
     requireInvariant notCreatedIsEmpty(tree, root);
     requireInvariant wellFormed(tree, root);
     requireInvariant notCreatedIsEmpty(tree, _account);
     requireInvariant wellFormed(tree, _account);
     requireInvariant notCreatedIsEmpty(tree, left);
     requireInvariant wellFormed(tree, left);
-    require T.getLeft(tree, _account) == 0;
-    require T.getHash(tree, left) != T.getHash(tree, _account);
-
-    bytes32 reconstructedLeaf;
-    bytes32 reconstructedRoot;
-    require reconstructedLeaf == _keccak(address_to_bytes32(_account), uint256_to_bytes32(_claimable));
-    require reconstructedRoot == _keccak(_proof, reconstructedLeaf);
 
     claimOne(_account, _claimable, _proof);
 
     assert _proof == T.getHash(tree, left);
 }
 
-// rule claimCorrectOne2(address _account, uint256 _claimable, bytes32 _proof) {
-//     env e;
-//     address root;
-//     address left;
-//     require root == T.getRoot();
-//     require _account != 0;
-//     require T.getHash(root) == currRoot();
-//     require T.getRight(root) == _account;
-//     require T.getLeft(root) == left;
-//     require T.isWellFormed(root);
-//     require T.isWellFormed(_account);
-//     require T.isWellFormed(left);
-//     require T.getLeft(_account) == 0;
+rule claimOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
+    env e; address tree; address root;
+    require root == T.getRoot(tree);
 
-//     claimOne(_account, _claimable, _proof);
+    require _account != 0;
+    require T.getCreated(tree, root);
+    require T.getHash(tree, root) == currRoot();
+    require T.getRight(tree, root) == _account;
+    requireInvariant wellFormed(tree, root);
 
-//     assert _claimable == T.getValue(_account);
-// }
+    assert T.getLeft(tree, root) != 0;
+}
 
-// rule claimCorrectOne3(address _account, uint256 _claimable, bytes32 _proof) {
-//     env e;
-//     address root;
-//     address left;
-//     require root == T.getRoot();
-//     require _account != 0;
-//     require T.getHash(root) == currRoot();
-//     require T.getRight(root) == _account;
-//     require T.getLeft(root) == left;
-//     require T.isWellFormed(root);
-//     require T.isWellFormed(_account);
-//     require T.isWellFormed(left);
-//     require T.getLeft(_account) == 0;
+rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
+    env e; address tree; address root;
+    require root == T.getRoot(tree);
 
-//     claimOne(_account, _claimable, _proof);
+    require T.getHash(tree, root) == currRoot();
+    require T.isWellFormed(tree, _account);
 
-//     assert false;
-// }
+    claim(_account, _claimable, _proof);
 
-// rule embeddedHash(bytes32 claimable, bytes32 left, bytes32 left_alt, bytes32 right_hash, bytes32 currRoot) {
-//     env e;
-//     bytes32 left_hash; bytes32 left_alt_hash;
-//     require left_hash == _keccak(left, claimable);
-//     require left_alt_hash == _keccak(left_alt, claimable);
-//     require _keccak(left_hash, right_hash) == currRoot;
-//     require _keccak(left_alt_hash, right_hash) == currRoot;
+    assert T.getCreated(tree, root);
+    assert T.getCreated(tree, _account);
+    assert _claimable == T.getValue(tree, _account);
+}
 
-//     assert left_alt == left;
-// }
+// rule claimCorrectnessStrong(address _account, uint256 _claimable, bytes32[] _proof) {
+//     env e; address tree1; address root1; address tree2; address root2;
+//     require root1 == T.getRoot(tree1);
+//     require root2 == T.getRoot(tree2);
 
-// rule claimOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
-//     env e;
-//     address root;
-//     require root == T.getRoot();
-//     require T.getCreated(root);
-//     require _account != 0;
-//     require T.getHash(root) == currRoot();
-//     require T.getRight(root) == _account;
-//     requireInvariant wellFormed(root);
+//     require T.getHash(tree1, root1) == currRoot();
+//     require T.getHash(tree2, root2) == prevRoot();
+//     require T.isWellFormed(tree1, _account);
+//     require T.isWellFormed(tree2, _account);
 
-//     assert T.getLeft(root) != 0;
-// }
-
-// rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
-//     env e;
-//     require T.getHash(T.getRoot()) == currRoot();
-//     require T.isWellFormed(_account); // can also assume that other accounts are well-formed
+//     uint256 balanceBefore = MorphoToken.balanceOf(_account);
+//     uint256 claimedBefore = claimed(_account);
 
 //     claim(_account, _claimable, _proof);
 
-//     assert T.getCreated(T.getRoot());
-//     assert T.getCreated(_account);
-//     assert _claimable == T.getValue(_account);
+//     uint256 balanceAfter = MorphoToken.balanceOf(_account);
+
+//     assert balanceAfter - balanceBefore == _claimable - claimedBefore; 
+//     assert (T.getCreated(tree1, _account) && _claimable == T.getValue(tree1, _account)) || 
+//            (T.getCreated(tree2, _account) && _claimable == T.getValue(tree2, _account));
 // }
 
-// // rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
-// //     env e;
-// //     require T.getHash(T.getRoot()) == currRoot();
-// //     require T2.getHash(T2.getRoot()) == prevRoot();
-// //     require T.isWellFormed(_account) && T2.isWellFormed(_account); // can also assume that other accounts are well-formed
+rule claimCompleteness(address _account) {
+    env e; address tree; address root;
+    require root == T.getRoot(tree);
 
-// //     uint256 balanceBefore = MorphoToken.balanceOf(_account);
-// //     uint256 claimedBefore = claimed(_account);
+    require T.getHash(tree, root) == currRoot();
+    require T.getCreated(tree, _account);
+    require T.isWellFormed(tree, _account);
 
-// //     claim(_account, _claimable, _proof);
+    T.findAndClaimAt@withrevert(tree, currentContract, _account);
 
-// //     uint256 balanceAfter = MorphoToken.balanceOf(_account);
-
-// //     assert balanceAfter - balanceBefore == _claimable - claimedBefore; 
-// //     assert (T.getCreated(_account) && _claimable == T.getValue(_account)) || 
-// //            (T2.getCreated(_account) && _claimable == T.getValue(_account));
-// // }
-
-// rule claimCompleteness(address _account) {
-//     env e;
-//     require T.getHash(T.getRoot()) == currRoot();
-//     require T.getCreated(_account);
-//     require T.isWellFormed(_account); // can also assume that other accounts are well-formed
-
-//     T.findAndClaimAt@withrevert(currentContract, _account);
-
-//     assert !lastReverted;
-// }
+    assert !lastReverted;
+}
