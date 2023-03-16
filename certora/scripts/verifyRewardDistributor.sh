@@ -4,8 +4,7 @@ make -C certora munged-rewards
 
 certoraRun \
     certora/munged-rewards/common/rewards-distribution/RewardsDistributor.sol \
-    certora/munged-rewards/common/rewards-distribution/MerkleTree1.sol \
-    certora/munged-rewards/common/rewards-distribution/MerkleTree2.sol \
+    certora/munged-rewards/common/rewards-distribution/MerkleTreeMock.sol \
     certora/munged-rewards/common/rewards-distribution/dependencies/MorphoToken.sol \
     certora/munged-rewards/common/rewards-distribution/dependencies/MerkleProof.sol \
     --packages @rari-capital/solmate=lib/solmate \
