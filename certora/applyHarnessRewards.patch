@@ -1,6 +1,6 @@
 diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distribution/dependencies/Hash.sol
 --- common/rewards-distribution/dependencies/Hash.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/Hash.sol	2023-03-16 11:56:11.699583475 +0100
++++ common/rewards-distribution/dependencies/Hash.sol	2023-03-16 17:21:58.438819344 +0100
 @@ -0,0 +1,9 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -13,7 +13,7 @@ diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distr
 +}
 diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/rewards-distribution/dependencies/MerkleProof.sol
 --- common/rewards-distribution/dependencies/MerkleProof.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-03-16 11:56:11.699583475 +0100
++++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-03-16 17:21:58.438819344 +0100
 @@ -0,0 +1,31 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -48,7 +48,7 @@ diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/reward
 +}
 diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/rewards-distribution/dependencies/MorphoToken.sol
 --- common/rewards-distribution/dependencies/MorphoToken.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MorphoToken.sol	2023-03-16 11:56:11.699583475 +0100
++++ common/rewards-distribution/dependencies/MorphoToken.sol	2023-03-16 17:21:58.438819344 +0100
 @@ -0,0 +1,8 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -60,7 +60,7 @@ diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/reward
 +}
 diff -ruN common/rewards-distribution/dependencies/SafeTransferLib.sol common/rewards-distribution/dependencies/SafeTransferLib.sol
 --- common/rewards-distribution/dependencies/SafeTransferLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/SafeTransferLib.sol	2023-03-16 11:56:11.699583475 +0100
++++ common/rewards-distribution/dependencies/SafeTransferLib.sol	2023-03-16 17:21:58.438819344 +0100
 @@ -0,0 +1,17 @@
 +// SPDX-License-Identifier: AGPL-3.0-only
 +pragma solidity ^0.8.0;
@@ -81,8 +81,8 @@ diff -ruN common/rewards-distribution/dependencies/SafeTransferLib.sol common/re
 +}
 diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribution/MerkleTreeLib.sol
 --- common/rewards-distribution/MerkleTreeLib.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeLib.sol	2023-03-16 12:12:08.377505187 +0100
-@@ -0,0 +1,110 @@
++++ common/rewards-distribution/MerkleTreeLib.sol	2023-03-16 17:34:15.014325976 +0100
+@@ -0,0 +1,99 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
@@ -102,11 +102,7 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +        address root;
 +    }
 +
-+    function newAccount(
-+        Tree storage tree,
-+        address addr,
-+        uint256 value
-+    ) public {
++    function newAccount(Tree storage tree, address addr, uint256 value) public {
 +        Node storage node = tree.nodes[addr];
 +        require(addr != address(0));
 +        require(!node.created);
@@ -117,12 +113,7 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +        node.hashNode = Hash.keccak(bytes32(bytes20(addr)), bytes32(value));
 +    }
 +
-+    function newNode(
-+        Tree storage tree,
-+        address parent,
-+        address left,
-+        address right
-+    ) public {
++    function newNode(Tree storage tree, address parent, address left, address right) public {
 +        Node storage parentNode = tree.nodes[parent];
 +        Node storage leftNode = tree.nodes[left];
 +        Node storage rightNode = tree.nodes[right];
@@ -130,6 +121,9 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +        require(!parentNode.created);
 +        require(leftNode.created && rightNode.created);
 +        require(leftNode.hashNode <= rightNode.hashNode);
++
++        // To ensure that the hash of a node discriminates if it is an internal node or a leaf.
++        require(bytes32(bytes20(parent)) != leftNode.hashNode);
 +
 +        parentNode.created = true;
 +        parentNode.left = left;
@@ -147,21 +141,16 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +
 +        if (!node.created) return true;
 +
-+        if (node.left == address(0) && node.right == address(0))
-+            return
-+                node.value != 0 &&
-+                node.hashNode == Hash.keccak(bytes32(bytes20(addr)), bytes32(node.value));
-+        else {
++        if (node.left == address(0) && node.right == address(0)) {
++            return node.value != 0 && node.hashNode == Hash.keccak(bytes32(bytes20(addr)), bytes32(node.value));
++        } else {
 +            // Well-formed nodes have exactly 0 or 2 children.
 +            if (node.left == address(0) || node.right == address(0)) return false;
 +            Node storage left = tree.nodes[node.left];
 +            Node storage right = tree.nodes[node.right];
-+            return
-+                left.created &&
-+                right.created &&
-+                node.value == 0 &&
-+                left.hashNode <= right.hashNode && // Well-formed tree.nodes should be pair sorted.
-+                node.hashNode == Hash.keccak(left.hashNode, right.hashNode);
++            bool sorted = left.hashNode <= right.hashNode; // Well-formed tree.nodes should be pair sorted.
++            return left.created && right.created && node.value == 0 && sorted
++                && node.hashNode == Hash.keccak(left.hashNode, right.hashNode) && bytes32(bytes20(addr)) != left.hashNode;
 +        }
 +    }
 +
@@ -195,7 +184,7 @@ diff -ruN common/rewards-distribution/MerkleTreeLib.sol common/rewards-distribut
 +}
 diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribution/MerkleTreeMock.sol
 --- common/rewards-distribution/MerkleTreeMock.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/MerkleTreeMock.sol	2023-03-16 13:38:09.529872767 +0100
++++ common/rewards-distribution/MerkleTreeMock.sol	2023-03-16 17:21:58.438819344 +0100
 @@ -0,0 +1,65 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
@@ -264,7 +253,7 @@ diff -ruN common/rewards-distribution/MerkleTreeMock.sol common/rewards-distribu
 +}
 diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-distribution/RewardsDistributor.sol
 --- common/rewards-distribution/RewardsDistributor.sol	2023-03-16 10:48:36.211323219 +0100
-+++ common/rewards-distribution/RewardsDistributor.sol	2023-03-16 11:56:11.699583475 +0100
++++ common/rewards-distribution/RewardsDistributor.sol	2023-03-16 17:21:58.438819344 +0100
 @@ -1,9 +1,10 @@
  // SPDX-License-Identifier: AGPL-3.0-only
  pragma solidity ^0.8.0;
@@ -333,6 +322,6 @@ diff -ruN common/rewards-distribution/RewardsDistributor.sol common/rewards-dist
  }
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2023-03-16 11:56:11.699583475 +0100
++++ .gitignore	2023-03-16 17:21:58.438819344 +0100
 @@ -0,0 +1 @@
 +*

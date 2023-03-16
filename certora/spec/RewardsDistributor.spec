@@ -33,6 +33,7 @@ methods {
 ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
         _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
+    axiom forall bytes32 a. forall bytes32 b. _keccak(a, b) != 0;
 }
 
 definition isEmpty(address tree, address addr) returns bool =
@@ -45,7 +46,7 @@ invariant notCreatedIsEmpty(address tree, address addr)
     ! T.getCreated(tree, addr) => T.isEmpty(tree, addr)
     filtered { f -> false }
 
-invariant zeroNotCreated(address tree, address addr)
+invariant zeroNotCreated(address tree)
     ! T.getCreated(tree, 0)
     filtered { f -> false }
 
@@ -73,13 +74,13 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
     env e; address tree; address root; address left;
     require root == T.getRoot(tree);
 
-    require _account != 0;
     require T.getHash(tree, root) == currRoot();
     require T.getRight(tree, root) == _account;
     require T.getLeft(tree, root) == left;
-    require T.getLeft(tree, _account) == 0;
-    require T.getHash(tree, left) != T.getHash(tree, _account);
+    require _account != 0;
 
+    requireInvariant rootZeroOrCreated(tree);
+    requireInvariant zeroNotCreated(tree);
     requireInvariant notCreatedIsEmpty(tree, root);
     requireInvariant wellFormed(tree, root);
     requireInvariant notCreatedIsEmpty(tree, _account);
@@ -89,20 +90,9 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
 
     claimOne(_account, _claimable, _proof);
 
+    assert T.getLeft(tree, _account) == 0;
     assert _proof == T.getHash(tree, left);
-}
-
-rule claimOneAlt(address _account, uint256 _claimable, bytes32 _proof) {
-    env e; address tree; address root;
-    require root == T.getRoot(tree);
-
-    require _account != 0;
-    require T.getCreated(tree, root);
-    require T.getHash(tree, root) == currRoot();
-    require T.getRight(tree, root) == _account;
-    requireInvariant wellFormed(tree, root);
-
-    assert T.getLeft(tree, root) != 0;
+    assert _claimable == T.getValue(tree, _account);
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {

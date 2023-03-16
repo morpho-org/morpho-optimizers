@@ -24,7 +24,7 @@ definition isEmpty(address tree, address addr) returns bool =
 invariant notCreatedIsEmpty(address tree, address addr)
     ! getCreated(tree, addr) => isEmpty(tree, addr)
 
-invariant zeroNotCreated(address tree, address addr)
+invariant zeroNotCreated(address tree)
     ! getCreated(tree, 0)
 
 invariant rootZeroOrCreated(address tree)
@@ -36,9 +36,8 @@ invariant wellFormed(address tree, address addr)
         require initialized();
         requireInvariant notCreatedIsEmpty(tree, addr);
       }
-      preserved newNode(address _tree, address parent, address left, address right) {
+      preserved newNode(address _, address parent, address left, address right) {
         requireInvariant notCreatedIsEmpty(tree, parent);
-        requireInvariant zeroNotCreated(tree, left);
-        requireInvariant zeroNotCreated(tree, right);
+        requireInvariant zeroNotCreated(tree);
       }
     }
