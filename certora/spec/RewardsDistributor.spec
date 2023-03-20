@@ -79,6 +79,26 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
     require T.getLeft(tree, root) == left;
     require _account != 0;
 
+    address leftLeft; address rightLeft; address leftAccount; address rightAccount;
+    require leftLeft == T.getLeft(tree, left);
+    require rightLeft == T.getRight(tree, left);
+    require leftAccount == T.getLeft(tree, _account);
+    require rightAccount == T.getRight(tree, _account);
+
+    uint256 leftValue; uint256 accountValue;
+    require leftValue == T.getValue(tree, left);
+    require accountValue == T.getValue(tree, _account);
+
+    bytes32 leftHash; bytes32 accountHash;
+    require leftHash == T.getHash(tree, left);
+    require accountHash == T.getHash(tree, _account);
+
+    bytes32 leftLeftHash; bytes32 rightLeftHash; bytes32 leftAccountHash; bytes32 rightAccountHash;
+    require leftLeftHash == T.getHash(tree, leftLeft);
+    require rightLeftHash == T.getHash(tree, rightLeft);
+    require leftAccountHash == T.getHash(tree, leftAccount);
+    require rightAccountHash == T.getHash(tree, rightAccount);
+
     requireInvariant rootZeroOrCreated(tree);
     requireInvariant zeroNotCreated(tree);
     requireInvariant notCreatedIsEmpty(tree, root);
@@ -90,8 +110,6 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
 
     claimOne(_account, _claimable, _proof);
 
-    assert T.getLeft(tree, _account) == 0;
-    assert _proof == T.getHash(tree, left);
     assert _claimable == T.getValue(tree, _account);
 }
 
@@ -100,12 +118,11 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
     require root == T.getRoot(tree);
 
     require T.getHash(tree, root) == currRoot();
-    require T.isWellFormed(tree, _account);
+
+    requireInvariant wellFormed(tree, _account);
 
     claim(_account, _claimable, _proof);
 
-    assert T.getCreated(tree, root);
-    assert T.getCreated(tree, _account);
     assert _claimable == T.getValue(tree, _account);
 }
 

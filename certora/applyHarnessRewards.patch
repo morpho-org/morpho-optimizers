@@ -13,8 +13,8 @@ diff -ruN common/rewards-distribution/dependencies/Hash.sol common/rewards-distr
 +}
 diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/rewards-distribution/dependencies/MerkleProof.sol
 --- common/rewards-distribution/dependencies/MerkleProof.sol	1970-01-01 01:00:00.000000000 +0100
-+++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-03-16 17:21:58.438819344 +0100
-@@ -0,0 +1,31 @@
++++ common/rewards-distribution/dependencies/MerkleProof.sol	2023-03-16 18:23:48.490485743 +0100
+@@ -0,0 +1,27 @@
 +// SPDX-License-Identifier: GNU AGPLv3
 +pragma solidity ^0.8.0;
 +
@@ -38,13 +38,9 @@ diff -ruN common/rewards-distribution/dependencies/MerkleProof.sol common/reward
 +    }
 +
 +    function processOne(bytes32 proof, bytes32 leaf) internal pure returns (bytes32 computedHash) {
-+        computedHash = Hash.keccak(proof, leaf);
++        if (leaf <= proof) computedHash = Hash.keccak(leaf, proof);
++        else computedHash = Hash.keccak(proof, leaf);
 +    }
-+
-+    // function processOne(bytes32 proof, bytes32 leaf) internal pure returns (bytes32 computedHash) {
-+    //     if (leaf <= proof) computedHash = Hash.keccak(leaf, proof);
-+    //     else computedHash = Hash.keccak(proof, leaf);
-+    // }
 +}
 diff -ruN common/rewards-distribution/dependencies/MorphoToken.sol common/rewards-distribution/dependencies/MorphoToken.sol
 --- common/rewards-distribution/dependencies/MorphoToken.sol	1970-01-01 01:00:00.000000000 +0100
