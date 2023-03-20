@@ -7,12 +7,12 @@ import "../interfaces/aave/IAToken.sol";
 import "../interfaces/IMorpho.sol";
 import "./interfaces/ILens.sol";
 
+import "../libraries/aave/DataTypes.sol";
+import "../libraries/InterestRatesModel.sol";
 import "../libraries/aave/ReserveConfiguration.sol";
 import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
-import "../libraries/aave/DataTypes.sol";
-import "../libraries/InterestRatesModel.sol";
 
 /// @title LensStorage.
 /// @author Morpho Labs.
@@ -29,7 +29,7 @@ abstract contract LensStorage is ILens {
     /// IMMUTABLES ///
 
     // stETH is a rebasing token, so the rebase index's value when the astEth market was created is stored
-    // and used for internal calculations to convert `stEth.balanceOf` into an amount in scaled units.
+    // and used for internal calculations to convert `stEth.balanceOf` into an amount in pool supply unit.
     uint256 public immutable ST_ETH_BASE_REBASE_INDEX;
 
     IMorpho public immutable morpho;

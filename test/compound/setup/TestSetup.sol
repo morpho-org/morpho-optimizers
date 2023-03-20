@@ -4,10 +4,9 @@ pragma solidity ^0.8.0;
 import "src/compound/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "src/compound/libraries/CompoundMath.sol";
+import "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
-import {IncentivesVault} from "src/compound/IncentivesVault.sol";
 import {PositionsManager} from "src/compound/PositionsManager.sol";
 import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 import "../../common/helpers/MorphoToken.sol";
@@ -96,15 +95,6 @@ contract TestSetup is Config, Utils {
 
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            comptroller,
-            IMorpho(address(morpho)),
-            morphoToken,
-            address(treasuryVault),
-            dumbOracle
-        );
-        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
-        morpho.setIncentivesVault(incentivesVault);
 
         rewardsManagerImplV1 = new RewardsManager();
         rewardsManagerProxy = new TransparentUpgradeableProxy(
@@ -117,7 +107,8 @@ contract TestSetup is Config, Utils {
 
         morpho.setRewardsManager(rewardsManager);
 
-        lensImplV1 = new Lens(address(morpho));
+        lensExtension = new LensExtension(address(morpho));
+        lensImplV1 = new Lens(address(lensExtension));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
         lens = Lens(address(lensProxy));
     }
@@ -182,7 +173,6 @@ contract TestSetup is Config, Utils {
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
         hevm.label(address(dumbOracle), "DumbOracle");
-        hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(lens), "Lens");
     }

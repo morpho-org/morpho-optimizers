@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestSupply is TestSetup {
     using stdStorage for StdStorage;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
     // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.

@@ -30,10 +30,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted when the address of the `incentivesVault` is set.
-    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
-    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
-
     /// @notice Emitted when the `entryPositionsManager` is set.
     /// @param _entryPositionsManager The new address of the `entryPositionsManager`.
     event EntryPositionsManagerSet(address indexed _entryPositionsManager);
@@ -42,17 +38,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _exitPositionsManager The new address of the `exitPositionsManager`.
     event ExitPositionsManagerSet(address indexed _exitPositionsManager);
 
-    /// @notice Emitted when the `rewardsManager` is set.
-    /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
-    event RewardsManagerSet(address indexed _newRewardsManagerAddress);
-
     /// @notice Emitted when the `interestRatesManager` is set.
     /// @param _interestRatesManager The new address of the `interestRatesManager`.
     event InterestRatesSet(address indexed _interestRatesManager);
-
-    /// @notice Emitted when the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
 
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _poolToken The address of the concerned market.
@@ -109,14 +97,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _isDeprecated The new deprecated status.
     event IsDeprecatedSet(address indexed _poolToken, bool _isDeprecated);
 
-    /// @notice Emitted when claiming rewards is paused or unpaused.
-    /// @param _isPaused The new pause status.
-    event ClaimRewardsPauseStatusSet(bool _isPaused);
-
     /// @notice Emitted when a new market is created.
     /// @param _poolToken The address of the market that has been created.
     /// @param _reserveFactor The reserve factor set for this market.
-    /// @param _poolToken The P2P index cursor set for this market.
+    /// @param _p2pIndexCursor The P2P index cursor set for this market.
     event MarketCreated(address indexed _poolToken, uint16 _reserveFactor, uint16 _p2pIndexCursor);
 
     /// ERRORS ///
@@ -138,6 +122,12 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
+
+    /// @notice Thrown when market borrow is not paused.
+    error BorrowNotPaused();
+
+    /// @notice Thrown when market is deprecated.
+    error MarketIsDeprecated();
 
     /// UPGRADE ///
 
@@ -224,32 +214,11 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit InterestRatesSet(address(_interestRatesManager));
     }
 
-    /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManager The new `rewardsManager`.
-    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
-        rewardsManager = _rewardsManager;
-        emit RewardsManagerSet(address(_rewardsManager));
-    }
-
     /// @notice Sets the `treasuryVault`.
     /// @param _treasuryVault The address of the new `treasuryVault`.
     function setTreasuryVault(address _treasuryVault) external onlyOwner {
         treasuryVault = _treasuryVault;
         emit TreasuryVaultSet(_treasuryVault);
-    }
-
-    /// @notice Sets the `aaveIncentivesController`.
-    /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
-        aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
-        emit AaveIncentivesControllerSet(_aaveIncentivesController);
-    }
-
-    /// @notice Sets the `incentivesVault`.
-    /// @param _incentivesVault The new `incentivesVault`.
-    function setIncentivesVault(IIncentivesVault _incentivesVault) external onlyOwner {
-        incentivesVault = _incentivesVault;
-        emit IncentivesVaultSet(address(_incentivesVault));
     }
 
     /// @notice Sets the `reserveFactor`.
@@ -302,6 +271,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
+        if (!_isPaused && marketPauseStatus[_poolToken].isDeprecated) revert MarketIsDeprecated();
         marketPauseStatus[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -382,13 +352,6 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit P2PStatusSet(_poolToken, _isP2PDisabled);
     }
 
-    /// @notice Sets `isClaimRewardsPaused`.
-    /// @param _isPaused The new pause status, true to pause the mechanism.
-    function setIsClaimRewardsPaused(bool _isPaused) external onlyOwner {
-        isClaimRewardsPaused = _isPaused;
-        emit ClaimRewardsPauseStatusSet(_isPaused);
-    }
-
     /// @notice Sets a market as deprecated (allows liquidation of every position on this market).
     /// @param _poolToken The address of the market to update.
     /// @param _isDeprecated The new deprecated status, true to deprecate the market.
@@ -397,19 +360,9 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
+        if (!marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowNotPaused();
         marketPauseStatus[_poolToken].isDeprecated = _isDeprecated;
         emit IsDeprecatedSet(_poolToken, _isDeprecated);
-    }
-
-    /// @notice Sets a market's asset as collateral.
-    /// @param _poolToken The address of the market to (un)set as collateral.
-    /// @param _assetAsCollateral True to set the asset as collateral (True by default).
-    function setAssetAsCollateral(address _poolToken, bool _assetAsCollateral)
-        external
-        onlyOwner
-        isMarketCreated(_poolToken)
-    {
-        pool.setUserUseReserveAsCollateral(market[_poolToken].underlyingToken, _assetAsCollateral);
     }
 
     /// @notice Increases peer-to-peer deltas, to put some liquidity back on the pool.
@@ -514,17 +467,24 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MarketPauseStatus storage pause = marketPauseStatus[_poolToken];
 
         pause.isSupplyPaused = _isPaused;
-        pause.isBorrowPaused = _isPaused;
-        pause.isWithdrawPaused = _isPaused;
-        pause.isRepayPaused = _isPaused;
-        pause.isLiquidateCollateralPaused = _isPaused;
-        pause.isLiquidateBorrowPaused = _isPaused;
-
         emit IsSupplyPausedSet(_poolToken, _isPaused);
-        emit IsBorrowPausedSet(_poolToken, _isPaused);
+
+        // Note that pause.isDeprecated implies pause.isBorrowPaused.
+        if (!pause.isDeprecated) {
+            pause.isBorrowPaused = _isPaused;
+            emit IsBorrowPausedSet(_poolToken, _isPaused);
+        }
+
+        pause.isWithdrawPaused = _isPaused;
         emit IsWithdrawPausedSet(_poolToken, _isPaused);
+
+        pause.isRepayPaused = _isPaused;
         emit IsRepayPausedSet(_poolToken, _isPaused);
+
+        pause.isLiquidateCollateralPaused = _isPaused;
         emit IsLiquidateCollateralPausedSet(_poolToken, _isPaused);
+
+        pause.isLiquidateBorrowPaused = _isPaused;
         emit IsLiquidateBorrowPausedSet(_poolToken, _isPaused);
     }
 }

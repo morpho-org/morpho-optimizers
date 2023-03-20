@@ -3,14 +3,11 @@ pragma solidity >=0.8.0;
 
 import {ILendingPool} from "src/aave-v2/interfaces/aave/ILendingPool.sol";
 import {IPriceOracleGetter} from "src/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
-import {IAaveIncentivesController} from "src/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import {ILendingPoolAddressesProvider} from "src/aave-v2/interfaces/aave/ILendingPoolAddressesProvider.sol";
-import {IRewardsManager} from "src/aave-v2/interfaces/IRewardsManager.sol";
-import {IIncentivesVault} from "src/aave-v2/interfaces/IIncentivesVault.sol";
 import {IEntryPositionsManager} from "src/aave-v2/interfaces/IEntryPositionsManager.sol";
 import {IExitPositionsManager} from "src/aave-v2/interfaces/IExitPositionsManager.sol";
 import {IInterestRatesManager} from "src/aave-v2/interfaces/IInterestRatesManager.sol";
-import {ILendingPoolConfigurator} from "../../../test/aave-v2/helpers/ILendingPoolConfigurator.sol";
+import {ILendingPoolConfigurator} from "test/aave-v2/helpers/ILendingPoolConfigurator.sol";
 import {IMorpho} from "src/aave-v2/interfaces/IMorpho.sol";
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -44,12 +41,8 @@ contract Config is BaseConfig {
         ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
     ILendingPoolConfigurator public lendingPoolConfigurator =
         ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
-    IAaveIncentivesController public aaveIncentivesController =
-        IAaveIncentivesController(0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5);
     IPriceOracleGetter public oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
     ILendingPool public pool = ILendingPool(poolAddressesProvider.getLendingPool());
-
-    address public REWARD_TOKEN = aaveIncentivesController.REWARD_TOKEN();
 
     ProxyAdmin public proxyAdmin = ProxyAdmin(0x99917ca0426fbC677e84f873Fb0b726Bb4799cD8);
 
@@ -57,16 +50,12 @@ contract Config is BaseConfig {
         TransparentUpgradeableProxy(payable(0x507fA343d0A90786d86C7cd885f5C49263A91FF4));
     TransparentUpgradeableProxy public morphoProxy =
         TransparentUpgradeableProxy(payable(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0));
-    TransparentUpgradeableProxy public rewardsManagerProxy;
 
     Lens public lensImplV1;
     Morpho public morphoImplV1;
-    IRewardsManager public rewardsManagerImplV1;
 
     Lens public lens;
     Morpho public morpho;
-    IRewardsManager public rewardsManager;
-    IIncentivesVault public incentivesVault;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
     IInterestRatesManager public interestRatesManager;

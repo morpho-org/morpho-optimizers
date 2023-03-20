@@ -81,7 +81,7 @@ abstract contract IndexesLens is LensStorage {
             market.reserveFactor
         );
 
-        indexes.p2pSupplyIndex = InterestRatesModel.computeP2PSupplyIndex(
+        indexes.p2pSupplyIndex = InterestRatesModel.computeP2PIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolSupplyGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pSupplyGrowthFactor,
@@ -91,7 +91,7 @@ abstract contract IndexesLens is LensStorage {
                 p2pAmount: delta.p2pSupplyAmount
             })
         );
-        indexes.p2pBorrowIndex = InterestRatesModel.computeP2PBorrowIndex(
+        indexes.p2pBorrowIndex = InterestRatesModel.computeP2PIndex(
             InterestRatesModel.P2PIndexComputeParams({
                 poolGrowthFactor: growthFactors.poolBorrowGrowthFactor,
                 p2pGrowthFactor: growthFactors.p2pBorrowGrowthFactor,

@@ -40,7 +40,6 @@ interface ILens {
 
     /// MARKETS ///
 
-    /// @dev Deprecated.
     function isMarketCreated(address _poolToken) external view returns (bool);
 
     /// @dev Deprecated.
@@ -283,6 +282,16 @@ interface ILens {
         address _poolToken,
         uint256 _balance
     ) external view returns (uint256);
+
+    function getAccruedSupplierComp(address _supplier, address _poolToken)
+        external
+        view
+        returns (uint256);
+
+    function getAccruedBorrowerComp(address _borrower, address _poolToken)
+        external
+        view
+        returns (uint256);
 
     function getCurrentCompSupplyIndex(address _poolToken) external view returns (uint256);
 

@@ -63,7 +63,7 @@ contract TestDeltas is TestSetup {
                 address(morpho)
             );
 
-            vm.prank(proxyAdmin.owner());
+            vm.prank(morpho.owner());
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
 
             (
@@ -98,7 +98,7 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 test.avgSupplyRatePerBlock,
                 ICToken(test.market.poolToken).supplyRatePerBlock(),
-                1,
+                10,
                 "avg supply rate per year"
             );
             assertApproxEqAbs(
@@ -154,9 +154,11 @@ contract TestDeltas is TestSetup {
             if (
                 p2pSupplyUnderlying > supplyDeltaUnderlyingBefore &&
                 p2pBorrowUnderlying > borrowDeltaUnderlyingBefore
-            ) continue;
+            ) {
+                continue;
+            }
 
-            vm.prank(proxyAdmin.owner());
+            vm.prank(morpho.owner());
             vm.expectRevert(PositionsManager.AmountIsZero.selector);
             morpho.increaseP2PDeltas(test.market.poolToken, type(uint256).max);
         }

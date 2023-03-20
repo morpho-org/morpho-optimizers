@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {CompoundMath} from "src/compound/libraries/CompoundMath.sol";
+import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
 import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
 import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
@@ -61,7 +61,6 @@ contract TestSetup is Config, Test {
         lens = Lens(address(lensProxy));
         morpho = Morpho(payable(morphoProxy));
         rewardsManager = RewardsManager(address(morpho.rewardsManager()));
-        incentivesVault = morpho.incentivesVault();
         positionsManager = morpho.positionsManager();
         interestRatesManager = morpho.interestRatesManager();
 
@@ -100,7 +99,6 @@ contract TestSetup is Config, Test {
         vm.label(address(rewardsManager), "RewardsManager");
         vm.label(address(comptroller), "Comptroller");
         vm.label(address(oracle), "Oracle");
-        vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 
         vm.label(address(aave), "AAVE");
@@ -126,7 +124,7 @@ contract TestSetup is Config, Test {
         vm.label(address(cUsdc), "cUSDC");
         vm.label(address(cUsdt), "cUSDT");
         vm.label(address(cWbtc2), "cWBTC");
-        vm.label(address(cEth), "cWETH");
+        vm.label(address(cEth), "cETH");
         vm.label(address(cComp), "cCOMP");
         vm.label(address(cBat), "cBAT");
         vm.label(address(cTusd), "cTUSD");
@@ -263,7 +261,9 @@ contract TestSetup is Config, Test {
         proxyAdmin.upgrade(morphoProxy, morphoImplV2);
         vm.label(morphoImplV2, "MorphoImplV2");
 
-        address lensImplV2 = address(new Lens(address(morpho)));
+        lensExtension = new LensExtension(address(morpho));
+
+        address lensImplV2 = address(new Lens(address(lensExtension)));
         proxyAdmin.upgrade(lensProxy, lensImplV2);
         vm.label(lensImplV2, "LensImplV2");
 

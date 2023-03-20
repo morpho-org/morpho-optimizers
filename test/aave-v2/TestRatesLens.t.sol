@@ -8,6 +8,8 @@ contract TestRatesLens is TestSetup {
     using SafeTransferLib for ERC20;
 
     function testGetRatesPerYear() public {
+        supplier1.aaveSupply(dai, 1 ether); // Update pool rates.
+
         hevm.roll(block.number + 1_000);
         (
             uint256 p2pSupplyRate,
@@ -174,7 +176,7 @@ contract TestRatesLens is TestSetup {
             uint256 totalBalance
         ) = lens.getNextUserSupplyRatePerYear(aDai, address(supplier1), 0);
 
-        assertEq(supplyRatePerYear, 0, "non zero supply rate per block");
+        assertEq(supplyRatePerYear, 0, "non zero supply rate per year");
         assertEq(balanceOnPool, 0, "non zero pool balance");
         assertEq(balanceInP2P, 0, "non zero p2p balance");
         assertEq(totalBalance, 0, "non zero total balance");
@@ -188,7 +190,7 @@ contract TestRatesLens is TestSetup {
             uint256 totalBalance
         ) = lens.getNextUserBorrowRatePerYear(aDai, address(borrower1), 0);
 
-        assertEq(borrowRatePerYear, 0, "non zero borrow rate per block");
+        assertEq(borrowRatePerYear, 0, "non zero borrow rate per year");
         assertEq(balanceOnPool, 0, "non zero pool balance");
         assertEq(balanceInP2P, 0, "non zero p2p balance");
         assertEq(totalBalance, 0, "non zero total balance");
@@ -219,8 +221,8 @@ contract TestRatesLens is TestSetup {
             uint256 expectedTotalBalance
         ) = lens.getCurrentSupplyBalanceInOf(aDai, address(supplier1));
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
-        assertEq(supplyRatePerYear, expectedSupplyRatePerYear, "unexpected supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
+        assertEq(supplyRatePerYear, expectedSupplyRatePerYear, "unexpected supply rate per year");
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
         assertEq(totalBalance, expectedTotalBalance, "unexpected total balance");
@@ -252,8 +254,8 @@ contract TestRatesLens is TestSetup {
             uint256 expectedTotalBalance
         ) = lens.getCurrentBorrowBalanceInOf(aDai, address(borrower1));
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
-        assertEq(borrowRatePerYear, expectedBorrowRatePerYear, "unexpected borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
+        assertEq(borrowRatePerYear, expectedBorrowRatePerYear, "unexpected borrow rate per year");
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
         assertEq(totalBalance, expectedTotalBalance, "unexpected total balance");
@@ -273,12 +275,12 @@ contract TestRatesLens is TestSetup {
         uint256 expectedSupplyRatePerYear = reserve.currentLiquidityRate;
         uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
         assertApproxEqAbs(
             supplyRatePerYear,
             expectedSupplyRatePerYear,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertEq(
             balanceOnPool,
@@ -306,12 +308,12 @@ contract TestRatesLens is TestSetup {
         DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
         uint256 expectedBorrowRatePerYear = reserve.currentVariableBorrowRate;
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
         assertApproxEqAbs(
             borrowRatePerYear,
             expectedBorrowRatePerYear,
-            1,
-            "unexpected borrow rate per block"
+            1e22,
+            "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, amount, 1, "unexpected pool balance");
         assertEq(balanceInP2P, 0, "unexpected p2p balance");
@@ -341,12 +343,12 @@ contract TestRatesLens is TestSetup {
 
         uint256 expectedBalanceInP2P = amount.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
         assertApproxEqAbs(
             supplyRatePerYear,
             p2pSupplyRatePerYear,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
@@ -375,12 +377,12 @@ contract TestRatesLens is TestSetup {
 
         uint256 expectedBalanceInP2P = amount.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
         assertApproxEqAbs(
             borrowRatePerYear,
             p2pBorrowRatePerYear,
-            1,
-            "unexpected borrow rate per block"
+            1e22,
+            "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
@@ -413,12 +415,12 @@ contract TestRatesLens is TestSetup {
         );
         uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
         assertApproxEqAbs(
             supplyRatePerYear,
             (p2pSupplyRatePerYear + poolSupplyRatePerYear) / 2,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertEq(balanceOnPool, expectedBalanceOnPool, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
@@ -454,12 +456,12 @@ contract TestRatesLens is TestSetup {
         );
         uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
         assertApproxEqAbs(
             borrowRatePerYear,
             (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
-            1,
-            "unexpected borrow rate per block"
+            1e22,
+            "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
@@ -496,8 +498,8 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             supplyRatePerYear,
             expectedPoolSupplyRate,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertEq(
             balanceOnPool,
@@ -535,8 +537,8 @@ contract TestRatesLens is TestSetup {
         assertApproxEqAbs(
             borrowRatePerYear,
             expectedBorrowRatePerYear,
-            1,
-            "unexpected borrow rate per block"
+            1e22,
+            "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, amount, 1, "unexpected pool balance");
         assertEq(balanceInP2P, 0, "unexpected p2p balance");
@@ -565,12 +567,12 @@ contract TestRatesLens is TestSetup {
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 expectedBalanceInP2P = amount.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
         assertApproxEqAbs(
             supplyRatePerYear,
             p2pSupplyRatePerYear,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
@@ -599,12 +601,12 @@ contract TestRatesLens is TestSetup {
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 expectedBalanceInP2P = amount.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
         assertApproxEqAbs(
             borrowRatePerYear,
             p2pBorrowRatePerYear,
-            1,
-            "unexpected borrow rate per block"
+            1e21,
+            "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, 0, 1, "unexpected pool balance");
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
@@ -639,12 +641,12 @@ contract TestRatesLens is TestSetup {
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 expectedBalanceInP2P = amount.rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
         assertApproxEqAbs(
             supplyRatePerYear,
             p2pSupplyRatePerYear,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
@@ -680,12 +682,12 @@ contract TestRatesLens is TestSetup {
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 expectedBalanceInP2P = amount.rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
         assertApproxEqAbs(
             borrowRatePerYear,
             p2pBorrowRatePerYear,
-            1,
-            "unexpected borrow rate per block"
+            1e22,
+            "unexpected borrow rate per year"
         );
         assertEq(balanceOnPool, 0, "unexpected pool balance");
         assertEq(balanceInP2P, expectedBalanceInP2P, "unexpected p2p balance");
@@ -727,12 +729,12 @@ contract TestRatesLens is TestSetup {
         );
         uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pSupplyIndex).rayMul(p2pSupplyIndex);
 
-        assertGt(supplyRatePerYear, 0, "zero supply rate per block");
+        assertGt(supplyRatePerYear, 0, "zero supply rate per year");
         assertApproxEqAbs(
             supplyRatePerYear,
             (p2pSupplyRatePerYear + poolSupplyRatePerYear) / 2,
-            1,
-            "unexpected supply rate per block"
+            1e22,
+            "unexpected supply rate per year"
         );
         assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
@@ -779,12 +781,12 @@ contract TestRatesLens is TestSetup {
         );
         uint256 expectedBalanceInP2P = (amount / 2).rayDiv(p2pBorrowIndex).rayMul(p2pBorrowIndex);
 
-        assertGt(borrowRatePerYear, 0, "zero borrow rate per block");
+        assertGt(borrowRatePerYear, 0, "zero borrow rate per year");
         assertApproxEqAbs(
             borrowRatePerYear,
             (p2pBorrowRatePerYear + poolBorrowRatePerYear) / 2,
-            1,
-            "unexpected borrow rate per block"
+            1e22,
+            "unexpected borrow rate per year"
         );
         assertApproxEqAbs(balanceOnPool, expectedBalanceOnPool, 1, "unexpected pool balance");
         assertApproxEqAbs(balanceInP2P, expectedBalanceInP2P, 1, "unexpected p2p balance");
@@ -1044,30 +1046,53 @@ contract TestRatesLens is TestSetup {
     function testRatesWithInvertedSpreadAndHalfSupplyDelta() public {
         // Full p2p on the DAI market, with a 50% supply delta.
         uint256 supplyAmount = 1 ether;
-        uint256 repayAmount = 0.5 ether;
+        uint256 repayAmount = supplyAmount / 2;
+
         supplier1.approve(dai, supplyAmount);
         supplier1.supply(aDai, supplyAmount);
+
         borrower1.approve(aave, supplyAmount);
         borrower1.supply(aAave, supplyAmount);
         borrower1.borrow(aDai, supplyAmount);
+
         setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
         borrower1.approve(dai, repayAmount);
         borrower1.repay(aDai, repayAmount);
-        (uint256 p2pSupplyDelta, , , ) = morpho.deltas(aDai);
-        assertEq(p2pSupplyDelta, repayAmount.rayDiv(pool.getReserveNormalizedIncome(dai)));
 
-        // Invert spreads on DAI.
-        (uint256 poolSupplyRate, uint256 poolBorrowRate) = _invertPoolSpreadWithStorageManipulation(
-            dai
+        DataTypes.ReserveData memory reserve = pool.getReserveData(dai);
+        reserve.currentLiquidityRate = 0.03e27;
+        reserve.currentVariableBorrowRate = 0.02e27;
+        reserve.currentStableBorrowRate = 0.04e27;
+        vm.mockCall(
+            reserve.interestRateStrategyAddress,
+            abi.encodeWithSelector(IReserveInterestRateStrategy.calculateInterestRates.selector),
+            abi.encode(
+                reserve.currentLiquidityRate,
+                reserve.currentStableBorrowRate,
+                reserve.currentVariableBorrowRate
+            )
+        );
+        vm.mockCall(
+            address(pool),
+            abi.encodeWithSelector(ILendingPool.getReserveData.selector),
+            abi.encode(reserve)
         );
 
         (uint256 avgSupplyRate, , ) = lens.getAverageSupplyRatePerYear(aDai);
         (uint256 avgBorrowRate, , ) = lens.getAverageBorrowRatePerYear(aDai);
         (uint256 p2pSupplyRate, uint256 p2pBorrowRate, , ) = lens.getRatesPerYear(aDai);
 
-        assertApproxEqAbs(avgSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
-        assertEq(avgBorrowRate, poolBorrowRate);
-        assertApproxEqAbs(p2pSupplyRate, (poolBorrowRate + poolSupplyRate) / 2, 1e7);
-        assertEq(p2pBorrowRate, poolBorrowRate);
+        assertEq(
+            avgSupplyRate,
+            (reserve.currentVariableBorrowRate + reserve.currentLiquidityRate) / 2,
+            "avg supply rate"
+        );
+        assertEq(avgBorrowRate, reserve.currentVariableBorrowRate, "avg borrow rate");
+        assertEq(
+            p2pSupplyRate,
+            (reserve.currentVariableBorrowRate + reserve.currentLiquidityRate) / 2,
+            "p2p supply rate"
+        );
+        assertEq(p2pBorrowRate, reserve.currentVariableBorrowRate, "p2p borrow rate");
     }
 }

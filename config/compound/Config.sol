@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0;
 
 import "src/compound/interfaces/compound/ICompound.sol";
-import {IIncentivesVault} from "src/compound/interfaces/IIncentivesVault.sol";
 import {IPositionsManager} from "src/compound/interfaces/IPositionsManager.sol";
 import {IInterestRatesManager} from "src/compound/interfaces/IInterestRatesManager.sol";
 import {IMorpho} from "src/compound/interfaces/IMorpho.sol";
@@ -11,6 +10,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {RewardsManager} from "src/compound/RewardsManager.sol";
+import {LensExtension} from "src/compound/lens/LensExtension.sol";
 import {Lens} from "src/compound/lens/Lens.sol";
 import {Morpho} from "src/compound/Morpho.sol";
 import {BaseConfig} from "../BaseConfig.sol";
@@ -50,9 +50,10 @@ contract Config is BaseConfig {
     RewardsManager public rewardsManagerImplV1;
 
     Lens public lens;
+    LensExtension public lensExtension;
+
     Morpho public morpho;
     RewardsManager public rewardsManager;
-    IIncentivesVault public incentivesVault;
     IPositionsManager public positionsManager;
     IInterestRatesManager public interestRatesManager;
 }

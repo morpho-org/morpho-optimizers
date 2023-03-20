@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "src/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "src/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "src/aave-v2/interfaces/aave/IAToken.sol";
 import "src/aave-v2/interfaces/lido/ILido.sol";
@@ -13,7 +12,6 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
-import {IncentivesVault} from "src/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "src/aave-v2/MatchingEngine.sol";
 import {PositionsManagerUtils} from "src/aave-v2/PositionsManagerUtils.sol";
 import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
@@ -73,7 +71,6 @@ contract TestSetup is Config, Test {
     function initContracts() internal {
         lens = Lens(address(lensProxy));
         morpho = Morpho(payable(morphoProxy));
-        incentivesVault = morpho.incentivesVault();
         entryPositionsManager = morpho.entryPositionsManager();
         exitPositionsManager = morpho.exitPositionsManager();
         interestRatesManager = morpho.interestRatesManager();
@@ -112,14 +109,12 @@ contract TestSetup is Config, Test {
 
     function setContractsLabels() internal {
         vm.label(address(poolAddressesProvider), "PoolAddressesProvider");
-        vm.label(address(aaveIncentivesController), "IncentivesController");
         vm.label(address(pool), "LendingPool");
         vm.label(address(proxyAdmin), "ProxyAdmin");
         vm.label(address(morphoImplV1), "MorphoImplV1");
         vm.label(address(morpho), "Morpho");
         vm.label(address(interestRatesManager), "InterestRatesManager");
         vm.label(address(oracle), "Oracle");
-        vm.label(address(incentivesVault), "IncentivesVault");
         vm.label(address(lens), "Lens");
 
         vm.label(address(aave), "AAVE");

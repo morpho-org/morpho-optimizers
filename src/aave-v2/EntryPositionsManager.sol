@@ -72,13 +72,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toRepay;
     }
 
-    // Struct to avoid stack too deep.
-    struct BorrowAllowedVars {
-        uint256 i;
-        bytes32 userMarkets;
-        uint256 numberOfMarketsCreated;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
@@ -97,13 +90,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         Types.Market memory market = market[_poolToken];
+        ERC20 underlyingToken = ERC20(market.underlyingToken);
+
         if (!market.isCreated) revert MarketNotCreated();
         if (marketPauseStatus[_poolToken].isSupplyPaused) revert SupplyIsPaused();
 
         _updateIndexes(_poolToken);
         _setSupplying(_onBehalf, borrowMask[_poolToken], true);
 
-        ERC20 underlyingToken = ERC20(market.underlyingToken);
         underlyingToken.safeTransferFrom(_from, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolToken];
@@ -290,6 +284,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _borrowedAmount
     ) internal returns (bool) {
         Types.LiquidityData memory values = _liquidityData(_user, _poolToken, 0, _borrowedAmount);
-        return values.debt <= values.maxDebt;
+        return values.debtEth <= values.borrowableEth;
     }
 }

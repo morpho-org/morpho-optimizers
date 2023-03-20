@@ -381,6 +381,10 @@ contract TestLifecycle is TestSetup {
             supplyMarketIndex < collateralMarkets.length;
             ++supplyMarketIndex
         ) {
+            TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
+
+            if (supplyMarket.status.isSupplyPaused) continue;
+
             for (
                 uint256 borrowMarketIndex;
                 borrowMarketIndex < borrowableMarkets.length;
@@ -388,19 +392,13 @@ contract TestLifecycle is TestSetup {
             ) {
                 _revert();
 
-                TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
-                if (supplyMarket.status.isSupplyPaused) continue;
-
-                uint256 borrowAmount = _boundBorrowAmount(
-                    borrowMarket,
-                    _amount,
-                    oracle.getUnderlyingPrice(borrowMarket.poolToken)
-                );
+                uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
+                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
-                    oracle.getUnderlyingPrice(borrowMarket.poolToken),
+                    borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
                 ).mul(1.001 ether);
@@ -432,6 +430,10 @@ contract TestLifecycle is TestSetup {
             supplyMarketIndex < collateralMarkets.length;
             ++supplyMarketIndex
         ) {
+            TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
+
+            if (supplyMarket.status.isSupplyPaused) continue;
+
             for (
                 uint256 borrowMarketIndex;
                 borrowMarketIndex < borrowableMarkets.length;
@@ -439,11 +441,9 @@ contract TestLifecycle is TestSetup {
             ) {
                 _revert();
 
-                TestMarket memory supplyMarket = collateralMarkets[supplyMarketIndex];
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
-                if (supplyMarket.status.isSupplyPaused || borrowMarket.status.isBorrowPaused)
-                    continue;
+                if (borrowMarket.status.isBorrowPaused) continue;
 
                 uint256 borrowAmount = _boundBorrowAmount(
                     borrowMarket,

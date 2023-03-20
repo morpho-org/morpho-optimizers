@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "src/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import "src/aave-v2/interfaces/aave/IReserveInterestRateStrategy.sol";
 import "src/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "src/aave-v2/interfaces/aave/IAToken.sol";
 import "src/aave-v2/interfaces/IMorpho.sol";
@@ -14,7 +14,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/aave-v2/libraries/Types.sol";
 
 import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
-import {IncentivesVault} from "src/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "src/aave-v2/MatchingEngine.sol";
 import {EntryPositionsManager} from "src/aave-v2/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "src/aave-v2/ExitPositionsManager.sol";
@@ -93,7 +92,6 @@ contract TestSetup is Config, Utils {
 
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
-        morpho.setAaveIncentivesController(address(aaveIncentivesController));
 
         /// Create markets ///
 
@@ -105,19 +103,10 @@ contract TestSetup is Config, Utils {
 
         hevm.warp(block.timestamp + 100);
 
-        /// Create Morpho token, deploy Incentives Vault and activate rewards ///
+        /// Create Morpho token ///
 
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            IMorpho(address(morpho)),
-            morphoToken,
-            ERC20(REWARD_TOKEN),
-            address(treasuryVault),
-            dumbOracle
-        );
-        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
-        morpho.setIncentivesVault(incentivesVault);
 
         lensImplV1 = new Lens(address(morpho));
         lensProxy = new TransparentUpgradeableProxy(address(lensImplV1), address(proxyAdmin), "");
@@ -174,13 +163,11 @@ contract TestSetup is Config, Utils {
     function setContractsLabels() internal {
         hevm.label(address(morpho), "Morpho");
         hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(address(aaveIncentivesController), "AaveIncentivesController");
         hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
         hevm.label(address(pool), "Pool");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(interestRatesManager), "InterestRatesManager");
-        hevm.label(address(incentivesVault), "IncentivesVault");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {

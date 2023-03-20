@@ -102,6 +102,28 @@ contract TestPausableMarket is TestSetup {
         }
     }
 
+    function testBorrowPauseCheckSkipped() public {
+        // Deprecate a market.
+        morpho.setIsBorrowPaused(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
+        (, bool isBorrowPaused, , , , , bool isDeprecated) = morpho.marketPauseStatus(aDai);
+
+        assertTrue(isBorrowPaused);
+        assertTrue(isDeprecated);
+
+        morpho.setIsPausedForAllMarkets(false);
+        (, isBorrowPaused, , , , , isDeprecated) = morpho.marketPauseStatus(aDai);
+
+        assertTrue(isBorrowPaused);
+        assertTrue(isDeprecated);
+
+        morpho.setIsPausedForAllMarkets(true);
+        (, isBorrowPaused, , , , , isDeprecated) = morpho.marketPauseStatus(aDai);
+
+        assertTrue(isBorrowPaused);
+        assertTrue(isDeprecated);
+    }
+
     function testPauseSupply() public {
         uint256 amount = 10_000 ether;
         morpho.setIsSupplyPaused(aDai, true);

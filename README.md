@@ -41,8 +41,9 @@ It also interacts with `RewardsManager`, which manages the underlying pool's rew
 ## Documentation
 
 - [White Paper](https://whitepaper.morpho.xyz)
+- [Yellow Paper](https://yellowpaper.morpho.xyz/)
 - [Morpho Documentation](https://docs.morpho.xyz)
-- Yellow Paper (coming soon)
+- [Morpho Developers Documentation](https://developers.morpho.xyz)
 
 ---
 
@@ -64,24 +65,25 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 ### Morpho-Compound Ethereum
 
 - Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
-- Morpho Implementation: [0xbbb011b923f382543a94e67e1d0c88d9763356e5](https://etherscan.io/address/0xbbb011b923f382543a94e67e1d0c88d9763356e5)
-- PositionsManager: [0x309a4505d79fcc59affaba205fdcb880d400ef39](https://etherscan.io/address/0x309a4505d79fcc59affaba205fdcb880d400ef39)
-- InterestRatesManager: [0x3e483225666871d192b686c42e6834e217a9871c](https://etherscan.io/address/0x3e483225666871d192b686c42e6834e217a9871c)
+- Morpho Implementation: [0xe3d7a242614174ccf9f96bd479c42795d666fc81](https://etherscan.io/address/0xe3d7a242614174ccf9f96bd479c42795d666fc81)
+- PositionsManager: [0x79a1b5888009bB4887E00EA27CF52551aAf2A004](https://etherscan.io/address/0x79a1b5888009bB4887E00EA27CF52551aAf2A004)
+- InterestRatesManager: [0xD9B7209eD2936b5c06990A8356D155c3665d43Ab](https://etherscan.io/address/0xD9B7209eD2936b5c06990A8356D155c3665d43Ab)
 - RewardsManager Proxy: [0x78681e63b6f3ad81ecd64aecc404d765b529c80d](https://etherscan.io/address/0x78681e63b6f3ad81ecd64aecc404d765b529c80d)
-- RewardsManager Implementation: [0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7](https://etherscan.io/address/0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7)
+- RewardsManager Implementation: [0x581c3816589ad0de7f9c76bc242c97fe96c9f100](https://etherscan.io/address/0x581c3816589ad0de7f9c76bc242c97fe96c9f100)
 - Lens Proxy: [0x930f1b46e1d081ec1524efd95752be3ece51ef67](https://etherscan.io/address/0x930f1b46e1d081ec1524efd95752be3ece51ef67)
-- Lens Implementation: [0xe54dde06d245fadcba50dd786f717d44c341f81b](https://etherscan.io/address/0xe54dde06d245fadcba50dd786f717d44c341f81b)
+- Lens Implementation: [0x834632a7c70ddd7badd3d21ba9d885a9da66b0de](https://etherscan.io/address/0x834632a7c70ddd7badd3d21ba9d885a9da66b0de)
+- Lens Extension: [0xc5c3bB32c70d1d547023346BD1E32a6c5BC7FD1e](https://etherscan.io/address/0xc5c3bB32c70d1d547023346BD1E32a6c5BC7FD1e)
 - CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
 
 ### Morpho-Aave-V2 Ethereum
 
 - Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
-- Morpho Implementation: [0x206a1609a484db5129ca118f138e5a8abb9c61e0](https://etherscan.io/address/0x206a1609a484db5129ca118f138e5a8abb9c61e0)
-- EntryPositionsManager: [0x2a46cad23484c15f60663ece368395b3a249632a](https://etherscan.io/address/0x2a46cad23484c15f60663ece368395b3a249632a)
-- ExitPositionsManager: [0xfa652aa169c23277a941cf2d23d2d707fda60ed9](https://etherscan.io/address/0xfa652aa169c23277a941cf2d23d2d707fda60ed9)
-- InterestRatesManager: [0x4f54235e17eb8dcdfc941a77e7734a537f7bed86](https://etherscan.io/address/0x4f54235e17eb8dcdfc941a77e7734a537f7bed86)
+- Morpho Implementation: [0xFBc7693f114273739C74a3FF028C13769C49F2d0](https://etherscan.io/address/0xFBc7693f114273739C74a3FF028C13769C49F2d0)
+- EntryPositionsManager: [0x029Ee1AF5BafC481f9E8FBeD5164253f1266B968](https://etherscan.io/address/0x029Ee1AF5BafC481f9E8FBeD5164253f1266B968)
+- ExitPositionsManager: [0xfd9b1Ad429667D27cE666EA800f828B931A974D2](https://etherscan.io/address/0xfd9b1Ad429667D27cE666EA800f828B931A974D2)
+- InterestRatesManager: [0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1](https://etherscan.io/address/0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1)
 - Lens Proxy: [0x507fa343d0a90786d86c7cd885f5c49263a91ff4](https://etherscan.io/address/0x507fa343d0a90786d86c7cd885f5c49263a91ff4)
-- Lens Implementation: [0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb](https://etherscan.io/address/0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb)
+- Lens Implementation: [0x4bf26012b64312b462bf70f2e42d1be8881d0f84](https://etherscan.io/address/0x4bf26012b64312b462bf70f2e42d1be8881d0f84)
 
 ### Common Ethereum
 

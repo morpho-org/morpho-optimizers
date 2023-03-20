@@ -10,12 +10,10 @@ contract User {
 
     Morpho internal morpho;
     ILendingPool public pool;
-    IAaveIncentivesController public aaveIncentivesController;
 
     constructor(Morpho _morpho) {
         morpho = _morpho;
         pool = _morpho.pool();
-        aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 
     receive() external payable {}
@@ -122,10 +120,6 @@ contract User {
         pool.borrow(_underlyingToken, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 
-    function aaveClaimRewards(address[] memory assets) external {
-        aaveIncentivesController.claimRewards(assets, type(uint256).max, address(this));
-    }
-
     function liquidate(
         address _poolTokenBorrowed,
         address _poolTokenCollateral,
@@ -143,13 +137,6 @@ contract User {
         external
     {
         morpho.setDefaultMaxGasForMatching(_maxGasForMatching);
-    }
-
-    function claimRewards(address[] calldata _assets, bool _toSwap)
-        external
-        returns (uint256 claimedAmount)
-    {
-        return morpho.claimRewards(_assets, _toSwap);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
@@ -178,11 +165,5 @@ contract User {
 
     function setIsLiquidateBorrowPaused(address _poolToken, bool _isPaused) external {
         morpho.setIsLiquidateBorrowPaused(_poolToken, _isPaused);
-    }
-
-    function setMorphoAddresses(Morpho _morpho) public {
-        morpho = _morpho;
-        pool = _morpho.pool();
-        aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 }

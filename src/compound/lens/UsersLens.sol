@@ -50,8 +50,8 @@ abstract contract UsersLens is IndexesLens {
             if (_poolToken != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, false, oracle);
 
-                data.maxDebtValue += assetData.maxDebtValue;
-                data.debtValue += assetData.debtValue;
+                data.maxDebtUsd += assetData.maxDebtUsd;
+                data.debtUsd += assetData.debtUsd;
             }
 
             unchecked {
@@ -61,11 +61,11 @@ abstract contract UsersLens is IndexesLens {
 
         assetData = getUserLiquidityDataForAsset(_user, _poolToken, true, oracle);
 
-        data.maxDebtValue += assetData.maxDebtValue;
-        data.debtValue += assetData.debtValue;
+        data.maxDebtUsd += assetData.maxDebtUsd;
+        data.debtUsd += assetData.debtUsd;
 
         // Not possible to withdraw nor borrow.
-        if (data.maxDebtValue < data.debtValue) return (0, 0);
+        if (data.maxDebtUsd < data.debtUsd) return (0, 0);
 
         uint256 poolTokenBalance = _poolToken == morpho.cEth()
             ? _poolToken.balance
@@ -73,11 +73,11 @@ abstract contract UsersLens is IndexesLens {
 
         borrowable = Math.min(
             poolTokenBalance,
-            (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice)
+            (data.maxDebtUsd - data.debtUsd).div(assetData.underlyingPrice)
         );
         withdrawable = Math.min(
             poolTokenBalance,
-            assetData.collateralValue.div(assetData.underlyingPrice)
+            assetData.collateralUsd.div(assetData.underlyingPrice)
         );
 
         if (assetData.collateralFactor != 0) {
@@ -140,10 +140,10 @@ abstract contract UsersLens is IndexesLens {
         view
         returns (uint256)
     {
-        (, uint256 debtValue, uint256 maxDebtValue) = getUserBalanceStates(_user, _updatedMarkets);
-        if (debtValue == 0) return type(uint256).max;
+        (, uint256 debtUsd, uint256 maxDebtUsd) = getUserBalanceStates(_user, _updatedMarkets);
+        if (debtUsd == 0) return type(uint256).max;
 
-        return maxDebtValue.div(debtValue);
+        return maxDebtUsd.div(debtUsd);
     }
 
     /// @dev Returns the debt value, max debt value of a given user.
@@ -151,14 +151,14 @@ abstract contract UsersLens is IndexesLens {
     /// @param _poolToken The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The amount to hypothetically withdraw from the given market (in underlying).
     /// @param _borrowedAmount The amount to hypothetically borrow from the given market (in underlying).
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum debt value possible of the user.
+    /// @return debtUsd The current debt value of the user (in wad).
+    /// @return maxDebtUsd The maximum debt value possible of the user (in wad).
     function getUserHypotheticalBalanceStates(
         address _user,
         address _poolToken,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) external view returns (uint256 debtValue, uint256 maxDebtValue) {
+    ) external view returns (uint256 debtUsd, uint256 maxDebtUsd) {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory createdMarkets = morpho.getAllMarkets();
 
@@ -177,8 +177,8 @@ abstract contract UsersLens is IndexesLens {
                 )
                 : _getUserHypotheticalLiquidityDataForAsset(_user, poolToken, true, oracle, 0, 0);
 
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
         }
     }
 
@@ -187,16 +187,16 @@ abstract contract UsersLens is IndexesLens {
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
-    /// @return collateralValue The collateral value of the user.
-    /// @return debtValue The current debt value of the user.
-    /// @return maxDebtValue The maximum possible debt value of the user.
-    function getUserBalanceStates(address _user, address[] memory _updatedMarkets)
+    /// @return collateralUsd The collateral value of the user (in wad).
+    /// @return debtUsd The current debt value of the user (in wad).
+    /// @return maxDebtUsd The maximum possible debt value of the user (in wad).
+    function getUserBalanceStates(address _user, address[] calldata _updatedMarkets)
         public
         view
         returns (
-            uint256 collateralValue,
-            uint256 debtValue,
-            uint256 maxDebtValue
+            uint256 collateralUsd,
+            uint256 debtUsd,
+            uint256 maxDebtUsd
         )
     {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
@@ -225,9 +225,9 @@ abstract contract UsersLens is IndexesLens {
                 oracle
             );
 
-            collateralValue += assetData.collateralValue;
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            collateralUsd += assetData.collateralUsd;
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
 
             unchecked {
                 ++i;
@@ -388,15 +388,15 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle _oracle,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) public view returns (Types.AssetLiquidityData memory assetData) {
+    ) internal view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolToken);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
 
         (, assetData.collateralFactor, ) = comptroller.markets(_poolToken);
 
-        Types.Indexes memory indexes = getIndexes(_poolToken, _getUpdatedIndexes);
+        (, Types.Indexes memory indexes) = _getIndexes(_poolToken, _getUpdatedIndexes);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(
+        assetData.collateralUsd = _getUserSupplyBalanceInOf(
             _poolToken,
             _user,
             indexes.p2pSupplyIndex,
@@ -404,7 +404,7 @@ abstract contract UsersLens is IndexesLens {
         ).zeroFloorSub(_withdrawnAmount)
         .mul(assetData.underlyingPrice);
 
-        assetData.debtValue = (_getUserBorrowBalanceInOf(
+        assetData.debtUsd = (_getUserBorrowBalanceInOf(
             _poolToken,
             _user,
             indexes.p2pBorrowIndex,
@@ -412,7 +412,7 @@ abstract contract UsersLens is IndexesLens {
         ) + _borrowedAmount)
         .mul(assetData.underlyingPrice);
 
-        assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
+        assetData.maxDebtUsd = assetData.collateralUsd.mul(assetData.collateralFactor);
     }
 
     /// @dev Returns whether a liquidation can be performed on the given user.
@@ -429,8 +429,8 @@ abstract contract UsersLens is IndexesLens {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        uint256 debtValue;
-        uint256 maxDebtValue;
+        uint256 maxDebtUsd;
+        uint256 debtUsd;
 
         uint256 nbUpdatedMarkets = _updatedMarkets.length;
         for (uint256 i; i < enteredMarkets.length; ) {
@@ -455,16 +455,16 @@ abstract contract UsersLens is IndexesLens {
                 oracle
             );
 
-            if (_poolTokenDeprecated == poolTokenEntered && assetData.debtValue > 0) return true;
+            if (_poolTokenDeprecated == poolTokenEntered && assetData.debtUsd > 0) return true;
 
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            maxDebtUsd += assetData.maxDebtUsd;
+            debtUsd += assetData.debtUsd;
 
             unchecked {
                 ++i;
             }
         }
 
-        return debtValue > maxDebtValue;
+        return debtUsd > maxDebtUsd;
     }
 }

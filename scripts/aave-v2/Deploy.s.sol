@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import "src/aave-v2/interfaces/IIncentivesVault.sol";
 import "src/aave-v2/interfaces/IInterestRatesManager.sol";
 import "src/aave-v2/interfaces/IExitPositionsManager.sol";
 import "src/aave-v2/interfaces/IEntryPositionsManager.sol";
@@ -27,7 +26,6 @@ contract Deploy is Script, Config {
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
     IInterestRatesManager public interestRatesManager;
-    IIncentivesVault public incentivesVault;
 
     function run() external {
         vm.startBroadcast();

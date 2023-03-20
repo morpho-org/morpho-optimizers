@@ -137,15 +137,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.entryPositionsManager()), address(entryPositionsManagerV2));
     }
 
-    function testOnlyOwnerShouldSetRewardsManager() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setRewardsManager(IRewardsManager(address(1)));
-
-        morpho.setRewardsManager(IRewardsManager(address(1)));
-        assertEq(address(morpho.rewardsManager()), address(1));
-    }
-
     function testOnlyOwnerShouldSetInterestRatesManager() public {
         IInterestRatesManager interestRatesV2 = new InterestRatesManager();
 
@@ -155,23 +146,6 @@ contract TestGovernance is TestSetup {
 
         morpho.setInterestRatesManager(interestRatesV2);
         assertEq(address(morpho.interestRatesManager()), address(interestRatesV2));
-    }
-
-    function testOnlyOwnerShouldSetIncentivesVault() public {
-        IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            IMorpho(address(morpho)),
-            morphoToken,
-            ERC20(address(1)),
-            address(2),
-            dumbOracle
-        );
-
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setIncentivesVault(incentivesVaultV2);
-
-        morpho.setIncentivesVault(incentivesVaultV2);
-        assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
     }
 
     function testOnlyOwnerShouldSetTreasuryVault() public {
@@ -185,15 +159,6 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 
-    function testOnlyOwnerCanSetIsClaimRewardsPaused() public {
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setIsClaimRewardsPaused(true);
-
-        morpho.setIsClaimRewardsPaused(true);
-        assertTrue(morpho.isClaimRewardsPaused());
-    }
-
     function testOnlyOwnerCanSetPauseStatusForAllMarkets() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -203,6 +168,8 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetDeprecatedMarket() public {
+        morpho.setIsBorrowPaused(aDai, true);
+
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setIsDeprecated(aDai, true);
@@ -439,5 +406,19 @@ contract TestGovernance is TestSetup {
 
     function testFailCallIncreaseP2PDeltasFromImplementation() public {
         exitPositionsManager.increaseP2PDeltasLogic(aDai, 0);
+    }
+
+    function testDeprecateCycle() public {
+        hevm.expectRevert(abi.encodeWithSignature("BorrowNotPaused()"));
+        morpho.setIsDeprecated(aDai, true);
+
+        morpho.setIsBorrowPaused(aDai, true);
+        morpho.setIsDeprecated(aDai, true);
+
+        hevm.expectRevert(abi.encodeWithSignature("MarketIsDeprecated()"));
+        morpho.setIsBorrowPaused(aDai, false);
+
+        morpho.setIsDeprecated(aDai, false);
+        morpho.setIsBorrowPaused(aDai, false);
     }
 }

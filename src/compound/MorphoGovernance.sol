@@ -25,10 +25,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
-    /// @notice Emitted when the address of the `incentivesVault` is set.
-    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
-    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
-
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The new address of the `positionsManager`.
     event PositionsManagerSet(address indexed _positionsManager);
@@ -107,13 +103,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a new market is created.
     /// @param _poolToken The address of the market that has been created.
     /// @param _reserveFactor The reserve factor set for this market.
-    /// @param _poolToken The P2P index cursor set for this market.
+    /// @param _p2pIndexCursor The P2P index cursor set for this market.
     event MarketCreated(address indexed _poolToken, uint16 _reserveFactor, uint16 _p2pIndexCursor);
 
     /// ERRORS ///
 
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
+    /// @notice Thrown when the creation of a market failed on Compound and kicks back Compound error code.
+    error MarketCreationFailedOnCompound(uint256 errorCode);
 
     /// @notice Thrown when the input is above the max basis points value (100%).
     error ExceedsMaxBasisPoints();
@@ -126,6 +122,12 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
+
+    /// @notice Thrown when market borrow is not paused.
+    error BorrowNotPaused();
+
+    /// @notice Thrown when market is deprecated.
+    error MarketIsDeprecated();
 
     /// UPGRADE ///
 
@@ -215,13 +217,6 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit TreasuryVaultSet(_treasuryVault);
     }
 
-    /// @notice Sets the `incentivesVault`.
-    /// @param _incentivesVault The new `incentivesVault`.
-    function setIncentivesVault(IIncentivesVault _incentivesVault) external onlyOwner {
-        incentivesVault = _incentivesVault;
-        emit IncentivesVaultSet(address(_incentivesVault));
-    }
-
     /// @dev Sets `dustThreshold`.
     /// @param _dustThreshold The new `dustThreshold`.
     function setDustThreshold(uint256 _dustThreshold) external onlyOwner {
@@ -279,6 +274,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
+        if (!_isPaused && marketPauseStatus[_poolToken].isDeprecated) revert MarketIsDeprecated();
         marketPauseStatus[_poolToken].isBorrowPaused = _isPaused;
         emit IsBorrowPausedSet(_poolToken, _isPaused);
     }
@@ -374,6 +370,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolToken)
     {
+        if (!marketPauseStatus[_poolToken].isBorrowPaused) revert BorrowNotPaused();
         marketPauseStatus[_poolToken].isDeprecated = _isDeprecated;
         emit IsDeprecatedSet(_poolToken, _isDeprecated);
     }
@@ -440,7 +437,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolToken;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
-        if (results[0] != 0) revert MarketCreationFailedOnCompound();
+        if (results[0] != 0) revert MarketCreationFailedOnCompound(results[0]);
 
         // Same initial index as Compound.
         uint256 initialIndex;
@@ -470,17 +467,24 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MarketPauseStatus storage pause = marketPauseStatus[_poolToken];
 
         pause.isSupplyPaused = _isPaused;
-        pause.isBorrowPaused = _isPaused;
-        pause.isWithdrawPaused = _isPaused;
-        pause.isRepayPaused = _isPaused;
-        pause.isLiquidateCollateralPaused = _isPaused;
-        pause.isLiquidateBorrowPaused = _isPaused;
-
         emit IsSupplyPausedSet(_poolToken, _isPaused);
-        emit IsBorrowPausedSet(_poolToken, _isPaused);
+
+        // Note that pause.isDeprecated implies pause.isBorrowPaused.
+        if (!pause.isDeprecated) {
+            pause.isBorrowPaused = _isPaused;
+            emit IsBorrowPausedSet(_poolToken, _isPaused);
+        }
+
+        pause.isWithdrawPaused = _isPaused;
         emit IsWithdrawPausedSet(_poolToken, _isPaused);
+
+        pause.isRepayPaused = _isPaused;
         emit IsRepayPausedSet(_poolToken, _isPaused);
+
+        pause.isLiquidateCollateralPaused = _isPaused;
         emit IsLiquidateCollateralPausedSet(_poolToken, _isPaused);
+
+        pause.isLiquidateBorrowPaused = _isPaused;
         emit IsLiquidateBorrowPausedSet(_poolToken, _isPaused);
     }
 }
