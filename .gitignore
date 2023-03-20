@@ -39,3 +39,9 @@ lcov.*
 
 # docs
 /docs
+
+# certora
+certora/munged
+.certora*
+last_conf*
+certora_debug_log.txt
