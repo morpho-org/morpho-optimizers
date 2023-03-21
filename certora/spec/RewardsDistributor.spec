@@ -143,8 +143,8 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
 //     uint256 balanceAfter = MorphoToken.balanceOf(_account);
 
-//     assert balanceAfter - balanceBefore == _claimable - claimedBefore; 
-//     assert (T.getCreated(tree1, _account) && _claimable == T.getValue(tree1, _account)) || 
+//     assert balanceAfter - balanceBefore == _claimable - claimedBefore;
+//     assert (T.getCreated(tree1, _account) && _claimable == T.getValue(tree1, _account)) ||
 //            (T.getCreated(tree2, _account) && _claimable == T.getValue(tree2, _account));
 // }
 

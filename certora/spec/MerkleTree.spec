@@ -11,8 +11,13 @@ methods {
     getValue(address, address) returns uint256 envfree
     getHash(address, address) returns bytes32 envfree
     findAndClaimAt(address, address, address) envfree
+    claim(address, uint256, bytes32[]) => HAVOC_ALL
 
     isWellFormed(address, address) returns bool envfree
+}
+
+hook Sstore ignore bool v STORAGE {
+    require false;
 }
 
 definition isEmpty(address tree, address addr) returns bool =
