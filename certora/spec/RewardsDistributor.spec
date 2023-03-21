@@ -34,6 +34,7 @@ ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
         _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
     axiom forall bytes32 a. forall bytes32 b. _keccak(a, b) != 0;
+    axiom forall bytes32 a. forall bytes32 b. _keccak(a, b) << 160 != 0;
 }
 
 definition isEmpty(address tree, address addr) returns bool =
@@ -143,8 +144,8 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
 //     uint256 balanceAfter = MorphoToken.balanceOf(_account);
 
-//     assert balanceAfter - balanceBefore == _claimable - claimedBefore; 
-//     assert (T.getCreated(tree1, _account) && _claimable == T.getValue(tree1, _account)) || 
+//     assert balanceAfter - balanceBefore == _claimable - claimedBefore;
+//     assert (T.getCreated(tree1, _account) && _claimable == T.getValue(tree1, _account)) ||
 //            (T.getCreated(tree2, _account) && _claimable == T.getValue(tree2, _account));
 // }
 
