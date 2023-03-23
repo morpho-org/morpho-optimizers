@@ -42,10 +42,6 @@ definition isEmpty(address tree, address addr) returns bool =
     T.getValue(tree, addr) == 0 &&
     T.getHash(tree, addr) == 0;
 
-invariant notCreatedIsEmpty(address tree, address addr)
-    ! T.getCreated(tree, addr) => T.isEmpty(tree, addr)
-    filtered { f -> false }
-
 invariant zeroNotCreated(address tree)
     ! T.getCreated(tree, 0)
     filtered { f -> false }
@@ -54,8 +50,14 @@ invariant rootZeroOrCreated(address tree)
     T.getRoot(tree) == 0 || T.getCreated(tree, T.getRoot(tree))
     filtered { f -> false }
 
-invariant wellFormed(address tree, address addr)
-    T.isWellFormed(tree, addr)
+function safeAssumptions(address tree) {
+    requireInvariant zeroNotCreated(tree);
+    requireInvariant rootZeroOrCreated(tree);
+}
+
+invariant createdWellFormed(address tree, address addr)
+    T.isWellFormed(tree, addr) &&
+    (! T.getCreated(tree, addr) => T.isEmpty(tree, addr))
     filtered { f -> false }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
@@ -99,14 +101,14 @@ rule claimCorrectOne(address _account, uint256 _claimable, bytes32 _proof) {
     require leftAccountHash == T.getHash(tree, leftAccount);
     require rightAccountHash == T.getHash(tree, rightAccount);
 
-    requireInvariant rootZeroOrCreated(tree);
-    requireInvariant zeroNotCreated(tree);
-    requireInvariant notCreatedIsEmpty(tree, root);
-    requireInvariant wellFormed(tree, root);
-    requireInvariant notCreatedIsEmpty(tree, _account);
-    requireInvariant wellFormed(tree, _account);
-    requireInvariant notCreatedIsEmpty(tree, left);
-    requireInvariant wellFormed(tree, left);
+    safeAssumptions(tree);
+    requireInvariant createdWellFormed(tree, root);
+    requireInvariant createdWellFormed(tree, _account);
+    requireInvariant createdWellFormed(tree, left);
+    requireInvariant createdWellFormed(tree, leftLeft);
+    requireInvariant createdWellFormed(tree, rightLeft);
+    requireInvariant createdWellFormed(tree, leftAccount);
+    requireInvariant createdWellFormed(tree, rightAccount);
 
     claimOne(_account, _claimable, _proof);
 
@@ -119,7 +121,7 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
     require T.getHash(tree, root) == currRoot();
 
-    requireInvariant wellFormed(tree, _account);
+    requireInvariant createdWellFormed(tree, _account);
 
     claim(_account, _claimable, _proof);
 
@@ -154,7 +156,7 @@ rule claimCompleteness(address _account) {
 
     require T.getHash(tree, root) == currRoot();
     require T.getCreated(tree, _account);
-    require T.isWellFormed(tree, _account);
+    requireInvariant createdWellFormed(tree, _account);
 
     T.findAndClaimAt@withrevert(tree, currentContract, _account);
 

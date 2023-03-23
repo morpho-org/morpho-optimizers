@@ -26,14 +26,14 @@ definition isEmpty(address tree, address addr) returns bool =
     getValue(tree, addr) == 0 &&
     getHash(tree, addr) == 0;
 
-invariant notCreatedIsEmpty(address tree, address addr)
-    ! getCreated(tree, addr) => isEmpty(tree, addr)
-
 invariant zeroNotCreated(address tree)
     ! getCreated(tree, 0)
 
 invariant rootZeroOrCreated(address tree)
     getRoot(tree) == 0 || getCreated(tree, getRoot(tree))
+
+invariant notCreatedIsEmpty(address tree, address addr)
+    ! getCreated(tree, addr) => isEmpty(tree, addr)
 
 invariant wellFormed(address tree, address addr)
     isWellFormed(tree, addr)
