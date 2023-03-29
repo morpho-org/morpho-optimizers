@@ -18,7 +18,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Upload docs
+      - name: Generate and upload docs
         uses: morpho-labs/foundry-docs-aws@v1
         with:
           aws-s3-bucket: ${{ secrets.AWS_S3_BUCKET }}
