@@ -34,6 +34,7 @@ ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
         _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
     axiom forall bytes32 a. forall bytes32 b. _keccak(a, b) != 0;
+    axiom forall address tree. forall address addr. isCreatedWellFormed(tree, addr);
 }
 
 definition isEmpty(address tree, address addr) returns bool =
@@ -41,6 +42,10 @@ definition isEmpty(address tree, address addr) returns bool =
     T.getRight(tree, addr) == 0 &&
     T.getValue(tree, addr) == 0 &&
     T.getHash(tree, addr) == 0;
+
+definition isCreatedWellFormed(address tree, address addr) returns bool =
+    T.isWellFormed(tree, addr) &&
+    (! T.getCreated(tree, addr) => T.isEmpty(tree, addr));
 
 invariant zeroNotCreated(address tree)
     ! T.getCreated(tree, 0)
@@ -56,8 +61,7 @@ function safeAssumptions(address tree) {
 }
 
 invariant createdWellFormed(address tree, address addr)
-    T.isWellFormed(tree, addr) &&
-    (! T.getCreated(tree, addr) => T.isEmpty(tree, addr))
+    isCreatedWellFormed(tree, addr)
     filtered { f -> false }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
