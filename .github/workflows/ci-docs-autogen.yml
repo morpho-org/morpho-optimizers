@@ -5,10 +5,13 @@ on:
     branches:
       - main
 
-jobs:
-  autogen-docs:
-    runs-on: ubuntu-latest
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
 
+jobs:
+  forge-docs:
+    runs-on: ubuntu-latest
     environment:
       name: docs
       url: https://developers.morpho.xyz
@@ -18,11 +21,12 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Generate and upload docs
-        uses: morpho-labs/foundry-docs-aws@v1
+      - name: Generate & upload forge docs
+        uses: morpho-labs/foundry-docs-aws@v1.1.1
         with:
           aws-s3-bucket: ${{ secrets.AWS_S3_BUCKET }}
           aws-cloudfront-distribution-id: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: ${{ vars.AWS_SESSION_NAME }}
           aws-region: ${{ secrets.AWS_REGION }}
+          s3-acl: private
