@@ -225,7 +225,6 @@ contract TestSupply is TestSetup {
         supplier2.approve(dai, address(pool), amount);
         hevm.prank(address(supplier2));
         pool.repay(dai, amount, 2, address(morpho));
-        hevm.stopPrank();
 
         // Supplier 1 supply in peer-to-peer. Not supposed to revert.
         supplier1.approve(dai, amount);
