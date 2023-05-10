@@ -711,7 +711,6 @@ contract TestRepay is TestSetup {
         supplier2.approve(dai, cDai, amount);
         hevm.prank(address(supplier2));
         ICToken(cDai).repayBorrowBehalf(address(morpho), amount);
-        hevm.stopPrank();
 
         // Borrower1 repays on pool. Not supposed to revert.
         borrower1.approve(dai, amount);
