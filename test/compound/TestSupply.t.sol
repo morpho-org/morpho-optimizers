@@ -321,6 +321,22 @@ contract TestSupply is TestSetup {
         assertGt(gasUsed2, gasUsed1 + 5e4);
     }
 
+    function testNoIndexUpdateSkip() public {
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, 1 ether);
+
+        (, uint256 poolSupplyIndexCachedBefore, ) = morpho.lastPoolIndexes(cDai);
+
+        vm.prank(address(supplier1));
+        ERC20(dai).transfer(cDai, 10_000 ether);
+
+        supplier1.supply(cDai, 1);
+
+        (, uint256 poolSupplyIndexCachedAfter, ) = morpho.lastPoolIndexes(cDai);
+
+        assertGt(poolSupplyIndexCachedAfter, poolSupplyIndexCachedBefore);
+    }
+
     /// @dev Helper for gas usage test
     function _getSupplyGasUsage(uint256 amount, uint256 maxGas) internal returns (uint256 gasUsed) {
         // 2 * NMAX borrowers borrow amount
