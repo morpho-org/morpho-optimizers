@@ -321,7 +321,7 @@ contract TestSupply is TestSetup {
         assertGt(gasUsed2, gasUsed1 + 5e4);
     }
 
-    function testNoIndexUpdateSkip() public {
+    function testPoolIndexGrowthInsideBlock() public {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 1 ether);
 
@@ -335,6 +335,28 @@ contract TestSupply is TestSetup {
         (, uint256 poolSupplyIndexCachedAfter, ) = morpho.lastPoolIndexes(cDai);
 
         assertGt(poolSupplyIndexCachedAfter, poolSupplyIndexCachedBefore);
+    }
+
+    function testP2PIndexGrowthInsideBlock() public {
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, 1 ether);
+        borrower1.borrow(cDai, 0.5 ether);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        // Bypass the borrow repay in the same block by overwritting the storage slot lastBorrowBlock[borrower1].
+        hevm.store(address(morpho), keccak256(abi.encode(address(borrower1), 178)), 0);
+        // Create delta.
+        borrower1.repay(cDai, type(uint256).max);
+
+        uint256 p2pSupplyIndexBefore = morpho.p2pSupplyIndex(cDai);
+
+        vm.prank(address(supplier1));
+        ERC20(dai).transfer(cDai, 10_000 ether);
+
+        borrower1.supply(cDai, 1);
+
+        uint256 p2pSupplyIndexAfter = morpho.p2pSupplyIndex(cDai);
+
+        assertGt(p2pSupplyIndexAfter, p2pSupplyIndexBefore);
     }
 
     /// @dev Helper for gas usage test
