@@ -1658,4 +1658,40 @@ contract TestLens is TestSetup {
         morpho.setIsLiquidateBorrowPaused(aDai, true);
         assertTrue(lens.getMarketPauseStatus(aDai).isLiquidateBorrowPaused);
     }
+
+    function testPoolIndexGrowthInsideBlock() public {
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, 10 ether);
+
+        uint256 poolSupplyIndexBefore = lens.getIndexes(aDai).poolSupplyIndex;
+
+        FlashLoan flashLoan = new FlashLoan(pool);
+        vm.prank(address(supplier2));
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        flashLoan.callFlashLoan(dai, 10_000 ether);
+
+        uint256 poolSupplyIndexAfter = lens.getIndexes(aDai).poolSupplyIndex;
+
+        assertGt(poolSupplyIndexAfter, poolSupplyIndexBefore);
+    }
+
+    function testP2PIndexGrowthInsideBlock() public {
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, 10 ether);
+        borrower1.borrow(aDai, 5 ether);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 0);
+        // Create delta.
+        borrower1.repay(aDai, type(uint256).max);
+
+        uint256 p2pSupplyIndexBefore = lens.getCurrentP2PSupplyIndex(aDai);
+
+        FlashLoan flashLoan = new FlashLoan(pool);
+        vm.prank(address(supplier2));
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        flashLoan.callFlashLoan(dai, 10_000 ether);
+
+        uint256 p2pSupplyIndexAfter = lens.getCurrentP2PSupplyIndex(aDai);
+
+        assertGt(p2pSupplyIndexAfter, p2pSupplyIndexBefore);
+    }
 }
