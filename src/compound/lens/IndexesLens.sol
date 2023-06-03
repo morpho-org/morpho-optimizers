@@ -179,7 +179,7 @@ abstract contract IndexesLens is LensStorage {
     {
         marketParameters = morpho.marketParameters(_poolToken);
 
-        if (!_updated || block.number == _lastPoolIndexes.lastUpdateBlockNumber) {
+        if (!_updated) {
             return (
                 morpho.p2pSupplyIndex(_poolToken),
                 morpho.p2pBorrowIndex(_poolToken),

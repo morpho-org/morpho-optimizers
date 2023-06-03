@@ -74,10 +74,9 @@ contract TestLens is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 2;
 
-        borrower1.approve(dai, amount);
+        borrower1.approve(dai, type(uint256).max);
         indexes.index1 = ICToken(cDai).exchangeRateCurrent();
         borrower1.supply(cDai, amount);
-        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
         borrower1.borrow(cDai, toBorrow);
 
         indexes.index2 = ICToken(cDai).exchangeRateCurrent();
@@ -94,6 +93,9 @@ contract TestLens is TestSetup {
 
         uint256 total;
 
+        // To update p2p indexes on Morpho (they can change inside of a block because the poolSupplyIndex can change due to rounding errors).
+        borrower1.supply(cDai, 1);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
         {
             uint256 onPool = amount.div(indexes.index1);
             uint256 matchedInP2P = toBorrow.div(morpho.p2pSupplyIndex(cDai));
