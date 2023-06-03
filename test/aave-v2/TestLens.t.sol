@@ -1667,7 +1667,7 @@ contract TestLens is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, 10_000 ether);
 
         uint256 poolSupplyIndexAfter = lens.getIndexes(aDai).poolSupplyIndex;
@@ -1687,7 +1687,7 @@ contract TestLens is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, 10_000 ether);
 
         uint256 p2pSupplyIndexAfter = lens.getCurrentP2PSupplyIndex(aDai);

@@ -257,7 +257,7 @@ contract TestSupply is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, flashLoanAmount);
 
         vm.warp(block.timestamp + 1);
@@ -285,7 +285,7 @@ contract TestSupply is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, 10_000 ether);
 
         supplier1.supply(aDai, 1);
@@ -307,7 +307,7 @@ contract TestSupply is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, 10_000 ether);
 
         borrower1.supply(aDai, 1);
