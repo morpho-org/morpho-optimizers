@@ -52,8 +52,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     function updateP2PIndexes(address _poolToken) external {
         Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolToken];
 
-        if (block.number == poolIndexes.lastUpdateBlockNumber) return;
-
         Types.MarketParameters memory marketParams = marketParameters[_poolToken];
 
         uint256 poolSupplyIndex = ICToken(_poolToken).exchangeRateCurrent();

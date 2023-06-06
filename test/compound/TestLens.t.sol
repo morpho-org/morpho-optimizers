@@ -74,10 +74,9 @@ contract TestLens is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 2;
 
-        borrower1.approve(dai, amount);
+        borrower1.approve(dai, type(uint256).max);
         indexes.index1 = ICToken(cDai).exchangeRateCurrent();
         borrower1.supply(cDai, amount);
-        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
         borrower1.borrow(cDai, toBorrow);
 
         indexes.index2 = ICToken(cDai).exchangeRateCurrent();
@@ -94,6 +93,9 @@ contract TestLens is TestSetup {
 
         uint256 total;
 
+        // To update p2p indexes on Morpho (they can change inside of a block because the poolSupplyIndex can change due to rounding errors).
+        borrower1.supply(cDai, 1);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
         {
             uint256 onPool = amount.div(indexes.index1);
             uint256 matchedInP2P = toBorrow.div(morpho.p2pSupplyIndex(cDai));
@@ -1718,5 +1720,41 @@ contract TestLens is TestSetup {
     function testGetMarketPauseStatusesPauseLiquidateOnBorrow() public {
         morpho.setIsLiquidateBorrowPaused(cDai, true);
         assertTrue(lens.getMarketPauseStatus(cDai).isLiquidateBorrowPaused);
+    }
+
+    function testPoolIndexGrowthInsideBlock() public {
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, 1 ether);
+
+        uint256 poolBorrowIndexBefore = lens.getIndexes(cDai, true).poolSupplyIndex;
+
+        vm.prank(address(supplier1));
+        ERC20(dai).transfer(cDai, 10_000 ether);
+
+        supplier1.supply(cDai, 1);
+
+        uint256 poolSupplyIndexAfter = lens.getIndexes(cDai, true).poolSupplyIndex;
+
+        assertGt(poolSupplyIndexAfter, poolBorrowIndexBefore);
+    }
+
+    function testP2PIndexGrowthInsideBlock() public {
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, 1 ether);
+        borrower1.borrow(cDai, 0.5 ether);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+        // Bypass the borrow repay in the same block by overwritting the storage slot lastBorrowBlock[borrower1].
+        hevm.store(address(morpho), keccak256(abi.encode(address(borrower1), 178)), 0);
+        // Create delta.
+        borrower1.repay(cDai, type(uint256).max);
+
+        uint256 p2pSupplyIndexBefore = lens.getCurrentP2PSupplyIndex(cDai);
+
+        vm.prank(address(supplier1));
+        ERC20(dai).transfer(cDai, 10_000 ether);
+
+        uint256 p2pSupplyIndexAfter = lens.getCurrentP2PSupplyIndex(cDai);
+
+        assertGt(p2pSupplyIndexAfter, p2pSupplyIndexBefore);
     }
 }
