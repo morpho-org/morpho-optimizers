@@ -257,7 +257,7 @@ contract TestSupply is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, flashLoanAmount);
 
         vm.warp(block.timestamp + 1);
@@ -277,7 +277,7 @@ contract TestSupply is TestSetup {
         assertGt(gasUsed2, gasUsed1 + 1e4);
     }
 
-    function testNoIndexUpdateSkip() public {
+    function testPoolIndexGrowthInsideBlock() public {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, 1);
 
@@ -285,7 +285,7 @@ contract TestSupply is TestSetup {
 
         FlashLoan flashLoan = new FlashLoan(pool);
         vm.prank(address(supplier2));
-        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // to pay the premium.
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
         flashLoan.callFlashLoan(dai, 10_000 ether);
 
         supplier1.supply(aDai, 1);
@@ -293,6 +293,28 @@ contract TestSupply is TestSetup {
         (, uint256 poolSupplyIndexCachedAfter, ) = morpho.poolIndexes(aDai);
 
         assertGt(poolSupplyIndexCachedAfter, poolSupplyIndexCachedBefore);
+    }
+
+    function testP2PIndexGrowthInsideBlock() public {
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, 10 ether);
+        borrower1.borrow(aDai, 5 ether);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 0);
+        // Create delta.
+        borrower1.repay(aDai, type(uint256).max);
+
+        uint256 p2pSupplyIndexBefore = morpho.p2pSupplyIndex(aDai);
+
+        FlashLoan flashLoan = new FlashLoan(pool);
+        vm.prank(address(supplier2));
+        ERC20(dai).transfer(address(flashLoan), 10_000 ether); // To pay the premium.
+        flashLoan.callFlashLoan(dai, 10_000 ether);
+
+        borrower1.supply(aDai, 1);
+
+        uint256 p2pSupplyIndexAfter = morpho.p2pSupplyIndex(aDai);
+
+        assertGt(p2pSupplyIndexAfter, p2pSupplyIndexBefore);
     }
 
     /// @dev Helper for gas usage test
