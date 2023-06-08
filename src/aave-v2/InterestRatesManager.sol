@@ -53,8 +53,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     function updateIndexes(address _poolToken) external {
         Types.PoolIndexes storage marketPoolIndexes = poolIndexes[_poolToken];
 
-        if (block.timestamp == marketPoolIndexes.lastUpdateTimestamp) return;
-
         Types.Market storage market = market[_poolToken];
         (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _getPoolIndexes(
             market.underlyingToken
