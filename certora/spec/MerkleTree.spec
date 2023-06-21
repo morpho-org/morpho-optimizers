@@ -1,19 +1,19 @@
 methods {
-    initialized() returns bool envfree
-    newAccount(address, address, uint256) envfree
-    newNode(address, address, address, address) envfree
-    setRoot(address, address) envfree
+    function initialized() external returns bool envfree;
+    function newAccount(address, address, uint256) external envfree;
+    function newNode(address, address, address, address) external envfree;
+    function setRoot(address, address) external envfree;
 
-    getRoot(address) returns address envfree
-    getCreated(address, address) returns bool envfree
-    getLeft(address, address) returns address envfree
-    getRight(address, address) returns address envfree
-    getValue(address, address) returns uint256 envfree
-    getHash(address, address) returns bytes32 envfree
-    findAndClaimAt(address, address, address) envfree
-    claim(address, uint256, bytes32[]) => HAVOC_ALL
+    function getRoot(address) external returns address envfree;
+    function getCreated(address, address) external returns bool envfree;
+    function getLeft(address, address) external returns address envfree;
+    function getRight(address, address) external returns address envfree;
+    function getValue(address, address) external returns uint256 envfree;
+    function getHash(address, address) external returns bytes32 envfree;
+    function findAndClaimAt(address, address, address) external envfree;
+    function isWellFormed(address, address) external returns bool envfree;
 
-    isWellFormed(address, address) returns bool envfree
+    function _.claim(address, uint256, bytes32[]) external => HAVOC_ALL;
 }
 
 hook Sstore ignore bool v STORAGE {
@@ -24,16 +24,16 @@ definition isEmpty(address tree, address addr) returns bool =
     getLeft(tree, addr) == 0 &&
     getRight(tree, addr) == 0 &&
     getValue(tree, addr) == 0 &&
-    getHash(tree, addr) == 0;
+    getHash(tree, addr) == to_bytes32(0);
 
 invariant zeroNotCreated(address tree)
-    ! getCreated(tree, 0)
+    ! getCreated(tree, 0);
 
 invariant rootZeroOrCreated(address tree)
-    getRoot(tree) == 0 || getCreated(tree, getRoot(tree))
+    getRoot(tree) == 0 || getCreated(tree, getRoot(tree));
 
 invariant notCreatedIsEmpty(address tree, address addr)
-    ! getCreated(tree, addr) => isEmpty(tree, addr)
+    ! getCreated(tree, addr) => isEmpty(tree, addr);
 
 invariant wellFormed(address tree, address addr)
     isWellFormed(tree, addr)

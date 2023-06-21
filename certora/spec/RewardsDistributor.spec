@@ -1,39 +1,38 @@
-using MerkleTreeMock as T
-using MorphoToken as MorphoToken
+using MerkleTreeMock as T;
+using MorphoToken as MorphoToken;
 
 methods {
-    MORPHO() returns address envfree
-    currRoot() returns bytes32 envfree
-    claimed(address) returns uint256 envfree
-    claim(address, uint256, bytes32[]) envfree => DISPATCHER(true)
-    claimOne(address, uint256, bytes32) envfree
-    transfer(address, uint256) => DISPATCHER(true)
-    address_to_bytes32(address) returns bytes32 envfree
-    uint256_to_bytes32(uint256) returns bytes32 envfree
+    function MORPHO() external returns address envfree;
+    function currRoot() external returns bytes32 envfree;
+    function claimed(address) external returns uint256 envfree;
+    function claim(address, uint256, bytes32[]) external envfree;
+    function claimOne(address, uint256, bytes32) external envfree;
+    function address_to_bytes32(address) external returns bytes32 envfree;
+    function uint256_to_bytes32(uint256) external returns bytes32 envfree;
 
-    T.initialized(address) returns bool envfree
-    T.newAccount(address, address, uint256) envfree
-    T.newNode(address, address, address, address) envfree
-    T.setRoot(address, address) envfree
-    T.isWellFormed(address, address) returns bool envfree
-    T.findProof(address, address) returns bytes32[] envfree
-    T.getRoot(address) returns address envfree
-    T.getCreated(address, address) returns bool envfree
-    T.getLeft(address, address) returns address envfree
-    T.getRight(address, address) returns address envfree
-    T.getValue(address, address) returns uint256 envfree
-    T.getHash(address, address) returns bytes32 envfree
-    T.findAndClaimAt(address, address, address) envfree
+    function T.initialized() external returns bool envfree;
+    function T.newAccount(address, address, uint256) external envfree;
+    function T.newNode(address, address, address, address) external envfree;
+    function T.setRoot(address, address) external envfree;
+    function T.isWellFormed(address, address) external returns bool envfree;
+    function T.getRoot(address) external returns address envfree;
+    function T.getCreated(address, address) external returns bool envfree;
+    function T.getLeft(address, address) external returns address envfree;
+    function T.getRight(address, address) external returns address envfree;
+    function T.getValue(address, address) external returns uint256 envfree;
+    function T.getHash(address, address) external returns bytes32 envfree;
+    function T.findAndClaimAt(address, address, address) external envfree;
 
-    MorphoToken.balanceOf(address) returns uint256 envfree
+    function MorphoToken.transfer(address, uint256) external;
+    function MorphoToken.balanceOf(address) external returns uint256 envfree;
 
-    keccak(bytes32 a, bytes32 b) returns bytes32 envfree => _keccak(a, b)
+    function _.keccak(bytes32 a, bytes32 b) internal => _keccak(a, b) expect bytes32 ALL;
 }
 
 ghost _keccak(bytes32, bytes32) returns bytes32 {
     axiom forall bytes32 a1. forall bytes32 b1. forall bytes32 a2. forall bytes32 b2.
         _keccak(a1, b1) == _keccak(a2, b2) => a1 == a2 && b1 == b2;
-    axiom forall bytes32 a. forall bytes32 b. _keccak(a, b) != 0;
+    axiom forall bytes32 a. forall bytes32 b. _keccak(a, b) != to_bytes32(0);
     axiom forall address tree. forall address addr. isCreatedWellFormed(tree, addr);
 }
 
@@ -41,11 +40,11 @@ definition isEmpty(address tree, address addr) returns bool =
     T.getLeft(tree, addr) == 0 &&
     T.getRight(tree, addr) == 0 &&
     T.getValue(tree, addr) == 0 &&
-    T.getHash(tree, addr) == 0;
+    T.getHash(tree, addr) == to_bytes32(0);
 
 definition isCreatedWellFormed(address tree, address addr) returns bool =
     T.isWellFormed(tree, addr) &&
-    (! T.getCreated(tree, addr) => T.isEmpty(tree, addr));
+    (! T.getCreated(tree, addr) => isEmpty(tree, addr));
 
 invariant zeroNotCreated(address tree)
     ! T.getCreated(tree, 0)

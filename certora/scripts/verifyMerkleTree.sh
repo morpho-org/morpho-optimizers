@@ -4,6 +4,7 @@ make -C certora munged
 
 certoraRun \
     certora/munged/common/rewards-distribution/MerkleTreeMock.sol \
+    certora/munged/common/rewards-distribution/RewardsDistributor.sol \
     --packages @rari-capital/solmate=lib/solmate \
                @openzeppelin=node_modules/@openzeppelin \
     --verify MerkleTreeMock:certora/spec/MerkleTree.spec \
