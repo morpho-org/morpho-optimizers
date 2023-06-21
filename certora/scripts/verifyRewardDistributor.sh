@@ -9,7 +9,7 @@ certoraRun \
     certora/munged/common/rewards-distribution/dependencies/MerkleProof.sol \
     --packages @rari-capital/solmate=lib/solmate \
                @openzeppelin=node_modules/@openzeppelin \
-    --verify RewardsDistributor:certora/spec/RewardsDistributor.spec \
+    --verify RewardsDistributor:certora/specs/RewardsDistributor.spec \
     --solc solc8.13 \
     --loop_iter 2 \
     --optimistic_loop \
