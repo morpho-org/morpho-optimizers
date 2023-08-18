@@ -1,7 +1,7 @@
-# Morpho Core Protocol V1
+# Morpho V1 Optimizers Protocol
 
-[![Morpho-Compound](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
-[![Morpho-AaveV2](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
+[![Morpho-Compound-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
+[![Morpho-AaveV2-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/uLq5V14.png">
@@ -10,40 +10,40 @@
 
 ---
 
-## What is Morpho?
+## What is Morpho Optimizers?
 
-Morpho is a lending pool optimizer: it improves the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
+Morpho optimizers improve the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
 
-- Morpho's rates stay between the supply rate and the borrow rate of the pool, reducing the interests paid by the borrowers while increasing the interests earned by the suppliers. It means that you are getting boosted peer-to-peer rates or, in the worst case scenario, the APY of the pool.
-- Morpho also preserves the same experience, the same liquidity and the same parameters (collateral factors, oracles, …) as the underlying pool.
+- Morpho's rates stay between the supply rate and the borrow rate of the pool, reducing the interest paid by the borrowers while increasing the interest earned by the suppliers. It means that you are getting boosted peer-to-peer rates or, in the worst-case scenario, the APY of the pool.
+- Morpho also preserves the same experience, the same liquidity, and the same parameters (collateral factors, oracles, …) as the underlying pool.
 
-TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave.
+TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave Optimizer.
 
 ---
 
 ## Contracts overview
 
-The Morpho protocol is designed at its core with a set of contracts delegating calls to implementation contracts (to overcome the contract size limit).
+The Morpho Optimizer protocol is designed at its core with a set of contracts delegating calls to implementation contracts (to overcome the contract size limit).
 
-Here is a brief overview of the Morpho protocol's contracts interactions:
+Here is a brief overview of the Morpho Optimizers protocol's contracts interactions:
 
 ![image](https://user-images.githubusercontent.com/3147812/187162991-d9e94841-0f23-4f25-86d4-a495917b70e7.png)
 
-The main user's entry points are exposed in the `Morpho` contract. It inherits from `MorphoGovernance` which contains all the admin functions of the DAO, `MorphoUtils`, and `MorphoStorage`, where the protocol's storage is located. This contract delegates call to other contracts, that have the exact same storage layout:
+The main user's entry points are exposed in the `Morpho` contract. It inherits from `MorphoGovernance`, which contains all the admin functions of the DAO, `MorphoUtils`, and `MorphoStorage`, where the protocol's storage is located. This contract delegates call to other contracts that have the same storage layout:
 
-- `PositionsManager`: logic of basic supply, borrow, withdraw, repay and liquidate functions. In Morpho-Aave, it is separated into two contracts, `EntryPositionsManager` and `ExitPositionsManager`. These contracts inherit from `MatchingEngine`, which contains the matching engine internal functions.
+- `PositionsManager`: logic of basic supply, borrow, withdraw, repay, and liquidate functions. Morpho-AaveV2 Optimizer is separated into two contracts, `EntryPositionsManager` and `ExitPositionsManager`. These contracts inherit from `MatchingEngine`, which contains the matching engine's internal functions.
 - `InterestRatesManager`: logic of indexes computation.
 
-It also interacts with `RewardsManager`, which manages the underlying pool's rewards if any.
+It also interacts with `RewardsManager`, which manages the underlying pool's rewards, if any.
 
 ---
 
 ## Documentation
 
-- [White Paper](https://whitepaper.morpho.xyz)
-- [Yellow Paper](https://yellowpaper.morpho.xyz/)
-- [Morpho Documentation](https://docs.morpho.xyz)
-- [Morpho Developers Documentation](https://developers.morpho.xyz)
+- [White Paper](https://whitepaper.morpho.org)
+- [Yellow Paper](https://yellowpaper.morpho.org/)
+- [Morpho Documentation](https://docs.morpho.org)
+- [Morpho Developers Documentation](https://developers.morpho.org)
 
 ---
 
@@ -52,17 +52,16 @@ It also interacts with `RewardsManager`, which manages the underlying pool's rew
 All audits are stored in the [audits](./audits/)' folder.
 
 ---
-
 ## Bug bounty
 
 A bug bounty is open on Immunefi. The rewards and scope are defined [here](https://immunefi.com/bounty/morpho/).
-You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) if you find something worrying.
+You can email [security@morpho.org](mailto:security@morpho.org) if you find something worrying.
 
 ---
 
 ## Deployment Addresses
 
-### Morpho-Compound Ethereum
+### Morpho-Compound Ethereum Optimizer
 
 - Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
 - Morpho Implementation: [0xe3d7a242614174ccf9f96bd479c42795d666fc81](https://etherscan.io/address/0xe3d7a242614174ccf9f96bd479c42795d666fc81)
@@ -75,7 +74,7 @@ You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) 
 - Lens Extension: [0xc5c3bB32c70d1d547023346BD1E32a6c5BC7FD1e](https://etherscan.io/address/0xc5c3bB32c70d1d547023346BD1E32a6c5BC7FD1e)
 - CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
 
-### Morpho-Aave-V2 Ethereum
+### Morpho-AaveV2 Ethereum Optimizer
 
 - Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
 - Morpho Implementation: [0xFBc7693f114273739C74a3FF028C13769C49F2d0](https://etherscan.io/address/0xFBc7693f114273739C74a3FF028C13769C49F2d0)
@@ -115,7 +114,7 @@ git submodule add @morpho-dao/morpho-v1@v2.0.0 lib/morpho-v1
 
 ## Testing with [Foundry](https://github.com/foundry-rs/foundry) 🔨
 
-Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
+Tests are run against a fork of real networks, allowing us to interact directly with Compound or Aave liquidity pools. Note that you need an RPC provider with access to Ethereum or Polygon.
 
 For testing, make sure `yarn` and `foundry` are installed and install dependencies (node_modules, git submodules) with:
 
@@ -129,19 +128,19 @@ Refer to the `env.example` for the required environment variable.
 
 To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
-To run every test of a specific protocol (e.g. for Morpho-Compound):
+To run every test of a specific protocol (e.g., for Morpho-Compound Optimizer):
 
 ```bash
 make test PROTOCOL=compound
 ```
 
-or to run only a specific set of tests of a specific protocol (e.g. for Morpho-Aave V2):
+or to run only a specific set of tests of a specific protocol (e.g. for Morpho-AaveV2 Optimizer):
 
 ```bash
 make c-TestBorrow PROTOCOL=aave-v2
 ```
 
-or to run an individual test of a specific protocol (e.g. for Morpho-Aave V2):
+or to run an individual test of a specific protocol (e.g. for Morpho-AaveV2 Optimizer):
 
 ```bash
 make test-testBorrow1 PROTOCOL=aave-v2
@@ -149,12 +148,12 @@ make test-testBorrow1 PROTOCOL=aave-v2
 
 For the other commands, check the [Makefile](./Makefile).
 
-If you want to call a custom forge command, and not have to edit the `Makefile`, you can _source_ the `export_env.sh` script by calling `. ./export_env.sh`.
+If you want to call a custom forge command and not have to edit the `Makefile`, you can _source_ the `export_env.sh` script by calling `. ./export_env.sh`.
 
 :warning: The `export_env.sh` script exports environment variables in the current shell, meaning that subsequent calls to `make` or `forge` will use those variables. Variables defined in the `.env.local` file will still override those if you run `make` later. If you don't want to change variables in the current shell, you can always create a new shell in one of the following ways:
 
 - use `( . ./export_env.sh && forge test )` if the command you want to run is `forge test`
-- use `bash` and then `. ./export_env.sh` followed by your commands and then `exit` to return to the parent shell and clear the environment variables.
+- use `bash` and then `. ./export_env.sh` followed your commands and then `exit` to return to the parent shell and clear the environment variables.
 
 ---
 
@@ -174,7 +173,7 @@ yarn test
 
 Test coverage is reported using [foundry](https://github.com/foundry-rs/foundry) coverage with [lcov](https://github.com/linux-test-project/lcov) report formatting (and optionally, [genhtml](https://manpages.ubuntu.com/manpages/xenial/man1/genhtml.1.html) transformer).
 
-To generate the `lcov` report, run:
+To generate the `lcov` report, run the following:
 
 ```bash
 make coverage
@@ -183,9 +182,9 @@ make coverage
 The report is then usable either:
 
 - via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
-- via html, using `make lcov-html` to transform the report and opening `coverage/index.html`
+- via HTML, using `make lcov-html` to transform the report and opening `coverage/index.html`
 
-:warning: Test coverage is not available on Morpho-AaveV2 for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+:warning: Test coverage is not available on Morpho-AaveV2 Optimizer for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
 
 ---
 
@@ -194,7 +193,7 @@ The report is then usable either:
 2 CI pipelines are currently running on every PR to check that the changes introduced are not modifying the storage layout of proxied smart contracts in an unsafe way:
 
 - [storage-layout.sh](./scripts/storage-layout.sh) checks that the latest foundry storage layout snapshot is identical to the committed storage layout snapshot
-- [foundry-storage-check](https://github.com/Rubilmax/foundry-storage-diff) is in test phase and will progressively replace the snapshot check
+- [foundry-storage-check](https://github.com/Rubilmax/foundry-storage-diff) is in the test phase and will progressively replace the snapshot check
 
 In the case the storage layout snapshots checked by `storage-layout.sh` are not identical, the developer must commit the updated storage layout snapshot stored under [snapshots/](./snapshots/) by running:
 
@@ -230,7 +229,7 @@ make script-Deploy PROTOCOL=compound NETWORK=goerli SMODE=local
 
 ## Questions & Feedback
 
-For any question or feedback you can send an email to [merlin@morpho.xyz](mailto:merlin@morpho.xyz).
+For any questions or feedback, you can send an email to [merlin@morpho.org](mailto:merlin@morpho.org).
 
 ---
 
