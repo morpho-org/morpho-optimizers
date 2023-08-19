@@ -10,7 +10,7 @@
 
 ---
 
-## What is Morpho Optimizers?
+## What are Morpho Optimizers?
 
 Morpho optimizers improve the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
 
