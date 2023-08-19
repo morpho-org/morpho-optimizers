@@ -1,4 +1,4 @@
-# Morpho V1 Optimizers Protocol
+# Morpho Optimizers V1
 
 [![Morpho-Compound-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
 [![Morpho-AaveV2-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
@@ -12,26 +12,26 @@
 
 ## What are Morpho Optimizers?
 
-Morpho optimizers improve the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
+Morpho Optimizers improve the capital efficiency of positions on existing lending pools by seamlessly matching users peer-to-peer.
 
 - Morpho's rates stay between the supply rate and the borrow rate of the pool, reducing the interest paid by the borrowers while increasing the interest earned by the suppliers. It means that you are getting boosted peer-to-peer rates or, in the worst-case scenario, the APY of the pool.
 - Morpho also preserves the same experience, the same liquidity, and the same parameters (collateral factors, oracles, …) as the underlying pool.
 
-TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho-Compound or Morpho-Aave Optimizer.
+TL;DR: Instead of borrowing or lending on your favorite pool like Compound or Aave, you would be better off using Morpho Optimizers.
 
 ---
 
 ## Contracts overview
 
-The Morpho Optimizer protocol is designed at its core with a set of contracts delegating calls to implementation contracts (to overcome the contract size limit).
+Morpho Optimizers are designed at their core with a set of contracts delegating calls to implementation contracts (to overcome the contract size limit).
 
-Here is a brief overview of the Morpho Optimizers protocol's contracts interactions:
+Here is a brief overview of the Morpho Optimizers' contracts interactions:
 
 ![image](https://user-images.githubusercontent.com/3147812/187162991-d9e94841-0f23-4f25-86d4-a495917b70e7.png)
 
 The main user's entry points are exposed in the `Morpho` contract. It inherits from `MorphoGovernance`, which contains all the admin functions of the DAO, `MorphoUtils`, and `MorphoStorage`, where the protocol's storage is located. This contract delegates call to other contracts that have the same storage layout:
 
-- `PositionsManager`: logic of basic supply, borrow, withdraw, repay, and liquidate functions. Morpho-AaveV2 Optimizer is separated into two contracts, `EntryPositionsManager` and `ExitPositionsManager`. These contracts inherit from `MatchingEngine`, which contains the matching engine's internal functions.
+- `PositionsManager`: logic of basic supply, borrow, withdraw, repay, and liquidate functions. The Morpho-AaveV2 Optimizer is separated into two contracts, `EntryPositionsManager` and `ExitPositionsManager`. These contracts inherit from `MatchingEngine`, which contains the matching engine's internal functions.
 - `InterestRatesManager`: logic of indexes computation.
 
 It also interacts with `RewardsManager`, which manages the underlying pool's rewards, if any.
@@ -61,7 +61,7 @@ You can email [security@morpho.org](mailto:security@morpho.org) if you find some
 
 ## Deployment Addresses
 
-### Morpho-Compound Ethereum Optimizer
+### Morpho-Compound Optimizer on Ethereum
 
 - Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
 - Morpho Implementation: [0xe3d7a242614174ccf9f96bd479c42795d666fc81](https://etherscan.io/address/0xe3d7a242614174ccf9f96bd479c42795d666fc81)
@@ -74,7 +74,7 @@ You can email [security@morpho.org](mailto:security@morpho.org) if you find some
 - Lens Extension: [0xc5c3bB32c70d1d547023346BD1E32a6c5BC7FD1e](https://etherscan.io/address/0xc5c3bB32c70d1d547023346BD1E32a6c5BC7FD1e)
 - CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
 
-### Morpho-AaveV2 Ethereum Optimizer
+### Morpho-AaveV2 Optimizer on Ethereum
 
 - Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
 - Morpho Implementation: [0xFBc7693f114273739C74a3FF028C13769C49F2d0](https://etherscan.io/address/0xFBc7693f114273739C74a3FF028C13769C49F2d0)
@@ -128,19 +128,19 @@ Refer to the `env.example` for the required environment variable.
 
 To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
-To run every test of a specific protocol (e.g., for Morpho-Compound Optimizer):
+To run every test of a specific protocol (e.g. for the Morpho-Compound Optimizer):
 
 ```bash
 make test PROTOCOL=compound
 ```
 
-or to run only a specific set of tests of a specific protocol (e.g. for Morpho-AaveV2 Optimizer):
+or to run only a specific set of tests of a specific protocol (e.g. for the Morpho-AaveV2 Optimizer):
 
 ```bash
 make c-TestBorrow PROTOCOL=aave-v2
 ```
 
-or to run an individual test of a specific protocol (e.g. for Morpho-AaveV2 Optimizer):
+or to run an individual test of a specific protocol (e.g. for the Morpho-AaveV2 Optimizer):
 
 ```bash
 make test-testBorrow1 PROTOCOL=aave-v2
@@ -153,7 +153,7 @@ If you want to call a custom forge command and not have to edit the `Makefile`, 
 :warning: The `export_env.sh` script exports environment variables in the current shell, meaning that subsequent calls to `make` or `forge` will use those variables. Variables defined in the `.env.local` file will still override those if you run `make` later. If you don't want to change variables in the current shell, you can always create a new shell in one of the following ways:
 
 - use `( . ./export_env.sh && forge test )` if the command you want to run is `forge test`
-- use `bash` and then `. ./export_env.sh` followed your commands and then `exit` to return to the parent shell and clear the environment variables.
+- use `bash` and then `. ./export_env.sh` followed by your commands and then `exit` to return to the parent shell and clear the environment variables.
 
 ---
 
@@ -184,7 +184,7 @@ The report is then usable either:
 - via [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) following [this tutorial](https://mirror.xyz/devanon.eth/RrDvKPnlD-pmpuW7hQeR5wWdVjklrpOgPCOA-PJkWFU)
 - via HTML, using `make lcov-html` to transform the report and opening `coverage/index.html`
 
-:warning: Test coverage is not available on Morpho-AaveV2 Optimizer for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
+:warning: Test coverage is not available on the Morpho-AaveV2 Optimizer for [this reason](https://github.com/foundry-rs/foundry/issues/3357#issuecomment-1297192171)
 
 ---
 
@@ -193,7 +193,7 @@ The report is then usable either:
 2 CI pipelines are currently running on every PR to check that the changes introduced are not modifying the storage layout of proxied smart contracts in an unsafe way:
 
 - [storage-layout.sh](./scripts/storage-layout.sh) checks that the latest foundry storage layout snapshot is identical to the committed storage layout snapshot
-- [foundry-storage-check](https://github.com/Rubilmax/foundry-storage-diff) is in the test phase and will progressively replace the snapshot check
+- [foundry-storage-check](https://github.com/Rubilmax/foundry-storage-diff) is in test phase and will progressively replace the snapshot check
 
 In the case the storage layout snapshots checked by `storage-layout.sh` are not identical, the developer must commit the updated storage layout snapshot stored under [snapshots/](./snapshots/) by running:
 
