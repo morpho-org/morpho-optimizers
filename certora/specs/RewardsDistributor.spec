@@ -7,7 +7,6 @@ methods {
     function claimed(address) external returns uint256 envfree;
     function claim(address, uint256, bytes32[]) external envfree;
 
-    function T.initialized() external returns bool envfree;
     function T.newAccount(address, address, uint256) external envfree;
     function T.newNode(address, address, address, address) external envfree;
     function T.setRoot(address, address) external envfree;
