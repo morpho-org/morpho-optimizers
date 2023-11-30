@@ -75,6 +75,23 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
     assert _claimable == T.getValue(tree, _account);
 }
 
+rule claimCorrectnessZero(address _account, uint256 _claimable, bytes32[] _proof) {
+    env e; address tree; address root;
+    require root == T.getRoot(tree);
+
+    require T.getHash(tree, root) == currRoot();
+
+    requireInvariant createdWellFormed(tree, _account);
+    requireInvariant createdWellFormed(tree, root);
+
+    require _proof.length == 0;
+
+    claim(_account, _claimable, _proof);
+
+    assert _claimable == T.getValue(tree, _account);
+}
+
+
 // rule claimCorrectnessStrong(address _account, uint256 _claimable, bytes32[] _proof) {
 //     env e; address tree1; address root1; address tree2; address root2;
 //     require root1 == T.getRoot(tree1);
