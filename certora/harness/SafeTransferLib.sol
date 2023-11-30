@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {ERC20} from "../../lib/solmate/src/tokens/ERC20.sol";
+import {ERC20} from "./ERC20.sol";
 
 library SafeTransferLib {
     function safeTransfer(

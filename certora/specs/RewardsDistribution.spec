@@ -1,5 +1,5 @@
 using MerkleTrees as T;
-using MorphoToken as MorphoToken;
+using ERC20 as MorphoToken;
 
 methods {
     function MORPHO() external returns address envfree;
