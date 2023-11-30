@@ -1,4 +1,4 @@
-This folder contains the verification of the Morpho Optimizers using CVL, Certora's Verification Language.
+This folder contains the verification of the rewards distribution mechanism of Morpho Optimizers using CVL, Certora's Verification Language.
 
 # Folder and file structure
 
