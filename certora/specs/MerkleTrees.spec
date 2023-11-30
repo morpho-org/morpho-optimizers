@@ -2,7 +2,6 @@ methods {
     // This function is only used for the verification.
     function findAndClaimAt(address, address, address) external => NONDET DELETE;
 
-    function initialized() external returns bool envfree;
     function newAccount(address, address, uint256) external envfree;
     function newNode(address, address, address, address) external envfree;
     function setRoot(address, address) external envfree;
@@ -35,7 +34,6 @@ invariant notCreatedIsEmpty(address tree, address addr)
 invariant wellFormed(address tree, address addr)
     isWellFormed(tree, addr)
     { preserved {
-        require initialized();
         requireInvariant notCreatedIsEmpty(tree, addr);
       }
       preserved newNode(address _, address parent, address left, address right) {

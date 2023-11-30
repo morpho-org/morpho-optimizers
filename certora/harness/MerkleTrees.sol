@@ -9,13 +9,6 @@ contract MerkleTrees {
 
     mapping(address => MerkleTreeLib.Tree) trees;
 
-    bool public initialized;
-
-    constructor() {
-        require(initialized == false);
-        initialized = true;
-    }
-
     function newAccount(
         address treeAddress,
         address addr,
