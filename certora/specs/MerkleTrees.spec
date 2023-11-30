@@ -1,4 +1,7 @@
 methods {
+    // This function is only used for the verification.
+    function findAndClaimAt(address, address, address) external => NONDET DELETE;
+
     function initialized() external returns bool envfree;
     function newAccount(address, address, uint256) external envfree;
     function newNode(address, address, address, address) external envfree;
@@ -12,12 +15,6 @@ methods {
     function getHash(address, address) external returns bytes32 envfree;
     function findAndClaimAt(address, address, address) external envfree;
     function isWellFormed(address, address) external returns bool envfree;
-
-    function _.claim(address, uint256, bytes32[]) external => HAVOC_ALL;
-}
-
-hook Sstore ignore bool v STORAGE {
-    require false;
 }
 
 definition isEmpty(address tree, address addr) returns bool =
