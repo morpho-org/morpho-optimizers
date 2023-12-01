@@ -27,7 +27,7 @@ library MerkleTreeLib {
 
         node.created = true;
         node.value = value;
-        node.hashNode = keccak256(abi.encode(bytes32(bytes20(addr)), bytes32(value)));
+        node.hashNode = keccak256(abi.encodePacked(addr, value));
         require(node.hashNode << 160 != 0);
     }
 
@@ -66,8 +66,7 @@ library MerkleTreeLib {
 
         if (node.left == address(0) && node.right == address(0)) {
             return
-                node.value != 0 &&
-                node.hashNode == keccak256(abi.encode(bytes32(bytes20(addr)), bytes32(node.value)));
+                node.value != 0 && node.hashNode == keccak256(abi.encodePacked(addr, node.value));
         } else {
             // Well-formed nodes have exactly 0 or 2 children.
             if (node.left == address(0) || node.right == address(0)) return false;

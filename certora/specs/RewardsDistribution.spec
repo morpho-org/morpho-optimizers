@@ -77,11 +77,10 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
 rule claimCorrectnessZero(address _account, uint256 _claimable, bytes32[] _proof) {
     env e; address tree; address root;
-    require root == T.getRoot(tree);
 
+    require root == T.getRoot(tree);
     require T.getHash(tree, root) == currRoot();
 
-    requireInvariant createdWellFormed(tree, _account);
     requireInvariant createdWellFormed(tree, root);
 
     require _proof.length == 0;
