@@ -19,7 +19,6 @@ methods {
     function T.getHash(address, address) external returns bytes32 envfree;
     function T.findAndClaimAt(address, address, address) external envfree;
 
-    function MorphoToken.transfer(address, uint256) external;
     function MorphoToken.balanceOf(address) external returns uint256 envfree;
 }
 
@@ -63,7 +62,7 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
-    env e; address tree; address root;
+    address tree; address root;
     require root == T.getRoot(tree);
 
     require T.getHash(tree, root) == currRoot();
@@ -76,9 +75,9 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 }
 
 rule claimCorrectnessZero(address _account, uint256 _claimable, bytes32[] _proof) {
-    env e; address tree; address root;
-
+    address tree; address root;
     require root == T.getRoot(tree);
+
     require T.getHash(tree, root) == currRoot();
 
     requireInvariant createdWellFormed(tree, root);
@@ -90,6 +89,24 @@ rule claimCorrectnessZero(address _account, uint256 _claimable, bytes32[] _proof
     assert _claimable == T.getValue(tree, _account);
 }
 
+rule claimCorrectnessOne(address _account, uint256 _claimable, bytes32[] _proof) {
+    address tree; address root; address left; address right;
+    require root == T.getRoot(tree);
+    require left == T.getLeft(tree, root);
+    require right == T.getRight(tree, root);
+
+    require T.getHash(tree, root) == currRoot();
+
+    requireInvariant createdWellFormed(tree, root);
+    requireInvariant createdWellFormed(tree, left);
+    requireInvariant createdWellFormed(tree, right);
+
+    require _proof.length == 1;
+
+    claim(_account, _claimable, _proof);
+
+    assert _claimable == T.getValue(tree, _account);
+}
 
 // rule claimCorrectnessStrong(address _account, uint256 _claimable, bytes32[] _proof) {
 //     env e; address tree1; address root1; address tree2; address root2;
