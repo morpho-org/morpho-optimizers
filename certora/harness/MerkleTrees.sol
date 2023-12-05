@@ -57,4 +57,22 @@ contract MerkleTrees {
     function getHash(address treeAddress, address addr) public view returns (bytes32) {
         return trees[treeAddress].getHash(addr);
     }
+
+    function fullyCreatedWellFormed(address treeAddress, address addr) public view {
+        require(trees[treeAddress].isWellFormed(addr));
+        require(
+            trees[treeAddress].getCreated(addr) ||
+                (trees[treeAddress].getLeft(addr) == address(0) &&
+                    trees[treeAddress].getRight(addr) == address(0) &&
+                    trees[treeAddress].getValue(addr) &&
+                    trees[treeAddress].getHash(addr) == bytes(0))
+        );
+
+        address left = trees[treeAddress].getLeft(addr);
+        address right = trees[treeAddress].getRight(addr);
+        if (left != address(0)) {
+            fullyCreatedWellFormed(treeAddress, left);
+            fullyCreatedWellFormed(treeAddress, right);
+        }
+    }
 }

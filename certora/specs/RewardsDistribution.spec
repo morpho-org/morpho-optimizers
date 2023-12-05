@@ -17,6 +17,7 @@ methods {
     function T.getRight(address, address) external returns address envfree;
     function T.getValue(address, address) external returns uint256 envfree;
     function T.getHash(address, address) external returns bytes32 envfree;
+    function T.fullyCreatedWellFormed(address, address) external envfree;
 
     function MorphoToken.balanceOf(address) external returns uint256 envfree;
 }
@@ -66,7 +67,7 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
     require T.getHash(tree, root) == currRoot();
 
-    requireInvariant createdWellFormed(tree, _account);
+    T.fullyCreatedWellFormed(tree, root);
 
     claim(_account, _claimable, _proof);
 

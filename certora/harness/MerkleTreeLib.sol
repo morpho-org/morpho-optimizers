@@ -82,10 +82,6 @@ library MerkleTreeLib {
         }
     }
 
-    function findProof(Tree storage, address) public pure returns (bytes32[] memory) {
-        return new bytes32[](0); // TODO
-    }
-
     function getRoot(Tree storage tree) public view returns (address) {
         return tree.root;
     }
