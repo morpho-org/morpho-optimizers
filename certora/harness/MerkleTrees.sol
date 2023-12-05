@@ -58,7 +58,13 @@ contract MerkleTrees {
         return trees[treeAddress].getHash(addr);
     }
 
-    function fullyCreatedWellFormed(address treeAddress, address addr) public view {
+    function fullyCreatedWellFormed(
+        address treeAddress,
+        address addr,
+        uint256 depth
+    ) public view {
+        if (depth == 0) return;
+
         require(trees[treeAddress].isWellFormed(addr));
         require(
             trees[treeAddress].getCreated(addr) ||
@@ -71,8 +77,8 @@ contract MerkleTrees {
         address left = trees[treeAddress].getLeft(addr);
         address right = trees[treeAddress].getRight(addr);
         if (left != address(0)) {
-            fullyCreatedWellFormed(treeAddress, left);
-            fullyCreatedWellFormed(treeAddress, right);
+            fullyCreatedWellFormed(treeAddress, left, depth - 1);
+            fullyCreatedWellFormed(treeAddress, right, depth - 1);
         }
     }
 }
