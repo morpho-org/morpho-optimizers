@@ -57,15 +57,4 @@ contract MerkleTrees {
     function getHash(address treeAddress, address addr) public view returns (bytes32) {
         return trees[treeAddress].getHash(addr);
     }
-
-    function findAndClaimAt(
-        address treeAddress,
-        address rewardsDistributor,
-        address addr
-    ) public {
-        MerkleTreeLib.Tree storage tree = trees[treeAddress];
-        uint256 claimable = tree.getValue(addr);
-        bytes32[] memory proof = tree.findProof(addr);
-        RewardsDistributor(rewardsDistributor).claim(addr, claimable, proof);
-    }
 }

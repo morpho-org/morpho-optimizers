@@ -1,7 +1,4 @@
 methods {
-    // This function is only used for the verification.
-    function findAndClaimAt(address, address, address) external => NONDET DELETE;
-
     function newAccount(address, address, uint256) external envfree;
     function newNode(address, address, address, address) external envfree;
     function setRoot(address, address) external envfree;
@@ -12,7 +9,6 @@ methods {
     function getRight(address, address) external returns address envfree;
     function getValue(address, address) external returns uint256 envfree;
     function getHash(address, address) external returns bytes32 envfree;
-    function findAndClaimAt(address, address, address) external envfree;
     function isWellFormed(address, address) external returns bool envfree;
 }
 
