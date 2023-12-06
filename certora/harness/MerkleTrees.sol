@@ -66,13 +66,6 @@ contract MerkleTrees {
         if (depth == 0) return;
 
         require(trees[treeAddress].isWellFormed(addr));
-        require(
-            trees[treeAddress].getCreated(addr) ||
-                (trees[treeAddress].getLeft(addr) == address(0) &&
-                    trees[treeAddress].getRight(addr) == address(0) &&
-                    trees[treeAddress].getValue(addr) == 0 &&
-                    trees[treeAddress].getHash(addr) == bytes32(0))
-        );
 
         address left = trees[treeAddress].getLeft(addr);
         address right = trees[treeAddress].getRight(addr);
