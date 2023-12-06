@@ -57,6 +57,7 @@ contract MerkleTrees {
         return trees[treeAddress].isWellFormed(addr);
     }
 
+    // Only go up to a given depth, to avoid CVL recursion protection.
     function wellFormedUpTo(
         address treeAddress,
         address addr,

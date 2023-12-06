@@ -6,8 +6,7 @@ The [`certora/specs`](specs) folder contains the specification files.
 
 The [`certora/confs`](confs) folder contains a configuration file for each corresponding specification file.
 
-The [`certora/harness`](harness) folder contains contracts that enable the verification of Morpho Blue.
-Notably, this allows handling the fact that library functions should be called from a contract to be verified independently, and it allows defining needed getters.
+The [`certora/helpers`](helpers) folder contains files that enable the verification of Morpho Blue.
 
 # Getting started
 

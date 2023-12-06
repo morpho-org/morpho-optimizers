@@ -53,6 +53,7 @@ library MerkleTreeLib {
         require(leftNode.created && rightNode.created);
         require(leftNode.hashNode <= rightNode.hashNode);
 
+        // Notice that internal nodes have value 0.
         parentNode.created = true;
         parentNode.left = left;
         parentNode.right = right;
@@ -70,6 +71,8 @@ library MerkleTreeLib {
 
         if (!node.created) return isEmpty(node);
 
+        // Trick to make the verification discriminate between internal nodes and leaves.
+        // Safe because it will prompt a revert if this condition is not respected.
         if (node.hashNode << 160 == 0) return false;
 
         if (node.left == address(0) && node.right == address(0)) {
@@ -80,7 +83,8 @@ library MerkleTreeLib {
             if (node.left == address(0) || node.right == address(0)) return false;
             Node storage left = tree.nodes[node.left];
             Node storage right = tree.nodes[node.right];
-            bool sorted = left.hashNode <= right.hashNode; // Well-formed tree.nodes should be pair sorted.
+            // Well-formed nodes should have its children pair-sorted.
+            bool sorted = left.hashNode <= right.hashNode;
             return
                 left.created &&
                 right.created &&
