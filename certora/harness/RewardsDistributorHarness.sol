@@ -13,6 +13,7 @@ contract RewardsDistributorHarness is Ownable {
     /// STORAGE ///
 
     ERC20 public immutable MORPHO;
+    bytes32 public prevRoot;
     bytes32 public currRoot;
     mapping(address => uint256) public claimed;
 
@@ -39,6 +40,7 @@ contract RewardsDistributorHarness is Ownable {
     /// EXTERNAL ///
 
     function updateRoot(bytes32 _newRoot) external onlyOwner {
+        prevRoot = currRoot;
         currRoot = _newRoot;
         emit RootUpdated(_newRoot);
     }
@@ -59,8 +61,7 @@ contract RewardsDistributorHarness is Ownable {
             _proof,
             keccak256(abi.encodePacked(_account, _claimable))
         );
-        // HARNESS: removed prevRoot
-        if (candidateRoot != currRoot) revert ProofInvalidOrExpired();
+        if (candidateRoot != currRoot && candidateRoot != prevRoot) revert ProofInvalidOrExpired();
 
         uint256 alreadyClaimed = claimed[_account];
         if (_claimable <= alreadyClaimed) revert AlreadyClaimed();

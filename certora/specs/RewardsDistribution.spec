@@ -2,6 +2,7 @@ using MerkleTrees as MerkleTrees;
 using MorphoToken as MorphoToken;
 
 methods {
+    function prevRoot() external returns bytes32 envfree;
     function currRoot() external returns bytes32 envfree;
     function claim(address, uint256, bytes32[]) external envfree;
 
@@ -25,15 +26,19 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
-    address tree; address root;
+    address prevTree; address prevNode;
+    address currTree; address currNode;
 
-    // No need to make sure that currRoot is the root of the tree: one can pass an internal node instead.
+    // No need to make sure that currNode (resp prevNode) is equal to currRoot (resp prevRoot): one can pass an internal node instead.
 
-    require MerkleTrees.getHash(tree, root) == currRoot();
+    require MerkleTrees.getHash(prevTree, prevNode) == prevRoot();
+    MerkleTrees.wellFormedUpTo(prevTree, prevNode, 3);
 
-    MerkleTrees.wellFormedUpTo(tree, root, 3);
+    require MerkleTrees.getHash(currTree, currNode) == currRoot();
+    MerkleTrees.wellFormedUpTo(currTree, currNode, 3);
 
     claim(_account, _claimable, _proof);
 
-    assert _claimable == MerkleTrees.getValue(tree, _account);
+    assert _claimable == MerkleTrees.getValue(currTree, _account) ||
+           _claimable == MerkleTrees.getValue(prevTree, _account);
 }
