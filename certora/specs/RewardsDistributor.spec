@@ -4,6 +4,7 @@ using MorphoToken as MorphoToken;
 methods {
     function prevRoot() external returns bytes32 envfree;
     function currRoot() external returns bytes32 envfree;
+    function claimed(address) external returns uint256 envfree;
     function claim(address, uint256, bytes32[]) external envfree;
 
     function MerkleTrees.getValue(address, address) external returns uint256 envfree;
@@ -14,15 +15,23 @@ methods {
 }
 
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
-    env e;  uint256 claimed;
+    claim(_account, _claimable, _proof);
 
-    require (claimed <= _claimable);
+    uint256 _claimable2;
+    claim@withrevert(_account, _claimable2, _proof);
+
+    assert lastReverted;
+}
+
+rule transferredTokens(address _account, uint256 _claimable, bytes32[] _proof) {
+    uint256 balanceBefore = MorphoToken.balanceOf(_account);
+    uint256 claimedBefore = claimed(_account);
 
     claim(_account, _claimable, _proof);
 
-    claim@withrevert(_account, claimed, _proof);
+    uint256 balanceAfter = MorphoToken.balanceOf(_account);
 
-    assert lastReverted;
+    assert balanceAfter - balanceBefore == _claimable - claimedBefore;
 }
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
