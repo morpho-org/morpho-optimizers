@@ -18,7 +18,7 @@ methods {
 rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     claim(_account, _claimable, _proof);
 
-    assert _claimable == claimed(account);
+    assert _claimable == claimed(_account);
 
     uint256 _claimable2;
     // Assume that the second claim is smaller or equal to the previous claimed amount.
