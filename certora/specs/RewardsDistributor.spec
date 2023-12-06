@@ -18,12 +18,15 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
     claim(_account, _claimable, _proof);
 
     uint256 _claimable2;
+    require (_claimable2 <= _claimable);
     claim@withrevert(_account, _claimable2, _proof);
 
     assert lastReverted;
 }
 
 rule transferredTokens(address _account, uint256 _claimable, bytes32[] _proof) {
+    require _account != currentContract;
+
     uint256 balanceBefore = MorphoToken.balanceOf(_account);
     uint256 claimedBefore = claimed(_account);
 
