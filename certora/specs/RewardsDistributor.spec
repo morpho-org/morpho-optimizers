@@ -30,6 +30,8 @@ rule transferredTokens(address _account, uint256 _claimable, bytes32[] _proof) {
     uint256 balanceBefore = MorphoToken.balanceOf(_account);
     uint256 claimedBefore = claimed(_account);
 
+    require balanceBefore + MorphoToken.balanceOf(currentContract) < 2^256;
+
     claim(_account, _claimable, _proof);
 
     uint256 balanceAfter = MorphoToken.balanceOf(_account);
