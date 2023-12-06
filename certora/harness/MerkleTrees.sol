@@ -30,10 +30,6 @@ contract MerkleTrees {
         trees[treeAddress].setRoot(addr);
     }
 
-    function isWellFormed(address treeAddress, address addr) public view returns (bool) {
-        return trees[treeAddress].isWellFormed(addr);
-    }
-
     function getRoot(address treeAddress) public view returns (address) {
         return trees[treeAddress].getRoot();
     }
@@ -58,7 +54,11 @@ contract MerkleTrees {
         return trees[treeAddress].getHash(addr);
     }
 
-    function fullyCreatedWellFormed(
+    function isWellFormed(address treeAddress, address addr) public view returns (bool) {
+        return trees[treeAddress].isWellFormed(addr);
+    }
+
+    function wellFormedUpTo(
         address treeAddress,
         address addr,
         uint256 depth
@@ -70,8 +70,8 @@ contract MerkleTrees {
         address left = trees[treeAddress].getLeft(addr);
         address right = trees[treeAddress].getRight(addr);
         if (left != address(0)) {
-            fullyCreatedWellFormed(treeAddress, left, depth - 1);
-            fullyCreatedWellFormed(treeAddress, right, depth - 1);
+            wellFormedUpTo(treeAddress, left, depth - 1);
+            wellFormedUpTo(treeAddress, right, depth - 1);
         }
     }
 }

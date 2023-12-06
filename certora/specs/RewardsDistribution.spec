@@ -1,13 +1,13 @@
-using MerkleTrees as T;
-using ERC20 as MorphoToken;
+using MerkleTrees as MerkleTrees;
+using MorphoToken as MorphoToken;
 
 methods {
     function currRoot() external returns bytes32 envfree;
     function claim(address, uint256, bytes32[]) external envfree;
 
-    function T.getValue(address, address) external returns uint256 envfree;
-    function T.getHash(address, address) external returns bytes32 envfree;
-    function T.fullyCreatedWellFormed(address, address, uint256) external envfree;
+    function MerkleTrees.getValue(address, address) external returns uint256 envfree;
+    function MerkleTrees.getHash(address, address) external returns bytes32 envfree;
+    function MerkleTrees.wellFormedUpTo(address, address, uint256) external envfree;
 
     function MorphoToken.balanceOf(address) external returns uint256 envfree;
 }
@@ -29,11 +29,11 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
 
     // No need to make sure that currRoot is the root of the tree: one can pass an internal node instead.
 
-    require T.getHash(tree, root) == currRoot();
+    require MerkleTrees.getHash(tree, root) == currRoot();
 
-    T.fullyCreatedWellFormed(tree, root, 3);
+    MerkleTrees.wellFormedUpTo(tree, root, 3);
 
     claim(_account, _claimable, _proof);
 
-    assert _claimable == T.getValue(tree, _account);
+    assert _claimable == MerkleTrees.getValue(tree, _account);
 }
