@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./MerkleTreeLib.sol";
-import "src/common/rewards-distribution/RewardsDistributor.sol";
 
 contract MerkleTrees {
     using MerkleTreeLib for MerkleTreeLib.Tree;
