@@ -63,45 +63,11 @@ rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
 
 rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
     address tree; address root;
-    require root == T.getRoot(tree);
+    // No need to make sure that root is the actual root of the tree: one can pass an internal node as the root.
 
     require T.getHash(tree, root) == currRoot();
 
     T.fullyCreatedWellFormed(tree, root, 3);
-
-    claim(_account, _claimable, _proof);
-
-    assert _claimable == T.getValue(tree, _account);
-}
-
-rule claimCorrectnessZero(address _account, uint256 _claimable, bytes32[] _proof) {
-    address tree; address root;
-    require root == T.getRoot(tree);
-
-    require T.getHash(tree, root) == currRoot();
-
-    requireInvariant createdWellFormed(tree, root);
-
-    require _proof.length == 0;
-
-    claim(_account, _claimable, _proof);
-
-    assert _claimable == T.getValue(tree, _account);
-}
-
-rule claimCorrectnessOne(address _account, uint256 _claimable, bytes32[] _proof) {
-    address tree; address root; address left; address right;
-    require root == T.getRoot(tree);
-    require left == T.getLeft(tree, root);
-    require right == T.getRight(tree, root);
-
-    require T.getHash(tree, root) == currRoot();
-
-    requireInvariant createdWellFormed(tree, root);
-    requireInvariant createdWellFormed(tree, left);
-    requireInvariant createdWellFormed(tree, right);
-
-    require _proof.length == 1;
 
     claim(_account, _claimable, _proof);
 
