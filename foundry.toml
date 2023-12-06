@@ -7,6 +7,7 @@ via_ir = false
 revert_strings = "default"
 names = true
 sizes = true
+fs_permissions = [{access = "read", path= "./"}]
 
 [profile.default.fuzz]
 runs = 1024
