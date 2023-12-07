@@ -7,7 +7,6 @@ via_ir = false
 revert_strings = "default"
 names = true
 sizes = true
-fs_permissions = [{access = "read", path= "./"}]
 
 [profile.default.fuzz]
 runs = 1024
@@ -20,3 +19,8 @@ fork_block_number = 15_581_371
 
 [profile.aave-v2]
 fork_block_number = 15_581_371 # Block number when the Aave's V2 IRM was updated for the stETH.
+
+[profile.checker]
+test = 'certora/checker'
+fs_permissions = [{access = "read", path= "./"}]
+match_contract = 'Checker'
