@@ -29,9 +29,9 @@ library MerkleTreeLib {
         uint256 value
     ) internal {
         Node storage node = tree.nodes[addr];
-        require(addr != address(0));
-        require(!node.created);
-        require(value != 0);
+        require(addr != address(0), "addr is zero address");
+        require(!node.created, "node is already created");
+        require(value != 0, "value is zero");
 
         node.created = true;
         node.value = value;
@@ -48,17 +48,18 @@ library MerkleTreeLib {
         Node storage parentNode = tree.nodes[parent];
         Node storage leftNode = tree.nodes[left];
         Node storage rightNode = tree.nodes[right];
-        require(parent != address(0));
-        require(!parentNode.created);
-        require(leftNode.created && rightNode.created);
-        require(leftNode.hashNode <= rightNode.hashNode);
+        require(parent != address(0), "parent is zero address");
+        require(!parentNode.created, "parent is already created");
+        require(leftNode.created, "left is not created");
+        require(rightNode.created, "right is not created");
+        require(leftNode.hashNode <= rightNode.hashNode, "children are not pair sorted");
 
         // Notice that internal nodes have value 0.
         parentNode.created = true;
         parentNode.left = left;
         parentNode.right = right;
         parentNode.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
-        require(parentNode.hashNode << 160 != 0);
+        require(parentNode.hashNode << 160 != 0, "invalid node hash");
     }
 
     function setRoot(Tree storage tree, address addr) internal {
