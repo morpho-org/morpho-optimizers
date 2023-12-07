@@ -1,3 +1,4 @@
+import sys
 import json
 from web3 import Web3, EthereumTesterProvider
 
@@ -56,7 +57,7 @@ def walk(h):
         )
 
 
-with open("proofs.json") as input_file:
+with open(sys.argv[1]) as input_file:
     proofs = json.load(input_file)
     certificate["root"] = proofs["root"]
     certificate["leaf"] = []

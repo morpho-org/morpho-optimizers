@@ -25,7 +25,7 @@ contract Checker is Test {
 
     function testVerifyCertificate() public {
         string memory projectRoot = vm.projectRoot();
-        string memory path = string.concat(projectRoot, "/certora/checker/certificate.json");
+        string memory path = string.concat(projectRoot, "/certificate.json");
         string memory json = vm.readFile(path);
 
         uint256 leafLength = abi.decode(json.parseRaw(".leafLength"), (uint256));
