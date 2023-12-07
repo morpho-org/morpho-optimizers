@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "../../lib/morpho-utils/lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import "../helpers/MerkleTreeLib.sol";
-import "forge-std/Test.sol";
-import "forge-std/StdJson.sol";
+import "../../lib/forge-std/src/Test.sol";
+import "../../lib/forge-std/src/StdJson.sol";
 
 contract Checker is Test {
     using MerkleTreeLib for MerkleTreeLib.Tree;
