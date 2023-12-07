@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "../helpers/MerkleTreeLib.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
@@ -17,24 +18,39 @@ contract Checker is Test {
     }
 
     struct InternalNode {
+        address addr;
         address left;
         address right;
     }
 
-    function testZeroDepthTree() public {
+    function testVerifyCertificate() public {
         string memory projectRoot = vm.projectRoot();
-        string memory path = string.concat(projectRoot, "/certora/checker/simple_proofs.json");
+        string memory path = string.concat(projectRoot, "/certora/checker/certificate.json");
         string memory json = vm.readFile(path);
 
-        Leaf memory leaf1 = abi.decode(json.parseRaw(".leaf1"), (Leaf));
-        tree.newAccount(leaf1.addr, leaf1.value);
+        uint256 leafLength = abi.decode(json.parseRaw(".leafLength"), (uint256));
+        Leaf memory leaf;
+        for (uint256 i; i < leafLength; i++) {
+            leaf = abi.decode(
+                json.parseRaw(string.concat(".leaf[", Strings.toString(i), "]")),
+                (Leaf)
+            );
+            tree.newAccount(leaf.addr, leaf.value);
+        }
 
-        Leaf memory leaf2 = abi.decode(json.parseRaw(".leaf2"), (Leaf));
-        tree.newAccount(leaf2.addr, leaf2.value);
+        uint256 nodeLength = abi.decode(json.parseRaw(".nodeLength"), (uint256));
+        InternalNode memory node;
+        for (uint256 i; i < nodeLength; i++) {
+            node = abi.decode(
+                json.parseRaw(string.concat(".node[", Strings.toString(i), "]")),
+                (InternalNode)
+            );
+            tree.newNode(node.addr, node.left, node.right);
+        }
 
-        InternalNode memory node1 = abi.decode(json.parseRaw(".node1"), (InternalNode));
-        tree.newNode(address(1), node1.right, node1.left);
+        bytes32 root = abi.decode(json.parseRaw(".root"), (bytes32));
 
-        console.logBytes32(tree.getHash(address(1)));
+        assertTrue(tree.getCreated(node.addr), "unrecognized node");
+        assertEq(tree.getHash(node.addr), root, "mismatched roots");
     }
 }
