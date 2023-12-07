@@ -23,7 +23,7 @@ library MerkleTreeLib {
         address root;
     }
 
-    function newAccount(
+    function newLeaf(
         Tree storage tree,
         address addr,
         uint256 value
@@ -36,10 +36,10 @@ library MerkleTreeLib {
         node.created = true;
         node.value = value;
         node.hashNode = keccak256(abi.encodePacked(addr, value));
-        require(node.hashNode << 160 != 0);
+        require(node.hashNode << 160 != 0, "invalid leaf hash");
     }
 
-    function newNode(
+    function newInternalNode(
         Tree storage tree,
         address parent,
         address left,
@@ -54,10 +54,11 @@ library MerkleTreeLib {
         require(rightNode.created, "right is not created");
         require(leftNode.hashNode <= rightNode.hashNode, "children are not pair sorted");
 
-        // Notice that internal nodes have value 0.
         parentNode.created = true;
         parentNode.left = left;
         parentNode.right = right;
+        // The value of an internal node represents the sum of the values of the leaves underneath.
+        parentNode.value = leftNode.value + rightNode.value;
         parentNode.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
         require(parentNode.hashNode << 160 != 0, "invalid node hash");
     }

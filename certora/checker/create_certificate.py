@@ -60,6 +60,7 @@ def walk(h):
 with open(sys.argv[1]) as input_file:
     proofs = json.load(input_file)
     certificate["root"] = proofs["root"]
+    certificate["total"] = int(proofs["total"])
     certificate["leaf"] = []
     certificate["node"] = []
 

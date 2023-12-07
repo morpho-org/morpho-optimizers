@@ -8,21 +8,21 @@ contract MerkleTrees {
 
     mapping(address => MerkleTreeLib.Tree) trees;
 
-    function newAccount(
+    function newLeaf(
         address treeAddress,
         address addr,
         uint256 value
     ) public {
-        trees[treeAddress].newAccount(addr, value);
+        trees[treeAddress].newLeaf(addr, value);
     }
 
-    function newNode(
+    function newInternalNode(
         address treeAddress,
         address parent,
         address left,
         address right
     ) public {
-        trees[treeAddress].newNode(parent, left, right);
+        trees[treeAddress].newInternalNode(parent, left, right);
     }
 
     function setRoot(address treeAddress, address addr) public {

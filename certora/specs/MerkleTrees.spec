@@ -1,5 +1,5 @@
 methods {
-    function newNode(address, address, address, address) external envfree;
+    function newInternalNode(address, address, address, address) external envfree;
 
     function getRoot(address) external returns address envfree;
     function getCreated(address, address) external returns bool envfree;

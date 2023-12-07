@@ -35,7 +35,7 @@ contract Checker is Test {
                 json.parseRaw(string.concat(".leaf[", Strings.toString(i), "]")),
                 (Leaf)
             );
-            tree.newAccount(leaf.addr, leaf.value);
+            tree.newLeaf(leaf.addr, leaf.value);
         }
 
         uint256 nodeLength = abi.decode(json.parseRaw(".nodeLength"), (uint256));
@@ -45,12 +45,15 @@ contract Checker is Test {
                 json.parseRaw(string.concat(".node[", Strings.toString(i), "]")),
                 (InternalNode)
             );
-            tree.newNode(node.addr, node.left, node.right);
+            tree.newInternalNode(node.addr, node.left, node.right);
         }
 
-        bytes32 root = abi.decode(json.parseRaw(".root"), (bytes32));
-
         assertTrue(tree.getCreated(node.addr), "unrecognized node");
+
+        uint256 total = abi.decode(json.parseRaw(".total"), (uint256));
+        assertEq(tree.getValue(node.addr), total, "incorrect total rewards");
+
+        bytes32 root = abi.decode(json.parseRaw(".root"), (bytes32));
         assertEq(tree.getHash(node.addr), root, "mismatched roots");
     }
 }

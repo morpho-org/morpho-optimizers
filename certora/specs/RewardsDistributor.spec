@@ -65,22 +65,3 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
     assert _claimable == MerkleTrees.getValue(prevTree, _account) ||
            _claimable == MerkleTrees.getValue(currTree, _account);
 }
-
-// rule claimCompletness(address _account, uint256 _claimable, bytes32[] _proof) {
-//     // address prevTree; address prevNode;
-//     address currTree; address currNode;
-
-//     // Assume that prevRoot and currRoot correspond to prevTree and currTree.
-//     // require MerkleTrees.getHash(prevTree, prevNode) == prevRoot();
-//     require MerkleTrees.getHash(currTree, currNode) == currRoot();
-
-//     // No need to make sure that currNode (resp prevNode) is equal to currRoot (resp prevRoot): one can pass an internal node instead.
-
-//     // Assume that prevTree and currTree are well-formed.
-//     // MerkleTrees.wellFormedUpTo(prevTree, prevNode, 3);
-//     MerkleTrees.wellFormedUpTo(currTree, currNode, 3);
-
-//     claim@withrevert(_account, _claimable, _proof);
-
-//     satisfy !lastReverted;
-// }
