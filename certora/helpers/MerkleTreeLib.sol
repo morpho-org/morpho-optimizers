@@ -67,6 +67,11 @@ library MerkleTreeLib {
         tree.root = addr;
     }
 
+    // The specification of a well-formed tree is the following:
+    //   - empty nodes are well-formed
+    //   - other nodes should have non-zero value, where the leaf node contains the value of the account and internal nodes contain the sum of the values of its leaf children.
+    //   - correct hashing of leaves and of internal nodes
+    //   - internal nodes have their children pair sorted and not empty
     function isWellFormed(Tree storage tree, address addr) internal view returns (bool) {
         Node storage node = tree.nodes[addr];
 
@@ -76,9 +81,10 @@ library MerkleTreeLib {
         // Safe because it will prompt a revert if this condition is not respected.
         if (node.hashNode << 160 == 0) return false;
 
+        if (node.value == 0) return false;
+
         if (node.left == address(0) && node.right == address(0)) {
-            return
-                node.value != 0 && node.hashNode == keccak256(abi.encodePacked(addr, node.value));
+            return node.hashNode == keccak256(abi.encodePacked(addr, node.value));
         } else {
             // Well-formed nodes have exactly 0 or 2 children.
             if (node.left == address(0) || node.right == address(0)) return false;
@@ -90,7 +96,6 @@ library MerkleTreeLib {
                 !left.isEmpty() &&
                 !right.isEmpty() &&
                 sorted &&
-                node.value != 0 &&
                 node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
         }
     }
