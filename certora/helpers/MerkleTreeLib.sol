@@ -100,6 +100,10 @@ library MerkleTreeLib {
         }
     }
 
+    function isEmpty(Tree storage tree, address addr) internal view returns (bool) {
+        return tree.nodes[addr].isEmpty();
+    }
+
     function getRoot(Tree storage tree) internal view returns (address) {
         return tree.root;
     }

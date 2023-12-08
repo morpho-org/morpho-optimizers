@@ -48,7 +48,7 @@ contract Checker is Test {
             tree.newInternalNode(node.addr, node.left, node.right);
         }
 
-        assertTrue(tree.getCreated(node.addr), "unrecognized node");
+        assertTrue(!tree.isEmpty(node.addr), "empty root");
 
         uint256 total = abi.decode(json.parseRaw(".total"), (uint256));
         assertEq(tree.getValue(node.addr), total, "incorrect total rewards");
