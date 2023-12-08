@@ -10,6 +10,8 @@ The [`certora/helpers`](helpers) folder contains files that enable the verific
 
 # Getting started
 
+## Certora specification verification
+
 Install `certora-cli` package with `pip install certora-cli`.
 To verify specification files, pass to `certoraRun` the corresponding configuration file in the [`certora/confs`](confs) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
@@ -18,4 +20,26 @@ For example, at the root of the repository:
 
 ```
 certoraRun certora/confs/MerkleTrees.conf --rule wellFormed
+```
+
+## Merkle tree verification
+
+To verify that a given list of proofs corresponds to a valid Merkle tree, you must generate a certificate from it.
+This assumes that the list of proofs is in the expected JSON format.
+For example, at the root of the repository, given a `proofs.json` file:
+
+```
+python certora/checker/create_certificate.py proofs.json
+```
+
+This requires installing the corresponding libraries first:
+
+```
+pip install web3 eth-tester py-evm
+```
+
+Then, verify this certificate:
+
+```
+FOUNDRY_PROFILE=checker forge test
 ```
