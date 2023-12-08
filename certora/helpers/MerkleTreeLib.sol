@@ -90,8 +90,8 @@ library MerkleTreeLib {
             return
                 left.created &&
                 right.created &&
-                node.value == 0 &&
                 sorted &&
+                node.value != 0 &&
                 node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
         }
     }
