@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 library MerkleTreeLib {
+    using MerkleTreeLib for Node;
+
     struct Node {
-        bool created;
         address left;
         address right;
         uint256 value;
@@ -30,10 +31,9 @@ library MerkleTreeLib {
     ) internal {
         Node storage node = tree.nodes[addr];
         require(addr != address(0), "addr is zero address");
-        require(!node.created, "node is already created");
+        require(node.isEmpty(), "leaf is not empty");
         require(value != 0, "value is zero");
 
-        node.created = true;
         node.value = value;
         node.hashNode = keccak256(abi.encodePacked(addr, value));
         require(node.hashNode << 160 != 0, "invalid leaf hash");
@@ -49,12 +49,11 @@ library MerkleTreeLib {
         Node storage leftNode = tree.nodes[left];
         Node storage rightNode = tree.nodes[right];
         require(parent != address(0), "parent is zero address");
-        require(!parentNode.created, "parent is already created");
-        require(leftNode.created, "left is not created");
-        require(rightNode.created, "right is not created");
+        require(parentNode.isEmpty(), "parent is not empty");
+        require(!leftNode.isEmpty(), "left is empty");
+        require(!rightNode.isEmpty(), "right is empty");
         require(leftNode.hashNode <= rightNode.hashNode, "children are not pair sorted");
 
-        parentNode.created = true;
         parentNode.left = left;
         parentNode.right = right;
         // The value of an internal node represents the sum of the values of the leaves underneath.
@@ -64,14 +63,14 @@ library MerkleTreeLib {
     }
 
     function setRoot(Tree storage tree, address addr) internal {
-        require(tree.nodes[addr].created);
+        require(!tree.nodes[addr].isEmpty(), "root is empty");
         tree.root = addr;
     }
 
     function isWellFormed(Tree storage tree, address addr) internal view returns (bool) {
         Node storage node = tree.nodes[addr];
 
-        if (!node.created) return isEmpty(node);
+        if (node.isEmpty()) return true;
 
         // Trick to make the verification discriminate between internal nodes and leaves.
         // Safe because it will prompt a revert if this condition is not respected.
@@ -88,8 +87,8 @@ library MerkleTreeLib {
             // Well-formed nodes should have its children pair-sorted.
             bool sorted = left.hashNode <= right.hashNode;
             return
-                left.created &&
-                right.created &&
+                !left.isEmpty() &&
+                !right.isEmpty() &&
                 sorted &&
                 node.value != 0 &&
                 node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
@@ -98,10 +97,6 @@ library MerkleTreeLib {
 
     function getRoot(Tree storage tree) internal view returns (address) {
         return tree.root;
-    }
-
-    function getCreated(Tree storage tree, address addr) internal view returns (bool) {
-        return tree.nodes[addr].created;
     }
 
     function getLeft(Tree storage tree, address addr) internal view returns (address) {

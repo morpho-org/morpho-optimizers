@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./MerkleTreeLib.sol";
 
 contract MerkleTrees {
+    using MerkleTreeLib for MerkleTreeLib.Node;
     using MerkleTreeLib for MerkleTreeLib.Tree;
 
     mapping(address => MerkleTreeLib.Tree) trees;
@@ -33,10 +34,6 @@ contract MerkleTrees {
         return trees[treeAddress].getRoot();
     }
 
-    function getCreated(address treeAddress, address addr) public view returns (bool) {
-        return trees[treeAddress].getCreated(addr);
-    }
-
     function getLeft(address treeAddress, address addr) public view returns (address) {
         return trees[treeAddress].getLeft(addr);
     }
@@ -51,6 +48,10 @@ contract MerkleTrees {
 
     function getHash(address treeAddress, address addr) public view returns (bytes32) {
         return trees[treeAddress].getHash(addr);
+    }
+
+    function isEmpty(address treeAddress, address addr) public view returns (bool) {
+        return trees[treeAddress].nodes[addr].isEmpty();
     }
 
     function isWellFormed(address treeAddress, address addr) public view returns (bool) {
