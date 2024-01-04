@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "../../ProdTest.sol";
 
 import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
-import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {Types} from "src/compound/libraries/Types.sol";
 
 import {PositionsManager} from "src/compound/PositionsManager.sol";
