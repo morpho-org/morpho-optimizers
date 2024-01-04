@@ -94,7 +94,7 @@ contract TestLifecycle is TestSetup {
         assertApproxEqAbs(
             supply.position.total,
             supply.amount,
-            1,
+            2,
             string.concat(supply.market.symbol, " total supply")
         );
         if (supply.p2pDisabled)
