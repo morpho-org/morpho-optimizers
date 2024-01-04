@@ -45,6 +45,10 @@ contract TestUpgradeLens is TestSetup {
         }
     }
 
+    function testSingledOut() public {
+        testNextRateShouldMatchRateAfterInteraction(4);
+    }
+
     function testNextRateShouldMatchRateAfterInteraction(uint96 _amount) public {
         _upgrade();
 
