@@ -401,7 +401,7 @@ contract TestLifecycle is TestSetup {
                     borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
-                ).mul(1.001 ether);
+                ).mul(1.01 ether);
 
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);

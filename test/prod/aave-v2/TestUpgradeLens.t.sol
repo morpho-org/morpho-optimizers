@@ -75,7 +75,7 @@ contract TestUpgradeLens is TestSetup {
                     oracle.getAssetPrice(supplyMarket.underlying),
                     supplyMarket.decimals,
                     supplyMarket.ltv
-                ).wadMul(1.001 ether);
+                ).wadMul(1.01 ether);
 
                 (uint256 expectedSupplyRate, , , ) = lens.getNextUserSupplyRatePerYear(
                     supplyMarket.poolToken,

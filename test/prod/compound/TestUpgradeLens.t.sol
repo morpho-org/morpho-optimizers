@@ -108,7 +108,7 @@ contract TestUpgradeLens is TestSetup {
                     borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
-                ).mul(1.001 ether);
+                ).mul(1.01 ether);
 
                 (uint256 expectedSupplyRate, , , ) = lens.getNextUserSupplyRatePerBlock(
                     supplyMarket.poolToken,

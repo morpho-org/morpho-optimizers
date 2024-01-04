@@ -332,7 +332,7 @@ contract TestLifecycle is TestSetup {
                     oracle.getAssetPrice(supplyMarket.underlying),
                     supplyMarket.decimals,
                     supplyMarket.ltv
-                ).wadMul(1.001 ether);
+                ).wadMul(1.01 ether);
 
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);
