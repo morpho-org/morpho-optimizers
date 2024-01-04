@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IERC20} from "src/aave-v2/interfaces/aave/IERC20.sol";
+import "../../ProdTest.sol";
 
 import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
-import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
+import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {Types} from "src/compound/libraries/Types.sol";
 
 import {PositionsManager} from "src/compound/PositionsManager.sol";
@@ -14,10 +12,8 @@ import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
 import "config/compound/Config.sol";
-import "@forge-std/console.sol";
-import "@forge-std/Test.sol";
 
-contract TestSetup is Config, Test {
+contract TestSetup is Config, ProdTest {
     using CompoundMath for uint256;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
@@ -67,17 +63,6 @@ contract TestSetup is Config, Test {
         interestRatesManager = morpho.interestRatesManager();
 
         rewardsManagerProxy = TransparentUpgradeableProxy(payable(address(rewardsManager)));
-    }
-
-    // Needed because AAVE packs the balance struct.
-    function dealAave(address who, uint104 amount) public {
-        // The slot of the balance struct "_balances" is 0.
-        bytes32 slot = keccak256(abi.encode(who, uint256(0)));
-        bytes32 initialValue = vm.load(aave, slot);
-        // The balance is stored in the first 104 bits.
-        bytes32 finalValue = initialValue | bytes32(uint256(amount));
-        vm.store(aave, slot, finalValue);
-        require(IERC20(aave).balanceOf(who) == uint256(amount));
     }
 
     function initUsers() internal {

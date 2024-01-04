@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "../../ProdTest.sol";
+
 import "src/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "src/aave-v2/interfaces/aave/IAToken.sol";
 import "src/aave-v2/interfaces/lido/ILido.sol";
 
 import {ReserveConfiguration} from "src/aave-v2/libraries/aave/ReserveConfiguration.sol";
-import "@morpho-dao/morpho-utils/math/WadRayMath.sol";
-import "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho-dao/morpho-utils/math/Math.sol";
 
 import {InterestRatesManager} from "src/aave-v2/InterestRatesManager.sol";
 import {MatchingEngine} from "src/aave-v2/MatchingEngine.sol";
@@ -20,10 +18,8 @@ import "src/aave-v2/Morpho.sol";
 
 import {User} from "../../../aave-v2/helpers/User.sol";
 import "config/aave-v2/Config.sol";
-import "@forge-std/console.sol";
-import "@forge-std/Test.sol";
 
-contract TestSetup is Config, Test {
+contract TestSetup is Config, ProdTest {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
     using PercentageMath for uint256;
@@ -74,17 +70,6 @@ contract TestSetup is Config, Test {
         entryPositionsManager = morpho.entryPositionsManager();
         exitPositionsManager = morpho.exitPositionsManager();
         interestRatesManager = morpho.interestRatesManager();
-    }
-
-    // Needed because AAVE packs the balance struct.
-    function dealAave(address who, uint104 amount) public {
-        // The slot of the balance struct "_balances" is 0.
-        bytes32 slot = keccak256(abi.encode(who, uint256(0)));
-        bytes32 initialValue = vm.load(aave, slot);
-        // The balance is stored in the first 104 bits.
-        bytes32 finalValue = initialValue | bytes32(uint256(amount));
-        vm.store(aave, slot, finalValue);
-        require(IERC20(aave).balanceOf(who) == uint256(amount));
     }
 
     function initUsers() internal {
