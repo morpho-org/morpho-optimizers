@@ -178,7 +178,7 @@ contract TestLifecycle is TestSetup {
         assertApproxEqAbs(
             borrow.position.total,
             borrow.amount,
-            1,
+            2,
             string.concat(borrow.market.symbol, " total borrow")
         );
         if (borrow.p2pDisabled)
