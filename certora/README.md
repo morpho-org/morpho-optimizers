@@ -8,9 +8,24 @@ The [`certora/confs`](confs) folder contains a configuration file for each cor
 
 The [`certora/helpers`](helpers) folder contains files that enable the verification of Morpho Blue.
 
+# Overview of the verification
+
+This work aims at providing a formally verified rewards checker.
+The rewards checker is composed of the [Checker.sol](checker/Checker.sol) file, which takes a certificate as an input.
+The certificate is assumed to contain the submitted root to verify, a total amount of rewards distributed, and a Merkle tree, and it is checked that:
+
+1. the Merkle tree is a well-formed Merkle tree
+2. the total amount of rewards distributed matches the total rewards contained in the Merkle tree
+
+Those checks are done by only using "trusted" functions, namely `newLeaf` and `newInternalNode`, that have been formally verified to preserve those invariants:
+
+- it is checked in [MerkleTrees.spec](specs/MerkleTrees.spec) that those functions lead to creating well-formed trees.
+  Well-formed trees also verify that the value of their internal node is the sum of the rewards it contains.
+- it is checked in [RewardsDistributor.spec](specs/RewardsDistributor.spec) that the rewards distributor is correct, meaning that claimed rewards correspond exactly to the rewards contained in the corresponding Merkle tree.
+
 # Getting started
 
-## Certora specification verification
+## Verifying the rewards checker
 
 Install `certora-cli` package with `pip install certora-cli`.
 To verify specification files, pass to `certoraRun` the corresponding configuration file in the [`certora/confs`](confs) folder.
@@ -22,7 +37,7 @@ For example, at the root of the repository:
 certoraRun certora/confs/MerkleTrees.conf --rule wellFormed
 ```
 
-## Merkle tree verification
+## Running the rewards checker
 
 To verify that a given list of proofs corresponds to a valid Merkle tree, you must generate a certificate from it.
 This assumes that the list of proofs is in the expected JSON format.
