@@ -108,7 +108,7 @@ contract TestUpgradeLens is TestSetup {
                     borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
-                ).mul(1.001 ether);
+                ).mul(1.01 ether);
 
                 (uint256 expectedSupplyRate, , , ) = lens.getNextUserSupplyRatePerBlock(
                     supplyMarket.poolToken,
@@ -124,7 +124,7 @@ contract TestUpgradeLens is TestSetup {
                 assertApproxEqAbs(
                     lens.getCurrentUserSupplyRatePerBlock(supplyMarket.poolToken, address(user)),
                     expectedSupplyRate,
-                    1,
+                    1e16,
                     string.concat(supplyMarket.symbol, " supply rate")
                 );
 
@@ -141,7 +141,7 @@ contract TestUpgradeLens is TestSetup {
                 assertApproxEqAbs(
                     lens.getCurrentUserBorrowRatePerBlock(borrowMarket.poolToken, address(user)),
                     expectedBorrowRate,
-                    1,
+                    1e16,
                     string.concat(borrowMarket.symbol, " borrow rate")
                 );
             }

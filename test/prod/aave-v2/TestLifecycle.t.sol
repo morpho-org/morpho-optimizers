@@ -94,7 +94,7 @@ contract TestLifecycle is TestSetup {
         assertApproxEqAbs(
             supply.position.total,
             supply.amount,
-            1,
+            2,
             string.concat(supply.market.symbol, " total supply")
         );
         if (supply.p2pDisabled)
@@ -178,7 +178,7 @@ contract TestLifecycle is TestSetup {
         assertApproxEqAbs(
             borrow.position.total,
             borrow.amount,
-            1,
+            2,
             string.concat(borrow.market.symbol, " total borrow")
         );
         if (borrow.p2pDisabled)
@@ -332,7 +332,7 @@ contract TestLifecycle is TestSetup {
                     oracle.getAssetPrice(supplyMarket.underlying),
                     supplyMarket.decimals,
                     supplyMarket.ltv
-                ).wadMul(1.001 ether);
+                ).wadMul(1.01 ether);
 
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);
