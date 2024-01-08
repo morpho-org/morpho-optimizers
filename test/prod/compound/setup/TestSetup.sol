@@ -69,7 +69,7 @@ contract TestSetup is Config, ProdTest {
 
         vm.label(address(user), "User");
 
-        dealAave(address(this), type(uint104).max);
+        deal(aave, address(this), type(uint104).max);
         deal(dai, address(this), type(uint256).max);
         deal(usdc, address(this), type(uint256).max);
         deal(usdt, address(this), type(uint256).max);
