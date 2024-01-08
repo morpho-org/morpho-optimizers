@@ -18,8 +18,6 @@ contract ProdTest is Test, BaseConfig {
         address user,
         uint256 amount
     ) internal override {
-        if (amount == 0) return;
-
         if (underlying == aave) {
             uint256 balance = ERC20(underlying).balanceOf(user);
 
