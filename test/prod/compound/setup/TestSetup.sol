@@ -69,9 +69,11 @@ contract TestSetup is Config, ProdTest {
 
         vm.label(address(user), "User");
 
+        // Only 104 bits are used for the balance in the AAVE balance slot
         deal(aave, address(this), type(uint104).max);
+        // Only 255 bits are used for the balance in the USDC balance slot
+        deal(usdc, address(this), 2**255 - 1);
         deal(dai, address(this), type(uint256).max);
-        deal(usdc, address(this), type(uint256).max);
         deal(usdt, address(this), type(uint256).max);
         deal(wbtc, address(this), type(uint256).max);
         deal(wEth, address(this), type(uint256).max);
