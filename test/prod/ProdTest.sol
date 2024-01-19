@@ -12,6 +12,10 @@ import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
 
 contract ProdTest is Test, BaseConfig {
+    function setUp() public virtual {
+        console.log("Testing at block", block.number);
+    }
+
     // Needed because AAVE packs the balance struct.
     function deal(
         address underlying,
