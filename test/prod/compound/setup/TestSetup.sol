@@ -46,9 +46,7 @@ contract TestSetup is Config, ProdTest {
 
     uint256 snapshotId = type(uint256).max;
 
-    function setUp() public virtual override {
-        super.setUp();
-
+    function setUp() public virtual {
         initContracts();
         setContractsLabels();
         initUsers();

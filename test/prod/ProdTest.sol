@@ -12,7 +12,8 @@ import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
 
 contract ProdTest is Test, BaseConfig {
-    function setUp() public virtual {
+    // Show block number for reproducibility.
+    function testShowBlockNumber() public view {
         console.log("Testing at block", block.number);
     }
 
