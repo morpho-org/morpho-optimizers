@@ -191,6 +191,7 @@ contract TestSetup is Config, ProdTest {
         uint96 _amount,
         uint256 _price
     ) internal view returns (uint256) {
+        ICToken poolToken = ICToken(_market.poolToken);
         return
             bound(
                 _amount,
@@ -199,9 +200,7 @@ contract TestSetup is Config, ProdTest {
                     Math.min(
                         Math.min(
                             (_market.maxBorrows - _market.totalBorrows) / 2,
-                            _market.underlying == wEth
-                                ? cEth.balance
-                                : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                            poolToken.getCash() - poolToken.totalReserves()
                         ),
                         MAX_USD_AMOUNT.div(_price)
                     ),
