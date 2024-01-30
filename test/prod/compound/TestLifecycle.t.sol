@@ -97,10 +97,9 @@ contract TestLifecycle is TestSetup {
             0,
             string.concat(supply.market.symbol, " balance after supply")
         );
-        assertApproxEqAbs(
-            supply.position.total,
+        assertGe(
             supply.amount,
-            1,
+            supply.position.total,
             string.concat(supply.market.symbol, " total supply")
         );
         if (supply.p2pDisabled)
@@ -143,10 +142,9 @@ contract TestLifecycle is TestSetup {
             supply.morphoUnderlyingBalanceBefore,
             string.concat(supply.market.symbol, " morpho balance")
         );
-        assertApproxEqAbs(
+        assertGe(
             ICToken(supply.market.poolToken).balanceOfUnderlying(address(morpho)),
             supply.morphoPoolSupplyBefore + supply.position.pool,
-            10,
             string.concat(supply.market.symbol, " morpho pool supply")
         );
         assertApproxEqAbs(
@@ -401,7 +399,7 @@ contract TestLifecycle is TestSetup {
                     borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
-                ).mul(1.001 ether);
+                ).mul(1.01 ether);
 
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);

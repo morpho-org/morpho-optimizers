@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "../../ProdTest.sol";
+
 import {CompoundMath} from "@morpho-dao/morpho-utils/math/CompoundMath.sol";
-import {PercentageMath} from "@morpho-dao/morpho-utils/math/PercentageMath.sol";
-import {SafeTransferLib, ERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import {Math} from "@morpho-dao/morpho-utils/math/Math.sol";
 import {Types} from "src/compound/libraries/Types.sol";
 
 import {PositionsManager} from "src/compound/PositionsManager.sol";
@@ -12,10 +11,8 @@ import {InterestRatesManager} from "src/compound/InterestRatesManager.sol";
 
 import {User} from "../../../compound/helpers/User.sol";
 import "config/compound/Config.sol";
-import "@forge-std/console.sol";
-import "@forge-std/Test.sol";
 
-contract TestSetup is Config, Test {
+contract TestSetup is Config, ProdTest {
     using CompoundMath for uint256;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
@@ -72,9 +69,11 @@ contract TestSetup is Config, Test {
 
         vm.label(address(user), "User");
 
-        deal(aave, address(this), type(uint256).max);
+        // Only 104 bits are used for the balance in the AAVE balance slot
+        deal(aave, address(this), type(uint104).max);
+        // Only 255 bits are used for the balance in the USDC balance slot
+        deal(usdc, address(this), 2**255 - 1);
         deal(dai, address(this), type(uint256).max);
-        deal(usdc, address(this), type(uint256).max);
         deal(usdt, address(this), type(uint256).max);
         deal(wbtc, address(this), type(uint256).max);
         deal(wEth, address(this), type(uint256).max);
@@ -192,6 +191,7 @@ contract TestSetup is Config, Test {
         uint96 _amount,
         uint256 _price
     ) internal view returns (uint256) {
+        ICToken poolToken = ICToken(_market.poolToken);
         return
             bound(
                 _amount,
@@ -200,9 +200,7 @@ contract TestSetup is Config, Test {
                     Math.min(
                         Math.min(
                             (_market.maxBorrows - _market.totalBorrows) / 2,
-                            _market.underlying == wEth
-                                ? cEth.balance
-                                : ERC20(_market.underlying).balanceOf(_market.poolToken)
+                            poolToken.getCash() - poolToken.totalReserves()
                         ),
                         MAX_USD_AMOUNT.div(_price)
                     ),

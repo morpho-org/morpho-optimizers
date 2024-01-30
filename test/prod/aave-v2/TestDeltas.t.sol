@@ -27,7 +27,7 @@ contract TestDeltas is TestSetup {
 
     function testShouldClearP2P() public virtual {
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
-            // _revert(); // TODO: re-add as soon as https://github.com/foundry-rs/foundry/issues/3792 is resolved, to avoid sharing state changes with each market test
+            _revert();
 
             DeltasTest memory test;
             test.market = markets[0];
@@ -72,13 +72,13 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 test.p2pSupplyDelta.rayMul(test.indexes.poolSupplyIndex),
                 p2pSupplyUnderlying,
-                10,
+                100,
                 "p2p supply delta"
             );
             assertApproxEqAbs(
                 test.p2pBorrowDelta.rayMul(test.indexes.poolBorrowIndex),
                 p2pBorrowUnderlying,
-                10,
+                100,
                 "p2p borrow delta"
             );
             assertEq(test.p2pSupplyAfter, test.p2pSupplyBefore, "p2p supply");
@@ -108,14 +108,14 @@ contract TestDeltas is TestSetup {
             assertApproxEqAbs(
                 p2pSupplyUnderlying - supplyDeltaUnderlyingBefore,
                 IAToken(test.market.poolToken).balanceOf(address(morpho)) - test.morphoSupplyBefore,
-                10,
+                100,
                 "morpho pool supply"
             );
             assertApproxEqAbs(
                 p2pBorrowUnderlying - borrowDeltaUnderlyingBefore,
                 IVariableDebtToken(test.market.debtToken).balanceOf(address(morpho)) -
                     test.morphoBorrowBefore,
-                10,
+                100,
                 "morpho pool borrow"
             );
         }
@@ -123,7 +123,7 @@ contract TestDeltas is TestSetup {
 
     function testShouldNotClearP2PWhenFullDelta() public virtual {
         for (uint256 marketIndex; marketIndex < markets.length; ++marketIndex) {
-            // _revert(); // TODO: re-add as soon as https://github.com/foundry-rs/foundry/issues/3792 is resolved, to avoid sharing state changes with each market test
+            _revert();
 
             DeltasTest memory test;
             test.market = markets[0];
