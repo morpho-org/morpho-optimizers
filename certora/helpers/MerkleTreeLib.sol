@@ -36,7 +36,6 @@ library MerkleTreeLib {
 
         node.value = value;
         node.hashNode = keccak256(abi.encodePacked(addr, value));
-        require(node.hashNode << 160 != 0, "invalid leaf hash");
     }
 
     function newInternalNode(
@@ -59,7 +58,6 @@ library MerkleTreeLib {
         // The value of an internal node represents the sum of the values of the leaves underneath.
         parentNode.value = leftNode.value + rightNode.value;
         parentNode.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
-        require(parentNode.hashNode << 160 != 0, "invalid node hash");
     }
 
     function setRoot(Tree storage tree, address addr) internal {
@@ -76,10 +74,6 @@ library MerkleTreeLib {
         Node storage node = tree.nodes[addr];
 
         if (node.isEmpty()) return true;
-
-        // Trick to make the verification discriminate between internal nodes and leaves.
-        // Safe because it will prompt a revert if this condition is not respected.
-        if (node.hashNode << 160 == 0) return false;
 
         if (node.value == 0) return false;
 
