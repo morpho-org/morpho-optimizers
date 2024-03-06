@@ -63,23 +63,26 @@ contract MerkleTrees {
     function wellFormedPath(
         address treeAddress,
         address addr,
-        bytes32[] memory proof,
-        uint256 length
+        bytes32[] memory proof
     ) public view {
         MerkleTreeLib.Tree storage tree = trees[treeAddress];
 
         require(tree.isWellFormed(addr));
 
-        if (length == 0) return;
+        for (uint256 i = proof.length; i > 0; i--) {
+            bytes32 otherHash = proof[i - 1];
 
-        bytes32 otherHash = proof[length - 1];
+            address left = tree.getLeft(addr);
+            address right = tree.getRight(addr);
+            if (tree.getHash(left) == otherHash) {
+                addr = right;
+            } else if (tree.getHash(right) == otherHash) {
+                addr = left;
+            } else {
+                return;
+            }
 
-        address left = tree.getLeft(addr);
-        address right = tree.getRight(addr);
-        if (tree.getHash(left) == otherHash) {
-            wellFormedPath(treeAddress, right, proof, length - 1);
-        } else if (tree.getHash(right) == otherHash) {
-            wellFormedPath(treeAddress, left, proof, length - 1);
+            require(tree.isWellFormed(addr));
         }
     }
 }
