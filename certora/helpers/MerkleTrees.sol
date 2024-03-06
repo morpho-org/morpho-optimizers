@@ -58,21 +58,28 @@ contract MerkleTrees {
         return trees[treeAddress].isWellFormed(addr);
     }
 
-    // Only go up to a given depth, to avoid CVL recursion protection.
-    function wellFormedUpTo(
+    // Check that the nodes are well formed on the path from the root.
+    // Stops early if the proof is incorrect.
+    function wellFormedPath(
         address treeAddress,
         address addr,
-        uint256 depth
+        bytes32[] memory proof,
+        uint256 length
     ) public view {
-        if (depth == 0) return;
+        MerkleTreeLib.Tree storage tree = trees[treeAddress];
 
-        require(trees[treeAddress].isWellFormed(addr));
+        require(tree.isWellFormed(addr));
 
-        address left = trees[treeAddress].getLeft(addr);
-        address right = trees[treeAddress].getRight(addr);
-        if (left != address(0)) {
-            wellFormedUpTo(treeAddress, left, depth - 1);
-            wellFormedUpTo(treeAddress, right, depth - 1);
+        if (length == 0) return;
+
+        bytes32 otherHash = proof[length - 1];
+
+        address left = tree.getLeft(addr);
+        address right = tree.getRight(addr);
+        if (tree.getHash(left) == otherHash) {
+            wellFormedPath(treeAddress, right, proof, length - 1);
+        } else if (tree.getHash(right) == otherHash) {
+            wellFormedPath(treeAddress, left, proof, length - 1);
         }
     }
 }
