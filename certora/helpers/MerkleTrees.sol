@@ -59,7 +59,6 @@ contract MerkleTrees {
     }
 
     // Check that the nodes are well formed on the path from the root.
-    // Stops early if the proof is incorrect.
     function wellFormedPath(
         address treeAddress,
         address addr,
@@ -67,22 +66,17 @@ contract MerkleTrees {
     ) public view {
         MerkleTreeLib.Tree storage tree = trees[treeAddress];
 
-        require(tree.isWellFormed(addr));
+        for (uint256 i = proof.length; ; ) {
+            require(tree.isWellFormed(addr));
 
-        for (uint256 i = proof.length; i > 0; i--) {
-            bytes32 otherHash = proof[i - 1];
+            if (i == 0) break;
+
+            bytes32 otherHash = proof[--i];
 
             address left = tree.getLeft(addr);
             address right = tree.getRight(addr);
-            if (tree.getHash(left) == otherHash) {
-                addr = right;
-            } else if (tree.getHash(right) == otherHash) {
-                addr = left;
-            } else {
-                return;
-            }
 
-            require(tree.isWellFormed(addr));
+            addr = tree.getHash(left) == otherHash ? right : left;
         }
     }
 }

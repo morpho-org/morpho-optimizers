@@ -9,7 +9,7 @@ methods {
 
     function MerkleTrees.getValue(address, address) external returns uint256 envfree;
     function MerkleTrees.getHash(address, address) external returns bytes32 envfree;
-    function MerkleTrees.wellFormedPath(address, address, bytes32[], uint256) external envfree;
+    function MerkleTrees.wellFormedPath(address, address, bytes32[]) external envfree;
 
     function MorphoToken.balanceOf(address) external returns uint256 envfree;
 }
@@ -75,8 +75,8 @@ rule claimCorrectness(address _account, uint256 _claimable, bytes32[] _proof) {
     // No need to make sure that currNode (resp prevNode) is equal to currRoot (resp prevRoot): one can pass an internal node instead.
 
     // Assume that prevTree and currTree are well-formed.
-    MerkleTrees.wellFormedPath(prevTree, prevNode, _proof, _proof.length);
-    MerkleTrees.wellFormedPath(currTree, currNode, _proof, _proof.length);
+    MerkleTrees.wellFormedPath(prevTree, prevNode, _proof);
+    MerkleTrees.wellFormedPath(currTree, currNode, _proof);
 
     claim(_account, _claimable, _proof);
 
