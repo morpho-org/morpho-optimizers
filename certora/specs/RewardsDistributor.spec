@@ -22,13 +22,28 @@ rule updatedClaimedAmount(address _account, uint256 _claimable, bytes32[] _proof
 }
 
 // Check an account can only claim greater amounts each time.
-// Together with the previous rule, it ensures that an account cannot claim twice the rewards.
 rule increasingClaimedAmounts(address _account, uint256 _claimable, bytes32[] _proof) {
     uint256 claimed = claimed(_account);
 
     claim(_account, _claimable, _proof);
 
     assert _claimable > claimed;
+}
+
+// Check that claiming twice is equivalent to claiming once with the last amount.
+rule claimTwice(address _account, uint256 _claim1, uint256 _claim2) {
+    storage initStorage = lastStorage;
+
+    bytes32[] _proof1; bytes32[] _proof2;
+    claim(_account, _claim1, _proof1);
+    claim(_account, _claim2, _proof2);
+
+    storage afterBothStorage = lastStorage;
+
+    bytes32[] _proof;
+    claim(_account, _claim2, _proof) at initStorage;
+
+    assert lastStorage == afterBothStorage;
 }
 
 // Check that the transferred amount is equal to the claimed amount minus the previous claimed amount.
