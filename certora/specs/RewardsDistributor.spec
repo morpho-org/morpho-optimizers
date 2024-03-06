@@ -14,18 +14,21 @@ methods {
     function MorphoToken.balanceOf(address) external returns uint256 envfree;
 }
 
-// Check an account can only claim greater rewards each time.
-rule noClaimAgain(address _account, uint256 _claimable, bytes32[] _proof) {
+// Check an account claimed amount is correctly updated.
+rule updatedClaimedAmount(address _account, uint256 _claimable, bytes32[] _proof) {
     claim(_account, _claimable, _proof);
 
     assert _claimable == claimed(_account);
+}
 
-    uint256 _claimable2;
-    // Assume that the second claim is smaller or equal to the previous claimed amount.
-    require (_claimable2 <= _claimable);
-    claim@withrevert(_account, _claimable2, _proof);
+// Check an account can only claim greater amounts each time.
+// Together with the previous rule, it ensures that an account cannot claim twice the rewards.
+rule increasingClaimedAmounts(address _account, uint256 _claimable, bytes32[] _proof) {
+    uint256 claimed = claimed(_account);
 
-    assert lastReverted;
+    claim(_account, _claimable, _proof);
+
+    assert _claimable > claimed;
 }
 
 // Check that the transferred amount is equal to the claimed amount minus the previous claimed amount.
