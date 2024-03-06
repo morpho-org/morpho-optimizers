@@ -42,8 +42,7 @@ It also interacts with `RewardsManager`, which manages the underlying pool's rew
 
 - [White Paper](https://whitepaper.morpho.org)
 - [Yellow Paper](https://yellowpaper.morpho.org/)
-- [Morpho Documentation](https://docs.morpho.org)
-- [Morpho Developers Documentation](https://developers.morpho.org)
+- [Morpho Documentation](https://docs.morpho.org/concepts/morpho-optimizers)
 
 ---
 
@@ -52,6 +51,7 @@ It also interacts with `RewardsManager`, which manages the underlying pool's rew
 All audits are stored in the [audits](./audits/)' folder.
 
 ---
+
 ## Bug bounty
 
 A bug bounty is open on Immunefi. The rewards and scope are defined [here](https://immunefi.com/bounty/morpho/).

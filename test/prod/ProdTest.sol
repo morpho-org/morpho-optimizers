@@ -12,14 +12,30 @@ import "@forge-std/console.sol";
 import "@forge-std/Test.sol";
 
 contract ProdTest is Test, BaseConfig {
+    // Show block number for reproducibility.
+    function testShowBlockNumber() public view {
+        console.log("Testing at block", block.number);
+    }
+
     // Needed because AAVE packs the balance struct.
-    function dealAave(address who, uint104 amount) public {
-        // The slot of the balance struct "_balances" is 0.
-        bytes32 slot = keccak256(abi.encode(who, uint256(0)));
-        bytes32 initialValue = vm.load(aave, slot);
-        // The balance is stored in the first 104 bits.
-        bytes32 finalValue = ((initialValue >> 104) << 104) | bytes32(uint256(amount));
-        vm.store(aave, slot, finalValue);
-        require(ERC20(aave).balanceOf(who) == uint256(amount));
+    function deal(
+        address underlying,
+        address user,
+        uint256 amount
+    ) internal override {
+        if (underlying == aave) {
+            uint256 balance = ERC20(underlying).balanceOf(user);
+
+            if (amount > balance) {
+                ERC20(underlying).transfer(user, amount - balance);
+            } else {
+                vm.prank(user);
+                ERC20(underlying).transfer(address(this), balance - amount);
+            }
+
+            return;
+        }
+
+        super.deal(underlying, user, amount);
     }
 }

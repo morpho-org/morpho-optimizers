@@ -97,8 +97,9 @@ contract TestLifecycle is TestSetup {
             0,
             string.concat(supply.market.symbol, " balance after supply")
         );
-        assertTrue(
-            supply.amount >= supply.position.total,
+        assertGe(
+            supply.amount,
+            supply.position.total,
             string.concat(supply.market.symbol, " total supply")
         );
         if (supply.p2pDisabled)
@@ -141,9 +142,9 @@ contract TestLifecycle is TestSetup {
             supply.morphoUnderlyingBalanceBefore,
             string.concat(supply.market.symbol, " morpho balance")
         );
-        assertTrue(
-            ICToken(supply.market.poolToken).balanceOfUnderlying(address(morpho)) >=
-                supply.morphoPoolSupplyBefore + supply.position.pool,
+        assertGe(
+            ICToken(supply.market.poolToken).balanceOfUnderlying(address(morpho)),
+            supply.morphoPoolSupplyBefore + supply.position.pool,
             string.concat(supply.market.symbol, " morpho pool supply")
         );
         assertApproxEqAbs(
