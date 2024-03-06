@@ -89,6 +89,7 @@ library MerkleTreeLib {
             return
                 !left.isEmpty() &&
                 !right.isEmpty() &&
+                node.value == left.value + right.value &&
                 sorted &&
                 node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
         }
