@@ -12,40 +12,29 @@ contract Checker is Test {
 
     MerkleTreeLib.Tree public tree;
 
-    struct Leaf {
-        address addr;
-        uint256 value;
-    }
-
-    struct InternalNode {
-        address addr;
-        address left;
-        address right;
-    }
-
     function testVerifyCertificate() public {
         string memory projectRoot = vm.projectRoot();
         string memory path = string.concat(projectRoot, "/certificate.json");
         string memory json = vm.readFile(path);
 
         uint256 leafLength = abi.decode(json.parseRaw(".leafLength"), (uint256));
-        Leaf memory leaf;
+        MerkleTreeLib.Leaf memory leaf;
         for (uint256 i; i < leafLength; i++) {
             leaf = abi.decode(
                 json.parseRaw(string.concat(".leaf[", Strings.toString(i), "]")),
-                (Leaf)
+                (MerkleTreeLib.Leaf)
             );
-            tree.newLeaf(leaf.addr, leaf.value);
+            tree.newLeaf(leaf);
         }
 
         uint256 nodeLength = abi.decode(json.parseRaw(".nodeLength"), (uint256));
-        InternalNode memory node;
+        MerkleTreeLib.InternalNode memory node;
         for (uint256 i; i < nodeLength; i++) {
             node = abi.decode(
                 json.parseRaw(string.concat(".node[", Strings.toString(i), "]")),
-                (InternalNode)
+                (MerkleTreeLib.InternalNode)
             );
-            tree.newInternalNode(node.addr, node.left, node.right);
+            tree.newInternalNode(node);
         }
 
         assertTrue(!tree.isEmpty(node.addr), "empty root");
