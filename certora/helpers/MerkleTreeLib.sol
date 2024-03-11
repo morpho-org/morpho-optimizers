@@ -31,9 +31,9 @@ library MerkleTreeLib {
             node.hashNode == bytes32(0);
     }
 
+    // The tree has no root because every node (and the nodes underneath) form a Merkle tree.
     struct Tree {
         mapping(address => Node) nodes;
-        address root;
     }
 
     function newLeaf(Tree storage tree, Leaf memory leaf) internal {
@@ -66,11 +66,6 @@ library MerkleTreeLib {
         node.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
     }
 
-    function setRoot(Tree storage tree, address addr) internal {
-        require(!tree.nodes[addr].isEmpty(), "node is empty");
-        tree.root = addr;
-    }
-
     // The specification of a well-formed tree is the following:
     //   - empty nodes are well-formed
     //   - other nodes should have non-zero value, where the leaf node contains the value of the account and internal nodes contain the sum of the values of its leaf children.
@@ -101,10 +96,6 @@ library MerkleTreeLib {
 
     function isEmpty(Tree storage tree, address addr) internal view returns (bool) {
         return tree.nodes[addr].isEmpty();
-    }
-
-    function getRoot(Tree storage tree) internal view returns (address) {
-        return tree.root;
     }
 
     function getLeft(Tree storage tree, address addr) internal view returns (address) {

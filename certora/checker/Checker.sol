@@ -10,7 +10,7 @@ contract Checker is Test {
     using MerkleTreeLib for MerkleTreeLib.Tree;
     using stdJson for string;
 
-    MerkleTreeLib.Tree public tree;
+    MerkleTreeLib.Tree internal tree;
 
     function testVerifyCertificate() public {
         string memory projectRoot = vm.projectRoot();

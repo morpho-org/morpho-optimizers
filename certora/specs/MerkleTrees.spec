@@ -3,7 +3,6 @@
 methods {
     function newInternalNode(address, MerkleTreeLib.InternalNode) external envfree;
 
-    function getRoot(address) external returns address envfree;
     function getValue(address, address) external returns uint256 envfree;
     function isEmpty(address, address) external returns bool envfree;
     function isWellFormed(address, address) external returns bool envfree;
@@ -19,9 +18,6 @@ invariant nonEmptyHasValue(address tree, address addr)
     requireInvariant nonEmptyHasValue(tree, internalNode.right);
   }
 }
-
-invariant rootIsZeroOrNotEmpty(address tree)
-    getRoot(tree) == 0 || !isEmpty(tree, getRoot(tree));
 
 invariant wellFormed(address tree, address addr)
     isWellFormed(tree, addr)

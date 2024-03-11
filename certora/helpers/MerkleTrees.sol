@@ -19,14 +19,6 @@ contract MerkleTrees {
         trees[treeAddress].newInternalNode(internalNode);
     }
 
-    function setRoot(address treeAddress, address addr) public {
-        trees[treeAddress].setRoot(addr);
-    }
-
-    function getRoot(address treeAddress) public view returns (address) {
-        return trees[treeAddress].getRoot();
-    }
-
     function getLeft(address treeAddress, address addr) public view returns (address) {
         return trees[treeAddress].getLeft(addr);
     }
