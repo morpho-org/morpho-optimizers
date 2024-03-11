@@ -7,7 +7,6 @@ methods {
     function prevRoot() external returns(bytes32) envfree;
     function currRoot() external returns(bytes32) envfree;
     function claimed(address) external returns(uint256) envfree;
-    function updateRoot(bytes32) external envfree;
     function claim(address, uint256, bytes32[]) external envfree;
 
     function MerkleTrees.getValue(address, address) external returns(uint256) envfree;
@@ -18,10 +17,10 @@ methods {
 }
 
 // Check how updateRoot changes the storage.
-rule updateRootStorageChange(bytes32 _newRoot) {
+rule updateRootStorageChange(env e, bytes32 _newRoot) {
     bytes32 rootBefore = currRoot();
 
-    updateRoot(_newRoot);
+    updateRoot(e, _newRoot);
 
     assert prevRoot() == rootBefore;
     assert currRoot() == _newRoot;
