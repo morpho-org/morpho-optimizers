@@ -44,20 +44,20 @@ def populate(address, amount, proof):
 
 
 # Traverse the tree and generate corresponding instruction for each internal node and each leaf.
-def walk(h):
-    if h in left:
-        walk(left[h])
-        walk(right[h])
+def walk(node):
+    if node in left:
+        walk(left[node])
+        walk(right[node])
         certificate["node"].append(
             {
-                "addr": hash_to_address[h],
-                "left": hash_to_address[left[h]],
-                "right": hash_to_address[right[h]],
+                "addr": hash_to_address[node],
+                "left": hash_to_address[left[node]],
+                "right": hash_to_address[right[node]],
             }
         )
     else:
         certificate["leaf"].append(
-            {"addr": hash_to_address[h], "value": hash_to_value[h]}
+            {"addr": hash_to_address[node], "value": hash_to_value[node]}
         )
 
 

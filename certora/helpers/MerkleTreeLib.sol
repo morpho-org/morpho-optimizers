@@ -42,28 +42,29 @@ library MerkleTreeLib {
 
     function newInternalNode(
         Tree storage tree,
-        address parent,
+        address addr,
         address left,
         address right
     ) internal {
-        Node storage parentNode = tree.nodes[parent];
+        // The key of the new internal node is left arbitrary.
+        Node storage node = tree.nodes[addr];
         Node storage leftNode = tree.nodes[left];
         Node storage rightNode = tree.nodes[right];
-        require(parent != address(0), "parent is zero address");
-        require(parentNode.isEmpty(), "parent is not empty");
+        require(addr != address(0), "node is zero address");
+        require(node.isEmpty(), "node is not empty");
         require(!leftNode.isEmpty(), "left is empty");
         require(!rightNode.isEmpty(), "right is empty");
         require(leftNode.hashNode <= rightNode.hashNode, "children are not pair sorted");
 
-        parentNode.left = left;
-        parentNode.right = right;
+        node.left = left;
+        node.right = right;
         // The value of an internal node represents the sum of the values of the leaves underneath.
-        parentNode.value = leftNode.value + rightNode.value;
-        parentNode.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
+        node.value = leftNode.value + rightNode.value;
+        node.hashNode = keccak256(abi.encode(leftNode.hashNode, rightNode.hashNode));
     }
 
     function setRoot(Tree storage tree, address addr) internal {
-        require(!tree.nodes[addr].isEmpty(), "root is empty");
+        require(!tree.nodes[addr].isEmpty(), "node is empty");
         tree.root = addr;
     }
 
@@ -86,13 +87,11 @@ library MerkleTreeLib {
             if (node.left == address(0) || node.right == address(0)) return false;
             Node storage left = tree.nodes[node.left];
             Node storage right = tree.nodes[node.right];
-            // Well-formed nodes should have its children pair-sorted.
-            bool sorted = left.hashNode <= right.hashNode;
             return
                 !left.isEmpty() &&
                 !right.isEmpty() &&
                 node.value == left.value + right.value &&
-                sorted &&
+                left.hashNode <= right.hashNode &&
                 node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
         }
     }
