@@ -3,9 +3,9 @@
 methods {
     function newInternalNode(address, MerkleTreeLib.InternalNode) external envfree;
 
-    function getValue(address, address) external returns uint256 envfree;
-    function isEmpty(address, address) external returns bool envfree;
-    function isWellFormed(address, address) external returns bool envfree;
+    function getValue(address, address) external returns(uint256) envfree;
+    function isEmpty(address, address) external returns(bool) envfree;
+    function isWellFormed(address, address) external returns(bool) envfree;
 }
 
 invariant zeroIsEmpty(address tree)
