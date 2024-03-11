@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 methods {
-    function newInternalNode(address, address, address, address) external envfree;
+    function newInternalNode(address, MerkleTreeLib.InternalNode) external envfree;
 
     function getRoot(address) external returns address envfree;
     function getValue(address, address) external returns uint256 envfree;
@@ -14,9 +14,9 @@ invariant zeroIsEmpty(address tree)
 
 invariant nonEmptyHasValue(address tree, address addr)
     ! isEmpty(tree, addr) => getValue(tree, addr) != 0
-{ preserved newInternalNode(address _, address parent, address left, address right) {
-    requireInvariant nonEmptyHasValue(tree, left);
-    requireInvariant nonEmptyHasValue(tree, right);
+{ preserved newInternalNode(address _, MerkleTreeLib.InternalNode internalNode) {
+    requireInvariant nonEmptyHasValue(tree, internalNode.left);
+    requireInvariant nonEmptyHasValue(tree, internalNode.right);
   }
 }
 
@@ -28,9 +28,9 @@ invariant wellFormed(address tree, address addr)
 { preserved {
     requireInvariant zeroIsEmpty(tree);
   }
-  preserved newInternalNode(address _, address parent, address left, address right) {
+  preserved newInternalNode(address _, MerkleTreeLib.InternalNode internalNode) {
     requireInvariant zeroIsEmpty(tree);
-    requireInvariant nonEmptyHasValue(tree, left);
-    requireInvariant nonEmptyHasValue(tree, right);
+    requireInvariant nonEmptyHasValue(tree, internalNode.left);
+    requireInvariant nonEmptyHasValue(tree, internalNode.right);
   }
 }
