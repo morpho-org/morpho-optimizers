@@ -93,24 +93,4 @@ library MerkleTreeLib {
                 node.hashNode == keccak256(abi.encode(left.hashNode, right.hashNode));
         }
     }
-
-    function isEmpty(Tree storage tree, address addr) internal view returns (bool) {
-        return tree.nodes[addr].isEmpty();
-    }
-
-    function getLeft(Tree storage tree, address addr) internal view returns (address) {
-        return tree.nodes[addr].left;
-    }
-
-    function getRight(Tree storage tree, address addr) internal view returns (address) {
-        return tree.nodes[addr].right;
-    }
-
-    function getValue(Tree storage tree, address addr) internal view returns (uint256) {
-        return tree.nodes[addr].value;
-    }
-
-    function getHash(Tree storage tree, address addr) internal view returns (bytes32) {
-        return tree.nodes[addr].hashNode;
-    }
 }

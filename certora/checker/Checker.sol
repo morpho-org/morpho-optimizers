@@ -2,15 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "../../lib/morpho-utils/lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-import "../helpers/MerkleTreeLib.sol";
+import "../helpers/MerkleTrees.sol";
 import "../../lib/forge-std/src/Test.sol";
 import "../../lib/forge-std/src/StdJson.sol";
 
 contract Checker is Test {
-    using MerkleTreeLib for MerkleTreeLib.Tree;
     using stdJson for string;
 
-    MerkleTreeLib.Tree internal tree;
+    MerkleTrees trees = new MerkleTrees();
+    address constant tree = address(0);
 
     function testVerifyCertificate() public {
         string memory projectRoot = vm.projectRoot();
@@ -24,7 +24,7 @@ contract Checker is Test {
                 json.parseRaw(string.concat(".leaf[", Strings.toString(i), "]")),
                 (MerkleTreeLib.Leaf)
             );
-            tree.newLeaf(leaf);
+            trees.newLeaf(tree, leaf);
         }
 
         uint256 nodeLength = abi.decode(json.parseRaw(".nodeLength"), (uint256));
@@ -34,15 +34,15 @@ contract Checker is Test {
                 json.parseRaw(string.concat(".node[", Strings.toString(i), "]")),
                 (MerkleTreeLib.InternalNode)
             );
-            tree.newInternalNode(node);
+            trees.newInternalNode(tree, node);
         }
 
-        assertTrue(!tree.isEmpty(node.addr), "empty root");
+        assertTrue(!trees.isEmpty(tree, node.addr), "empty root");
 
         uint256 total = abi.decode(json.parseRaw(".total"), (uint256));
-        assertEq(tree.getValue(node.addr), total, "incorrect total rewards");
+        assertEq(trees.getValue(tree, node.addr), total, "incorrect total rewards");
 
         bytes32 root = abi.decode(json.parseRaw(".root"), (bytes32));
-        assertEq(tree.getHash(node.addr), root, "mismatched roots");
+        assertEq(trees.getHash(tree, node.addr), root, "mismatched roots");
     }
 }
