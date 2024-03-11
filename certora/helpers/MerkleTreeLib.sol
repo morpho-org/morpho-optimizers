@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU AGPLv3
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
 library MerkleTreeLib {
@@ -29,6 +29,8 @@ library MerkleTreeLib {
         address addr,
         uint256 value
     ) internal {
+        // The address of the receiving account is used as the key to create a new leaf.
+        // This ensures that a single account cannot appear twice in the tree.
         Node storage node = tree.nodes[addr];
         require(addr != address(0), "addr is zero address");
         require(node.isEmpty(), "leaf is not empty");

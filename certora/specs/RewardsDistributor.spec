@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 using MerkleTrees as MerkleTrees;
 using MorphoToken as MorphoToken;
 

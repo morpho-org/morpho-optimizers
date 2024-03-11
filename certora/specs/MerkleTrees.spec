@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 methods {
     function newInternalNode(address, address, address, address) external envfree;
 
