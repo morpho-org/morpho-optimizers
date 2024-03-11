@@ -40,6 +40,7 @@ certoraRun certora/confs/MerkleTrees.conf --rule wellFormed
 ## Running the rewards checker
 
 To verify that a given list of proofs corresponds to a valid Merkle tree, you must generate a certificate from it.
+Examples of lists of proofs can be found as `proofs.json` files in the subfolders of the [distribution folder of morpho-optimizers-rewards](https://github.com/morpho-org/morpho-optimizers-rewards/tree/main/distribution).
 This assumes that the list of proofs is in the expected JSON format.
 For example, at the root of the repository, given a `proofs.json` file:
 
