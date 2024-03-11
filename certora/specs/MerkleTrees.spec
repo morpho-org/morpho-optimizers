@@ -25,11 +25,9 @@ invariant wellFormed(address tree, address addr)
     isWellFormed(tree, addr)
 { preserved {
     requireInvariant zeroIsEmpty(tree);
-    requireInvariant wellFormed(tree, addr);
   }
   preserved newInternalNode(address _, address parent, address left, address right) {
     requireInvariant zeroIsEmpty(tree);
-    requireInvariant wellFormed(tree, addr);
     requireInvariant nonEmptyHasValue(tree, left);
     requireInvariant nonEmptyHasValue(tree, right);
   }
