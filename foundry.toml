@@ -22,5 +22,5 @@ fork_block_number = 15_581_371 # Block number when the Aave's V2 IRM was updated
 
 [profile.checker]
 test = 'certora/checker'
-fs_permissions = [{access = "read", path= "./"}]
+fs_permissions = [{access = "read", path= "./certificate.json"}]
 match_contract = 'Checker'
