@@ -37,6 +37,8 @@ contract Checker is Test {
             trees.newInternalNode(tree, node);
         }
 
+        // At this point `node` is the candidate for the root.
+
         assertTrue(!trees.isEmpty(tree, node.addr), "empty root");
 
         uint256 total = abi.decode(json.parseRaw(".total"), (uint256));
