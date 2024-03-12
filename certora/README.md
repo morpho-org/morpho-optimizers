@@ -54,7 +54,7 @@ This requires installing the corresponding libraries first:
 pip install web3 eth-tester py-evm
 ```
 
-Then, verify this certificate:
+Then, check this certificate:
 
 ```
 FOUNDRY_PROFILE=checker forge test

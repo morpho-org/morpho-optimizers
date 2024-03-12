@@ -41,8 +41,8 @@ library MerkleTreeLib {
         // This ensures that a single account cannot appear twice in the tree.
         Node storage node = tree.nodes[leaf.addr];
         require(leaf.addr != address(0), "addr is zero address");
-        require(node.isEmpty(), "leaf is not empty");
         require(leaf.value != 0, "value is zero");
+        require(node.isEmpty(), "leaf is not empty");
 
         node.value = leaf.value;
         node.hashNode = keccak256(abi.encodePacked(leaf.addr, leaf.value));

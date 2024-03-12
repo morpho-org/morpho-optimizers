@@ -41,7 +41,8 @@ contract MerkleTrees {
         return trees[tree].isWellFormed(node);
     }
 
-    // Check that the nodes are well formed on the path from the root.
+    // Check that the nodes are well formed starting from `node` and going down the `tree.
+    // The `proof` is used to choose the path downward.
     function wellFormedPath(
         address tree,
         address node,
