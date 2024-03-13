@@ -17,6 +17,8 @@ on:
       - "remappings.txt"
       - ".github/actions/ci-foundry-upgrade/*"
       - ".github/workflows/ci-foundry-aave-v2-upgrade.yml"
+  schedule:
+    - cron: "0 5 * * 1" # runs every monday at 5am.
 
 jobs:
   morpho-aave-v2-eth-mainnet-upgrade:
