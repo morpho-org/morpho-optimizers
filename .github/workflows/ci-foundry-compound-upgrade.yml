@@ -17,6 +17,8 @@ on:
       - "remappings.txt"
       - ".github/actions/ci-foundry-upgrade/*"
       - ".github/workflows/ci-foundry-compound-upgrade.yml"
+  schedule:
+    - cron: "0 5 * * 1" # runs every monday at 5am.
 
 jobs:
   morpho-compound-eth-mainnet-upgrade:
