@@ -122,10 +122,7 @@ contract TestUpgradeLens is TestSetup {
                     supplyAmount
                 );
 
-                (uint256 supplyDelta, uint256 borrowDelta, , ) = morpho.deltas(
-                    supplyMarket.poolToken
-                );
-
+                (uint256 supplyDelta, , , ) = morpho.deltas(supplyMarket.poolToken);
                 if (supplyDelta > 0) continue;
 
                 _tip(supplyMarket.underlying, address(user), supplyAmount);
@@ -140,6 +137,7 @@ contract TestUpgradeLens is TestSetup {
                     string.concat(supplyMarket.symbol, " supply rate")
                 );
 
+                (, uint256 borrowDelta, , ) = morpho.deltas(borrowMarket.poolToken);
                 if (borrowDelta > 0 || borrowMarket.status.isBorrowPaused) continue;
 
                 (uint256 expectedBorrowRate, , , ) = lens.getNextUserBorrowRatePerBlock(
