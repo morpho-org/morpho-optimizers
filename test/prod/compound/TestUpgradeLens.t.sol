@@ -102,7 +102,13 @@ contract TestUpgradeLens is TestSetup {
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
                 uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
-                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
+                (uint256 borrowAmount, bool overUtilized) = _boundBorrowAmount(
+                    borrowMarket,
+                    _amount,
+                    borrowedPrice
+                );
+                if (overUtilized) continue;
+
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
                     borrowedPrice,

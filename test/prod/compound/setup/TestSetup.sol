@@ -190,23 +190,21 @@ contract TestSetup is Config, ProdTest {
         TestMarket memory _market,
         uint96 _amount,
         uint256 _price
-    ) internal view returns (uint256) {
+    ) internal view returns (uint256 borrowAmount, bool overUtilized) {
         ICToken poolToken = ICToken(_market.poolToken);
-        return
-            bound(
-                _amount,
-                MIN_USD_AMOUNT.div(_price),
+        uint256 cash = poolToken.getCash();
+        borrowAmount = bound(
+            _amount,
+            MIN_USD_AMOUNT.div(_price),
+            Math.min(
                 Math.min(
-                    Math.min(
-                        Math.min(
-                            (_market.maxBorrows - _market.totalBorrows) / 2,
-                            poolToken.getCash() - poolToken.totalReserves()
-                        ),
-                        MAX_USD_AMOUNT.div(_price)
-                    ),
-                    type(uint96).max / 2 // so that collateral amount < type(uint96).max
-                )
-            );
+                    Math.min((_market.maxBorrows - _market.totalBorrows) / 2, cash),
+                    MAX_USD_AMOUNT.div(_price)
+                ),
+                type(uint96).max / 2 // so that collateral amount < type(uint96).max
+            )
+        );
+        overUtilized = borrowAmount + poolToken.totalReserves() > cash;
     }
 
     function _getUnderlying(address _poolToken) internal view returns (address underlying) {
