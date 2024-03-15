@@ -286,7 +286,10 @@ contract TestLifecycle is TestSetup {
         _tip(
             borrow.market.underlying,
             address(user),
-            borrow.position.total - ERC20(borrow.market.underlying).balanceOf(address(user))
+            Math.zeroFloorSub(
+                borrow.position.total,
+                ERC20(borrow.market.underlying).balanceOf(address(user))
+            )
         );
         user.approve(borrow.market.underlying, borrow.position.total);
         user.repay(borrow.market.poolToken, address(user), type(uint256).max);
@@ -393,13 +396,19 @@ contract TestLifecycle is TestSetup {
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
                 uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
-                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
+                (uint256 borrowAmount, bool overUtilized) = _boundBorrowAmount(
+                    borrowMarket,
+                    _amount,
+                    borrowedPrice
+                );
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
                     borrowedPrice,
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
                 ).mul(1.01 ether);
+
+                if (overUtilized) continue;
 
                 MarketSideTest memory supply = _supply(supplyMarket, supplyAmount);
                 _testSupply(supply);
@@ -443,7 +452,7 @@ contract TestLifecycle is TestSetup {
 
                 if (borrowMarket.status.isBorrowPaused) continue;
 
-                uint256 borrowAmount = _boundBorrowAmount(
+                (uint256 borrowAmount, bool overUtilized) = _boundBorrowAmount(
                     borrowMarket,
                     _amount,
                     oracle.getUnderlyingPrice(borrowMarket.poolToken)
@@ -454,6 +463,8 @@ contract TestLifecycle is TestSetup {
                     oracle.getUnderlyingPrice(supplyMarket.poolToken),
                     supplyMarket.collateralFactor
                 ).mul(0.995 ether);
+
+                if (overUtilized) continue;
 
                 _supply(supplyMarket, supplyAmount);
 
