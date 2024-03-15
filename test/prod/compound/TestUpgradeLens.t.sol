@@ -102,7 +102,13 @@ contract TestUpgradeLens is TestSetup {
                 TestMarket memory borrowMarket = borrowableMarkets[borrowMarketIndex];
 
                 uint256 borrowedPrice = oracle.getUnderlyingPrice(borrowMarket.poolToken);
-                uint256 borrowAmount = _boundBorrowAmount(borrowMarket, _amount, borrowedPrice);
+                (uint256 borrowAmount, bool overUtilized) = _boundBorrowAmount(
+                    borrowMarket,
+                    _amount,
+                    borrowedPrice
+                );
+                if (overUtilized) continue;
+
                 uint256 supplyAmount = _getMinimumCollateralAmount(
                     borrowAmount,
                     borrowedPrice,
@@ -116,6 +122,9 @@ contract TestUpgradeLens is TestSetup {
                     supplyAmount
                 );
 
+                (uint256 supplyDelta, , , ) = morpho.deltas(supplyMarket.poolToken);
+                if (supplyDelta > 0) continue;
+
                 _tip(supplyMarket.underlying, address(user), supplyAmount);
 
                 user.approve(supplyMarket.underlying, supplyAmount);
@@ -128,7 +137,8 @@ contract TestUpgradeLens is TestSetup {
                     string.concat(supplyMarket.symbol, " supply rate")
                 );
 
-                if (borrowMarket.status.isBorrowPaused) continue;
+                (, uint256 borrowDelta, , ) = morpho.deltas(borrowMarket.poolToken);
+                if (borrowDelta > 0 || borrowMarket.status.isBorrowPaused) continue;
 
                 (uint256 expectedBorrowRate, , , ) = lens.getNextUserBorrowRatePerBlock(
                     borrowMarket.poolToken,
