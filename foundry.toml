@@ -19,3 +19,8 @@ fork_block_number = 15_581_371
 
 [profile.aave-v2]
 fork_block_number = 15_581_371 # Block number when the Aave's V2 IRM was updated for the stETH.
+
+[profile.checker]
+test = 'certora/checker'
+fs_permissions = [{access = "read", path= "./certificate.json"}]
+match_contract = 'Checker'

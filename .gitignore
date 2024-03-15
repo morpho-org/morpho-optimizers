@@ -39,3 +39,7 @@ lcov.*
 
 # docs
 /docs
+
+# certora
+.certora**
+emv-*-certora*

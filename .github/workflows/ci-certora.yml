@@ -1,0 +1,58 @@
+name: Certora
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "certora/**"
+      - "lib/**"
+      - "src/common/**"
+      - "*.lock"
+      - "foundry.toml"
+      - "remappings.txt"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        conf:
+          - MerkleTrees
+          - RewardsDistributor
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        shell: bash
+
+      - name: Install python
+        uses: actions/setup-python@v4
+
+      - name: Install certora
+        run: pip install certora-cli
+
+      - name: Install solc
+        run: |
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.13/solc-static-linux
+          chmod +x solc-static-linux
+          sudo mv solc-static-linux /usr/local/bin/solc8.13
+
+      - name: Verify ${{ matrix.conf }}
+        run: certoraRun certora/confs/${{ matrix.conf }}.conf
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
