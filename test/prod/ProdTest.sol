@@ -16,26 +16,4 @@ contract ProdTest is Test, BaseConfig {
     function testShowBlockNumber() public view {
         console.log("Testing at block", block.number);
     }
-
-    // Needed because AAVE packs the balance struct.
-    function deal(
-        address underlying,
-        address user,
-        uint256 amount
-    ) internal override {
-        if (underlying == aave) {
-            uint256 balance = ERC20(underlying).balanceOf(user);
-
-            if (amount > balance) {
-                ERC20(underlying).transfer(user, amount - balance);
-            } else {
-                vm.prank(user);
-                ERC20(underlying).transfer(address(this), balance - amount);
-            }
-
-            return;
-        }
-
-        super.deal(underlying, user, amount);
-    }
 }
