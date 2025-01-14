@@ -1,4 +1,4 @@
-# Morpho Optimizers V1
+# Morpho Optimizers
 
 [![Morpho-Compound-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
 [![Morpho-AaveV2-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-aave-v2.yml)
