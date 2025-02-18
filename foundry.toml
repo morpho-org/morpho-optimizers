@@ -8,6 +8,7 @@ via_ir = false
 revert_strings = "default"
 names = true
 sizes = true
+remappings = [ "@openzeppelin/=node_modules/@openzeppelin/" ]
 
 [profile.default.fuzz]
 runs = 1024
