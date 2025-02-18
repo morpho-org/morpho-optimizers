@@ -632,6 +632,7 @@ contract TestRepay is TestSetup {
             assertEq(onPool, 0, "onPool");
         }
 
+        assertEq(true, false);
         moveOneBlockForwardBorrowRepay();
 
         // Borrower repays max.
