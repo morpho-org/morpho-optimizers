@@ -5,3 +5,4 @@ config/=config/
 @morpho-dao/morpho-utils/=lib/morpho-utils/src/
 @morpho-dao/morpho-data-structures/=lib/morpho-data-structures/contracts/
 @rari-capital/solmate/=lib/solmate/
+@openzeppelin/=node_modules/@openzeppelin/
