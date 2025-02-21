@@ -60,7 +60,7 @@ test:
 		match contract patterns \"\(${FOUNDRY_MATCH_CONTRACT}\)!${FOUNDRY_NO_MATCH_CONTRACT}\",\
 		match test patterns \"\(${FOUNDRY_MATCH_TEST}\)!${FOUNDRY_NO_MATCH_TEST}\"
 
-	forge test -vvvvv | tee trace.ansi
+	forge test -vvv | tee trace.ansi
 
 test-prod:
 	@FOUNDRY_NO_MATCH_CONTRACT=TestUpgrade FOUNDRY_PROFILE=production make test
