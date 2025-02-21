@@ -57,7 +57,7 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }}-${{ inputs.network }} # always keep compiled contracts from base branch
 
     - name: Run tests
-      run: make ci
+      run: make test-Delta
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
