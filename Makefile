@@ -83,15 +83,6 @@ test-%:
 contract-% c-%:
 	@FOUNDRY_MATCH_CONTRACT=$* make test
 
-coverage:
-	@echo Create lcov coverage report for Morpho-${PROTOCOL}-${NETWORK} tests
-	forge coverage --report lcov
-	lcov --remove lcov.info -o lcov.info "test/*"
-
-lcov-html:
-	@echo Transforming the lcov coverage report into html
-	genhtml lcov.info -o coverage
-
 gas-report:
 	@echo Create gas report from Morpho-${PROTOCOL}-${NETWORK} tests under \"${FOUNDRY_TEST}\"\
 		with profile \"${FOUNDRY_PROFILE}\", seed \"${FOUNDRY_FUZZ_SEED}\",
@@ -102,4 +93,4 @@ config:
 	@forge config
 
 
-.PHONY: test config test-common foundry coverage contracts
+.PHONY: test config test-common foundry contracts
