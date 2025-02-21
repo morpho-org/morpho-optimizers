@@ -6,7 +6,6 @@
 .pnp.js
 
 # testing
-/coverage
 *.html
 
 # production
@@ -16,7 +15,6 @@
 # hardhat
 /artifacts
 /cache
-/coverage.json
 test/contracts/flattened
 
 # misc
@@ -35,7 +33,6 @@ yarn-error.log*
 # traces
 *.ansi
 *.html
-lcov.*
 
 # docs
 /docs

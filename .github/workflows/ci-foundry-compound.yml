@@ -33,4 +33,3 @@ jobs:
           protocol: compound
           network: eth-mainnet
           alchemyKey: ${{ secrets.ALCHEMY_KEY }}
-          codecovToken: ${{ secrets.CODECOV_TOKEN }}

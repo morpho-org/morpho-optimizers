@@ -11,9 +11,6 @@ inputs:
   alchemyKey:
     description: The Alchemy key giving access to a private RPC.
     required: true
-  codecovToken:
-    description: The Codecov token used to upload coverage report.
-    required: false
 
 runs:
   using: composite
@@ -22,11 +19,6 @@ runs:
       with:
         node-version: 16
         cache: yarn
-
-    - name: Install lcov
-      if: ${{ inputs.codecovToken != '' }}
-      run: sudo apt-get install -y lcov
-      shell: bash
 
     - name: Install dependencies
       run: yarn install --frozen-lockfile
@@ -57,31 +49,9 @@ runs:
         key: ${{ github.base_ref || github.ref_name }}-foundry-${{ inputs.protocol }}-${{ inputs.network }} # always keep compiled contracts from base branch
 
     - name: Run tests
-      run: make test-Delta
+      run: make ci
       shell: bash
       env:
         PROTOCOL: ${{ inputs.protocol }}
         NETWORK: ${{ inputs.network }}
         ALCHEMY_KEY: ${{ inputs.alchemyKey }}
-
-    - name: Generate lcov coverage report
-      if: ${{ inputs.codecovToken != '' }}
-      run: make coverage
-      shell: bash
-      env:
-        PROTOCOL: ${{ inputs.protocol }}
-        NETWORK: ${{ inputs.network }}
-        ALCHEMY_KEY: ${{ inputs.alchemyKey }}
-
-    - name: Check coverage threshold
-      if: ${{ inputs.codecovToken != '' }}
-      run: npx lcov-total lcov.info --gte=90
-      shell: bash
-
-    - name: Upload coverage to Codecov
-      if: ${{ inputs.codecovToken != '' }}
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ inputs.codecovToken }}
-        name: morpho-${{ inputs.protocol }}-${{ inputs.network }}
-        files: lcov.info
