@@ -37,16 +37,16 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Check Lens storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1.2
+        uses: Rubilmax/foundry-storage-check@v3
         with:
           contract: src/compound/lens/Lens.sol:Lens
 
       - name: Check Morpho storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1.2
+        uses: Rubilmax/foundry-storage-check@v3
         with:
           contract: src/compound/Morpho.sol:Morpho
 
       - name: Check RewardsManager storage layout
-        uses: Rubilmax/foundry-storage-check@v2.1.2
+        uses: Rubilmax/foundry-storage-check@v3
         with:
           contract: src/compound/RewardsManager.sol:RewardsManager
