@@ -1,3 +1,6 @@
+> [!WARNING]
+> The Morpho Optimizers were deprecated on 2025-12-17. As a result, **this repository is no longer maintained**.
+
 # Morpho Optimizers
 
 [![Morpho-Compound-Optimizer](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml/badge.svg)](https://github.com/morpho-dao/morpho-v1/actions/workflows/ci-foundry-compound.yml)
